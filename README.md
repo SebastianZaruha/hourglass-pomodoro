@@ -128,8 +128,8 @@ archivo por archivo están en **[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md)**.
 ### Instalar y arrancar
 
 ```bash
-git clone https://github.com/SebastianZaruha/reloj-de-arena.git
-cd reloj-de-arena
+git clone https://github.com/SebastianZaruha/hourglass-pomodoro.git
+cd hourglass-pomodoro
 npm install          # instala todo el monorepo (y copia canvaskit.wasm para la web)
 npm run mobile       # servidor de Expo para el móvil (development build)
 npm run web          # o: versión web en el navegador
