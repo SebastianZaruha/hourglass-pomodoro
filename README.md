@@ -27,7 +27,8 @@ grano, se desliza al inclinar el móvil y empieza de nuevo al darle la vuelta.**
 5. [Tests y calidad](#tests-y-calidad)
 6. [Rendimiento y memoria](#rendimiento-y-memoria)
 7. [Licencia](#licencia)
-8. [Autor](#autor)
+8. [Privacidad](#privacidad)
+9. [Autor](#autor)
 
 Más documentación: **[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md)** (cómo funciona por dentro y
 dónde está cada cosa en el código) y **[CHANGELOG.md](CHANGELOG.md)** (historial de versiones).
@@ -280,6 +281,16 @@ gráficos de la app no están incluidos en la licencia. ¿Te interesa un uso com
 [sebastianzaruha@gmail.com](mailto:sebastianzaruha@gmail.com).
 
 Texto completo de la licencia: [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)
+
+## Privacidad
+
+La app no tiene cuentas, anuncios, analítica ni servidor: no envía datos fuera del móvil.
+
+- Política de privacidad (español): [docs/privacidad.html](docs/privacidad.html)
+- Privacy policy (English): [docs/privacy.html](docs/privacy.html)
+
+Son páginas HTML: con GitHub Pages (o un visor de HTML) se ven ya formateadas; en el repositorio
+se muestra el código fuente.
 
 ## Autor
 

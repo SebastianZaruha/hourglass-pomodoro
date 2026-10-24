@@ -23,6 +23,9 @@ Solo documentación y licencia; la app no cambia y no hace falta un APK nuevo.
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) indica la nueva licencia del proyecto; las
   licencias de las dependencias no cambian. Revisadas las dependencias de producción: ninguna
   GPL, AGPL ni LGPL que obligue a cambiar la licencia de la app.
+- Política de privacidad en español ([`docs/privacidad.html`](docs/privacidad.html)) e inglés
+  ([`docs/privacy.html`](docs/privacy.html)), con el nombre **Hourglass Pomodoro**, enlazada
+  desde la nueva sección [Privacidad](README.md#privacidad) del README.
 
 ## 1.8.10 — Menú a mano: botón abajo a la derecha, etiquetas en los botones redondos y menú cerrado al volver
 
