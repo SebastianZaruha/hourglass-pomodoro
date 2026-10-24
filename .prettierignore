@@ -1,0 +1,9 @@
+node_modules
+dist
+.expo
+coverage
+apps/mobile/public
+package-lock.json
+docs/capturas
+# Texto oficial de la licencia: no se reformatea
+LICENSE.md

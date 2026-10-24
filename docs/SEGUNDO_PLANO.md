@@ -1,0 +1,302 @@
+# Segundo plano en Android: notificación, avisos y ventana flotante
+
+Desde la 1.7, en Android el reloj **sigue contando con la app en segundo plano o cerrada**:
+
+- Una **notificación fija** muestra la cuenta atrás («Trabajo 1/4 · hasta las 10:25» y el
+  tiempo que queda corriendo solo) con los botones **Pausar / Reanudar** y **Reiniciar**.
+- Al **cambiar de fase** y al **terminar** suena el aviso (`cambio.mp3` / `fin.mp3`) y vibra
+  igual que dentro de la app (doble toque en el cambio de fase), aunque la app esté cerrada.
+- Desde la 1.8, una **ventana flotante** opcional deja el reloj de arena, pequeño y sin
+  fondo, encima de las demás apps. Sin permiso, la app pasa a **imagen en imagen** (PiP).
+
+Este documento explica cómo está hecho y por qué. El resto de la arquitectura está en
+[ARQUITECTURA.md](ARQUITECTURA.md).
+
+## Por qué un módulo nativo propio y no `expo-notifications`
+
+`expo-notifications` sabe programar notificaciones a una hora, pero le faltan dos cosas que
+aquí son el núcleo:
+
+1. **Cuenta atrás nativa.** Android puede pintar él mismo un cronómetro descendente en la
+   notificación (`setUsesChronometer(true)` + `setChronometerCountDown(true)`): cero trabajo
+   para la app, exacto al segundo y sin despertar el móvil cada segundo. `expo-notifications`
+   no expone esas dos opciones.
+2. **Botones que funcionan con la app muerta.** Pausar desde la notificación tiene que
+   cancelar las alarmas pendientes y reanudar tiene que volver a programarlas. Con
+   `expo-notifications` el botón abre o despierta la parte JavaScript, que puede no estar
+   viva. Aquí un `BroadcastReceiver` en Kotlin lo resuelve en milisegundos sin arrancar
+   React Native.
+
+Por eso hay un **módulo local de Expo** en Kotlin (`apps/mobile/modules/background-timer/`).
+Se enlaza solo (autolinking de la carpeta `modules/`), no añade dependencias y no necesita
+servicio en primer plano.
+
+## Cómo funciona
+
+```
+ JavaScript (app abierta)                         Android (siempre)
+ ────────────────────────                         ─────────────────
+ useSession ──► useBackgroundTimer ──sync(payload)──► BackgroundTimer.sync
+   ▲              (backgroundSync.ts)                 ├─ TimerStore      (guarda en SharedPreferences)
+   │                                                  ├─ TimerNotifications (notificación fija con cronómetro)
+   │                                                  └─ TimerAlarms     (una alarma exacta: la próxima)
+   │
+   │   onChange{seq} / getState()      AlarmReceiver  ──► avanza de fase, aviso con sonido, nueva notificación
+   └──────────────────────────────── ActionReceiver ──► pausar / reanudar / reiniciar (seq + 1)
+                                     RestoreReceiver ──► reinicio del móvil o actualización: reprograma
+```
+
+1. **El core calcula; Kotlin solo ejecuta.** `packages/core/src/background/` convierte la
+   sesión en un modelo mínimo (`BackgroundSession`: duraciones de los tramos, tramo actual,
+   cuándo acaba —si corre— o cuánto queda —si está en pausa—) y calcula **todos los avisos
+   futuros** por marcas de tiempo (`backgroundEvents`, máximo 48). También prepara los textos
+   ya traducidos (`backgroundPayload`), así Kotlin no necesita i18n.
+2. **`TimerModel.kt` es un espejo del core.** Pausar, reanudar, reiniciar y «ponerse al día»
+   están escritos dos veces: en TypeScript (con tests que comprueban que coinciden con el motor
+   de sesiones) y en Kotlin (con tests JUnit de los mismos casos). Así los botones de la
+   notificación funcionan sin JavaScript.
+3. **Alarmas exactas.** Solo está programada **la próxima** alarma
+   `setExactAndAllowWhileIdle` (suena aunque el móvil esté en reposo); al sonar, programa la
+   siguiente. Cualquier cambio (pausa, reinicio, otro plan, volteo, cambio de ajustes) la
+   cambia por la nueva. Hasta la 1.8 se programaban todas (hasta 48), y cada cambio hacía
+   más de cien llamadas al sistema en el hilo de JavaScript.
+   **`sync` no bloquea la app (1.8.1):** la llamada desde JavaScript solo guarda el último
+   estado y vuelve; el trabajo (guardar, notificación, alarma, ventana flotante) se hace en un
+   hilo propio (`reloj-segundo-plano`), y si llegan varios seguidos solo se aplica el último.
+   Los canales de notificación solo se recrean si cambian sus textos. Sin permiso de alarmas exactas se usa
+   `setAndAllowWhileIdle`: suena igual, pero Android puede retrasarlo unos minutos.
+4. **Quién manda: el número de secuencia (`seq`).** Cada botón de la notificación sube `seq`.
+   Cuando la app vuelve, lee el estado nativo y, si `seq` es nuevo, **adopta** esa sesión
+   (`sessionFromBackground`). Un `sync` que llega de JS con un `seenSeq` viejo se descarta:
+   así un estado antiguo de la app nunca pisa una pausa hecha desde la notificación.
+5. **Sin avisos dobles.** Con la app en primer plano, la app ya suena y vibra por su cuenta:
+   el módulo sabe si la app está delante y entonces no avisa (pero sí mantiene la
+   notificación al día). Al volver de segundo plano, la app no repite durante 1 s los avisos
+   que ya dio la notificación (`appShouldAlert`, `CATCH_UP_MS`).
+6. **Reinicio del móvil.** Android borra las alarmas al reiniciar; `RestoreReceiver` las
+   vuelve a poner. Los avisos que se perdieron hace más de 15 min no se dan (`STALE_ALERT_MS`).
+
+## Canales, sonidos y vibración
+
+Android fija el sonido y la vibración **por canal**, y no deja cambiarlos después de crearlo.
+Por eso hay un canal por combinación de los interruptores Sonido/Vibración del menú:
+
+| Canal                    | Para qué                                                                  |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `reloj.cuenta`           | La notificación fija (importancia baja: no suena ni vibra).               |
+| `reloj.fin.{sv,s,v}.v1`  | Fin: sonido `fin.mp3`, vibración `[0, 40, 100, 40]`.                      |
+| `reloj.fase.{sv,s,v}.v1` | Cambio de fase: sonido `cambio.mp3`, vibración `[0, 43, 77, 43]` (doble). |
+
+`sv` = sonido y vibración, `s` = solo sonido, `v` = solo vibración. Con los dos apagados el
+aviso sale **en silencio**. Los patrones son los de `expo-haptics` que usa la app. Los mp3 los
+copia el _config plugin_ (`app.plugin.js`) a `res/raw` al hacer `prebuild`. Si cambias un
+sonido o un patrón, sube `CHANNEL_VERSION` en `TimerNotifications.kt` (crea canales nuevos).
+
+## Permisos
+
+| Permiso                                                | Cuándo                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `POST_NOTIFICATIONS`                                   | Android 13+. Se pide **una vez**, la primera vez que empieza un reloj, tras explicar para qué.  |
+| `USE_EXACT_ALARM`                                      | Android 13+. Se concede solo (es para apps de temporizador).                                    |
+| `SCHEDULE_EXACT_ALARM`                                 | Solo Android 12. Viene concedido, pero se puede quitar en Ajustes → «Alarmas y recordatorios».  |
+| `RECEIVE_BOOT_COMPLETED`                               | Reprogramar los avisos tras reiniciar el móvil.                                                 |
+| `SYSTEM_ALERT_WINDOW`                                  | 1.8, solo con «Ventana flotante» activada. Lo concede el usuario en «Mostrar sobre otras apps». |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE` | 1.8.6. Se conceden solos. El servicio de la cuenta (ver abajo).                                 |
+
+Si falta un permiso, el menú muestra un aviso que abre los ajustes del sistema. Rechazarlo no
+rompe nada: el reloj sigue funcionando con la app abierta, como antes.
+
+## Decisiones (se pueden cambiar)
+
+- **«Reiniciar» en la notificación vuelve a la ronda 1 y sigue contando.** Dentro de la app,
+  la pulsación larga deja el reloj listo para empezar; desde la notificación sería raro que
+  la notificación desapareciera. Está en `restartBackground` / `TimerModel.restart`.
+- **Servicio en primer plano solo para saber de Recientes (1.8.6).** Hasta la 1.8.5 no había
+  ninguno: el cronómetro lo pinta Android y las alarmas despiertan el receptor. Sigue siendo
+  así; `TimerService` no cuenta nada, solo existe para que Android avise al quitar la app de
+  Recientes (ver «Cuándo se para la cuenta»).
+- **En la web y en Expo Go no hace nada** (`requireOptionalNativeModule`): la app funciona
+  como en la 1.6.
+
+## Ventana flotante (1.8)
+
+Con **«Ventana flotante»** activada en el menú, al salir de la app con un reloj en marcha
+aparece el reloj de arena **solo** (vidrio y arena, fondo transparente) encima de las demás
+apps. Al volver a la app o al terminar el reloj, desaparece.
+
+### Por qué una vista nativa (Canvas) y no React Native
+
+La ventana tiene que seguir viva con la app en segundo plano y hasta con la parte JavaScript
+muerta (tras un aviso, un reinicio del móvil…). Por eso es una `View` de Kotlin dibujada con
+`Canvas` (`HourglassView.kt`) dentro de una ventana `TYPE_APPLICATION_OVERLAY`, y lee el mismo
+estado nativo que la notificación (`TimerStore` + `TimerModel.settle`). Cero JS, cero Skia.
+
+- **La silueta** es la del modelo «Clásico» del core (`profile.ts`), copiada en
+  `HourglassShape.kt`.
+- **El nivel de la arena** sale del tiempo que queda de verdad: se integra el área del vidrio
+  y se busca por bisección la altura que deja esa cantidad de arena arriba (con el embudo en V)
+  y abajo (con su montoncito). La paleta de granos es la de la app.
+- **Un chorro fino** de cinco granos cae por el cuello.
+- **Frecuencia:** ~12 fps en marcha, nada en pausa (la vista no se redibuja). Con las
+  animaciones del sistema desactivadas, va más lenta y sin volteo.
+- **Temas:** claro, oscuro o el del sistema, según el menú.
+- **Pausa:** el reloj se ve atenuado (`saveLayerAlpha`).
+- **Cambio de fase:** da la vuelta (700 ms) y la arena se rellena arriba.
+
+### Gestos
+
+| Gesto                      | Acción                                                                |
+| -------------------------- | --------------------------------------------------------------------- |
+| **Arrastrar**              | Se mueve; al soltar se acomoda suave en el borde izquierdo o derecho. |
+| **Pellizcar** (dos dedos)  | Más grande o más pequeño (44–124 dp de ancho; por defecto 58 dp).     |
+| **Tocar**                  | Abre la app.                                                          |
+| **Mantener pulsado**       | Pausa o reanuda.                                                      |
+| **Llevar a la × de abajo** | **Para la cuenta** y se quita (1.8.6; antes solo se escondía).        |
+
+Con TalkBack, las mismas acciones están en el menú de acciones (tocar, mantener y «Quitar»).
+La posición (lado y altura relativa) y el tamaño se guardan (`FloatingStore.kt`).
+
+### Cuándo se ve: `FloatingPolicy`
+
+Una máquina de estados pura (`FloatingPolicy.kt`, con tests) decide a partir del interruptor,
+el permiso, si la app está a la vista y el estado del reloj:
+
+1. Interruptor apagado, sin permiso o sin reloj vivo → oculta.
+2. App a la vista → oculta (y se olvida que la quitaste).
+3. La quitaste con la × → oculta (desde la 1.8.6 la × además para la cuenta, así que en la
+   práctica cae en la regla 1).
+4. App en segundo plano y reloj en marcha → visible.
+5. En pausa → se queda como estaba (si se veía, sigue atenuada; si saliste en pausa, no
+   aparece).
+
+Si la app está a la vista lo sabe `AppVisibility.kt` (cuenta las actividades iniciadas, con
+400 ms de margen para que un diálogo o un giro no la hagan parpadear). Cada cambio del reloj
+(sync desde JS, botón de la notificación, alarma, reinicio del móvil) vuelve a evaluar la
+política, así que la ventana también se actualiza con la app muerta.
+
+### Sin permiso: imagen en imagen
+
+Si «Ventana flotante» está activada pero falta «Mostrar sobre otras apps», al ir a inicio con
+un reloj en marcha la app entra en **imagen en imagen** (proporción 10:19) y muestra solo el
+reloj sobre el fondo del tema: sin tiempo, sin menú. En Android 12+ entra sola
+(`setAutoEnterEnabled`); en 8–11, con `onUserLeaveHint`. El _config plugin_ añade
+`supportsPictureInPicture` a la actividad.
+
+### Permiso y explicación
+
+La primera vez que se activa sin permiso, la app enseña una pantalla con el mismo estilo que
+«Gestos» (`FloatingHelp.tsx`): qué hace, los gestos y por qué Android pide el permiso. «Dar
+permiso» abre «Mostrar sobre otras apps» para esta app. Al volver, la app lo vuelve a
+comprobar; si sigue faltando, el menú lo avisa.
+
+### Probar el dibujo sin móvil
+
+`HourglassViewRenderTest` (Robolectric, gráficos nativos) dibuja la vista en la JVM y comprueba
+la arena, el chorro, los temas y la pausa. Para guardar las imágenes:
+
+```bash
+cd apps/mobile/android
+./gradlew :background-timer:testDebugUnitTest -Preloj.capturas=/ruta/a/capturas
+```
+
+## Cuándo se para la cuenta (1.8.6)
+
+La regla (decisión de Sebastián):
+
+| Qué haces                                                   | Qué pasa                             |
+| ----------------------------------------------------------- | ------------------------------------ |
+| «Atrás» o el gesto de volver, en la pantalla principal      | Sigue (como el gesto de inicio)      |
+| Gesto de inicio, cambiar de app, bloquear el móvil          | Sigue                                |
+| Quitar la app de Recientes (también «Cerrar todo»)          | **Se para** (`onTaskRemoved`)        |
+| Descartar la notificación de la cuenta (Android 14+)        | **Se para** (`deleteIntent`)         |
+| Llevar la ventana flotante a la × (o «Quitar» con TalkBack) | **Se para** (antes solo se escondía) |
+
+**Parar** (`BackgroundTimer.stop`, decisión pura en `SessionEnd`): si había una cuenta viva (en
+marcha o en pausa), la sesión guardada pasa a «ninguna» y `seq` sube; se cancelan las
+alarmas, se quita la notificación, se para el servicio y se quita la ventana flotante. La app
+se entera por `seq`: si sigue viva (el proceso aún no ha muerto), le llega `onChange` y
+`pendingNativeChange` devuelve `'stopped'` → `restart()` (reposo con la duración elegida); si
+se abre de cero, `takeBackgroundSession` no encuentra sesión y empieza en reposo. Solo `stop`
+deja la sesión en «ninguna» subiendo `seq`, así que no se confunde con otros cambios. Si la
+cuenta ya había terminado, se limpia igual pero `seq` no cambia (no hay nada que avisar).
+
+**«Atrás» = al fondo.** `src/background/backKeepsRunning.ts` registra, al cargar la app y
+antes que nadie, un `BackHandler` que llama a `moveToBack` (`moveTaskToBack(true)`) en el
+módulo. React Native llama primero al último registrado, así que el menú, la información y
+las ayudas siguen cerrándose con «atrás»; solo en la pantalla principal la app se va al fondo
+sin cerrar la actividad. Con un APK anterior (sin `moveToBack`) hace lo de antes.
+
+### Recientes: por qué un servicio en primer plano
+
+Al quitar una app de Recientes, Android mata su proceso **sin avisar** a la app, salvo que
+tenga un servicio arrancado con `stopWithTask="false"`: entonces llama a su `onTaskRemoved`.
+Y, para que Android no mate ese proceso antes, el servicio tiene que estar en primer plano.
+Por eso, mientras hay una cuenta viva, corre `TimerService`:
+
+- Es un servicio en primer plano de tipo **`specialUse`** (Android 14+ exige un tipo; un
+  temporizador no encaja en los tipos con nombre). Para un APK instalado a mano no hace falta
+  nada más. **Si se publicara en Google Play**, habría que justificar `specialUse` en la
+  consola (el texto ya está en `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` del manifiesto).
+- Usa **la misma notificación** de la cuenta (mismo id, 7301): no aparece nada nuevo. Se pone
+  `FOREGROUND_SERVICE_IMMEDIATE` para que Android 12+ no la retrase 10 s.
+- No cuenta nada ni despierta a nadie: las alarmas siguen como antes.
+- `ForegroundGate` (pura, con pruebas) evita el cierre «did not then call
+  Service.startForeground»: si la cuenta termina mientras el servicio arranca, no se llama a
+  `stopService`; el servicio se pone en primer plano y se para él solo.
+- Si Android no deja arrancarlo (Android 12+ lo prohíbe desde segundo plano salvo
+  excepciones; las alarmas exactas, los botones de la notificación y el reinicio del móvil lo
+  son), todo sigue como en la 1.8.5: notificación normal, sin enterarse de Recientes. Se vuelve
+  a intentar en el siguiente cambio. Lo normal es que arranque al empezar la cuenta, con la
+  app delante.
+
+### La notificación: fija, y descartarla para
+
+Sigue siendo **fija** (`setOngoing(true)`):
+
+- **Android 13 o menos:** no se puede deslizar (con el servicio en primer plano, tampoco).
+- **Android 14+:** se puede deslizar a mano (no con «Borrar todo» ni con el móvil bloqueado).
+  Deslizarla manda su `deleteIntent` (`ActionReceiver.ACTION_DISMISS`) y **para** la cuenta.
+  `deleteIntent` solo llega cuando la descarta el usuario, no cuando la quita la app.
+
+Se eligió fija y no deslizable en todas las versiones para que «Borrar todo» no pare un reloj
+sin querer.
+
+### Casos raros
+
+- **Imagen en imagen:** cerrar la ventanita (arrastrarla a la × de Android) puede quitar la
+  tarea de la app: entonces se para, igual que la × de la ventana flotante.
+- **«Detener» en el gestor de tareas de Android 13+** (o «Forzar detención»): mata el proceso
+  sin `onTaskRemoved`. Las alarmas se cancelan por diseño de Android con «Forzar detención»; con
+  «Detener» pueden quedar: al abrir la app sigue la cuenta como en la 1.8.5.
+- **Samsung «Cerrar todo»** quita todas las tareas de Recientes: llama a `onTaskRemoved` como
+  quitarla sola.
+- **Después de quitarla de Recientes**, Android puede tener el proceso un rato vivo (ya sin
+  servicio). Si la vuelves a abrir en ese rato, la app ya está en reposo (le llegó `onChange`).
+
+## Límites conocidos
+
+- **Fabricantes que matan apps** (Xiaomi/MIUI/HyperOS, Huawei, Oppo, Vivo, algunos Samsung):
+  pueden borrar las alarmas o bloquear el receptor. En esos móviles hay que permitir el
+  **inicio automático** y quitar la **optimización de batería** de la app.
+- **«Forzar detención»** en Ajustes cancela las alarmas por diseño de Android; vuelven al
+  abrir la app.
+- **Android 14+** deja descartar las notificaciones «fijas» deslizando: desde la 1.8.6 eso
+  **para** la cuenta (antes seguía sin notificación).
+- **Sin permiso de alarmas exactas** (Android 12 si lo quitas) los avisos pueden llegar
+  unos minutos tarde.
+- `USE_EXACT_ALARM` está permitido en Google Play para temporizadores, pero Play revisa su uso
+  al publicar.
+- Hay que **instalar el APK nuevo**: el de la 1.3 no tiene el módulo (la app funciona, pero
+  sin notificación). El de la 1.7 no tiene la ventana flotante.
+- **Ventana flotante:**
+  - Quitar la app de «Recientes» para la cuenta y quita la ventana (1.8.6).
+  - En Xiaomi/HyperOS hace falta, además, permitir «Mostrar ventanas emergentes mientras se
+    ejecuta en segundo plano».
+  - No se ve sobre la pantalla de bloqueo.
+  - `SYSTEM_ALERT_WINDOW`: Google Play lo revisa al publicar; aquí solo se usa si lo activas.
+- **Sin sensor fuera de la app:** con la ventana flotante, en imagen en imagen o en segundo
+  plano el acelerómetro está apagado, así que voltear el móvil no reinicia el reloj (batería y
+  bolsillos). Vuelve a funcionar al abrir la app.
+- **Imagen en imagen:** sin botones propios (Android pone los suyos); al terminar el reloj se
+  queda mostrando el reloj vacío hasta que la cierras.
+- La primera vez, los tests de dibujo (Robolectric) descargan sus librerías: necesitan red.

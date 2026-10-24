@@ -1,0 +1,237 @@
+package com.sebastianzaruha.relojdearena.background
+
+import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
+import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicReference
+
+/**
+ * El «director» del segundo plano: junta el estado guardado, las alarmas y
+ * las notificaciones. Lo llaman el módulo de Expo (la app), los botones de
+ * la notificación, las alarmas y el reinicio del móvil.
+ *
+ *   app (JS) ── sync(JSON) ──▶ guarda · programa los avisos del core · notificación
+ *   botón    ── onAction  ──▶ pausa/reanuda/reinicia (TimerModel) · seq+1 · avisa a la app
+ *   alarma   ── onAlarm   ──▶ pasa de fase (TimerModel.settle) · notificación · aviso
+ *   reinicio ── restore   ──▶ vuelve a poner alarmas y notificación
+ *   cerrar   ── stop      ──▶ sin sesión · seq+1 · quita todo · avisa a la app (1.8.6)
+ *
+ * Después de cada cambio se avisa a la ventana flotante (`FloatingWindow`),
+ * que decide si se ve y se repinta con la sesión nueva.
+ *
+ * Hilos (1.8.1): `sync` lo llama JavaScript EN SU HILO y de forma síncrona.
+ * Guardar en disco, programar la alarma y pintar la notificación son llamadas
+ * al sistema que en un móvil pueden tardar decenas de milisegundos, justo al
+ * empezar, pausar o voltear (cuando la app anima). Por eso `sync` solo
+ * comprueba `seq` y deja el trabajo a un hilo propio (`worker`); si llegan
+ * varios envíos seguidos, solo se aplica el último. Todo lo que cambia el
+ * estado (envío, botón, alarma, reinicio) pasa por el mismo `lock`, así que
+ * nunca se pisan.
+ *
+ * Los receptores hacen su trabajo al momento. Desde la 1.8.6, mientras hay
+ * una cuenta viva corre además `TimerService` (en primer plano, con la misma
+ * notificación), solo para enterarse de cuándo quitas la app de Recientes.
+ */
+object BackgroundTimer {
+  /**
+   * ¿Está la app a la vista? Entonces los avisos los da la propia app
+   * (sonido y vibración de siempre) y aquí solo se actualiza la cuenta.
+   * Al morir el proceso vuelve a false, que es lo correcto.
+   */
+  @Volatile var appInForeground = false
+
+  /** Un aviso que se pasó hace más de esto (móvil apagado, app forzada a parar) ya no suena. */
+  private const val STALE_ALERT_MS = 15 * 60_000L
+
+  /** Lo pone el módulo de Expo para avisar a la app de cambios hechos aquí. */
+  @Volatile var listener: ((seq: Int) -> Unit)? = null
+
+  /** Un solo cambio de estado a la vez (envío de la app, botón, alarma, reinicio). */
+  private val lock = Any()
+
+  /** Hilo para el trabajo de `sync` (fuera del hilo de JavaScript y del de la interfaz). */
+  private val worker: Handler by lazy {
+    val thread = HandlerThread("reloj-segundo-plano").apply { start() }
+    Handler(thread.looper)
+  }
+
+  /** Último envío de la app aún sin aplicar (los anteriores ya no importan). */
+  private val pending = AtomicReference<String?>(null)
+
+  /**
+   * Lo que manda la app. Devuelve false si el envío es anterior a un cambio
+   * hecho desde la notificación (la app aún no lo conocía): no se aplica y
+   * la app debe leer `snapshot` y ponerse al día.
+   */
+  fun sync(context: Context, json: String): Boolean {
+    if (JSONObject(json).optInt("seenSeq", 0) < TimerStore.seq(context)) return false
+    val app = context.applicationContext
+    // Si ya había uno esperando, el hilo lo cambiará por este: no hace falta otro aviso.
+    if (pending.getAndSet(json) == null) worker.post { applyPending(app) }
+    return true
+  }
+
+  /** En el hilo `worker`: aplica el último envío de la app. */
+  private fun applyPending(context: Context) {
+    val json = pending.getAndSet(null) ?: return
+    synchronized(lock) {
+      val payload = JSONObject(json)
+      val seq = TimerStore.seq(context)
+      // Entre `sync` y ahora se ha pulsado un botón: la app se pondrá al día
+      // (le llega `onChange`) y volverá a enviar.
+      if (payload.optInt("seenSeq", 0) < seq) return
+      // Si la app avisa justo después de un cambio de fase, la alarma de ese
+      // cambio aún no ha sonado y el envío la cancelaría: se atiende antes.
+      TimerStore.load(context)?.let { advance(context, it, System.currentTimeMillis()) }
+      val state = StoredState(payload, seq)
+      TimerStore.save(context, state)
+      render(context, state, state.session, state.events)
+      FloatingWindow.update(context, FloatingEvent.STATE_CHANGED)
+    }
+  }
+
+  /** Un botón de la notificación (ActionReceiver). */
+  fun onAction(context: Context, action: String) {
+    synchronized(lock) { onActionLocked(context, action) }
+  }
+
+  private fun onActionLocked(context: Context, action: String) {
+    val state = TimerStore.load(context) ?: return
+    val session = state.session
+    if (session == null || session.isFinished) {
+      TimerServiceControl.request(context, false)
+      TimerNotifications.cancelCountdown(context)
+      return
+    }
+    val now = System.currentTimeMillis()
+    val next = when (action) {
+      ActionReceiver.ACTION_PAUSE -> TimerModel.pause(session, now)
+      ActionReceiver.ACTION_RESUME -> TimerModel.resume(session, now)
+      ActionReceiver.ACTION_RESTART -> TimerModel.restart(session, now)
+      else -> return
+    }
+    val updated = state.withSession(next, state.seq + 1)
+    TimerStore.save(context, updated)
+    if (next.isFinished) TimerNotifications.alertFinished(context, updated)
+    render(context, updated, next, TimerModel.events(next))
+    FloatingWindow.update(context, FloatingEvent.STATE_CHANGED)
+    listener?.invoke(updated.seq)
+  }
+
+  /** Ha llegado la hora de un aviso (AlarmReceiver). `at` es la hora prevista. */
+  fun onAlarm(context: Context, at: Long) {
+    synchronized(lock) { onAlarmLocked(context, at) }
+  }
+
+  private fun onAlarmLocked(context: Context, at: Long) {
+    val state = TimerStore.load(context) ?: return
+    // Si Android la entrega unos milisegundos antes, cuenta como a su hora.
+    val updated = advance(context, state, maxOf(System.currentTimeMillis(), at))
+    // Solo hay una alarma programada (la del próximo aviso): ahora, la siguiente.
+    updated.session?.let { if (it.isRunning) TimerAlarms.schedule(context, TimerModel.events(it)) }
+    // Fin: se quita. Cambio de fase: la ventana ya gira sola; si el proceso
+    // había muerto, aquí vuelve a aparecer.
+    FloatingWindow.update(context, FloatingEvent.STATE_CHANGED)
+    val session = updated.session ?: return
+    if (session.isRunning || session.isPaused) {
+      TimerServiceControl.request(context, true)
+      TimerNotifications.showCountdown(context, updated, session)
+    }
+  }
+
+  /**
+   * Pasa las fases que hayan acabado hasta `now` y da su aviso (si la app no
+   * está a la vista y no es un aviso de hace mucho). Devuelve el estado nuevo.
+   * `seq` no cambia: es el paso natural del tiempo y la app calcula lo mismo.
+   */
+  private fun advance(context: Context, state: StoredState, now: Long): StoredState {
+    val session = state.session ?: return state
+    val settled = TimerModel.settle(session, now)
+    if (settled == session) return state
+    val updated = state.withSession(settled)
+    TimerStore.save(context, updated)
+    // ¿Cuándo fue el último aviso que se ha pasado? (p. ej. el móvil estuvo apagado)
+    val lastAt = TimerModel.events(session).lastOrNull { it.at <= now }?.at ?: now
+    val alerts = !appInForeground && now - lastAt < STALE_ALERT_MS
+    if (settled.isFinished) {
+      TimerAlarms.cancelAll(context)
+      TimerServiceControl.request(context, false)
+      TimerNotifications.cancelCountdown(context)
+      if (alerts) TimerNotifications.alertFinished(context, updated)
+    } else if (alerts && settled.transitions > session.transitions) {
+      TimerNotifications.alertPhase(context, updated, settled.index)
+    }
+    return updated
+  }
+
+  /**
+   * Tras reiniciar el móvil (se borran las alarmas y las notificaciones), al
+   * actualizar la app o al cambiar el permiso de alarmas exactas.
+   */
+  fun restore(context: Context) {
+    synchronized(lock) { restoreLocked(context) }
+  }
+
+  private fun restoreLocked(context: Context) {
+    val state = advance(context, TimerStore.load(context) ?: return, System.currentTimeMillis())
+    val session = state.session ?: return
+    render(context, state, session, TimerModel.events(session))
+    FloatingWindow.update(context, FloatingEvent.STATE_CHANGED)
+  }
+
+  /**
+   * Para la cuenta del todo (1.8.6): quitaste la app de Recientes, descartaste
+   * la notificación o llevaste la ventana flotante a la ×. La sesión guardada
+   * pasa a «ninguna» con `seq` + 1: la app, si sigue viva, se pone en reposo
+   * al momento (`onChange`); si no, al abrirla arranca en reposo. Se quitan
+   * alarmas, notificación, servicio y ventana flotante. Ver `SessionEnd`.
+   */
+  fun stop(context: Context, reason: StopReason) {
+    val app = context.applicationContext
+    synchronized(lock) {
+      val state = TimerStore.load(app)
+      val now = System.currentTimeMillis()
+      val stopped = if (state != null && SessionEnd.shouldStop(reason, state.session, now)) {
+        SessionEnd.stopped(state).also { TimerStore.save(app, it) }
+      } else {
+        null
+      }
+      TimerAlarms.cancelAll(app)
+      TimerServiceControl.request(app, false)
+      TimerNotifications.cancelCountdown(app)
+      FloatingWindow.update(app, FloatingEvent.STATE_CHANGED)
+      stopped?.let { listener?.invoke(it.seq) }
+    }
+  }
+
+  /** Para la app: la sesión guardada y el último `seq`, en JSON. */
+  fun snapshot(context: Context): String? {
+    val state = TimerStore.load(context) ?: return null
+    return JSONObject()
+      .put("session", state.session?.toJson() ?: JSONObject.NULL)
+      .put("seq", state.seq)
+      .toString()
+  }
+
+  /** Pone alarmas y notificación de acuerdo con la sesión. */
+  private fun render(context: Context, state: StoredState, session: BackgroundSession?, events: List<BackgroundEvent>) {
+    when {
+      session == null || session.isFinished -> {
+        TimerAlarms.cancelAll(context)
+        TimerServiceControl.request(context, false)
+        TimerNotifications.cancelCountdown(context)
+      }
+      session.isRunning -> {
+        TimerAlarms.schedule(context, events)
+        TimerServiceControl.request(context, true)
+        TimerNotifications.showCountdown(context, state, session)
+      }
+      else -> {
+        TimerAlarms.cancelAll(context)
+        TimerServiceControl.request(context, true)
+        TimerNotifications.showCountdown(context, state, session)
+      }
+    }
+  }
+}
