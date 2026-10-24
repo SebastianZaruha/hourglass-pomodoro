@@ -9,6 +9,31 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.12 — Icono limpio: sin bordes claros y a sangre
+
+Solo cambia el icono; el código es el de la 1.8.10.
+
+- `assets/icon.png` (1024 × 1024, RGB sin transparencia) se compone desde cero: el degradado
+  crema hasta el borde y el reloj encima. Ya no sale de un recorte del PNG, así que no puede
+  arrastrar nada de las esquinas blancas del cuadrado redondeado.
+- `android-icon-background.png`: el degradado del PNG tomado del centro (76 %), sin la franja
+  casi blanca de arriba, opaco y a sangre.
+- `android-icon-foreground.png`: el reloj con transparencia real; el borde suavizado se
+  «despremultiplica» para no dejar halo claro. Sigue al 52 % del alto, dentro de la zona segura.
+- `android-icon-monochrome.png`, `favicon.png` y `splash-icon.png` salen de las mismas capas.
+- `android/` regenerada con `npx expo prebuild -p android --clean`.
+
+### Icono genérico (robot) al ver el APK
+
+No es un fallo de empaquetado: el APK lleva `mipmap/ic_launcher` en mdpi–xxxhdpi (webp) y el
+icono adaptable `anydpi-v26`, igual que la 1.8.10. El Explorador de Windows nunca enseña el
+icono de dentro de un APK, y en el móvil algunos gestores de archivos ponen el icono genérico
+hasta instalar la app (o guardan la miniatura en caché).
+
+### Versión
+
+- `versionCode` 10812.
+
 ## 1.8.11 — Icono nuevo de Hourglass Pomodoro
 
 Solo cambia el icono de la app; el código y la arena son los de la 1.8.10.

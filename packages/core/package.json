@@ -1,6 +1,6 @@
 {
   "name": "@reloj/core",
-  "version": "1.8.11",
+  "version": "1.8.12",
   "private": true,
   "description": "Lógica pura (sin UI) del Reloj de Arena: motor del temporizador, ajustes, catálogos, simulación de arena y persistencia.",
   "license": "PolyForm-Noncommercial-1.0.0",
