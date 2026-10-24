@@ -9,6 +9,34 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.11 — Icono nuevo de Hourglass Pomodoro
+
+Solo cambia el icono de la app; el código y la arena son los de la 1.8.10.
+
+- Icono nuevo elegido por Sebastián: reloj de arena plano con arena dorada sobre fondo crema
+  con degradado. Sale del mismo PNG (1254 × 1254), sin rediseñarlo.
+- `assets/icon.png` (1024 × 1024): el PNG recortado a sangre, sin las esquinas blancas del
+  cuadrado redondeado (el sistema pone su propia máscara).
+- Icono adaptable de Android (108 dp):
+  - `android-icon-background.png`: el degradado del PNG, sin el reloj.
+  - `android-icon-foreground.png`: el reloj recortado del PNG sobre transparente, a un 52 % del
+    alto, dentro de la zona segura (66 dp): no se corta con máscara redonda ni de squircle.
+  - `android-icon-monochrome.png` (iconos temáticos de Android 13+): la silueta del reloj, con
+    el contorno, las bases y la arena opacas y el vidrio transparente.
+- `favicon.png` (web) y `splash-icon.png` también salen del nuevo icono (`splash-icon.png` no
+  se usa todavía: la app no lleva `expo-splash-screen`).
+- `android/` regenerada con `npx expo prebuild -p android` para los `mipmap-*`.
+
+### Qué probar en el móvil
+
+1. El icono del cajón de apps y de la pantalla de inicio es el reloj nuevo, centrado y sin
+   cortes, con la forma de icono del sistema.
+2. Con iconos temáticos activados (Android 13+), sale la silueta del reloj en el color del tema.
+
+### Versión
+
+- `versionCode` 10811.
+
 ## Sin publicar — Licencia: de MIT a PolyForm Noncommercial 1.0.0
 
 Solo documentación y licencia; la app no cambia y no hace falta un APK nuevo.

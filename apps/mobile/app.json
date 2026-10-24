@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reloj de Arena",
     "slug": "reloj-de-arena",
-    "version": "1.8.10",
+    "version": "1.8.11",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,7 +11,7 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 10810,
+      "versionCode": 10811,
       "adaptiveIcon": {
         "backgroundColor": "#E6DED4",
         "foregroundImage": "./assets/android-icon-foreground.png",
