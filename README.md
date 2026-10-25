@@ -226,16 +226,17 @@ se maneja con el ratón:
 | **Doble clic**                | Voltea 180° y reinicia la cuenta                            |
 | **Rueda**                     | Más o menos tiempo (solo si no está en marcha)              |
 | **Arrastrar el reloj**        | Gira el vidrio; si el giro es claro, voltea 180° y reinicia |
-| Botón de dos rayas (al pasar) | Panel de ajustes (a la derecha si la ventana es ancha)      |
+| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto           |
 
-El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de esa opción, y
-al fondo tres pastillas (tema, idioma y sonido). No es la hoja del móvil: en una ventana
-ancha queda a la derecha del reloj, con el tiempo encima; en una estrecha es una tarjeta
-debajo del reloj. El reloj y el tiempo siguen visibles con el panel abierto. No hay
-vibración ni ventana flotante. El sonido nace apagado. El tema y el idioma pueden ser
-claro/oscuro/automático y español/inglés/automático. En una ventana ancha el reloj queda a
-la izquierda y el tiempo a la derecha; en una estrecha se apilan. Al pausar, «Pausa» queda
-en el centro de la pantalla y el resto se desenfoca.
+En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
+derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para
+dejarle sitio. En una ventana alta el reloj se queda grande y el panel es una tarjeta al
+pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: primero hay que
+seguir. El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
+esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
+flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
+español/inglés/automático. Al pausar, «Pausa» queda en el centro de la pantalla y el resto
+se desenfoca.
 
 La cuenta sigue aunque la pestaña esté detrás (usa la hora del sistema). Si el aviso del
 navegador está permitido y la pestaña no se ve, al cambiar de fase sale una notificación.

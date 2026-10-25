@@ -12,7 +12,7 @@ import {
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
 import { CookieBanner } from './components/CookieBanner';
@@ -63,7 +63,8 @@ function useWideLayout() {
     const apply = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      setWide(w >= 720 && w > h * 1.05);
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      setWide(w >= rem * 46 && w > h * 1.05);
     };
     apply();
     window.addEventListener('resize', apply);
@@ -204,6 +205,62 @@ function Timer({
   const toggleRef = useRef(doToggle);
   toggleRef.current = doToggle;
 
+  const appRef = useRef<HTMLDivElement>(null);
+  const sideRef = useRef<HTMLDivElement>(null);
+  const paused = view.status === 'paused';
+
+  useEffect(() => {
+    if (paused) setMenu(false);
+  }, [paused]);
+
+  useLayoutEffect(() => {
+    const app = appRef.current;
+    const side = sideRef.current;
+    if (!app || !side) return;
+    const apply = () => {
+      const sideRect = side.getBoundingClientRect();
+      app.style.setProperty('--side-left', `${Math.round(sideRect.left)}px`);
+      app.style.setProperty('--side-width', `${Math.round(sideRect.width)}px`);
+      app.style.setProperty('--side-bottom', `${Math.round(window.innerHeight - sideRect.bottom)}px`);
+      const sheet = app.querySelector('.sheet');
+      const readout = side.querySelector('.readout');
+      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
+      if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
+        app.style.setProperty('--clock-lift', '0px');
+        app.style.removeProperty('--menu-pad');
+        return;
+      }
+      const sheetH = sheet.getBoundingClientRect().height;
+      const gap = rem * 1.15;
+      if (!wide) {
+        app.style.setProperty('--clock-lift', '0px');
+        app.style.setProperty('--menu-pad', `${Math.round(sheetH + gap)}px`);
+        return;
+      }
+      app.style.removeProperty('--menu-pad');
+      const readH = readout.getBoundingClientRect().height;
+      const sideH = sideRect.height;
+      const sheetInset = rem * 0.75;
+      const clockBottom = (sideH + readH) / 2;
+      const sheetTop = sideH - sheetInset - sheetH;
+      const centeringLift = (sheetH + sheetInset) / 2;
+      const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
+      const maxLift = Math.max(0, (sideH - readH) / 2 - rem * 0.5);
+      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift));
+      app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
+    };
+    apply();
+    const observed = new ResizeObserver(apply);
+    observed.observe(side);
+    const sheet = app.querySelector('.sheet');
+    if (sheet) observed.observe(sheet);
+    window.addEventListener('resize', apply);
+    return () => {
+      observed.disconnect();
+      window.removeEventListener('resize', apply);
+    };
+  }, [menu, wide, settings]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && menu) {
@@ -280,7 +337,6 @@ function Timer({
     doRestart();
   };
 
-  const paused = view.status === 'paused';
   const label = useMemo(() => {
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
     if (view.isCycle && view.status !== 'idle') return t.phaseLabel(view.kind, view.round, view.rounds);
@@ -306,6 +362,7 @@ function Timer({
 
   return (
     <div
+      ref={appRef}
       className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
@@ -333,24 +390,30 @@ function Timer({
             suppressClickRef={suppressClickRef}
             onFlip={doRestart}
           />
-          <TimeReadout
-            getSnapshot={getSnapshot}
-            running={view.status === 'running'}
-            label={label}
-            hint={paused ? null : hint}
-            describe={describe}
-          />
+          <div className="side" ref={sideRef}>
+            <TimeReadout
+              getSnapshot={getSnapshot}
+              running={view.status === 'running'}
+              label={label}
+              hint={paused ? null : hint}
+              describe={describe}
+            />
+          </div>
         </div>
 
         <button
           type="button"
           id="menu-button"
           className="menu-btn"
-          aria-label={menu ? t.closeSettings : t.openSettings}
+          aria-label={t.openSettings}
           aria-expanded={menu}
+          aria-hidden={menu || paused}
+          disabled={paused}
+          hidden={menu || paused}
           onClick={(e) => {
             e.stopPropagation();
-            setMenu((open) => !open);
+            if (paused || menu) return;
+            setMenu(true);
           }}
         >
           <span className="bar long" />
