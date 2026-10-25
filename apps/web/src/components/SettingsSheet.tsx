@@ -19,7 +19,7 @@ import {
   type Messages,
   type Settings,
 } from '@reloj/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
@@ -218,11 +218,19 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 incLabel={t.more}
                 canDec={nearestStepIndex(settings.lastDurationMs) > 0}
                 canInc={nearestStepIndex(settings.lastDurationMs) < DURATION_STEPS_MIN.length - 1}
+                scrubIndex={nearestStepIndex(settings.lastDurationMs)}
+                scrubMax={DURATION_STEPS_MIN.length - 1}
                 onStep={(d) =>
                   onChange((current) => ({
                     sessionMode: 'single',
                     lastDurationMs: stepToDuration(nearestStepIndex(current.lastDurationMs) + d),
                   }))
+                }
+                onScrubIndex={(index) =>
+                  onChange({
+                    sessionMode: 'single',
+                    lastDurationMs: stepToDuration(index),
+                  })
                 }
               />
             </div>
@@ -267,6 +275,8 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   );
 }
 
+const SCRUB_PX = 18;
+
 function Stepper({
   label,
   value,
@@ -276,6 +286,9 @@ function Stepper({
   canDec,
   canInc,
   onStep,
+  scrubIndex,
+  scrubMax,
+  onScrubIndex,
 }: {
   label: string;
   value: string;
@@ -285,10 +298,84 @@ function Stepper({
   canDec: boolean;
   canInc: boolean;
   onStep: (delta: number) => void;
+  scrubIndex?: number;
+  scrubMax?: number;
+  onScrubIndex?: (index: number) => void;
 }) {
+  const scrub = onScrubIndex != null && scrubIndex != null && scrubMax != null;
+  const drag = useRef<{
+    pointerId: number;
+    startX: number;
+    startIndex: number;
+    moved: boolean;
+    sent: number;
+  } | null>(null);
+  const swallowClick = useRef(false);
+
+  const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!scrub || scrubIndex == null || event.button !== 0) return;
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startIndex: scrubIndex,
+      moved: false,
+      sent: scrubIndex,
+    };
+  };
+
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = drag.current;
+    if (
+      !scrub ||
+      !gesture ||
+      gesture.pointerId !== event.pointerId ||
+      onScrubIndex == null ||
+      scrubMax == null
+    ) {
+      return;
+    }
+    const dx = event.clientX - gesture.startX;
+    if (!gesture.moved && Math.abs(dx) < 5) return;
+    if (!gesture.moved && !event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    gesture.moved = true;
+    const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dx / SCRUB_PX)));
+    if (index === gesture.sent) return;
+    gesture.sent = index;
+    onScrubIndex(index);
+  };
+
+  const endScrub = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = drag.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    if (gesture.moved) {
+      swallowClick.current = true;
+      window.setTimeout(() => {
+        swallowClick.current = false;
+      }, 0);
+    }
+    drag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   return (
     <div className="stepper">
-      <div className="stepper-controls">
+      <div
+        className={scrub ? 'stepper-controls stepper-scrub' : 'stepper-controls'}
+        onPointerDown={scrub ? onPointerDown : undefined}
+        onPointerMove={scrub ? onPointerMove : undefined}
+        onPointerUp={scrub ? endScrub : undefined}
+        onPointerCancel={scrub ? endScrub : undefined}
+        onClickCapture={(event) => {
+          if (!swallowClick.current) return;
+          swallowClick.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
         <button
           type="button"
           aria-label={`${decLabel} ${label}`}

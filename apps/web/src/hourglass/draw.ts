@@ -162,12 +162,23 @@ function oval(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, r
   ctx.fill();
 }
 
-/** Sombra quieta, como la del móvil con el teléfono de pie: luz arriba a la izquierda. */
-function drawTableShadow(ctx: CanvasRenderingContext2D, layout: GlassLayout, dark: boolean) {
+/**
+ * 1 con el reloj de pie, 0 de canto. Smoothstep para que la sombra
+ * salga y vuelva con el giro, sin un corte al empezar o al acabar.
+ */
+function floorShadowAmount(rotation: number): number {
+  const upright = Math.min(1, Math.abs(Math.cos(rotation)));
+  return upright * upright * (3 - 2 * upright);
+}
+
+/** Sombra quieta en el suelo. Se apaga mientras el vidrio gira y vuelve al reposo. */
+function drawTableShadow(ctx: CanvasRenderingContext2D, layout: GlassLayout, dark: boolean, amount: number) {
+  if (amount < 0.004) return;
   const { cx, cy, halfW, halfH } = layout;
   const baseY = cy + halfH * 0.985;
   const shift = halfW * 0.16;
   ctx.save();
+  ctx.globalAlpha = amount;
   ctx.filter = 'blur(22px)';
   ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.38)' : 'rgba(84, 64, 44, 0.28)';
   oval(ctx, cx + shift, baseY, halfW * 0.92, halfW * 0.15);
@@ -191,7 +202,7 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  drawTableShadow(ctx, layout, dark);
+  drawTableShadow(ctx, layout, dark, floorShadowAmount(scene.rotation));
 
   ctx.save();
   ctx.translate(cx, cy);

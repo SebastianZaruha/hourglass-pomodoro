@@ -220,20 +220,20 @@ ajustes, textos y simulación de arena). No cambia el móvil: el vidrio de Andro
 Skia. En el navegador el reloj se queda de pie (no hay acelerómetro), la arena cae igual, y
 se maneja con el ratón:
 
-| Acción                        | Efecto                                                      |
-| ----------------------------- | ----------------------------------------------------------- |
-| **Clic** o **Espacio**        | Empezar, pausar o seguir                                    |
-| **Doble clic**                | Voltea 180° y reinicia la cuenta                            |
-| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)              |
-| **Arrastrar el reloj**        | Gira el vidrio; si el giro es claro, voltea 180° y reinicia |
-| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto           |
+| Acción                        | Efecto                                                            |
+| ----------------------------- | ----------------------------------------------------------------- |
+| **Clic** o **Espacio**        | Empezar, pausar o seguir                                          |
+| **Doble clic**                | Voltea 180° y reinicia la cuenta                                  |
+| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                    |
+| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia |
+| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                 |
 
 En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
 derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para
 dejarle sitio. En una ventana alta el reloj se queda grande y el panel es una tarjeta al
 pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: primero hay que
 seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
-no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado, como los ciclos.
+no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado: la barra se arrastra a izquierda o derecha por los mismos escalones, y − / + siguen un paso.
 El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
 esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
 flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y

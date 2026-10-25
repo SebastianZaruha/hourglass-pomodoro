@@ -533,6 +533,16 @@ a {
   justify-self: end;
 }
 
+.stepper-scrub {
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.stepper-scrub button {
+  cursor: pointer;
+}
+
 .stepper {
   text-align: center;
   min-width: 0;
