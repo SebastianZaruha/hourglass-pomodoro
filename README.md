@@ -278,7 +278,7 @@ Este código es público para que puedas verlo, aprender de él y usarlo con fin
 comerciales, bajo la licencia [PolyForm Noncommercial 1.0.0](LICENSE.md). No está permitido el
 uso comercial ni redistribuirlo con ánimo de lucro sin mi permiso. El nombre, el logo y los
 gráficos de la app no están incluidos en la licencia. ¿Te interesa un uso comercial? Escríbeme a
-[sebastianzaruha@gmail.com](mailto:sebastianzaruha@gmail.com).
+[sebastianzaruha+apps@gmail.com](mailto:sebastianzaruha+apps@gmail.com).
 
 Texto completo de la licencia: [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)
 
