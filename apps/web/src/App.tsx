@@ -214,7 +214,10 @@ function Timer({
   const paused = view.status === 'paused';
 
   useEffect(() => {
-    if (paused) setMenu(false);
+    if (paused) {
+      setMenu(false);
+      setLegal(null);
+    }
   }, [paused]);
 
   useLayoutEffect(() => {

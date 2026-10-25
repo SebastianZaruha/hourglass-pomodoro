@@ -660,16 +660,8 @@ a {
   background: transparent;
 }
 
-@media (min-width: 56rem) {
-  .legal-overlay {
-    justify-content: flex-start;
-    padding-left: clamp(1rem, 3vw, 2.5rem);
-  }
-
-  .legal-dialog {
-    width: min(40rem, 48vw);
-    height: min(88vh, 52rem);
-  }
+.app.is-paused .site-footer {
+  display: none;
 }
 
 .banner {
