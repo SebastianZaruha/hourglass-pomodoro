@@ -27,6 +27,8 @@ import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
 const SHAKE_MS = 460;
+/** Embudo del bulbo de arriba. Más bajo que 0,25: la V queda menos honda. */
+const TOP_CRATER = 0.16;
 const STEPS_PER_FRAME = 2;
 const SAND_CELL_PX = 2.15;
 
@@ -188,7 +190,7 @@ export function useHourglass(
         } else if (!loop.flipHold) {
           const durationMs = p.getSnapshot().durationMs;
           const level = Math.round(sim.totalGrains * sandLevelForDuration(durationMs));
-          sim.arrange(Math.max(0, sim.totalGrains - level), level, GRAVITY_DOWN, { crater: 0.25 });
+          sim.arrange(Math.max(0, sim.totalGrains - level), level, GRAVITY_DOWN, { crater: TOP_CRATER });
           loop.flipHold = true;
           flipAngle = dest;
           loop.paint = true;
@@ -245,7 +247,7 @@ export function useHourglass(
         const key = String(snap.durationMs);
         if (loop.mode !== 'idle' || loop.idleKey !== key || !loop.populated) {
           const level = Math.round(sim.totalGrains * sandLevelForDuration(snap.durationMs));
-          sim.arrange(level, Math.max(0, sim.totalGrains - level), GRAVITY_DOWN, { crater: 0.25 });
+          sim.arrange(level, Math.max(0, sim.totalGrains - level), GRAVITY_DOWN, { crater: TOP_CRATER });
           loop.runInitial = level;
           loop.idleKey = key;
           loop.populated = true;
@@ -255,7 +257,7 @@ export function useHourglass(
       } else if (!loop.populated) {
         const level = Math.round(sim.totalGrains * sandLevelForDuration(snap.durationMs));
         const top = targetSourceGrains(level, snap.remainingMs, snap.durationMs);
-        sim.arrange(top, Math.max(0, sim.totalGrains - top), GRAVITY_DOWN, { crater: 0.35 });
+        sim.arrange(top, Math.max(0, sim.totalGrains - top), GRAVITY_DOWN, { crater: TOP_CRATER });
         loop.runInitial = level;
         loop.populated = true;
         loop.paint = true;
@@ -269,7 +271,8 @@ export function useHourglass(
         const target = targetSourceGrains(loop.runInitial, snap.remainingMs, snap.durationMs);
         const budget = flowBudget(loop.runInitial, snap.durationMs, sim.totalGrains);
         for (let k = 0; k < ticks; k++) {
-          if (syncSandToTarget(sim, target, GRAVITY_DOWN, budget) !== 'idle') moved = true;
+          if (syncSandToTarget(sim, target, GRAVITY_DOWN, { ...budget, crater: TOP_CRATER }) !== 'idle')
+            moved = true;
           for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
         }
       } else {
