@@ -32,7 +32,10 @@
     "check:worklets": "node scripts/check-worklets.mjs",
     "apk": "node scripts/build-apk.mjs",
     "mobile": "npm run start --workspace apps/mobile",
-    "web": "npm run web --workspace apps/mobile"
+    "web": "npm run web --workspace apps/mobile",
+    "web:dev": "npm run dev --workspace @reloj/web",
+    "web:build": "npm run build --workspace @reloj/web",
+    "web:preview": "npm run preview --workspace @reloj/web"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

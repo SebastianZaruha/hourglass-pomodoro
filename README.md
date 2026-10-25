@@ -4,10 +4,12 @@
 grano, se desliza al inclinar el móvil y empieza de nuevo al darle la vuelta.**
 
 > **English summary.** _Reloj de Arena_ ("hourglass") is a minimalist timer app for Android
-> (also runs on the web) built with Expo / React Native, React Native Skia shaders and a real
-> granular sand simulation. Tilt the phone and the sand slides; lay it on its side to pause;
-> flip it to restart. A discreet frosted-glass menu adds light/dark/auto themes, quick times,
-> work/break cycles and Spanish/English/automatic language (the app is fully translated). TypeScript monorepo with a pure, fully tested core. Documentation is in
+> built with Expo / React Native, React Native Skia shaders and a real granular sand
+> simulation. Tilt the phone and the sand slides; lay it on its side to pause; flip it to
+> restart. A discreet frosted-glass menu adds light/dark/auto themes, quick times, work/break
+> cycles and Spanish/English/automatic language (the app is fully translated). The same core
+> powers a separate browser app (`apps/web`, Vite): an upright glass hourglass, mouse controls,
+> and no tilt sensor. TypeScript monorepo with a pure, fully tested core. Documentation is in
 > Spanish. Source-available under the [PolyForm Noncommercial 1.0.0](LICENSE.md) license
 > (personal and noncommercial use only; the app's name, logo and graphics are not licensed).
 
@@ -80,7 +82,8 @@ reloj-de-arena/
 │   └── core/            @reloj/core · LÓGICA PURA (sin React, sin UI), con tests
 │       └── src/         timer · sim · physics · geometry · settings · catalog · session · persistence · recovery
 ├── apps/
-│   └── mobile/          @reloj/mobile · app Expo / React Native (Android, iOS, web)
+│   ├── mobile/          @reloj/mobile · app Expo / React Native (Android, iOS y vista Expo)
+│   └── web/             @reloj/web · app de navegador (Vite + React). No es la vista Expo.
 │       ├── app.json     configuración de Expo (nombre, paquete, permisos bloqueados…)
 │       ├── assets/      iconos y sonido de fin
 │       └── src/
@@ -130,9 +133,10 @@ archivo por archivo están en **[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md)**.
 ```bash
 git clone https://github.com/SebastianZaruha/hourglass-pomodoro.git
 cd hourglass-pomodoro
-npm install          # instala todo el monorepo (y copia canvaskit.wasm para la web)
+npm install          # instala todo el monorepo (y copia canvaskit.wasm para la vista Expo)
 npm run mobile       # servidor de Expo para el móvil (development build)
-npm run web          # o: versión web en el navegador
+npm run web          # vista Expo en el navegador (no es apps/web; ver más abajo)
+npm run web:dev      # app de navegador (apps/web) en http://localhost:5173
 ```
 
 En el móvil, abre **Reloj de Arena** (el _development build_): tu PC aparece en la lista de
@@ -206,8 +210,56 @@ Antes de la primera tecla no se simula nada.
 **Probar los ciclos sin esperar:** en desarrollo, añade `?velocidad=60` a la URL de la web y el
 tiempo corre 60 veces más rápido (un 25/5 dura 30 s). Solo funciona en modo desarrollo.
 
-Para exportar la web estática:
+Para exportar la **vista Expo** estática:
 `cd apps/mobile && npx expo export --platform web` (sale en `dist/`).
+
+### App de navegador (`apps/web`)
+
+Es otra app, en el mismo repositorio, que reutiliza `@reloj/core` (temporizador, ciclos,
+ajustes, textos y simulación de arena). No cambia el móvil: el vidrio de Android sigue siendo
+Skia. En el navegador el reloj se queda de pie (no hay acelerómetro), la arena cae igual, y
+se maneja con el ratón:
+
+| Acción                        | Efecto                                                            |
+| ----------------------------- | ----------------------------------------------------------------- |
+| **Clic** o **Espacio**        | Empezar, pausar o seguir                                          |
+| **Doble clic**                | Voltea 180° y reinicia la cuenta                                  |
+| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                    |
+| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia |
+| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                 |
+
+En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
+derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para
+dejarle sitio. En una ventana alta el reloj se queda grande y el panel es una tarjeta al
+pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: primero hay que
+seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
+no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado: la barra se arrastra a izquierda o derecha por los mismos escalones, y − / + siguen un paso.
+El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
+esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
+flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
+español/inglés/automático. Al pausar, «Pausa» queda en el centro de la pantalla y el resto
+se desenfoca.
+
+La cuenta sigue aunque la pestaña esté detrás (usa la hora del sistema). Si el aviso del
+navegador está permitido y la pestaña no se ve, al cambiar de fase sale una notificación.
+
+```bash
+npm run web:dev       # desarrollo, http://localhost:5173
+npm run web:build     # estático en apps/web/dist
+npm run web:preview   # sirve esa carpeta en http://localhost:4173
+```
+
+Variable de entorno (copia `apps/web/.env.example` a `apps/web/.env`):
+
+| Variable                 | Efecto                                                            |
+| ------------------------ | ----------------------------------------------------------------- |
+| `VITE_GA_MEASUREMENT_ID` | Id de GA4 (`G-…`). Vacío, o un ejemplo con `XXXX`, no carga nada. |
+
+Google Analytics **no** se inserta hasta que se pulsa **Aceptar** en el aviso de cookies, y
+solo si ese id es real. **Rechazar** no carga el script. «Configurar cookies» (pie de página
+y páginas legales) vuelve a preguntar; retirar el consentimiento borra las cookies `_ga`.
+Vercel Web Analytics va aparte, sin cookies, y no hace nada fuera de Vercel. No está
+desplegada: estos comandos solo la arrancan en local.
 
 ## Tests y calidad
 
@@ -284,13 +336,18 @@ Texto completo de la licencia: [PolyForm Noncommercial 1.0.0](https://polyformpr
 
 ## Privacidad
 
-La app no tiene cuentas, anuncios, analítica ni servidor: no envía datos fuera del móvil.
+La app de Android no tiene cuentas, anuncios, analítica ni servidor: no envía datos fuera del
+móvil. La app de navegador (`apps/web`) tampoco tiene cuentas. Puede medir visitas con Vercel
+Web Analytics (sin cookies) cuando está alojada en Vercel, y solo carga Google Analytics si la
+persona pulsa Aceptar y hay un id real en `VITE_GA_MEASUREMENT_ID`.
 
 - Política de privacidad (español): [docs/privacidad.html](docs/privacidad.html)
 - Privacy policy (English): [docs/privacy.html](docs/privacy.html)
+- Cookies: [docs/cookies.html](docs/cookies.html) · [docs/cookies-en.html](docs/cookies-en.html)
+- Aviso legal: [docs/aviso-legal.html](docs/aviso-legal.html) · [docs/legal-notice.html](docs/legal-notice.html)
 
 Son páginas HTML: con GitHub Pages (o un visor de HTML) se ven ya formateadas; en el repositorio
-se muestra el código fuente.
+se muestra el código fuente. La app de navegador las sirve desde `apps/web/public`.
 
 ## Autor
 

@@ -66,7 +66,8 @@ reloj-de-arena/
 │       └── test/           ← tests de Vitest
 │
 └── apps/
-    └── mobile/             ← @reloj/mobile: la app Expo / React Native
+    ├── mobile/             ← @reloj/mobile: la app Expo / React Native
+    └── web/                ← @reloj/web: app de navegador (Vite + React). Reutiliza el core; no toca el móvil.
         ├── index.ts        ← entrada de Expo → src/bootstrap(.web).ts
         ├── app.json        ← configuración de Expo (nombre, paquete Android, tema, web…)
         ├── assets/sounds/  ← fin.mp3 (aviso al terminar) y cambio.mp3 (cambio de fase)
@@ -119,6 +120,10 @@ reloj-de-arena/
 
 **Regla de oro:** `core` no importa nada de la app. La app importa de `core`. Así la lógica se
 puede testear sin emuladores y reutilizar en la futura app de escritorio.
+
+`apps/web` es la app de navegador (Vite + React). Importa el mismo core (sesión, ciclos,
+ajustes, textos y simulación) y dibuja el vidrio en Canvas 2D. No usa Skia, sensores ni la
+ventana flotante, y no modifica `apps/mobile`. Cómo arrancarla: [README › App de navegador](../README.md#app-de-navegador-appsweb).
 
 ## Visión general
 

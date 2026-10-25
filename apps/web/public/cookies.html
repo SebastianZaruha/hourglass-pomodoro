@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Política de cookies — Hourglass Pomodoro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Política de cookies de Hourglass Pomodoro." />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #efe8de;
+        --card: #f8f4ee;
+        --fg: #3b352f;
+        --muted: #7a6f63;
+        --line: #ddd2c4;
+        --link: #8a5a2b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #25211d;
+          --card: #2e2924;
+          --fg: #ece4d8;
+          --muted: #b3a796;
+          --line: #443c34;
+          --link: #e0b47f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          17px/1.65 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 1.1rem 1.25rem 3rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 2rem 1.75rem;
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        min-width: 36rem;
+        border-collapse: collapse;
+        margin: 0.4rem 0 1rem;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.65rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        font-weight: 500;
+        background: color-mix(in srgb, var(--fg) 6%, var(--card));
+      }
+      h1 {
+        font-weight: 300;
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-weight: 500;
+        font-size: 1.15rem;
+        margin: 2rem 0 0.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+      .meta,
+      .lang {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .lang {
+        text-align: left;
+        display: flex;
+        align-items: center;
+        min-height: 2.5rem;
+        margin: 0 7rem 1rem 0;
+      }
+      a {
+        color: var(--link);
+      }
+      ul {
+        padding-left: 1.3rem;
+      }
+      em {
+        color: var(--muted);
+      }
+          footer.links {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+      }
+    
+      .leave {
+        position: fixed;
+        z-index: 5;
+        top: 1.1rem;
+        right: 1.25rem;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <button type="button" class="leave" id="leave-page">Cerrar</button>
+    <main>
+      <p class="lang">Español · <a href="cookies-en.html" hreflang="en">English</a></p>
+      <div class="card">
+        <h1>Política de cookies — Hourglass Pomodoro</h1>
+        <p>Responsable: <strong>Sebastián Zaruha</strong>, Madrid (España). Contacto: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a></p>
+
+        <h2>Qué son</h2>
+        <p>Las cookies y tecnologías similares almacenan o leen información en tu dispositivo.</p>
+
+        <h2>Tipos que usamos</h2>
+        <ol>
+          <li><strong>Necesarias / técnicas</strong> (no requieren consentimiento): preferencia de tema e idioma; almacenamiento de tu elección de cookies.</li>
+          <li><strong>Analítica con cookies (Google Analytics 4)</strong>: solo con consentimiento. Miden visitas, páginas y procedencia.</li>
+          <li><strong>Vercel Web Analytics</strong>: no usa cookies; ver <a href="privacidad.html">política de privacidad</a>.</li>
+        </ol>
+
+        <h2>Tabla de cookies y almacenamiento</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Titular</th>
+              <th>Finalidad</th>
+              <th>Duración</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Preferencias de tema e idioma (localStorage)</td>
+              <td>Hourglass Pomodoro (propia)</td>
+              <td>Recordar tema e idioma</td>
+              <td>Hasta que las borres en el navegador</td>
+            </tr>
+            <tr>
+              <td>Elección de cookies (localStorage u similar)</td>
+              <td>Hourglass Pomodoro (propia)</td>
+              <td>Recordar Aceptar / Rechazar</td>
+              <td>Hasta unos 12 meses</td>
+            </tr>
+            <tr>
+              <td>_ga, _ga_*</td>
+              <td>Google Analytics 4</td>
+              <td>Analítica de visitas (solo si aceptas)</td>
+              <td>Hasta 24 meses (según configuración de Google)</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Vercel Web Analytics no usa cookies. Los detalles de privacidad de Google: <a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">política de privacidad de Google</a>.</p>
+
+        <h2>Cómo gestionarlas</h2>
+        <p>En el banner puedes elegir <strong>Aceptar</strong>, <strong>Rechazar</strong> o <strong>Configurar</strong>. Puedes cambiar tu elección en cualquier momento con «<a href="#configure-cookies">Configurar cookies</a>» en el pie de página. También puedes gestionarlas o borrarlas desde la configuración de tu navegador.</p>
+
+        <h2>Más detalle</h2>
+        <p>Consulta la <a href="privacidad.html">Política de privacidad</a>, donde se explican tus derechos. También puedes reclamar ante la AEPD (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
+      </div>
+      <footer class="links"><a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> · <a href="cookies.html">Cookies</a> · <a href="#configure-cookies">Configurar cookies</a></footer>
+    </main>
+  
+
+
+  
+<script>
+  (function () {
+    function configure(e) {
+      if (e) e.preventDefault();
+      location.href = "/?configure-cookies=1";
+    }
+    document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+      a.addEventListener("click", configure);
+    });
+    if (location.hash === "#configure-cookies") configure();
+
+    function leave() {
+      location.href = "/";
+    }
+    var closer = document.getElementById("leave-page");
+    if (closer) closer.addEventListener("click", leave);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") leave();
+    });
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest("a, button, .card, footer")) return;
+      leave();
+    });
+  })();
+</script>
+
+  </body>
+</html>

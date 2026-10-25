@@ -7,3 +7,11 @@ package-lock.json
 docs/capturas
 # Texto oficial de la licencia: no se reformatea
 LICENSE.md
+# Páginas legales: se copian tal cual (no reformatear)
+docs/privacidad.html
+docs/privacy.html
+docs/cookies.html
+docs/cookies-en.html
+docs/aviso-legal.html
+docs/legal-notice.html
+apps/web/public/*.html

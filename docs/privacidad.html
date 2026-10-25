@@ -4,10 +4,7 @@
     <meta charset="utf-8" />
     <title>Política de privacidad — Hourglass Pomodoro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Política de privacidad de la app Hourglass Pomodoro (antes Reloj de arena)."
-    />
+    <meta name="description" content="Política de privacidad del temporizador web Hourglass Pomodoro." />
     <style>
       :root {
         color-scheme: light dark;
@@ -47,7 +44,7 @@
       main {
         max-width: 720px;
         margin: 0 auto;
-        padding: 2.5rem 1.25rem 3rem;
+        padding: 1.1rem 1.25rem 3rem;
       }
       .card {
         background: var(--card);
@@ -74,8 +71,11 @@
         font-size: 0.95rem;
       }
       .lang {
-        text-align: right;
-        margin: 0 0 1rem;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        min-height: 2.5rem;
+        margin: 0 7rem 1rem 0;
       }
       a {
         color: var(--link);
@@ -86,72 +86,113 @@
       em {
         color: var(--muted);
       }
+          footer.links {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+      }
+    
+      .leave {
+        position: fixed;
+        z-index: 5;
+        top: 1.1rem;
+        right: 1.25rem;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
+    <button type="button" class="leave" id="leave-page">Cerrar</button>
     <main>
       <p class="lang">Español · <a href="privacy.html" hreflang="en">English</a></p>
       <div class="card">
         <h1>Política de privacidad</h1>
-        <p class="meta">Hourglass Pomodoro · <strong>Última actualización:</strong> 25 de octubre de 2026</p>
 
         <h2>1. Responsable</h2>
-        <p>
-          El responsable del tratamiento es <strong>Sebastián Zaruha</strong>, Madrid (España).<br />
-          Contacto: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a>
-        </p>
+        <p>El responsable del tratamiento es <strong>Sebastián Zaruha</strong>, Madrid (España).<br />Contacto: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a></p>
 
-        <h2>2. Qué es esta app</h2>
-        <p>
-          <strong>Hourglass Pomodoro</strong> (antes «Reloj de arena») es una aplicación gratuita de
-          temporizador / cuenta atrás para Android. Se distribuye como APK (por ejemplo a través de GitHub o
-          Google Drive). No requiere cuenta, no muestra anuncios y no se conecta a ningún servidor propio.
-        </p>
+        <h2>2. Qué es Hourglass Pomodoro</h2>
+        <p><strong>Hourglass Pomodoro</strong> (antes «Reloj de arena») es un temporizador en el navegador. No requiere cuenta ni registro y no muestra anuncios.</p>
 
-        <h2>3. Datos que tratamos (y los que no)</h2>
-        <p>
-          <strong>Esta app no recoge ni envía datos personales fuera de tu dispositivo.</strong> En concreto:
-        </p>
+        <h2>3. Datos que tratamos</h2>
+        <p>El temporizador guarda en tu navegador las preferencias de tema e idioma y tu elección sobre cookies. Esa información permanece en el navegador. Con «Automático», el tema y el idioma siguen la configuración del sistema.</p>
         <ul>
           <li>No hay registro ni inicio de sesión.</li>
-          <li>No hay anuncios ni analítica.</li>
-          <li>No se envían datos a Internet ni a terceros.</li>
+          <li>No hay anuncios.</li>
         </ul>
-        <p>
-          En tu propio móvil la app puede guardar preferencias locales (por ejemplo tema claro/oscuro e
-          idioma). Si eliges la opción «Automático», usa la configuración de tema e idioma del sistema. Esa
-          información <strong>permanece en el dispositivo</strong> y no se transmite.
-        </p>
+        <p>Además puede usar las herramientas de analítica descritas en el apartado 4.</p>
 
-        <h2>4. Permisos del sistema</h2>
-        <p>La app puede solicitar permisos de Android necesarios para su funcionamiento, por ejemplo:</p>
+        <h2>4. Analítica</h2>
         <ul>
-          <li><strong>Notificaciones:</strong> para avisarte cuando termina el temporizador.</li>
-          <li><strong>Mostrar sobre otras apps / ventana flotante:</strong> si usas esa función.</li>
+          <li><strong>Vercel Web Analytics</strong> (Vercel Inc., EE. UU.): estadísticas de visitas sin cookies. Base jurídica: interés legítimo (art. 6.1.f RGPD) en conocer el uso agregado del sitio. Las transferencias a EE. UU. se amparan en cláusulas contractuales tipo (SCC) y/o el Data Privacy Framework, según indica Vercel.</li>
+          <li><strong>Google Analytics 4</strong> (Google Ireland Ltd. / Google LLC): usa cookies e identificadores. <strong>Solo se activa si aceptas en el banner de cookies.</strong> Base jurídica: consentimiento (art. 6.1.a RGPD). Puedes retirarlo en cualquier momento desde «<a href="#configure-cookies">Configurar cookies</a>». Más información: <a href="https://policies.google.com/privacy">política de privacidad de Google</a>.</li>
         </ul>
-        <p>Puedes denegar o revocar estos permisos en los ajustes de Android. Denegarlos puede limitar funciones, pero no implica envío de datos.</p>
 
-        <h2>5. Base jurídica</h2>
-        <p>Las preferencias y los permisos que tú activas se tratan para prestar el servicio que pides (art. 6.1.b del RGPD, ejecución de la relación contractual / solicitud del interesado). No se usa tu información para publicidad ni perfilado.</p>
+        <h2>5. Cookies</h2>
+        <p>Consulta la <a href="cookies.html">Política de cookies</a>. Las preferencias de tema e idioma son técnicas y no requieren consentimiento.</p>
 
-        <h2>6. Conservación</h2>
-        <p>Las preferencias se conservan en el dispositivo mientras tengas la app instalada o hasta que las borres o desinstales la aplicación. Al desinstalar, esos datos locales se eliminan con la app (salvo lo que Android conserve por su propia gestión de copias).</p>
+        <h2>6. Base jurídica</h2>
+        <p>Las preferencias se tratan para prestar el servicio que pides (art. 6.1.b RGPD). La analítica sin cookies se basa en el interés legítimo (art. 6.1.f) y Google Analytics en tu consentimiento (art. 6.1.a). No se usa tu información para publicidad ni perfilado.</p>
 
-        <h2>7. Destinatarios y transferencias</h2>
-        <p>No se comunican datos a terceros ni se realizan transferencias internacionales de datos personales a través de esta app, porque no se envían datos fuera del dispositivo.</p>
+        <h2>7. Conservación</h2>
+        <p>Las preferencias se conservan en el navegador hasta que las borres. Tu elección sobre cookies se guarda como máximo unos 12 meses, tras los cuales se te volverá a preguntar. Los datos de analítica se conservan según la configuración y políticas de cada proveedor.</p>
 
-        <h2>8. Menores</h2>
-        <p>La app no está dirigida específicamente a menores de 14 años y no recoge datos de identificación. Si eres padre, madre o tutor y tienes alguna duda, escríbenos al email de contacto.</p>
+        <h2>8. Destinatarios y transferencias</h2>
+        <p>Pueden acceder a datos de uso Vercel Inc. (alojamiento y Web Analytics) y, solo si das tu consentimiento, Google (Google Analytics 4). Ambos pueden implicar transferencias a EE. UU., amparadas en cláusulas contractuales tipo y/o el Data Privacy Framework.</p>
 
-        <h2>9. Tus derechos</h2>
-        <p>Según el RGPD y la LOPDGDD, puedes ejercer los derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición, y reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">www.aepd.es</a> / sede electrónica).</p>
-        <p>Como no almacenamos datos personales en servidores propios, en la práctica puedes ejercer varios de estos derechos borrando preferencias o desinstalando la app. Para cualquier consulta: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a>. Responderemos en el plazo legal (como máximo un mes).</p>
+        <h2>9. Menores</h2>
+        <p>Hourglass Pomodoro no está dirigido específicamente a menores de 14 años y no recoge datos de identificación. Si eres padre, madre o tutor y tienes alguna duda, escríbenos al email de contacto.</p>
 
-        <h2>10. Cambios</h2>
-        <p>Si la app cambia (por ejemplo, se añade analítica, anuncios o un servidor), actualizaremos esta política y lo indicaremos con una nueva fecha. Te recomendamos revisarla de vez en cuando.</p>
+        <h2>10. Tus derechos</h2>
+        <p>Según el RGPD y la LOPDGDD, puedes ejercer los derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición, y reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
+        <p>Puedes aceptar, rechazar o retirar tu consentimiento a las cookies de analítica en cualquier momento desde «<a href="#configure-cookies">Configurar cookies</a>» o desde tu navegador. También puedes borrar las preferencias guardadas en el navegador. Para cualquier consulta: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a>. Responderemos en el plazo legal (como máximo un mes).</p>
 
-        <p><em>Esta política es orientativa y describe el funcionamiento actual de la app. No sustituye el asesoramiento de un profesional.</em></p>
+        <h2>11. Cambios</h2>
+        <p>Si Hourglass Pomodoro cambia (por ejemplo, nuevas herramientas, anuncios o un servidor), actualizaremos esta política. Te recomendamos revisarla de vez en cuando.</p>
+
+        <p><em>Esta política es orientativa y describe el funcionamiento actual. No sustituye el asesoramiento de un profesional.</em></p>
       </div>
+      <footer class="links"><a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> · <a href="cookies.html">Cookies</a> · <a href="#configure-cookies">Configurar cookies</a></footer>
     </main>
+  
+
+
+  
+<script>
+  (function () {
+    function configure(e) {
+      if (e) e.preventDefault();
+      location.href = "/?configure-cookies=1";
+    }
+    document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+      a.addEventListener("click", configure);
+    });
+    if (location.hash === "#configure-cookies") configure();
+
+    function leave() {
+      location.href = "/";
+    }
+    var closer = document.getElementById("leave-page");
+    if (closer) closer.addEventListener("click", leave);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") leave();
+    });
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest("a, button, .card, footer")) return;
+      leave();
+    });
+  })();
+</script>
+
   </body>
 </html>
