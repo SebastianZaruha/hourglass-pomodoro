@@ -14,7 +14,10 @@ export default [
   // App móvil (Expo).
   ...expoConfig.map((config) => ({ ...config, files: config.files ?? ['apps/mobile/**/*.{ts,tsx,js}'] })),
   // Paquete core: TypeScript puro.
-  ...tseslint.configs.recommended.map((config) => ({ ...config, files: ['packages/core/**/*.ts'] })),
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ['packages/core/**/*.ts', 'apps/web/**/*.{ts,tsx}'],
+  })),
   {
     files: ['**/*.{ts,tsx}'],
     rules: {

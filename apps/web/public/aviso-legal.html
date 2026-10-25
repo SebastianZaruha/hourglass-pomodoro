@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aviso legal — Hourglass Pomodoro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Aviso legal de Hourglass Pomodoro (app Android y versión web)." />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #efe8de;
+        --card: #f8f4ee;
+        --fg: #3b352f;
+        --muted: #7a6f63;
+        --line: #ddd2c4;
+        --link: #8a5a2b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #25211d;
+          --card: #2e2924;
+          --fg: #ece4d8;
+          --muted: #b3a796;
+          --line: #443c34;
+          --link: #e0b47f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          17px/1.65 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 3rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 2rem 1.75rem;
+      }
+      h1 {
+        font-weight: 300;
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-weight: 500;
+        font-size: 1.15rem;
+        margin: 2rem 0 0.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+      .meta,
+      .lang {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .lang {
+        text-align: right;
+        margin: 0 0 1rem;
+      }
+      a {
+        color: var(--link);
+      }
+      ul {
+        padding-left: 1.3rem;
+      }
+      em {
+        color: var(--muted);
+      }
+          footer.links {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="lang">Español · <a href="legal-notice.html" hreflang="en">English</a></p>
+      <div class="card">
+        <h1>Aviso legal</h1>
+        <p class="meta">Hourglass Pomodoro · <strong>Última actualización:</strong> 25 de octubre de 2026</p>
+
+        <h2>1. Titular</h2>
+        <p>En cumplimiento del art. 10 de la Ley 34/2002 de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa de que el titular de este sitio y de la app es <strong>Sebastián Zaruha</strong>, Madrid (España).<br />Contacto: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a></p>
+
+        <h2>2. Objeto</h2>
+        <p><strong>Hourglass Pomodoro</strong> es una app Android y una web que ofrecen un temporizador Pomodoro. Es un proyecto <strong>gratuito y sin fines comerciales</strong>: no se venden productos ni servicios.</p>
+
+        <h2>3. Propiedad intelectual</h2>
+        <p>© Sebastián Zaruha. Cuando se publique, el código fuente estará disponible bajo la licencia <strong>PolyForm Noncommercial 1.0.0</strong>. El nombre «Hourglass Pomodoro», el logotipo y los elementos gráficos <strong>no están incluidos</strong> en esa licencia y no pueden usarse sin autorización.</p>
+
+        <h2>4. Condiciones de uso</h2>
+        <ul>
+          <li>Te comprometes a hacer un uso lícito de la app y la web.</li>
+          <li>No se garantiza la disponibilidad continua ni la ausencia de errores.</li>
+          <li>En la medida permitida por la ley, el titular no se responsabiliza del uso indebido que se haga de la app o la web.</li>
+        </ul>
+
+        <h2>5. Enlaces</h2>
+        <p>Este sitio puede contener enlaces a sitios de terceros (por ejemplo, GitHub). El titular no es responsable de sus contenidos ni de sus políticas.</p>
+
+        <h2>6. Privacidad y cookies</h2>
+        <p>Consulta la <a href="privacidad.html">Política de privacidad</a> y la <a href="cookies.html">Política de cookies</a>.</p>
+
+        <h2>7. Legislación aplicable</h2>
+        <p>Este aviso legal se rige por la legislación española. Para cualquier controversia serán competentes los juzgados y tribunales que correspondan conforme a la ley.</p>
+      </div>
+      <footer class="links"><a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> · <a href="cookies.html">Cookies</a> · <a href="#configure-cookies">Configurar cookies</a></footer>
+    </main>
+  
+<script>
+  (function () {
+    function go(e) {
+      if (e) e.preventDefault();
+      location.href = "/?configure-cookies=1";
+    }
+    document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+      a.addEventListener("click", go);
+    });
+    if (location.hash === "#configure-cookies") go();
+  })();
+</script>
+
+  </body>
+</html>

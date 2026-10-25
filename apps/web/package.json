@@ -1,0 +1,34 @@
+{
+  "name": "@reloj/web",
+  "version": "1.8.12",
+  "private": true,
+  "description": "Hourglass Pomodoro en el navegador (Vite, React). No cambia la app móvil.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Sebastián Zaruha (https://github.com/SebastianZaruha)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SebastianZaruha/reloj-de-arena.git",
+    "directory": "apps/web"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/manrope": "^5.2.6",
+    "@reloj/core": "*",
+    "@vercel/analytics": "^1.5.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5"
+  }
+}

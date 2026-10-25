@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cookie policy — Hourglass Pomodoro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Cookie policy for Hourglass Pomodoro." />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #efe8de;
+        --card: #f8f4ee;
+        --fg: #3b352f;
+        --muted: #7a6f63;
+        --line: #ddd2c4;
+        --link: #8a5a2b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #25211d;
+          --card: #2e2924;
+          --fg: #ece4d8;
+          --muted: #b3a796;
+          --line: #443c34;
+          --link: #e0b47f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          17px/1.65 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 3rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 2rem 1.75rem;
+      }
+      h1 {
+        font-weight: 300;
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-weight: 500;
+        font-size: 1.15rem;
+        margin: 2rem 0 0.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+      .meta,
+      .lang {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .lang {
+        text-align: right;
+        margin: 0 0 1rem;
+      }
+      a {
+        color: var(--link);
+      }
+      ul {
+        padding-left: 1.3rem;
+      }
+      em {
+        color: var(--muted);
+      }
+          footer.links {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="lang"><a href="cookies.html" hreflang="es">Español</a> · English</p>
+      <div class="card">
+        <h1>Cookie policy — Hourglass Pomodoro</h1>
+        <p class="meta"><strong>Last updated:</strong> 25 October 2026</p>
+        <p>Controller: <strong>Sebastián Zaruha</strong>, Madrid (Spain). Contact: <a href="mailto:sebastianzaruha+apps@gmail.com">sebastianzaruha+apps@gmail.com</a></p>
+
+        <h2>What they are</h2>
+        <p>Cookies and similar technologies store or read information on your device.</p>
+
+        <h2>Types we use</h2>
+        <ol>
+          <li><strong>Strictly necessary / technical</strong> (no consent required): theme and language preference; storing your cookie choice.</li>
+          <li><strong>Analytics cookies (Google Analytics 4)</strong>: only with consent. They measure visits, pages and traffic sources.</li>
+          <li><strong>Vercel Web Analytics</strong>: does not use cookies; see the <a href="privacy.html">privacy policy</a>.</li>
+        </ol>
+
+        <h2>How to manage them</h2>
+        <p>In the banner you can choose <strong>Accept</strong>, <strong>Reject</strong> or <strong>More info</strong>. You can change your choice at any time via “<a href="#configure-cookies">Cookie settings</a>” in the footer. You can also manage or delete them in your browser settings.</p>
+
+        <h2>More detail</h2>
+        <p>See the <a href="privacy.html">Privacy policy</a>, which explains your rights. You may also lodge a complaint with the Spanish DPA, AEPD (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
+      </div>
+      <footer class="links"><a href="legal-notice.html">Legal notice</a> · <a href="privacy.html">Privacy</a> · <a href="cookies-en.html">Cookies</a> · <a href="#configure-cookies">Cookie settings</a></footer>
+    </main>
+  
+<script>
+  (function () {
+    function go(e) {
+      if (e) e.preventDefault();
+      location.href = "/?configure-cookies=1";
+    }
+    document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+      a.addEventListener("click", go);
+    });
+    if (location.hash === "#configure-cookies") go();
+  })();
+</script>
+
+  </body>
+</html>
