@@ -2,7 +2,8 @@
  * Bucle del reloj: la simulación del core marca cuánta arena queda arriba
  * y este lienzo la dibuja. La gravedad es siempre hacia abajo: no hay
  * sensores ni reacción al ratón. Girar el vidrio con el gesto es solo visual
- * (el conjunto gira y vuelve a su sitio).
+ * Un volteo (arrastre que pasa el umbral, o doble clic) gira 180° y
+ * la cuenta vuelve a empezar.
  */
 import {
   CLASSIC_MODEL,
@@ -24,7 +25,9 @@ import { useEffect, type RefObject } from 'react';
 import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, type Scheme } from './draw';
 
 const TURN_MS = 950;
+const FLIP_MS = 1000;
 const STEPS_PER_FRAME = 2;
+const SAND_CELL_PX = 2.15;
 
 export interface HourglassParams {
   getSnapshot: () => SessionSnapshot;
@@ -32,6 +35,12 @@ export interface HourglassParams {
   reduceMotion: boolean;
   gestureAngle: number;
   gestureActive: boolean;
+  /** Sube para pedir un giro de 180° que reinicia la cuenta. */
+  flipToken: number;
+  /** Ángulo del que parte ese giro (radianes). */
+  flipFrom: number;
+  /** El motor lo pone a true mientras el giro de 180° no ha terminado. */
+  flipBusy: boolean;
 }
 
 export interface HourglassHandle {
@@ -59,9 +68,16 @@ export function useHourglass(
     if (!canvas || !ctx) return;
 
     const profile = CLASSIC_MODEL.profile;
+    const guess = layoutFor(
+      Math.max(280, canvas.clientWidth || 480),
+      Math.max(360, canvas.clientHeight || 640),
+      profile,
+    );
+    const rawCols = Math.round((guess.halfW * 2) / SAND_CELL_PX);
+    const cols = Math.max(121, Math.min(181, rawCols % 2 === 0 ? rawCols + 1 : rawCols));
     const sim = new SandSimulation({
       profile,
-      cols: 81,
+      cols,
       seed: 11,
       slideChance: SAND.slideChance,
       fillRatio: SAND.fillRatio,
@@ -98,6 +114,11 @@ export function useHourglass(
       spin: 0,
       paint: true,
       layout: null as ReturnType<typeof layoutFor> | null,
+      flipToken: paramsRef.current.flipToken,
+      flipStart: null as number | null,
+      flipFrom: 0,
+      flipDir: 1,
+      flipHold: false,
     };
 
     const paintSand = () => {
@@ -110,7 +131,7 @@ export function useHourglass(
       const p = paramsRef.current;
       const cssW = canvas.clientWidth;
       const cssH = canvas.clientHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
       const pxW = Math.max(1, Math.round(cssW * dpr));
       const pxH = Math.max(1, Math.round(cssH * dpr));
       if (canvas.width !== pxW || canvas.height !== pxH) {
@@ -127,9 +148,54 @@ export function useHourglass(
         loop.paint = true;
       }
 
-      if (!p.gestureActive && Math.abs(p.gestureAngle) > 0.0008) {
+      if (p.flipToken !== loop.flipToken) {
+        loop.flipToken = p.flipToken;
+        p.gestureActive = false;
+        if (p.reduceMotion) {
+          p.gestureAngle = 0;
+          p.flipBusy = false;
+        } else {
+          p.flipBusy = true;
+          loop.flipStart = now;
+          loop.flipFrom = p.flipFrom;
+          loop.flipDir = p.flipFrom < 0 ? -1 : 1;
+          p.gestureAngle = 0;
+        }
+      }
+
+      if (!p.flipBusy && !p.gestureActive && Math.abs(p.gestureAngle) > 0.0008) {
         p.gestureAngle *= 0.84;
         if (Math.abs(p.gestureAngle) < 0.004) p.gestureAngle = 0;
+      }
+
+      let flipAngle = 0;
+      if (loop.flipStart !== null) {
+        const t = Math.min(1, (now - loop.flipStart) / FLIP_MS);
+        const dest = loop.flipDir * Math.PI;
+        if (t < 1) {
+          flipAngle = loop.flipFrom + (dest - loop.flipFrom) * easeInOutCubic(t);
+        } else if (!loop.flipHold) {
+          const durationMs = p.getSnapshot().durationMs;
+          const level = Math.round(sim.totalGrains * sandLevelForDuration(durationMs));
+          sim.arrange(Math.max(0, sim.totalGrains - level), level, GRAVITY_DOWN, { crater: 0.25 });
+          loop.flipHold = true;
+          flipAngle = dest;
+          loop.paint = true;
+          particles.reset(7);
+        } else {
+          sim.rotateHalfTurn();
+          loop.runInitial = sim.topCount;
+          loop.idleKey = String(p.getSnapshot().durationMs);
+          loop.populated = true;
+          loop.flipStart = null;
+          loop.flipHold = false;
+          loop.spin = 0;
+          flipAngle = 0;
+          p.flipBusy = false;
+          p.gestureAngle = 0;
+          loop.paint = true;
+          particles.reset(3);
+        }
       }
 
       const snap = p.getSnapshot();
@@ -162,7 +228,7 @@ export function useHourglass(
           particles.reset(7);
         }
       }
-      const turning = loop.turnStart !== null;
+      const turning = loop.turnStart !== null || loop.flipStart !== null;
 
       if (!turning && snap.status === 'idle') {
         const key = String(snap.durationMs);
@@ -208,12 +274,13 @@ export function useHourglass(
       input.gravity = GRAVITY_DOWN;
       particles.update(sim, input);
 
-      if (moved) loop.paint = true;
+      if (moved || loop.flipStart !== null) loop.paint = true;
       if (loop.paint) {
         paintSand();
         loop.paint = false;
       }
 
+      const rotation = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       drawHourglass(ctx, {
         profile,
         layout,
@@ -223,7 +290,7 @@ export function useHourglass(
         sim,
         particles,
         lut,
-        rotation: loop.spin + p.gestureAngle,
+        rotation,
       });
 
       const keep =
@@ -231,6 +298,7 @@ export function useHourglass(
         !sim.isSettled ||
         particles.active ||
         turning ||
+        p.flipBusy ||
         p.gestureActive ||
         Math.abs(p.gestureAngle) > 0.0008;
       if (keep) loop.raf = requestAnimationFrame(frame);

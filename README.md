@@ -220,19 +220,22 @@ ajustes, textos y simulación de arena). No cambia el móvil: el vidrio de Andro
 Skia. En el navegador el reloj se queda de pie (no hay acelerómetro), la arena cae igual, y
 se maneja con el ratón:
 
-| Acción                        | Efecto                                         |
-| ----------------------------- | ---------------------------------------------- |
-| **Clic** o **Espacio**        | Empezar, pausar o seguir                       |
-| **Doble clic**                | Reiniciar el ciclo                             |
-| **Rueda**                     | Más o menos tiempo (solo si no está en marcha) |
-| **Arrastrar un flanco**       | Gira el vidrio y vuelve solo a su sitio        |
-| Botón de dos rayas (al pasar) | Hoja de ajustes, estrecha, abajo               |
+| Acción                        | Efecto                                                      |
+| ----------------------------- | ----------------------------------------------------------- |
+| **Clic** o **Espacio**        | Empezar, pausar o seguir                                    |
+| **Doble clic**                | Voltea 180° y reinicia la cuenta                            |
+| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)              |
+| **Arrastrar el reloj**        | Gira el vidrio; si el giro es claro, voltea 180° y reinicia |
+| Botón de dos rayas (al pasar) | Panel de ajustes (a la derecha si la ventana es ancha)      |
 
-La hoja, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de esa opción, y
-al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana flotante. El
-sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
-español/inglés/automático. En una ventana ancha el reloj queda a la izquierda y el tiempo a
-la derecha; en una estrecha se apilan, y al pausar el vidrio se desenfoca con «Pausa».
+El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de esa opción, y
+al fondo tres pastillas (tema, idioma y sonido). No es la hoja del móvil: en una ventana
+ancha queda a la derecha del reloj, con el tiempo encima; en una estrecha es una tarjeta
+debajo del reloj. El reloj y el tiempo siguen visibles con el panel abierto. No hay
+vibración ni ventana flotante. El sonido nace apagado. El tema y el idioma pueden ser
+claro/oscuro/automático y español/inglés/automático. En una ventana ancha el reloj queda a
+la izquierda y el tiempo a la derecha; en una estrecha se apilan. Al pausar, «Pausa» queda
+en el centro de la pantalla y el resto se desenfoca.
 
 La cuenta sigue aunque la pestaña esté detrás (usa la hora del sistema). Si el aviso del
 navegador está permitido y la pestaña no se ve, al cambiar de fase sale una notificación.

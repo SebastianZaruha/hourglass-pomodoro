@@ -38,8 +38,8 @@
   --pause-veil: rgba(20, 16, 12, 0.38);
   --ink: #f3ece3;
   --ink-soft: #cbbba8;
-  --sheet: rgba(30, 25, 22, 0.98);
-  --sheet-edge: rgba(255, 236, 214, 0.08);
+  --sheet: rgba(58, 49, 42, 0.97);
+  --sheet-edge: rgba(216, 195, 166, 0.28);
   --track: rgba(255, 236, 214, 0.06);
   --pill: #d8c3a6;
   --pill-ink: #3a312a;
@@ -119,13 +119,46 @@ a {
   cursor: default;
 }
 
-.app.menu-open .glass-frame {
-  z-index: 36;
+.scene {
+  height: 100%;
+}
+
+.app.is-paused .scene {
+  filter: blur(18px);
+}
+
+.pause-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
   pointer-events: none;
 }
 
-.app.menu-open .readout {
-  opacity: 0;
+.pause-word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 300;
+  font-size: clamp(3.4rem, 8vw, 6rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--pause);
+  text-shadow:
+    0 0 22px var(--pause-veil),
+    0 0 42px var(--bg-bottom);
+}
+
+.pause-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4.2rem);
+  transform: translateX(-50%);
+  max-width: 32rem;
+  padding: 0 1.2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--hint);
 }
 
 .glass-frame {
@@ -143,27 +176,6 @@ a {
   touch-action: none;
 }
 
-.glass-frame.is-paused .glass-canvas {
-  filter: blur(8px);
-}
-
-.pause-frost {
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-  text-align: center;
-  font-weight: 300;
-  font-size: clamp(2.8rem, 10vw, 4.2rem);
-  letter-spacing: 0.01em;
-  color: var(--pause);
-  text-shadow:
-    0 0 16px var(--pause-veil),
-    0 0 28px var(--bg-top);
-  pointer-events: none;
-}
-
 .readout {
   text-align: center;
   pointer-events: none;
@@ -173,6 +185,18 @@ a {
 .app[data-layout='wide'] .readout {
   justify-self: center;
   padding-bottom: 4vh;
+}
+
+.app[data-layout='wide'].menu-open .readout {
+  align-self: start;
+  margin-top: 3vh;
+  padding-bottom: 0;
+}
+
+.app[data-layout='narrow'].menu-open .stage {
+  grid-template-rows: minmax(150px, 34vh) auto;
+  align-content: start;
+  padding-bottom: min(54vh, 580px);
 }
 
 .time {
@@ -272,29 +296,69 @@ a {
 .sheet {
   position: fixed;
   z-index: 34;
-  left: 50%;
-  bottom: 0;
-  width: min(440px, 100%);
-  max-height: min(78vh, 640px);
   overflow: auto;
-  padding: 8px 16px calc(18px + env(safe-area-inset-bottom));
-  border: 0;
-  border-radius: 28px 28px 0 0;
+  padding: 22px 22px 20px;
+  border-radius: 26px;
+  border: 1px solid var(--sheet-edge);
   background: var(--sheet);
   color: var(--ink);
-  box-shadow: var(--shadow);
-  transform: translateX(-50%) translateY(105%);
-  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
+  opacity: 0;
   pointer-events: none;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease;
+}
+
+.app[data-layout='narrow'] .sheet {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: auto;
+  max-height: min(52vh, 620px);
+  transform: translateY(18px);
+}
+
+.app[data-layout='wide'] .sheet {
+  top: 168px;
+  right: max(18px, 3vw);
+  bottom: auto;
+  width: min(540px, calc(44vw - 12px));
+  max-height: calc(100vh - 190px);
+  height: auto;
+  transform: translateY(16px);
 }
 
 .sheet.open {
-  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  transform: translateY(0);
   pointer-events: auto;
 }
 
 .sheet-head {
-  touch-action: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheet-close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.app.menu-open .menu-btn {
+  top: 16px;
+  bottom: auto;
 }
 
 .grabber {
@@ -309,7 +373,7 @@ a {
 }
 
 .sheet h2 {
-  margin: 0 0 16px;
+  margin: 0 0 18px;
   font-size: 1.85rem;
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -562,12 +626,11 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .sheet,
-  .readout,
-  .glass-frame.is-paused .glass-canvas {
+  .readout {
     transition: none;
   }
 
-  .glass-frame.is-paused .glass-canvas {
+  .app.is-paused .scene {
     filter: none;
   }
 }

@@ -1,18 +1,21 @@
 import { useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
-import { hitGlassSide } from './draw';
+import { hitVessel } from './draw';
 import { useHourglass, type HourglassHandle, type HourglassParams } from './useEngine';
+
+/** A partir de aquí el suelte completa el medio giro (180°). */
+const FLIP_COMMIT = Math.PI * 0.45;
 
 interface Props {
   readonly paramsRef: RefObject<HourglassParams>;
   readonly handleRef: RefObject<HourglassHandle | null>;
   /** Si el arrastre movió el reloj, el clic no debe pausar. */
   readonly suppressClickRef: RefObject<boolean>;
-  readonly showPause: boolean;
-  readonly pauseLabel: string;
+  /** Doble clic o un arrastre que ya es un volteo: giro de 180° y reinicio. */
+  readonly onFlip: () => void;
 }
 
-export function HourglassView({ paramsRef, handleRef, suppressClickRef, showPause, pauseLabel }: Props) {
+export function HourglassView({ paramsRef, handleRef, suppressClickRef, onFlip }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drag = useRef({ on: false, startAng: 0, startRot: 0, moved: false });
   useHourglass(canvasRef, paramsRef, handleRef);
@@ -23,16 +26,17 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, showPaus
   };
 
   return (
-    <div className={showPause ? 'glass-frame is-paused' : 'glass-frame'}>
+    <div className="glass-frame">
       <canvas
         ref={canvasRef}
         className="glass-canvas"
         aria-hidden="true"
         onPointerDown={(e) => {
+          if (paramsRef.current.flipBusy) return;
           const layout = handleRef.current?.layoutCss();
           if (!layout) return;
           const p = localPoint(e);
-          if (!hitGlassSide(layout, p.x, p.y)) return;
+          if (!hitVessel(layout, p.x, p.y)) return;
           const ang = Math.atan2(p.y - layout.cy, p.x - layout.cx);
           drag.current = { on: true, startAng: ang, startRot: paramsRef.current.gestureAngle, moved: false };
           paramsRef.current.gestureActive = true;
@@ -49,14 +53,23 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, showPaus
           while (delta > Math.PI) delta -= Math.PI * 2;
           while (delta < -Math.PI) delta += Math.PI * 2;
           if (Math.abs(delta) > 0.03) drag.current.moved = true;
-          paramsRef.current.gestureAngle = drag.current.startRot + delta;
+          let next = drag.current.startRot + delta;
+          if (next > Math.PI) next = Math.PI;
+          if (next < -Math.PI) next = -Math.PI;
+          paramsRef.current.gestureAngle = next;
           handleRef.current?.wake();
         }}
         onPointerUp={(e) => {
           if (!drag.current.on) return;
           drag.current.on = false;
           paramsRef.current.gestureActive = false;
-          if (drag.current.moved) suppressClickRef.current = true;
+          const ang = paramsRef.current.gestureAngle;
+          if (Math.abs(ang) >= FLIP_COMMIT) {
+            suppressClickRef.current = true;
+            onFlip();
+          } else if (drag.current.moved) {
+            suppressClickRef.current = true;
+          }
           if (e.currentTarget.hasPointerCapture(e.pointerId))
             e.currentTarget.releasePointerCapture(e.pointerId);
           handleRef.current?.wake();
@@ -67,11 +80,6 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, showPaus
           handleRef.current?.wake();
         }}
       />
-      {showPause ? (
-        <div className="pause-frost" aria-hidden="true">
-          {pauseLabel}
-        </div>
-      ) : null}
     </div>
   );
 }

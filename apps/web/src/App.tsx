@@ -153,6 +153,9 @@ function Timer({
     reduceMotion,
     gestureAngle: 0,
     gestureActive: false,
+    flipToken: 0,
+    flipFrom: 0,
+    flipBusy: false,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
@@ -189,6 +192,11 @@ function Timer({
   }, [state.timer.status, toggle]);
 
   const doRestart = useCallback(() => {
+    if (paramsRef.current.flipBusy) return;
+    paramsRef.current.flipFrom = paramsRef.current.gestureAngle;
+    paramsRef.current.gestureAngle = 0;
+    paramsRef.current.gestureActive = false;
+    paramsRef.current.flipToken += 1;
     restart();
     handleRef.current?.wake();
   }, [restart]);
@@ -274,11 +282,10 @@ function Timer({
 
   const paused = view.status === 'paused';
   const label = useMemo(() => {
-    if (paused && wide) return t.paused;
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
     if (view.isCycle && view.status !== 'idle') return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
-  }, [paused, t, view, wide]);
+  }, [t, view]);
   const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished');
 
   const describe = useCallback(
@@ -299,68 +306,81 @@ function Timer({
 
   return (
     <div
-      className={menu ? 'app menu-open' : 'app'}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
-      <div
-        ref={stageRef}
-        className="stage"
-        role="button"
-        tabIndex={0}
-        aria-label={action}
-        aria-keyshortcuts="Space"
-        onClick={onStageClick}
-        onDoubleClick={onStageDoubleClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            doToggle();
-          }
-        }}
-      >
-        <HourglassView
-          paramsRef={paramsRef}
-          handleRef={handleRef}
-          suppressClickRef={suppressClickRef}
-          showPause={!wide && paused}
-          pauseLabel={t.paused}
-        />
-        <TimeReadout
-          getSnapshot={getSnapshot}
-          running={view.status === 'running'}
-          label={label}
-          hint={hint}
-          describe={describe}
-        />
-      </div>
+      <div className="scene">
+        <div
+          ref={stageRef}
+          className="stage"
+          role="button"
+          tabIndex={0}
+          aria-label={action}
+          aria-keyshortcuts="Space"
+          onClick={onStageClick}
+          onDoubleClick={onStageDoubleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              doToggle();
+            }
+          }}
+        >
+          <HourglassView
+            paramsRef={paramsRef}
+            handleRef={handleRef}
+            suppressClickRef={suppressClickRef}
+            onFlip={doRestart}
+          />
+          <TimeReadout
+            getSnapshot={getSnapshot}
+            running={view.status === 'running'}
+            label={label}
+            hint={paused ? null : hint}
+            describe={describe}
+          />
+        </div>
 
-      <button
-        type="button"
-        id="menu-button"
-        className="menu-btn"
-        aria-label={menu ? t.closeSettings : t.openSettings}
-        aria-expanded={menu}
-        onClick={(e) => {
-          e.stopPropagation();
-          setMenu((open) => !open);
-        }}
-      >
-        <span className="bar long" />
-        <span className="bar short" />
-      </button>
-
-      {menu ? (
         <button
           type="button"
-          className="backdrop"
-          aria-label={t.closeSettings}
-          onClick={() => setMenu(false)}
+          id="menu-button"
+          className="menu-btn"
+          aria-label={menu ? t.closeSettings : t.openSettings}
+          aria-expanded={menu}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenu((open) => !open);
+          }}
+        >
+          <span className="bar long" />
+          <span className="bar short" />
+        </button>
+
+        {menu ? (
+          <button
+            type="button"
+            className="backdrop"
+            aria-label={t.closeSettings}
+            onClick={() => setMenu(false)}
+          />
+        ) : null}
+        <SettingsSheet
+          open={menu}
+          settings={settings}
+          t={t}
+          onChange={update}
+          onClose={() => setMenu(false)}
         />
+        <SiteFooter lang={lang} onCookies={() => setBannerOpen(true)} />
+        <CookieBanner open={bannerOpen} lang={lang} onChoose={chooseCookies} />
+      </div>
+      {paused ? (
+        <div className="pause-screen">
+          <span className="pause-word">{t.paused}</span>
+          {hint ? <span className="pause-hint">{hint}</span> : null}
+        </div>
       ) : null}
-      <SettingsSheet open={menu} settings={settings} t={t} onChange={update} onClose={() => setMenu(false)} />
-      <SiteFooter lang={lang} onCookies={() => setBannerOpen(true)} />
-      <CookieBanner open={bannerOpen} lang={lang} onChoose={chooseCookies} />
     </div>
   );
 }

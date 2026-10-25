@@ -52,28 +52,11 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       aria-label={t.settings}
       inert={!open}
     >
-      <div
-        className="sheet-head"
-        onPointerDown={(e) => {
-          const startY = e.clientY;
-          const target = e.currentTarget;
-          const move = (ev: PointerEvent) => {
-            if (ev.clientY - startY > 56) {
-              onClose();
-              cleanup();
-            }
-          };
-          const cleanup = () => {
-            target.removeEventListener('pointermove', move);
-            target.removeEventListener('pointerup', cleanup);
-          };
-          target.setPointerCapture(e.pointerId);
-          target.addEventListener('pointermove', move);
-          target.addEventListener('pointerup', cleanup);
-        }}
-      >
-        <button type="button" className="grabber" aria-label={t.closeSettings} onClick={onClose} />
+      <div className="sheet-head">
         <h2>{t.settings}</h2>
+        <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
+          ×
+        </button>
       </div>
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>

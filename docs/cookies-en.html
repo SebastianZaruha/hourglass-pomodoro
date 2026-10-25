@@ -89,9 +89,25 @@
         font-size: 0.95rem;
         margin-top: 1.5rem;
       }
+    
+      .leave {
+        position: fixed;
+        z-index: 5;
+        top: 16px;
+        right: 16px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
+    <button type="button" class="leave" id="leave-page">Close</button>
     <main>
       <p class="lang"><a href="cookies.html" hreflang="es">Español</a> · English</p>
       <div class="card">
@@ -117,5 +133,34 @@
       </div>
       <footer class="links"><a href="legal-notice.html">Legal notice</a> · <a href="privacy.html">Privacy</a> · <a href="cookies-en.html">Cookies</a> · <a href="#configure-cookies">Cookie settings</a></footer>
     </main>
+  
+<script>
+  (function () {
+    function configure(e) {
+      if (e) e.preventDefault();
+      location.href = "/?configure-cookies=1";
+    }
+    document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+      a.addEventListener("click", configure);
+    });
+    if (location.hash === "#configure-cookies") configure();
+
+    function leave() {
+      location.href = "/";
+    }
+    var closer = document.getElementById("leave-page");
+    if (closer) closer.addEventListener("click", leave);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") leave();
+    });
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest("a, button, .card, footer")) return;
+      leave();
+    });
+  })();
+</script>
+
   </body>
 </html>

@@ -5,8 +5,10 @@
  * son las partículas de `StreamParticles`.
  */
 import {
+  CLASSIC_MODEL,
   hash32,
   outlinePoints,
+  radiusAt,
   type ContentPalette,
   type HourglassProfile,
   type SandSimulation,
@@ -39,14 +41,21 @@ export function layoutFor(width: number, height: number, profile: HourglassProfi
   };
 }
 
-/** ¿El punto cae en un flanco del reloj (para girarlo) y no en el centro? */
-export function hitGlassSide(layout: GlassLayout, x: number, y: number): boolean {
-  const dx = x - layout.cx;
-  const dy = y - layout.cy;
-  if (Math.abs(dy) > layout.halfH * 0.98) return false;
-  const adx = Math.abs(dx);
-  if (adx > layout.halfW * 1.12) return false;
-  return adx >= layout.halfW * 0.36;
+/**
+ * Toda la silueta del vidrio, no solo el centro ni los flancos.
+ * El punto está en píxeles CSS del lienzo.
+ */
+export function hitVessel(
+  layout: GlassLayout,
+  x: number,
+  y: number,
+  profile: HourglassProfile = CLASSIC_MODEL.profile,
+): boolean {
+  const nx = (x - layout.cx) / layout.halfW;
+  const ny = (y - layout.cy) / layout.halfH;
+  if (!Number.isFinite(nx) || !Number.isFinite(ny)) return false;
+  if (Math.abs(ny) > 1.03) return false;
+  return Math.abs(nx) <= radiusAt(profile, ny) + 0.035;
 }
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
@@ -116,7 +125,7 @@ function trace(
   layout: GlassLayout,
   inner: boolean,
 ) {
-  const pts = outlinePoints(profile, 140, inner);
+  const pts = outlinePoints(profile, 240, inner);
   ctx.beginPath();
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
@@ -147,6 +156,31 @@ export interface DrawScene {
   readonly rotation: number;
 }
 
+function oval(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) {
+  ctx.beginPath();
+  ctx.ellipse(x, y, Math.max(1, rx), Math.max(1, ry), 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** Sombra quieta, como la del móvil con el teléfono de pie: luz arriba a la izquierda. */
+function drawTableShadow(ctx: CanvasRenderingContext2D, layout: GlassLayout, dark: boolean) {
+  const { cx, cy, halfW, halfH } = layout;
+  const baseY = cy + halfH * 0.985;
+  const shift = halfW * 0.16;
+  ctx.save();
+  ctx.filter = 'blur(22px)';
+  ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.38)' : 'rgba(84, 64, 44, 0.28)';
+  oval(ctx, cx + shift, baseY, halfW * 0.92, halfW * 0.15);
+  ctx.filter = 'blur(5px)';
+  ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.62)' : 'rgba(70, 52, 36, 0.55)';
+  oval(ctx, cx + shift * 0.25, baseY + halfW * 0.01, halfW * 0.34, halfW * 0.04);
+  ctx.filter = 'blur(9px)';
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = dark ? 'rgba(255, 220, 170, 0.12)' : 'rgba(255, 246, 228, 0.38)';
+  oval(ctx, cx + halfW * 0.38, baseY, halfW * 0.3, halfW * 0.055);
+  ctx.restore();
+}
+
 export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): void {
   const { layout, scheme, profile } = scene;
   const { cx, cy, halfW, halfH } = layout;
@@ -154,19 +188,10 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   const w = ctx.canvas.clientWidth;
   const h = ctx.canvas.clientHeight;
   ctx.clearRect(0, 0, w, h);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
 
-  ctx.save();
-  ctx.filter = 'blur(16px)';
-  ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(84, 64, 44, 0.22)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + halfH * 0.97, halfW * 0.78, Math.max(8, halfW * 0.11), 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.filter = 'none';
-  ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(70, 52, 36, 0.18)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + halfH * 0.95, halfW * 0.42, Math.max(4, halfW * 0.045), 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  drawTableShadow(ctx, layout, dark);
 
   ctx.save();
   ctx.translate(cx, cy);
@@ -176,18 +201,25 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   trace(ctx, profile, layout, false);
   ctx.save();
   ctx.clip();
-  const glass = ctx.createLinearGradient(cx, cy - halfH, cx, cy + halfH);
+  const glass = ctx.createLinearGradient(cx - halfW, cy - halfH, cx + halfW * 0.2, cy + halfH);
   if (dark) {
-    glass.addColorStop(0, 'rgba(255, 236, 214, 0.10)');
-    glass.addColorStop(0.45, 'rgba(255, 236, 214, 0.03)');
-    glass.addColorStop(1, 'rgba(255, 236, 214, 0.07)');
+    glass.addColorStop(0, 'rgba(255, 236, 214, 0.07)');
+    glass.addColorStop(0.42, 'rgba(255, 236, 214, 0.015)');
+    glass.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
   } else {
-    glass.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
-    glass.addColorStop(0.42, 'rgba(255, 252, 247, 0.08)');
-    glass.addColorStop(1, 'rgba(255, 250, 242, 0.22)');
+    glass.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+    glass.addColorStop(0.4, 'rgba(255, 252, 247, 0.04)');
+    glass.addColorStop(1, 'rgba(120, 96, 72, 0.06)');
   }
   ctx.fillStyle = glass;
   ctx.fillRect(cx - halfW, cy - halfH, halfW * 2, halfH * 2);
+
+  // Banda de absorción en el canto: el vidrio se ve más grueso ahí.
+  ctx.save();
+  ctx.lineWidth = Math.max(7, halfW * 0.07);
+  ctx.strokeStyle = dark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(92, 78, 64, 0.14)';
+  trace(ctx, profile, layout, false);
+  ctx.stroke();
   ctx.restore();
 
   trace(ctx, profile, layout, true);
@@ -195,13 +227,13 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   ctx.clip();
   const left = cx - halfW;
   const top = cy - halfH;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
+  // Granos nítidos: la rejilla ya va a ~2 px, suavizarla la deja borrosa.
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(scene.sand, left, top, halfW * 2, halfH * 2);
 
   ctx.save();
   ctx.globalCompositeOperation = 'source-atop';
-  ctx.globalAlpha = dark ? 0.28 : 0.34;
+  ctx.globalAlpha = dark ? 0.16 : 0.2;
   const pattern = ctx.createPattern(scene.noise, 'repeat');
   if (pattern) {
     ctx.fillStyle = pattern;
@@ -212,6 +244,7 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   const cellW = (halfW * 2) / scene.sim.cols;
   const cellH = (halfH * 2) / scene.sim.rows;
   const count = scene.particles.count;
+  ctx.imageSmoothingEnabled = true;
   for (let i = 0; i < count; i++) {
     const px = scene.particles.x[i] ?? 0;
     const py = scene.particles.y[i] ?? 0;
@@ -219,68 +252,67 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
     const tone = scene.particles.tone[i] ?? 1;
     const x = left + (px / scene.sim.cols) * halfW * 2;
     const y = top + (py / scene.sim.rows) * halfH * 2;
-    const radius = Math.max(0.7, size * cellW * 1.35);
+    const radius = Math.max(0.6, size * cellW * 1.15);
     const l = tone * 3;
     ctx.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
     ctx.beginPath();
-    ctx.ellipse(x, y, radius, Math.max(radius, size * cellH), 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
 
-  ctx.lineWidth = Math.max(6, halfW * 0.09);
-  ctx.strokeStyle = dark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(90, 70, 50, 0.16)';
+  // Canto interior, fino.
+  ctx.lineWidth = Math.max(1, halfW * 0.012);
+  ctx.strokeStyle = dark ? 'rgba(255, 238, 214, 0.28)' : 'rgba(255, 252, 246, 0.72)';
   trace(ctx, profile, layout, true);
   ctx.stroke();
   ctx.restore();
 
-  const rim = ctx.createLinearGradient(cx - halfW, cy - halfH, cx + halfW, cy + halfH);
-  if (dark) {
-    rim.addColorStop(0, 'rgba(255, 236, 214, 0.55)');
-    rim.addColorStop(0.45, 'rgba(255, 236, 214, 0.14)');
-    rim.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
-  } else {
-    rim.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-    rim.addColorStop(0.4, 'rgba(255, 252, 246, 0.35)');
-    rim.addColorStop(1, 'rgba(120, 96, 72, 0.28)');
-  }
-  ctx.lineWidth = Math.max(1.6, halfW * 0.028);
-  ctx.strokeStyle = rim;
-  ctx.lineJoin = 'round';
+  // Contorno exterior: línea oscura y un filo de luz a la izquierda.
+  ctx.lineWidth = Math.max(1.15, halfW * 0.014);
+  ctx.strokeStyle = dark ? 'rgba(0, 0, 0, 0.55)' : 'rgba(92, 78, 64, 0.42)';
   trace(ctx, profile, layout, false);
   ctx.stroke();
+  ctx.lineWidth = Math.max(0.8, halfW * 0.007);
+  ctx.strokeStyle = dark ? 'rgba(255, 238, 214, 0.42)' : 'rgba(255, 255, 255, 0.88)';
+  ctx.save();
+  ctx.translate(-0.6, -0.4);
+  trace(ctx, profile, layout, false);
+  ctx.stroke();
+  ctx.restore();
 
   ctx.save();
   trace(ctx, profile, layout, false);
   ctx.clip();
   ctx.globalCompositeOperation = 'screen';
   const shine = ctx.createRadialGradient(
-    cx - halfW * 0.32,
-    cy - halfH * 0.52,
-    2,
-    cx - halfW * 0.05,
-    cy - halfH * 0.42,
-    halfW * 0.62,
+    cx - halfW * 0.42,
+    cy - halfH * 0.62,
+    halfW * 0.02,
+    cx - halfW * 0.2,
+    cy - halfH * 0.48,
+    halfW * 0.48,
   );
-  shine.addColorStop(0, dark ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.7)');
-  shine.addColorStop(0.45, 'rgba(255,255,255,0.05)');
+  shine.addColorStop(0, dark ? 'rgba(255,255,255,0.34)' : 'rgba(255,255,255,0.85)');
+  shine.addColorStop(0.35, dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.18)');
   shine.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = shine;
   ctx.beginPath();
-  ctx.ellipse(cx - halfW * 0.12, cy - halfH * 0.46, halfW * 0.46, halfH * 0.22, -0.5, 0, Math.PI * 2);
+  ctx.ellipse(cx - halfW * 0.28, cy - halfH * 0.55, halfW * 0.28, halfH * 0.16, -0.7, 0, Math.PI * 2);
   ctx.fill();
   const lower = ctx.createRadialGradient(
-    cx - halfW * 0.28,
-    cy + halfH * 0.28,
-    2,
-    cx,
-    cy + halfH * 0.42,
-    halfW * 0.5,
+    cx - halfW * 0.36,
+    cy + halfH * 0.22,
+    1,
+    cx - halfW * 0.1,
+    cy + halfH * 0.4,
+    halfW * 0.42,
   );
-  lower.addColorStop(0, dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.4)');
+  lower.addColorStop(0, dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.45)');
   lower.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = lower;
   ctx.beginPath();
-  ctx.ellipse(cx - halfW * 0.08, cy + halfH * 0.38, halfW * 0.38, halfH * 0.16, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(cx - halfW * 0.22, cy + halfH * 0.32, halfW * 0.24, halfH * 0.12, -0.55, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 

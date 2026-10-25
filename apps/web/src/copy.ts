@@ -7,7 +7,9 @@ export function hintFor(lang: Language, status: TimerStatus, cyclesFinished: boo
     return es ? 'clic para empezar · rueda para el tiempo' : 'click to start · scroll to set the time';
   }
   if (status === 'paused') {
-    return es ? 'clic para seguir · doble clic para reiniciar' : 'click to resume · double-click to restart';
+    return es
+      ? 'clic para seguir · arrastra el reloj o doble clic para voltearlo'
+      : 'click to resume · drag the hourglass or double-click to flip';
   }
   if (status === 'finished') {
     return cyclesFinished
