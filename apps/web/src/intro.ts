@@ -5,6 +5,7 @@
  *   0–900 ms   una vuelta completa, ease-in-out
  *   900–1250   vuelve a su sitio y a su tamaño; vuelve la sombra
  *   950–1350   la hora, el menú y el pie se difuminan hasta verse
+ *   1350–2250  el botón de menú crece un poco, una sola vez, y vuelve
  *
  * Solo en la primera carga de esta pestaña. Con «reducir movimiento»
  * no hay giro ni desplazamiento: un fundido corto.
@@ -21,13 +22,15 @@ export const INTRO = {
   chromeFade: 400,
   startScale: 1.12,
   reducedFade: 280,
+  /** Un solo aviso en el botón de menú, al terminar el fundido. */
+  pulse: 900,
 } as const;
 
 /** ¿Ya terminó en esta pestaña? Un remontaje (Strict Mode) no la da por hecha. */
 let introPlayed = false;
 
 type Mode = 'off' | 'full' | 'reduced';
-type Phase = 'hide' | 'show' | 'done';
+type Phase = 'hide' | 'show' | 'pulse' | 'done';
 
 function clamp01(t: number): number {
   return Math.min(1, Math.max(0, t));
@@ -86,6 +89,7 @@ export function usePageIntro(
     let raf = 0;
     let showTimer = 0;
     let doneTimer = 0;
+    let pulseTimer = 0;
     let finished = false;
 
     const restParams = () => {
@@ -160,7 +164,10 @@ export function usePageIntro(
           introPlayed = true;
           restParams();
           clearVars();
-          setPhase('done');
+          setPhase('pulse');
+          pulseTimer = window.setTimeout(() => {
+            if (alive) setPhase('done');
+          }, INTRO.pulse);
           return;
         }
         raf = requestAnimationFrame(step);
@@ -173,6 +180,7 @@ export function usePageIntro(
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      window.clearTimeout(pulseTimer);
       if (!finished) {
         clearVars();
         restParams();
@@ -181,6 +189,7 @@ export function usePageIntro(
   }, [mode, appRef, paramsRef, handleRef]);
 
   if (phase === 'done') return { className: '', blocksInput: false };
+  if (phase === 'pulse') return { className: 'intro-menu-pulse', blocksInput: false };
   const reduced = mode === 'reduced' ? ' intro-reduced' : '';
   const hidden = phase === 'hide' ? ' intro-hide-chrome' : '';
   return { className: `intro-play${hidden}${reduced}`, blocksInput: true };

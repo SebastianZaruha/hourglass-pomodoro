@@ -785,6 +785,29 @@ a {
   transition-duration: 280ms;
 }
 
+.app.intro-menu-pulse .menu-btn {
+  transform-origin: center;
+  animation: menu-once 900ms cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+@keyframes menu-once {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(70, 52, 36, 0));
+  }
+  42% {
+    transform: scale(1.12);
+    opacity: 1;
+    filter: drop-shadow(0 4px 10px rgba(70, 52, 36, 0.38));
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(70, 52, 36, 0));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet,
   .readout,
@@ -799,6 +822,10 @@ a {
     transition:
       opacity 280ms ease,
       filter 280ms ease;
+  }
+
+  .app.intro-menu-pulse .menu-btn {
+    animation: none;
   }
 
   .sheet {
