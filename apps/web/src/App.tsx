@@ -157,6 +157,7 @@ function Timer({
     flipToken: 0,
     flipFrom: 0,
     flipBusy: false,
+    shakeToken: 0,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
@@ -339,7 +340,7 @@ function Timer({
 
   const label = useMemo(() => {
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
-    if (view.isCycle && view.status !== 'idle') return t.phaseLabel(view.kind, view.round, view.rounds);
+    if (view.isCycle) return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
   }, [t, view]);
   const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished');
@@ -353,7 +354,8 @@ function Timer({
         const phase = view.isCycle ? `${t.phaseSpoken(view.kind, view.round, view.rounds)}. ` : '';
         return `${phase}${t.remaining(duration)}`;
       }
-      return t.readyToStart(t.duration(view.durationMs));
+      const ready = t.readyToStart(t.duration(view.durationMs));
+      return view.isCycle ? `${t.phaseSpoken(view.kind, view.round, view.rounds)}. ${ready}` : ready;
     },
     [t, view],
   );

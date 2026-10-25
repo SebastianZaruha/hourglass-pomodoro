@@ -226,13 +226,16 @@ se maneja con el ratón:
 | **Doble clic**                | Voltea 180° y reinicia la cuenta                            |
 | **Rueda**                     | Más o menos tiempo (solo si no está en marcha)              |
 | **Arrastrar el reloj**        | Gira el vidrio; si el giro es claro, voltea 180° y reinicia |
+| **Pasar el ratón rápido**     | El vidrio y la arena se agitan un momento, juntos           |
 | Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto           |
 
 En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
 derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para
 dejarle sitio. En una ventana alta el reloj se queda grande y el panel es una tarjeta al
 pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: primero hay que
-seguir. El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
+seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
+no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado, como los ciclos.
+El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
 esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
 flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
 español/inglés/automático. Al pausar, «Pausa» queda en el centro de la pantalla y el resto

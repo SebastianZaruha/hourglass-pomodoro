@@ -1,13 +1,16 @@
 import {
   CYCLE_LIMITS,
   CYCLE_PRESETS,
+  DURATION_STEPS_MIN,
   MINUTE_MS,
   activeCycleConfig,
   languageName,
   languageSpoken,
+  nearestStepIndex,
   nextInCycle,
   stepMinutes,
   stepRounds,
+  stepToDuration,
   themeName,
   themeSpoken,
   LANGUAGE_CYCLE,
@@ -16,6 +19,7 @@ import {
   type Messages,
   type Settings,
 } from '@reloj/core';
+import { useEffect, useState } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
@@ -37,6 +41,13 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
+  const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
+  const [singleCustom, setSingleCustom] = useState(() => !onPreset);
+  const customOn = singleCustom || !onPreset;
+
+  useEffect(() => {
+    if (!onPreset) setSingleCustom(true);
+  }, [onPreset]);
 
   const chooseCustom = () => {
     const seed = settings.cyclePreset === 'custom' ? settings.customCycle : activeCycleConfig(settings);
@@ -169,21 +180,54 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           ) : null}
         </>
       ) : (
-        <div className="chip-row" role="radiogroup" aria-label={t.quickTimes}>
-          {QUICK_TIMES_MIN.map((min) => (
+        <>
+          <div className="chip-row" role="radiogroup" aria-label={t.quickTimes}>
+            {QUICK_TIMES_MIN.map((min) => (
+              <button
+                key={min}
+                type="button"
+                role="radio"
+                aria-checked={!customOn && lastMin === min}
+                className={!customOn && lastMin === min ? 'chip chip-on' : 'chip'}
+                aria-label={t.minutes(min)}
+                onClick={() => {
+                  setSingleCustom(false);
+                  onChange({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
+                }}
+              >
+                {min}
+              </button>
+            ))}
             <button
-              key={min}
               type="button"
               role="radio"
-              aria-checked={lastMin === min}
-              className={lastMin === min ? 'chip chip-on' : 'chip'}
-              aria-label={t.minutes(min)}
-              onClick={() => onChange({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS })}
+              aria-checked={customOn}
+              className={customOn ? 'chip chip-on' : 'chip'}
+              onClick={() => setSingleCustom(true)}
             >
-              {min}
+              {t.custom}
             </button>
-          ))}
-        </div>
+          </div>
+          {customOn ? (
+            <div className="stepper-row">
+              <Stepper
+                label={t.session}
+                value={`${DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)]} min`}
+                spoken={t.minutes(DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)] ?? lastMin)}
+                decLabel={t.less}
+                incLabel={t.more}
+                canDec={nearestStepIndex(settings.lastDurationMs) > 0}
+                canInc={nearestStepIndex(settings.lastDurationMs) < DURATION_STEPS_MIN.length - 1}
+                onStep={(d) =>
+                  onChange((current) => ({
+                    sessionMode: 'single',
+                    lastDurationMs: stepToDuration(nearestStepIndex(current.lastDurationMs) + d),
+                  }))
+                }
+              />
+            </div>
+          ) : null}
+        </>
       )}
 
       <div className="pref-row">
