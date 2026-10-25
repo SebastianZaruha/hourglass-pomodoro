@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
+import { useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
 import { hitVessel } from './draw';
 import { useHourglass, type HourglassHandle, type HourglassParams } from './useEngine';
@@ -18,37 +18,7 @@ interface Props {
 export function HourglassView({ paramsRef, handleRef, suppressClickRef, onFlip }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drag = useRef({ on: false, startAng: 0, startRot: 0, moved: false });
-  const hover = useRef({ x: 0, y: 0, t: 0, shook: 0 });
   useHourglass(canvasRef, paramsRef, handleRef);
-
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (drag.current.on || e.buttons !== 0) return;
-      const canvas = canvasRef.current;
-      const layout = handleRef.current?.layoutCss();
-      if (!canvas || !layout) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const now = performance.now();
-      const prev = hover.current;
-      const dt = now - prev.t;
-      const dist = Math.hypot(x - prev.x, y - prev.y);
-      prev.x = x;
-      prev.y = y;
-      prev.t = now;
-      if (dt <= 0 || dt > 160) return;
-      if (paramsRef.current.flipBusy || paramsRef.current.reduceMotion) return;
-      if (!hitVessel(layout, x, y)) return;
-      const minSpeed = Math.max(0.3, layout.halfW * 0.002);
-      if (dist / dt < minSpeed || now - prev.shook < 720) return;
-      prev.shook = now;
-      paramsRef.current.shakeToken += 1;
-      handleRef.current?.wake();
-    };
-    window.addEventListener('pointermove', onMove);
-    return () => window.removeEventListener('pointermove', onMove);
-  }, [handleRef, paramsRef]);
 
   const localPoint = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();

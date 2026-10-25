@@ -226,7 +226,6 @@ se maneja con el ratón:
 | **Doble clic**                | Voltea 180° y reinicia la cuenta                            |
 | **Rueda**                     | Más o menos tiempo (solo si no está en marcha)              |
 | **Arrastrar el reloj**        | Gira el vidrio; si el giro es claro, voltea 180° y reinicia |
-| **Pasar el ratón rápido**     | El vidrio y la arena se agitan un momento, juntos           |
 | Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto           |
 
 En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la

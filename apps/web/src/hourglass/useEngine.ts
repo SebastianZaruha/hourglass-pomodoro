@@ -26,7 +26,6 @@ import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, 
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
-const SHAKE_MS = 460;
 /** Embudo del bulbo de arriba. Más bajo que 0,25: la V queda menos honda. */
 const TOP_CRATER = 0.16;
 const STEPS_PER_FRAME = 2;
@@ -44,8 +43,6 @@ export interface HourglassParams {
   flipFrom: number;
   /** El motor lo pone a true mientras el giro de 180° no ha terminado. */
   flipBusy: boolean;
-  /** Sube para un breve temblor del vidrio y la arena, juntos. */
-  shakeToken: number;
 }
 
 export interface HourglassHandle {
@@ -124,8 +121,6 @@ export function useHourglass(
       flipFrom: 0,
       flipDir: 1,
       flipHold: false,
-      shakeToken: paramsRef.current.shakeToken,
-      shakeStart: null as number | null,
     };
 
     const paintSand = () => {
@@ -153,12 +148,6 @@ export function useHourglass(
         scheme = p.scheme;
         lut = buildPaletteLut(scheme === 'dark' ? SAND.palette.dark : SAND.palette.light);
         loop.paint = true;
-      }
-
-      if (p.shakeToken !== loop.shakeToken) {
-        loop.shakeToken = p.shakeToken;
-        if (!p.reduceMotion && !p.flipBusy && !p.gestureActive && loop.flipStart === null)
-          loop.shakeStart = now;
       }
 
       if (p.flipToken !== loop.flipToken) {
@@ -294,14 +283,7 @@ export function useHourglass(
         loop.paint = false;
       }
 
-      let shake = 0;
-      if (loop.shakeStart !== null) {
-        const u = Math.min(1, (now - loop.shakeStart) / SHAKE_MS);
-        if (u >= 1) loop.shakeStart = null;
-        else shake = Math.sin(u * Math.PI * 4) * (1 - u) * 0.095;
-      }
-
-      const rotation = (loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle) + shake;
+      const rotation = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       drawHourglass(ctx, {
         profile,
         layout,
@@ -321,7 +303,6 @@ export function useHourglass(
         turning ||
         p.flipBusy ||
         p.gestureActive ||
-        loop.shakeStart !== null ||
         Math.abs(p.gestureAngle) > 0.0008;
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;

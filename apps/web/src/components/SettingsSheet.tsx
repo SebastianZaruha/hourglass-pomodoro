@@ -209,7 +209,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
             </button>
           </div>
           {customOn ? (
-            <div className="stepper-row">
+            <div className="stepper-row stepper-solo">
               <Stepper
                 label={t.session}
                 value={`${DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)]} min`}

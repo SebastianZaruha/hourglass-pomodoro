@@ -157,7 +157,6 @@ function Timer({
     flipToken: 0,
     flipFrom: 0,
     flipBusy: false,
-    shakeToken: 0,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
@@ -330,6 +329,7 @@ function Timer({
     }, 260);
   };
   const onStageDoubleClick = () => {
+    window.getSelection()?.removeAllRanges();
     if (menu) return;
     if (clickTimer.current !== null) {
       window.clearTimeout(clickTimer.current);
@@ -377,6 +377,9 @@ function Timer({
           tabIndex={0}
           aria-label={action}
           aria-keyshortcuts="Space"
+          onMouseDown={(e) => {
+            if (e.detail > 1) e.preventDefault();
+          }}
           onClick={onStageClick}
           onDoubleClick={onStageDoubleClick}
           onKeyDown={(e) => {
