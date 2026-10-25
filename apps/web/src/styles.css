@@ -725,11 +725,80 @@ a {
   border: 0;
 }
 
+.app.intro-play .glass-frame {
+  position: relative;
+  z-index: 3;
+}
+
+.app.intro-play:not(.intro-reduced) .glass-frame {
+  transform: translate3d(var(--intro-x, 0px), var(--intro-y, 0px), 0);
+  transform-origin: 50% 48%;
+}
+
+.app.intro-play:not(.intro-reduced) .glass-canvas {
+  opacity: var(--intro-glass, 0);
+}
+
+.app.intro-reduced .glass-canvas {
+  animation: intro-glass-in 280ms ease both;
+}
+
+@keyframes intro-glass-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.app.intro-play .readout,
+.app.intro-play .menu-btn,
+.app.intro-play .site-footer,
+.app.intro-play .banner {
+  filter: blur(0);
+  transition:
+    opacity 400ms ease,
+    filter 400ms ease,
+    transform 760ms cubic-bezier(0.45, 0.02, 0.12, 1);
+}
+
+.app.intro-play.intro-hide-chrome .readout,
+.app.intro-play.intro-hide-chrome .menu-btn,
+.app.intro-play.intro-hide-chrome .site-footer,
+.app.intro-play.intro-hide-chrome .banner {
+  opacity: 0;
+  filter: blur(12px);
+}
+
+.app.intro-play .stage,
+.app.intro-play .menu-btn,
+.app.intro-play .site-footer,
+.app.intro-play .banner {
+  pointer-events: none;
+}
+
+.app.intro-reduced.intro-play .readout,
+.app.intro-reduced.intro-play .menu-btn,
+.app.intro-reduced.intro-play .site-footer,
+.app.intro-reduced.intro-play .banner {
+  transition-duration: 280ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet,
   .readout,
   .stage {
     transition: none;
+  }
+
+  .app.intro-reduced.intro-play .readout,
+  .app.intro-reduced.intro-play .menu-btn,
+  .app.intro-reduced.intro-play .site-footer,
+  .app.intro-reduced.intro-play .banner {
+    transition:
+      opacity 280ms ease,
+      filter 280ms ease;
   }
 
   .sheet {

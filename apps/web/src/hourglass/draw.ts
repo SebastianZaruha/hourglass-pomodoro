@@ -152,8 +152,12 @@ export interface DrawScene {
   readonly sim: SandSimulation;
   readonly particles: StreamParticles;
   readonly lut: Uint8ClampedArray;
-  /** Giro visual (cambio de fase + gesto). La arena va pegada al vidrio. */
+  /** Giro visual (cambio de fase + gesto + introducción). La arena va pegada al vidrio. */
   readonly rotation: number;
+  /** Escala alrededor del centro. 1 en reposo. */
+  readonly poseScale: number;
+  /** 0 esconde la sombra del suelo (el vidrio está en el aire). 1 es la sombra normal. */
+  readonly shadow: number;
 }
 
 function oval(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) {
@@ -202,10 +206,20 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  drawTableShadow(ctx, layout, dark, floorShadowAmount(scene.rotation));
+  const poseScale = scene.poseScale;
+  const shadowAmount = floorShadowAmount(scene.rotation) * scene.shadow;
+  if (poseScale !== 1) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(poseScale, poseScale);
+    ctx.translate(-cx, -cy);
+  }
+  drawTableShadow(ctx, layout, dark, shadowAmount);
+  if (poseScale !== 1) ctx.restore();
 
   ctx.save();
   ctx.translate(cx, cy);
+  if (poseScale !== 1) ctx.scale(poseScale, poseScale);
   ctx.rotate(scene.rotation);
   ctx.translate(-cx, -cy);
 

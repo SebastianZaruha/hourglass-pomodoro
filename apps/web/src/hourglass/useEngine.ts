@@ -31,6 +31,22 @@ const TOP_CRATER = 0.16;
 const STEPS_PER_FRAME = 2;
 const SAND_CELL_PX = 2.15;
 
+/** Encoge el vidrio lo justo para que, de canto, siga cabiendo en el lienzo. */
+function introPoseScale(
+  base: number,
+  layout: { halfW: number; halfH: number },
+  angle: number,
+  cssW: number,
+  cssH: number,
+): number {
+  const across = Math.abs(Math.sin(angle));
+  const along = Math.abs(Math.cos(angle));
+  const span = (layout.halfH * 2 * across + layout.halfW * 2 * along) * base;
+  const room = Math.min(cssW, cssH) * 0.92;
+  if (span <= room || span < 1) return base;
+  return (base * room) / span;
+}
+
 export interface HourglassParams {
   getSnapshot: () => SessionSnapshot;
   scheme: Scheme;
@@ -43,6 +59,11 @@ export interface HourglassParams {
   flipFrom: number;
   /** El motor lo pone a true mientras el giro de 180° no ha terminado. */
   flipBusy: boolean;
+  /** Introducción: el vidrio gira en el centro y luego se asienta. */
+  introActive: boolean;
+  introAngle: number;
+  introScale: number;
+  introShadow: number;
 }
 
 export interface HourglassHandle {
@@ -283,7 +304,9 @@ export function useHourglass(
         loop.paint = false;
       }
 
-      const rotation = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
+      const spinAngle = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
+      const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
+      const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
       drawHourglass(ctx, {
         profile,
         layout,
@@ -294,6 +317,8 @@ export function useHourglass(
         particles,
         lut,
         rotation,
+        poseScale,
+        shadow: p.introActive ? p.introShadow : 1,
       });
 
       const keep =
@@ -303,6 +328,7 @@ export function useHourglass(
         turning ||
         p.flipBusy ||
         p.gestureActive ||
+        p.introActive ||
         Math.abs(p.gestureAngle) > 0.0008;
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;

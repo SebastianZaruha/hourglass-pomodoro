@@ -24,6 +24,7 @@ import { hintFor } from './copy';
 import { readConsent, writeConsent, type ConsentChoice } from './cookies';
 import { HourglassView } from './hourglass/HourglassView';
 import type { HourglassHandle, HourglassParams } from './hourglass/useEngine';
+import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
 import { useSession } from './useSession';
@@ -58,15 +59,17 @@ function useReducedMotion() {
   return reduce;
 }
 
+function isWideLayout(): boolean {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  return w >= rem * 46 && w > h * 1.05;
+}
+
 function useWideLayout() {
-  const [wide, setWide] = useState(false);
+  const [wide, setWide] = useState(isWideLayout);
   useEffect(() => {
-    const apply = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      setWide(w >= rem * 46 && w > h * 1.05);
-    };
+    const apply = () => setWide(isWideLayout());
     apply();
     window.addEventListener('resize', apply);
     return () => window.removeEventListener('resize', apply);
@@ -161,6 +164,10 @@ function Timer({
     flipToken: 0,
     flipFrom: 0,
     flipBusy: false,
+    introActive: false,
+    introAngle: 0,
+    introScale: 1,
+    introShadow: 1,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
@@ -210,6 +217,9 @@ function Timer({
   toggleRef.current = doToggle;
 
   const appRef = useRef<HTMLDivElement>(null);
+  const intro = usePageIntro(appRef, paramsRef, handleRef);
+  const introRef = useRef(false);
+  introRef.current = intro.blocksInput;
   const sideRef = useRef<HTMLDivElement>(null);
   const paused = view.status === 'paused';
 
@@ -278,7 +288,7 @@ function Timer({
         if (menu) setMenu(false);
         return;
       }
-      if (legalRef.current) return;
+      if (legalRef.current || introRef.current) return;
       if (e.code !== 'Space' || e.repeat) return;
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest('button, a, input, textarea, select')) return;
@@ -296,7 +306,7 @@ function Timer({
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (menu || state.timer.status === 'running') return;
+      if (introRef.current || menu || state.timer.status === 'running') return;
       let dy = e.deltaY;
       if (e.deltaMode === 1) dy *= 16;
       if (e.deltaMode === 2) dy *= 400;
@@ -325,7 +335,7 @@ function Timer({
 
   const clickTimer = useRef<number | null>(null);
   const onStageClick = () => {
-    if (menu) return;
+    if (introRef.current || menu) return;
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
       return;
@@ -342,7 +352,7 @@ function Timer({
   };
   const onStageDoubleClick = () => {
     window.getSelection()?.removeAllRanges();
-    if (menu) return;
+    if (introRef.current || menu) return;
     if (clickTimer.current !== null) {
       window.clearTimeout(clickTimer.current);
       clickTimer.current = null;
@@ -377,7 +387,7 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
@@ -395,6 +405,7 @@ function Timer({
           onClick={onStageClick}
           onDoubleClick={onStageDoubleClick}
           onKeyDown={(e) => {
+            if (introRef.current) return;
             if (e.key === 'Enter') {
               e.preventDefault();
               doToggle();
