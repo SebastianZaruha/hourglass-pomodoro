@@ -62,6 +62,12 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       aria-hidden={!open}
       aria-label={t.settings}
       inert={!open}
+      onMouseDown={(event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('input, textarea, [contenteditable="true"]')) return;
+        if (event.detail > 1) event.preventDefault();
+        window.getSelection()?.removeAllRanges();
+      }}
     >
       <div className="sheet-head">
         <h2>{t.settings}</h2>
