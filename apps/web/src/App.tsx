@@ -16,6 +16,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
 import { CookieBanner } from './components/CookieBanner';
+import { LegalOverlay } from './components/LegalOverlay';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
@@ -105,6 +106,9 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
+  const legalRef = useRef<{ href: string; title: string } | null>(null);
+  legalRef.current = legal;
   const [consentChoice, setConsentChoice] = useState<ConsentChoice | null>(
     () => readConsent()?.choice ?? null,
   );
@@ -263,10 +267,15 @@ function Timer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && menu) {
-        setMenu(false);
+      if (e.key === 'Escape') {
+        if (legalRef.current) {
+          setLegal(null);
+          return;
+        }
+        if (menu) setMenu(false);
         return;
       }
+      if (legalRef.current) return;
       if (e.code !== 'Space' || e.repeat) return;
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest('button, a, input, textarea, select')) return;
@@ -440,8 +449,25 @@ function Timer({
           onChange={update}
           onClose={() => setMenu(false)}
         />
-        <SiteFooter lang={lang} onCookies={() => setBannerOpen(true)} />
-        <CookieBanner open={bannerOpen} lang={lang} onChoose={chooseCookies} />
+        <SiteFooter
+          lang={lang}
+          onCookies={() => setBannerOpen(true)}
+          onOpenLegal={(href, title) => setLegal({ href, title })}
+        />
+        <CookieBanner
+          open={bannerOpen}
+          lang={lang}
+          onChoose={chooseCookies}
+          onOpenLegal={(href, title) => setLegal({ href, title })}
+        />
+        {legal ? (
+          <LegalOverlay
+            src={legal.href}
+            title={legal.title}
+            onClose={() => setLegal(null)}
+            onConfigure={() => setBannerOpen(true)}
+          />
+        ) : null}
       </div>
       {paused ? (
         <div className="pause-screen">
