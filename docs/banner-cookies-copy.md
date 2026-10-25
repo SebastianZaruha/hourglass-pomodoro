@@ -5,12 +5,12 @@ _Fuente: Abogado, 25 oct 2026. Para la futura implementación web._
 ## ES
 > Usamos cookies técnicas necesarias y, solo si aceptas, cookies de analítica de Google Analytics para saber cómo se usa la web. Vercel Web Analytics mide visitas sin cookies. Puedes cambiar tu elección cuando quieras en «Configurar cookies».
 
-Botones: **Aceptar** | **Rechazar** | **Más información** (→ `cookies.html`)
+Botones: **Aceptar** | **Rechazar** | **Configurar** (→ `cookies.html`)
 
 ## EN
 > We use strictly necessary cookies and, only if you accept, Google Analytics cookies to understand how the site is used. Vercel Web Analytics measures visits without cookies. You can change your choice at any time in “Cookie settings”.
 
-Buttons: **Accept** | **Reject** | **More info** (→ `cookies-en.html`)
+Buttons: **Accept** | **Reject** | **Configure** (→ `cookies-en.html`)
 
 ## Notas de implementación
 - **No cargar `gtag` / GA4 hasta que el usuario pulse Aceptar.**

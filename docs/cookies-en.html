@@ -51,6 +51,25 @@
         border: 1px solid var(--line);
         border-radius: 18px;
         padding: 2rem 1.75rem;
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        min-width: 36rem;
+        border-collapse: collapse;
+        margin: 0.4rem 0 1rem;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.65rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        font-weight: 500;
+        background: color-mix(in srgb, var(--fg) 6%, var(--card));
       }
       h1 {
         font-weight: 300;
@@ -124,8 +143,41 @@
           <li><strong>Vercel Web Analytics</strong>: does not use cookies; see the <a href="privacy.html">privacy policy</a>.</li>
         </ol>
 
+        <h2>Cookie and storage table</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Owner</th>
+              <th>Purpose</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Theme and language preferences (localStorage)</td>
+              <td>Hourglass Pomodoro (first-party)</td>
+              <td>Remember theme and language</td>
+              <td>Until you clear them in the browser</td>
+            </tr>
+            <tr>
+              <td>Cookie choice (localStorage or similar)</td>
+              <td>Hourglass Pomodoro (first-party)</td>
+              <td>Remember Accept / Reject</td>
+              <td>Up to about 12 months</td>
+            </tr>
+            <tr>
+              <td>_ga, _ga_*</td>
+              <td>Google Analytics 4</td>
+              <td>Visit analytics (only if you accept)</td>
+              <td>Up to 24 months (per Google’s settings)</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Vercel Web Analytics does not use cookies. Google’s privacy details: <a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">Google Privacy Policy</a>.</p>
+
         <h2>How to manage them</h2>
-        <p>In the banner you can choose <strong>Accept</strong>, <strong>Reject</strong> or <strong>More info</strong>. You can change your choice at any time via “<a href="#configure-cookies">Cookie settings</a>” in the footer. You can also manage or delete them in your browser settings.</p>
+        <p>In the banner you can choose <strong>Accept</strong>, <strong>Reject</strong> or <strong>Configure</strong>. You can change your choice at any time via “<a href="#configure-cookies">Cookie settings</a>” in the footer. You can also manage or delete them in your browser settings.</p>
 
         <h2>More detail</h2>
         <p>See the <a href="privacy.html">Privacy policy</a>, which explains your rights. You may also lodge a complaint with the Spanish DPA, AEPD (<a href="https://www.aepd.es">www.aepd.es</a>).</p>
