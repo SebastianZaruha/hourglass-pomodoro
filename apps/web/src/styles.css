@@ -125,6 +125,11 @@ a {
   transition: padding-bottom 620ms cubic-bezier(0.33, 0, 0.2, 1);
 }
 
+/* La tira de la app ocupa el hueco bajo la hora; la hora sube para no taparse. */
+.app.has-android-promo[data-layout='narrow'] .stage {
+  padding-bottom: calc(4.75rem + 4.75rem);
+}
+
 .app.menu-open .stage {
   cursor: default;
 }
@@ -343,7 +348,7 @@ a {
   right: clamp(0.75rem, 3.5vw, 1.25rem);
   bottom: max(0.85rem, env(safe-area-inset-bottom));
   width: auto;
-  max-height: min(40vh, calc(100vh - 18rem));
+  max-height: min(46vh, calc(100vh - 14rem));
   transform: translateY(calc(100% + 3rem));
 }
 
@@ -596,7 +601,10 @@ a {
 .stepper button:focus-visible,
 .site-footer a:focus-visible,
 .site-footer button:focus-visible,
-.menu-btn:focus-visible {
+.menu-btn:focus-visible,
+.app-promo-action:focus-visible,
+.app-promo-dismiss:focus-visible,
+.android-link:focus-visible {
   outline: 2px solid var(--menu);
   outline-offset: 2px;
 }
@@ -660,8 +668,140 @@ a {
   background: transparent;
 }
 
-.app.is-paused .site-footer {
+.app.is-paused .site-footer,
+.app.is-paused .app-promo {
   display: none;
+}
+
+.app-promo {
+  position: fixed;
+  z-index: 23;
+  left: clamp(0.7rem, 2.4vw, 1.15rem);
+  bottom: calc(2.65rem + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(28rem, calc(100% - 5.4rem));
+  padding: 0.45rem 0.35rem 0.45rem 0.75rem;
+  border-radius: 16px;
+  border: 1px solid var(--sheet-edge);
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  animation: app-promo-in 420ms ease both;
+}
+
+.app-promo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+
+.app-promo-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.app-promo-pitch {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.app-promo-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--pill-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-promo-dismiss {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.app-promo-dismiss:hover {
+  background: var(--track);
+  color: var(--ink);
+}
+
+@keyframes app-promo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 40rem) {
+  .app-promo {
+    bottom: calc(4.15rem + env(safe-area-inset-bottom));
+  }
+}
+
+.android-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--track);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.android-link-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.android-link-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.android-link-pitch {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.android-link-action {
+  flex: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .banner {
@@ -771,6 +911,11 @@ a {
   filter: blur(12px);
 }
 
+.app.intro-play .app-promo,
+.app.intro-menu-pulse .app-promo {
+  display: none;
+}
+
 .app.intro-play .stage,
 .app.intro-play .menu-btn,
 .app.intro-play .site-footer,
@@ -824,7 +969,8 @@ a {
       filter 280ms ease;
   }
 
-  .app.intro-menu-pulse .menu-btn {
+  .app.intro-menu-pulse .menu-btn,
+  .app-promo {
     animation: none;
   }
 

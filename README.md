@@ -235,10 +235,39 @@ pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: prim
 seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
 no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado: la barra se arrastra a izquierda o derecha por los mismos escalones, y − / + siguen un paso.
 El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
-esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
-flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
-español/inglés/automático. Al pausar, «Pausa» queda en el centro de la pantalla y el resto
-se desenfoca.
+esa opción, tres pastillas (tema, idioma y sonido) y, debajo, **App Android**. No hay
+vibración ni ventana flotante. El sonido nace apagado. El tema y el idioma pueden ser
+claro/oscuro/automático y español/inglés/automático. Al pausar, «Pausa» queda en el centro
+de la pantalla, el resto se desenfoca y se ocultan el pie legal y el aviso de la app.
+
+### Aviso de la app Android
+
+Al terminar la intro (el vidrio ya en su sitio y el pulso del menú acabado) sale una tira
+discreta: la app de Android y que la arena reacciona al mover la mano y al inclinar el
+móvil, con **Descargar**. Se cierra con × y no vuelve (`localStorage`, clave
+`hourglass-web/android-promo`). No es analítica ni forma parte del banner de cookies: si
+el banner está abierto, la tira espera. En **PAUSA** se oculta, igual que el pie. La misma
+descarga está en el menú (**App Android** / **Android app**), también después de cerrar el
+aviso.
+
+La URL vive en `apps/web/src/androidApp.ts` (`ANDROID_APP`). Hoy es la release
+[`v1.8.12`](https://github.com/SebastianZaruha/hourglass-pomodoro/releases/tag/v1.8.12),
+asset `hourglass-pomodoro-1.8.12.apk`:
+
+`https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk`
+
+Para publicar otro APK:
+
+1. En GitHub, crea o edita una release y adjunta el `.apk` como asset (no hace falta
+   subirlo al repositorio). El nombre puede llevar la versión.
+2. En `ANDROID_RELEASE` pon la etiqueta y el nombre exacto del archivo. `ANDROID_APP.url`
+   se arma solo con `releases/download/<etiqueta>/<archivo>`.
+3. Opcional: adjunta además una copia llamada `hourglass-pomodoro.apk` en cada release y
+   apunta `url` a `githubLatestApkUrl` (`releases/latest/download/hourglass-pomodoro.apk`).
+   Ese enlace sigue al último asset con ese nombre y no hay que tocar la web en cada versión.
+
+Para pasar a Play Store: `distribution: 'play-store'` y la URL de la ficha. El botón pasa
+a «Play Store» / «Google Play» sin cambiar el aviso ni el menú.
 
 La cuenta sigue aunque la pestaña esté detrás (usa la hora del sistema). Si el aviso del
 navegador está permitido y la pestaña no se ve, al cambiar de fase sale una notificación.

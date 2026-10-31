@@ -14,7 +14,9 @@ import {
 } from '@reloj/core';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
 import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
+import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
 import { SettingsSheet } from './components/SettingsSheet';
@@ -109,6 +111,7 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const legalRef = useRef<{ href: string; title: string } | null>(null);
   legalRef.current = legal;
@@ -155,6 +158,11 @@ function Timer({
     writeConsent(choice);
     setConsentChoice(choice);
     setBannerOpen(false);
+  };
+
+  const dismissAndroidPromo = () => {
+    writeAndroidPromoDismissed();
+    setPromoDismissed(true);
   };
 
   const paramsRef = useRef<HourglassParams>({
@@ -385,11 +393,18 @@ function Timer({
   );
 
   const action = view.status === 'running' ? t.pause : view.status === 'paused' ? t.notifResume : t.start;
+  const showAndroidPromo = androidPromoOpen({
+    settled: intro.settled,
+    dismissed: promoDismissed,
+    bannerOpen,
+    menuOpen: menu,
+    legalOpen: legal !== null,
+  });
 
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
@@ -462,6 +477,7 @@ function Timer({
         <SettingsSheet
           open={menu}
           settings={settings}
+          lang={lang}
           t={t}
           onChange={update}
           onClose={() => setMenu(false)}
@@ -471,6 +487,7 @@ function Timer({
           onCookies={() => setBannerOpen(true)}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />
+        {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={dismissAndroidPromo} /> : null}
         <CookieBanner
           open={bannerOpen}
           lang={lang}

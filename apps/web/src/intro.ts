@@ -75,7 +75,7 @@ export function usePageIntro(
   appRef: RefObject<HTMLElement | null>,
   paramsRef: RefObject<HourglassParams>,
   handleRef: RefObject<HourglassHandle | null>,
-): { readonly className: string; readonly blocksInput: boolean } {
+): { readonly className: string; readonly blocksInput: boolean; readonly settled: boolean } {
   const [mode] = useState<Mode>(() => {
     if (introPlayed) return 'off';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -188,9 +188,12 @@ export function usePageIntro(
     };
   }, [mode, appRef, paramsRef, handleRef]);
 
-  if (phase === 'done') return { className: '', blocksInput: false };
-  if (phase === 'pulse') return { className: 'intro-menu-pulse', blocksInput: false };
+  // `settled` solo al terminar, pulso del menú incluido. El aviso de la
+  // app Android espera a esto para no salir antes de que el cromo esté listo.
+  const settled = phase === 'done';
+  if (phase === 'done') return { className: '', blocksInput: false, settled };
+  if (phase === 'pulse') return { className: 'intro-menu-pulse', blocksInput: false, settled };
   const reduced = mode === 'reduced' ? ' intro-reduced' : '';
   const hidden = phase === 'hide' ? ' intro-hide-chrome' : '';
-  return { className: `intro-play${hidden}${reduced}`, blocksInput: true };
+  return { className: `intro-play${hidden}${reduced}`, blocksInput: true, settled };
 }
