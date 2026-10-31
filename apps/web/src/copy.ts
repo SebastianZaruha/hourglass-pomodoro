@@ -1,5 +1,7 @@
 import type { Language, TimerStatus } from '@reloj/core';
 
+import type { AndroidDistribution } from './androidApp';
+
 /** Pistas de ratón (la app móvil habla de gestos táctiles; aquí no). */
 export function hintFor(lang: Language, status: TimerStatus, cyclesFinished: boolean): string | null {
   const es = lang === 'es';
@@ -8,8 +10,8 @@ export function hintFor(lang: Language, status: TimerStatus, cyclesFinished: boo
   }
   if (status === 'paused') {
     return es
-      ? 'clic para seguir · arrastra el reloj o doble clic para voltearlo'
-      : 'click to resume · drag the hourglass or double-click to flip';
+      ? 'clic para seguir · arrastra el reloj para voltearlo'
+      : 'click to resume · drag the hourglass to flip';
   }
   if (status === 'finished') {
     return cyclesFinished
@@ -53,6 +55,65 @@ export function legalHrefs(lang: Language) {
     privacy: '/privacy.html',
     cookies: '/cookies-en.html',
   };
+}
+
+export interface AndroidPromoCopy {
+  readonly title: string;
+  readonly pitch: string;
+  readonly action: string;
+  readonly actionHint: string;
+  readonly dismiss: string;
+}
+
+/** Aviso y fila del menú de la app Android. El botón depende de dónde se descarga. */
+export function androidPromoCopy(lang: Language, distribution: AndroidDistribution): AndroidPromoCopy {
+  const es = lang === 'es';
+  const action = androidActionLabel(lang, distribution);
+  const actionHint = androidActionHint(lang, distribution);
+  if (es) {
+    return {
+      title: 'App Android',
+      pitch: 'La arena reacciona al mover la mano y al inclinar el móvil.',
+      action,
+      actionHint,
+      dismiss: 'Cerrar el aviso de la app',
+    };
+  }
+  return {
+    title: 'Android app',
+    pitch: 'The sand reacts to your hand and to tilting the phone.',
+    action,
+    actionHint,
+    dismiss: 'Dismiss the app notice',
+  };
+}
+
+function androidActionLabel(lang: Language, distribution: AndroidDistribution): string {
+  switch (distribution) {
+    case 'play-store':
+      return lang === 'es' ? 'Play Store' : 'Google Play';
+    case 'github-release':
+      return lang === 'es' ? 'Descargar' : 'Download';
+    default: {
+      const unreachable: never = distribution;
+      return unreachable;
+    }
+  }
+}
+
+function androidActionHint(lang: Language, distribution: AndroidDistribution): string {
+  switch (distribution) {
+    case 'play-store':
+      return lang === 'es' ? 'Abrir en Google Play' : 'Open in Google Play';
+    case 'github-release':
+      return lang === 'es'
+        ? 'Descargar el APK desde GitHub Releases'
+        : 'Download the APK from GitHub Releases';
+    default: {
+      const unreachable: never = distribution;
+      return unreachable;
+    }
+  }
 }
 
 /** Texto del banner, tal como lo dejó el abogado (banner-cookies-copy.md). */

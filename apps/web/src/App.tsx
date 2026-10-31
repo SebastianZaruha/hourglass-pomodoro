@@ -12,9 +12,19 @@ import {
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 
+import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
 import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
+import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
 import { SettingsSheet } from './components/SettingsSheet';
@@ -27,6 +37,7 @@ import type { HourglassHandle, HourglassParams } from './hourglass/useEngine';
 import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
+import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
@@ -109,6 +120,7 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const legalRef = useRef<{ href: string; title: string } | null>(null);
   legalRef.current = legal;
@@ -155,6 +167,11 @@ function Timer({
     writeConsent(choice);
     setConsentChoice(choice);
     setBannerOpen(false);
+  };
+
+  const dismissAndroidPromo = () => {
+    writeAndroidPromoDismissed();
+    setPromoDismissed(true);
   };
 
   const paramsRef = useRef<HourglassParams>({
@@ -336,17 +353,29 @@ function Timer({
   }, [menu, settings, state.timer.status, update]);
 
   const clickTimer = useRef<number | null>(null);
-  const onStageClick = () => {
+  /** Esta pareja de clics empezó con PAUSA: el doble clic no reinicia. */
+  const resumeArmed = useRef(false);
+  const onStageClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (introRef.current || menu) return;
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
       return;
     }
-    if (clickTimer.current !== null) {
-      window.clearTimeout(clickTimer.current);
-      clickTimer.current = null;
+    const decision = decideStageClick({
+      status: view.status,
+      detail: event.detail,
+      pendingToggle: clickTimer.current !== null,
+      resumeArmed: resumeArmed.current,
+    });
+    if (decision.kind === 'ignore-extra') return;
+    if (decision.kind === 'cancel-pending') {
+      if (clickTimer.current !== null) {
+        window.clearTimeout(clickTimer.current);
+        clickTimer.current = null;
+      }
       return;
     }
+    resumeArmed.current = decision.armResume;
     clickTimer.current = window.setTimeout(() => {
       clickTimer.current = null;
       doToggle();
@@ -355,10 +384,12 @@ function Timer({
   const onStageDoubleClick = () => {
     window.getSelection()?.removeAllRanges();
     if (introRef.current || menu) return;
+    if (decideStageDoubleClick(view.status, resumeArmed.current) === 'ignore') return;
     if (clickTimer.current !== null) {
       window.clearTimeout(clickTimer.current);
       clickTimer.current = null;
     }
+    resumeArmed.current = false;
     doRestart();
   };
 
@@ -385,11 +416,18 @@ function Timer({
   );
 
   const action = view.status === 'running' ? t.pause : view.status === 'paused' ? t.notifResume : t.start;
+  const showAndroidPromo = androidPromoOpen({
+    settled: intro.settled,
+    dismissed: promoDismissed,
+    bannerOpen,
+    menuOpen: menu,
+    legalOpen: legal !== null,
+  });
 
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
@@ -462,6 +500,7 @@ function Timer({
         <SettingsSheet
           open={menu}
           settings={settings}
+          lang={lang}
           t={t}
           onChange={update}
           onClose={() => setMenu(false)}
@@ -471,6 +510,7 @@ function Timer({
           onCookies={() => setBannerOpen(true)}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />
+        {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={dismissAndroidPromo} /> : null}
         <CookieBanner
           open={bannerOpen}
           lang={lang}

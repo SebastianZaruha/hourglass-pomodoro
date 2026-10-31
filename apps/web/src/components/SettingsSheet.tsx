@@ -16,18 +16,22 @@ import {
   LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
+  type Language,
   type Messages,
   type Settings,
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { ANDROID_APP } from '../androidApp';
+import { androidPromoCopy } from '../copy';
+import { GlobeIcon, PhoneIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
 interface Props {
   readonly open: boolean;
   readonly settings: Settings;
+  readonly lang: Language;
   readonly t: Messages;
   readonly onChange: (
     patch:
@@ -37,7 +41,7 @@ interface Props {
   readonly onClose: () => void;
 }
 
-export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
+export function SettingsSheet({ open, settings, lang, t, onChange, onClose }: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
@@ -277,7 +281,28 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           <span>{t.sound}</span>
         </button>
       </div>
+      <AndroidAppLink lang={lang} />
     </div>
+  );
+}
+
+function AndroidAppLink({ lang }: { readonly lang: Language }) {
+  const copy = androidPromoCopy(lang, ANDROID_APP.distribution);
+  return (
+    <a
+      className="android-link"
+      href={ANDROID_APP.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={copy.actionHint}
+    >
+      <PhoneIcon />
+      <span className="android-link-text">
+        <span className="android-link-title">{copy.title}</span>
+        <span className="android-link-pitch">{copy.pitch}</span>
+      </span>
+      <span className="android-link-action">{copy.action}</span>
+    </a>
   );
 }
 

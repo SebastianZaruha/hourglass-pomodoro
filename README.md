@@ -221,13 +221,13 @@ ajustes, textos y simulación de arena). No cambia el móvil: el vidrio de Andro
 Skia. En el navegador el reloj se queda de pie (no hay acelerómetro), la arena cae igual, y
 se maneja con el ratón:
 
-| Acción                        | Efecto                                                            |
-| ----------------------------- | ----------------------------------------------------------------- |
-| **Clic** o **Espacio**        | Empezar, pausar o seguir                                          |
-| **Doble clic**                | Voltea 180° y reinicia la cuenta                                  |
-| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                    |
-| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia |
-| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                 |
+| Acción                        | Efecto                                                                |
+| ----------------------------- | --------------------------------------------------------------------- |
+| **Clic** o **Espacio**        | Empezar, pausar o seguir                                              |
+| **Doble clic**                | Voltea 180° y reinicia. En pausa no: un clic (aunque sea doble) sigue |
+| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                        |
+| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia     |
+| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                     |
 
 En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
 derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para
@@ -236,10 +236,40 @@ pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: prim
 seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
 no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado: la barra se arrastra a izquierda o derecha por los mismos escalones, y − / + siguen un paso.
 El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
-esa opción, y al fondo tres pastillas (tema, idioma y sonido). No hay vibración ni ventana
-flotante. El sonido nace apagado. El tema y el idioma pueden ser claro/oscuro/automático y
-español/inglés/automático. Al pausar, «Pausa» queda en el centro de la pantalla y el resto
-se desenfoca.
+esa opción, tres pastillas (tema, idioma y sonido) y, debajo, **App Android**. No hay
+vibración ni ventana flotante. El sonido nace apagado. El tema y el idioma pueden ser
+claro/oscuro/automático y español/inglés/automático. Al pausar, «Pausa» queda en el centro
+de la pantalla, el resto se desenfoca y se ocultan el pie legal y el aviso de la app.
+
+### Aviso de la app Android
+
+Al terminar la intro (el vidrio ya en su sitio y el pulso del menú acabado) sale una tira
+discreta: la app de Android y que la arena reacciona al mover la mano y al inclinar el
+móvil, con **Descargar**. Se cierra con × y no vuelve (`localStorage`, clave
+`hourglass-web/android-promo`). No es analítica ni forma parte del banner de cookies: si
+el banner está abierto, la tira espera. En **PAUSA** se oculta, igual que el pie. La misma
+descarga está en el menú (**App Android** / **Android app**), también después de cerrar el
+aviso.
+
+La URL vive en `apps/web/src/androidApp.ts` (`ANDROID_APP`). Es el patrón estable de
+GitHub Releases, `releases/latest/download/<archivo>`, en
+`SebastianZaruha/hourglass-pomodoro`. Hoy la latest es
+[`v1.8.12`](https://github.com/SebastianZaruha/hourglass-pomodoro/releases/tag/v1.8.12)
+y el asset se llama `hourglass-pomodoro-1.8.12.apk`:
+
+`https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.12.apk`
+
+Para publicar otro APK:
+
+1. En GitHub, crea una release y adjunta el `.apk` como asset (no hace falta subirlo al
+   repositorio).
+2. Si el archivo se llama igual que `ANDROID_APK_ASSET`, la web ya lo enlaza: `latest`
+   pasa a esa release sola.
+3. Si el nombre cambia, actualiza `ANDROID_APK_ASSET`. Para no tocar la web en cada
+   versión, sube el APK siempre con el mismo nombre.
+
+Para pasar a Play Store: `distribution: 'play-store'` y la URL de la ficha. El botón pasa
+a «Play Store» / «Google Play» sin cambiar el aviso ni el menú.
 
 La cuenta sigue aunque la pestaña esté detrás (usa la hora del sistema). Si el aviso del
 navegador está permitido y la pestaña no se ve, al cambiar de fase sale una notificación.
