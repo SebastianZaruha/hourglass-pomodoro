@@ -220,13 +220,13 @@ ajustes, textos y simulación de arena). No cambia el móvil: el vidrio de Andro
 Skia. En el navegador el reloj se queda de pie (no hay acelerómetro), la arena cae igual, y
 se maneja con el ratón:
 
-| Acción                        | Efecto                                                            |
-| ----------------------------- | ----------------------------------------------------------------- |
-| **Clic** o **Espacio**        | Empezar, pausar o seguir                                          |
-| **Doble clic**                | Voltea 180° y reinicia la cuenta                                  |
-| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                    |
-| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia |
-| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                 |
+| Acción                        | Efecto                                                                |
+| ----------------------------- | --------------------------------------------------------------------- |
+| **Clic** o **Espacio**        | Empezar, pausar o seguir                                              |
+| **Doble clic**                | Voltea 180° y reinicia. En pausa no: un clic (aunque sea doble) sigue |
+| **Rueda**                     | Más o menos tiempo (solo si no está en marcha)                        |
+| **Arrastrar el reloj**        | Gira el vidrio y apaga la sombra; un giro claro voltea y reinicia     |
+| Botón de dos rayas (al pasar) | Abre los ajustes; desaparece con el panel abierto                     |
 
 En una ventana ancha hay dos columnas: el reloj a la izquierda y la hora, centrada, a la
 derecha. Al abrir ajustes el panel sube desde abajo con un fundido y la hora sube para

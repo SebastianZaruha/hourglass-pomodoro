@@ -10,8 +10,8 @@ export function hintFor(lang: Language, status: TimerStatus, cyclesFinished: boo
   }
   if (status === 'paused') {
     return es
-      ? 'clic para seguir · arrastra el reloj o doble clic para voltearlo'
-      : 'click to resume · drag the hourglass or double-click to flip';
+      ? 'clic para seguir · arrastra el reloj para voltearlo'
+      : 'click to resume · drag the hourglass to flip';
   }
   if (status === 'finished') {
     return cyclesFinished
