@@ -256,10 +256,12 @@ Variable de entorno (copia `apps/web/.env.example` a `apps/web/.env`):
 | `VITE_GA_MEASUREMENT_ID` | Id de GA4 (`G-…`). Vacío, o un ejemplo con `XXXX`, no carga nada. |
 
 Google Analytics **no** se inserta hasta que se pulsa **Aceptar** en el aviso de cookies, y
-solo si ese id es real. **Rechazar** no carga el script. «Configurar cookies» (pie de página
-y páginas legales) vuelve a preguntar; retirar el consentimiento borra las cookies `_ga`.
-Vercel Web Analytics va aparte, sin cookies, y no hace nada fuera de Vercel. No está
-desplegada: estos comandos solo la arrancan en local.
+solo si ese id es real. Las cookies de GA quedan en el host de la página (`cookie_domain: 'none'`),
+no en el dominio padre. **Rechazar** no carga el script. «Configurar cookies» (pie de página
+y páginas legales) vuelve a preguntar; retirar el consentimiento borra las cookies `_ga*`
+también en `.sebastianzaruha.com` si quedaron de una prueba anterior. Vercel Web Analytics
+tampoco se carga hasta Aceptar (no usa cookies). No está desplegada: estos comandos solo la
+arrancan en local.
 
 ## Tests y calidad
 
@@ -337,9 +339,9 @@ Texto completo de la licencia: [PolyForm Noncommercial 1.0.0](https://polyformpr
 ## Privacidad
 
 La app de Android no tiene cuentas, anuncios, analítica ni servidor: no envía datos fuera del
-móvil. La app de navegador (`apps/web`) tampoco tiene cuentas. Puede medir visitas con Vercel
-Web Analytics (sin cookies) cuando está alojada en Vercel, y solo carga Google Analytics si la
-persona pulsa Aceptar y hay un id real en `VITE_GA_MEASUREMENT_ID`.
+móvil. La app de navegador (`apps/web`) tampoco tiene cuentas. Solo si la persona pulsa
+Aceptar carga Vercel Web Analytics (sin cookies) y, si hay un id real en
+`VITE_GA_MEASUREMENT_ID`, Google Analytics.
 
 - Política de privacidad (español): [docs/privacidad.html](docs/privacidad.html)
 - Privacy policy (English): [docs/privacy.html](docs/privacy.html)
