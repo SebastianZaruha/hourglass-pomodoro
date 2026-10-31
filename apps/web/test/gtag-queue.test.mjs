@@ -60,6 +60,7 @@ test('el fuente empuja arguments, no un rest Array', () => {
   assert.match(source, /function gtag\(\) \{[\s\S]*?window\.dataLayer\?\.push\(arguments\);/);
   assert.doesNotMatch(source, /function gtag\(\.\.\./);
   assert.doesNotMatch(source, /\.push\(args\)/);
+  assert.match(source, /cookie_domain:\s*'none'/);
   assert.equal(isGtagCommand(['config', MEASUREMENT_ID]), false);
 });
 
@@ -96,7 +97,7 @@ test('Accept encola js y config antes del script; Reject no lo deja cargado', as
       absWorkingDir: webRoot,
       stdin: {
         contents:
-          "import { disableGoogleAnalytics, enableGoogleAnalytics } from './src/analytics.ts';\nexport { disableGoogleAnalytics, enableGoogleAnalytics };\n",
+          "import { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains } from './src/analytics.ts';\nexport { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains };\n",
         resolveDir: webRoot,
         loader: 'ts',
         sourcefile: path.join(webRoot, 'ga-entry.ts'),
@@ -113,9 +114,16 @@ test('Accept encola js y config antes del script; Reject no lo deja cargado', as
     assert.match(bundled, /push\(arguments\)/);
 
     const scripts = [];
+    const writes = [];
+    let jar = '';
     const window = {};
     const document = {
-      cookie: '',
+      get cookie() {
+        return jar;
+      },
+      set cookie(value) {
+        writes.push(String(value));
+      },
       head: {
         appendChild(node) {
           if (typeof node.src === 'string' && node.src.includes('/gtag/js')) {
@@ -148,7 +156,7 @@ test('Accept encola js y config antes del script; Reject no lo deja cargado', as
     };
     globalThis.window = window;
     globalThis.document = document;
-    globalThis.location = { hostname: 'hourglass.example' };
+    globalThis.location = { hostname: 'hourglass.sebastianzaruha.com', protocol: 'https:' };
 
     const mod = await import(pathToFileURL(outfile).href);
     mod.enableGoogleAnalytics(null);
@@ -163,15 +171,43 @@ test('Accept encola js y config antes del script; Reject no lo deja cargado', as
     assert.equal(scripts[0].dataset.hourglassGa, MEASUREMENT_ID);
     assert.equal(isGtagCommand(window.dataLayer[0]), true);
     assert.equal(isGtagCommand(window.dataLayer[1]), true);
+    assert.equal(window.dataLayer[1][2].cookie_domain, 'none');
     assert.equal(window[`ga-disable-${MEASUREMENT_ID}`], false);
+
+    const domains = mod.gaCookieClearDomains('hourglass.sebastianzaruha.com');
+    for (const domain of [
+      '',
+      'hourglass.sebastianzaruha.com',
+      '.hourglass.sebastianzaruha.com',
+      'sebastianzaruha.com',
+      '.sebastianzaruha.com',
+    ]) {
+      assert.equal(domains.includes(domain), true, domain);
+    }
+    assert.equal(domains.includes('.com'), false);
 
     mod.enableGoogleAnalytics(MEASUREMENT_ID);
     assert.equal(scripts.length, 1);
     assert.equal(window.dataLayer.length, 2);
 
+    jar = '_ga=GA1.1.1.1; _gid=1; _gat_gtag_UA_1=1; theme=dark';
+    writes.length = 0;
     mod.disableGoogleAnalytics(MEASUREMENT_ID);
     assert.equal(scripts.length, 0);
     assert.equal(window[`ga-disable-${MEASUREMENT_ID}`], true);
+    for (const name of ['_ga', '_gid', '_gat_gtag_UA_1']) {
+      assert.equal(
+        writes.includes(
+          `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.sebastianzaruha.com`,
+        ),
+        true,
+        name,
+      );
+    }
+    assert.equal(
+      writes.some((line) => line.startsWith('theme=')),
+      false,
+    );
 
     mod.enableGoogleAnalytics(MEASUREMENT_ID);
     assert.equal(scripts.length, 1);

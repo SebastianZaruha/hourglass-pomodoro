@@ -29,6 +29,11 @@ import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
+import { stopVercelWebAnalytics } from './vercelAnalytics';
+
+function allowAnalyticsEvent<E>(event: E): E {
+  return event;
+}
 
 type Scheme = 'light' | 'dark';
 
@@ -79,12 +84,7 @@ function useWideLayout() {
 
 export function App() {
   const { settings, update } = useSettings();
-  return (
-    <>
-      <Timer settings={settings} update={update} />
-      <Analytics />
-    </>
-  );
+  return <Timer settings={settings} update={update} />;
 }
 
 function Timer({
@@ -143,16 +143,18 @@ function Timer({
   }, [lang, scheme]);
 
   useEffect(() => {
-    if (consentChoice === 'accepted') enableGoogleAnalytics(gaMeasurementId());
+    const id = gaMeasurementId();
+    if (consentChoice === 'accepted') enableGoogleAnalytics(id);
+    else if (consentChoice === 'rejected') {
+      disableGoogleAnalytics(id);
+      stopVercelWebAnalytics();
+    }
   }, [consentChoice]);
 
   const chooseCookies = (choice: ConsentChoice) => {
     writeConsent(choice);
     setConsentChoice(choice);
     setBannerOpen(false);
-    const id = gaMeasurementId();
-    if (choice === 'accepted') enableGoogleAnalytics(id);
-    else disableGoogleAnalytics(id);
   };
 
   const paramsRef = useRef<HourglassParams>({
@@ -391,6 +393,7 @@ function Timer({
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
+      {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
         <div
           ref={stageRef}

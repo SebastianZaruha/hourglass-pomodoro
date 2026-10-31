@@ -16,7 +16,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/gtag-queue.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.2.6",

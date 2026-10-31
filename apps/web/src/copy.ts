@@ -59,7 +59,7 @@ export function legalHrefs(lang: Language) {
 export function bannerCopy(lang: Language) {
   if (lang === 'es') {
     return {
-      body: 'Usamos cookies técnicas necesarias y, solo si aceptas, cookies de analítica de Google Analytics para saber cómo se usa la web. Vercel Web Analytics mide visitas sin cookies. Puedes cambiar tu elección cuando quieras en «Configurar cookies».',
+      body: 'Usamos cookies técnicas necesarias y, solo si aceptas, cookies de analítica de Google Analytics para saber cómo se usa la web. Vercel Web Analytics, también solo si aceptas, mide visitas sin cookies. Puedes cambiar tu elección cuando quieras en «Configurar cookies».',
       accept: 'Aceptar',
       reject: 'Rechazar',
       more: 'Configurar',
@@ -67,7 +67,7 @@ export function bannerCopy(lang: Language) {
     };
   }
   return {
-    body: 'We use strictly necessary cookies and, only if you accept, Google Analytics cookies to understand how the site is used. Vercel Web Analytics measures visits without cookies. You can change your choice at any time in “Cookie settings”.',
+    body: 'We use strictly necessary cookies and, only if you accept, Google Analytics cookies to understand how the site is used. Vercel Web Analytics, also only if you accept, measures visits without cookies. You can change your choice at any time in “Cookie settings”.',
     accept: 'Accept',
     reject: 'Reject',
     more: 'Configure',
