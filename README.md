@@ -250,21 +250,22 @@ el banner está abierto, la tira espera. En **PAUSA** se oculta, igual que el pi
 descarga está en el menú (**App Android** / **Android app**), también después de cerrar el
 aviso.
 
-La URL vive en `apps/web/src/androidApp.ts` (`ANDROID_APP`). Hoy es la release
-[`v1.8.12`](https://github.com/SebastianZaruha/hourglass-pomodoro/releases/tag/v1.8.12),
-asset `hourglass-pomodoro-1.8.12.apk`:
+La URL vive en `apps/web/src/androidApp.ts` (`ANDROID_APP`). Es el patrón estable de
+GitHub Releases, `releases/latest/download/<archivo>`, en
+`SebastianZaruha/hourglass-pomodoro`. Hoy la latest es
+[`v1.8.12`](https://github.com/SebastianZaruha/hourglass-pomodoro/releases/tag/v1.8.12)
+y el asset se llama `hourglass-pomodoro-1.8.12.apk`:
 
-`https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk`
+`https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.12.apk`
 
 Para publicar otro APK:
 
-1. En GitHub, crea o edita una release y adjunta el `.apk` como asset (no hace falta
-   subirlo al repositorio). El nombre puede llevar la versión.
-2. En `ANDROID_RELEASE` pon la etiqueta y el nombre exacto del archivo. `ANDROID_APP.url`
-   se arma solo con `releases/download/<etiqueta>/<archivo>`.
-3. Opcional: adjunta además una copia llamada `hourglass-pomodoro.apk` en cada release y
-   apunta `url` a `githubLatestApkUrl` (`releases/latest/download/hourglass-pomodoro.apk`).
-   Ese enlace sigue al último asset con ese nombre y no hay que tocar la web en cada versión.
+1. En GitHub, crea una release y adjunta el `.apk` como asset (no hace falta subirlo al
+   repositorio).
+2. Si el archivo se llama igual que `ANDROID_APK_ASSET`, la web ya lo enlaza: `latest`
+   pasa a esa release sola.
+3. Si el nombre cambia, actualiza `ANDROID_APK_ASSET`. Para no tocar la web en cada
+   versión, sube el APK siempre con el mismo nombre.
 
 Para pasar a Play Store: `distribution: 'play-store'` y la URL de la ficha. El botón pasa
 a «Play Store» / «Google Play» sin cambiar el aviso ni el menú.

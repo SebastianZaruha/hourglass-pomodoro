@@ -32,28 +32,32 @@ async function bundle(source) {
   return { mod, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-test('el APK apunta a la release v1.8.12, no a un binario inventado', async () => {
+test('el APK usa releases/latest del repo, con el asset que sí está publicado', async () => {
   const { mod, cleanup } = await bundle(
     `export {
       ANDROID_APP,
-      ANDROID_RELEASE,
+      ANDROID_APK_ASSET,
+      ANDROID_REPO,
       githubLatestApkUrl,
       githubReleaseApkUrl,
     } from './src/androidApp.ts';\n`,
   );
   try {
     assert.equal(mod.ANDROID_APP.distribution, 'github-release');
-    assert.equal(mod.ANDROID_RELEASE.repo, 'SebastianZaruha/hourglass-pomodoro');
-    assert.equal(mod.ANDROID_RELEASE.tag, 'v1.8.12');
-    assert.equal(mod.ANDROID_RELEASE.asset, 'hourglass-pomodoro-1.8.12.apk');
-    assert.equal(mod.ANDROID_APP.url, mod.githubReleaseApkUrl(mod.ANDROID_RELEASE));
+    assert.equal(mod.ANDROID_REPO, 'SebastianZaruha/hourglass-pomodoro');
+    assert.equal(mod.ANDROID_APK_ASSET, 'hourglass-pomodoro-1.8.12.apk');
+    assert.equal(mod.ANDROID_APP.url, mod.githubLatestApkUrl(mod.ANDROID_REPO, mod.ANDROID_APK_ASSET));
     assert.equal(
       mod.ANDROID_APP.url,
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk',
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.12.apk',
     );
     assert.equal(
-      mod.githubLatestApkUrl(mod.ANDROID_RELEASE.repo),
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro.apk',
+      mod.githubReleaseApkUrl({
+        repo: mod.ANDROID_REPO,
+        tag: 'v1.8.12',
+        asset: mod.ANDROID_APK_ASSET,
+      }),
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk',
     );
   } finally {
     cleanup();

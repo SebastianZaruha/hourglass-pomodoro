@@ -1,25 +1,32 @@
 /**
  * Descarga de la app Android.
  *
- * Hoy: APK de GitHub Releases (etiqueta fija + nombre del asset).
- * Mañana, Play Store: cambia `distribution` a `'play-store'` y `url` por la
- * ficha. El botón («Descargar» / «Play Store») sale de `androidPromoCopy`.
- *
- * `releases/download/<etiqueta>/<archivo>` no se mueve cuando sale otra
- * etiqueta. La v1.8.12 publica `hourglass-pomodoro-1.8.12.apk`.
+ * Hoy: `releases/latest/download/<archivo>` en SebastianZaruha/hourglass-pomodoro.
+ * Ese enlace sigue a la última release que lleve ese nombre de asset.
+ * La v1.8.12 publica `hourglass-pomodoro-1.8.12.apk`.
+ * Mañana, Play Store: `distribution: 'play-store'` y la URL de la ficha.
+ * El botón («Descargar» / «Play Store») sale de `androidPromoCopy`.
  * Para colgar otro APK, ver README › «App de navegador».
  */
 export const ANDROID_DISTRIBUTIONS = ['github-release', 'play-store'] as const;
 export type AndroidDistribution = (typeof ANDROID_DISTRIBUTIONS)[number];
 
-/** Release que lleva el APK enlazado desde la web. */
-export const ANDROID_RELEASE = {
-  repo: 'SebastianZaruha/hourglass-pomodoro',
-  tag: 'v1.8.12',
-  asset: 'hourglass-pomodoro-1.8.12.apk',
-} as const;
+export const ANDROID_REPO = 'SebastianZaruha/hourglass-pomodoro';
 
-/** Enlace directo al asset de una release (no a la página de la release). */
+/**
+ * Nombre exacto del asset en GitHub Releases.
+ * La release latest (v1.8.12) adjunta este archivo. Si la siguiente release
+ * cambia el nombre, actualiza esta constante, o sube el APK siempre con
+ * el mismo nombre para no tocar la web.
+ */
+export const ANDROID_APK_ASSET = 'hourglass-pomodoro-1.8.12.apk';
+
+/** `releases/latest/download/<archivo>`: el APK de la última release con ese nombre. */
+export function githubLatestApkUrl(repo: string, asset: string): string {
+  return `https://github.com/${repo}/releases/latest/download/${asset}`;
+}
+
+/** Enlace fijo a una etiqueta, por si hace falta no seguir a `latest`. */
 export function githubReleaseApkUrl(release: {
   readonly repo: string;
   readonly tag: string;
@@ -33,18 +40,8 @@ export const ANDROID_APP: {
   readonly url: string;
 } = {
   distribution: 'github-release',
-  url: githubReleaseApkUrl(ANDROID_RELEASE),
+  url: githubLatestApkUrl(ANDROID_REPO, ANDROID_APK_ASSET),
 };
-
-/**
- * Si en cada release se adjunta además una copia con este nombre fijo,
- * se puede usar `releases/latest/download/` y no tocar la web en cada versión.
- */
-export const ANDROID_APK_STABLE_NAME = 'hourglass-pomodoro.apk';
-
-export function githubLatestApkUrl(repo: string, asset = ANDROID_APK_STABLE_NAME): string {
-  return `https://github.com/${repo}/releases/latest/download/${asset}`;
-}
 
 /** Aviso cerrado. Un solo flag; no es consentimiento de cookies. */
 export const ANDROID_PROMO_KEY = 'hourglass-web/android-promo';
