@@ -500,7 +500,6 @@ function Timer({
         <SettingsSheet
           open={menu}
           settings={settings}
-          lang={lang}
           t={t}
           onChange={update}
           onClose={() => setMenu(false)}

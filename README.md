@@ -236,7 +236,7 @@ pie, sin encoger el vidrio. Con la pausa puesta no se puede abrir el menú: prim
 seguir. En ciclos, el rótulo del tramo (Trabajo 1/4, Descanso…) se ve aunque la cuenta
 no haya empezado y el menú esté cerrado. Sesión única tiene Personalizado: la barra se arrastra a izquierda o derecha por los mismos escalones, y − / + siguen un paso.
 El panel, de arriba a abajo: título, Sesión única o Ciclos, solo los tiempos de
-esa opción, tres pastillas (tema, idioma y sonido) y, debajo, **App Android**. No hay
+esa opción y tres pastillas (tema, idioma y sonido). No hay
 vibración ni ventana flotante. El sonido nace apagado. El tema y el idioma pueden ser
 claro/oscuro/automático y español/inglés/automático. Al pausar, «Pausa» queda en el centro
 de la pantalla, el resto se desenfoca y se ocultan el pie legal y el aviso de la app.
@@ -247,9 +247,12 @@ Al terminar la intro (el vidrio ya en su sitio y el pulso del menú acabado) sal
 discreta: la app de Android y que la arena reacciona al mover la mano y al inclinar el
 móvil, con **Descargar**. Se cierra con × y no vuelve (`localStorage`, clave
 `hourglass-web/android-promo`). No es analítica ni forma parte del banner de cookies: si
-el banner está abierto, la tira espera. En **PAUSA** se oculta, igual que el pie. La misma
-descarga está en el menú (**App Android** / **Android app**), también después de cerrar el
-aviso.
+el banner está abierto, la tira espera. En **PAUSA** se oculta, igual que el pie.
+
+En el pie, junto a los enlaces legales, **App móvil** / **Mobile app** abre la misma clase
+de aviso (centrado, con **Cerrar**) sin parar el reloj. Ahí se explica el gesto y hay una
+foto del reloj inclinado, con la arena apoyada en un lado, y el botón de descarga. En pausa
+el pie no se ve y el aviso se cierra.
 
 La URL vive en `apps/web/src/androidApp.ts` (`ANDROID_APP`). Es el patrón estable de
 GitHub Releases, `releases/latest/download/<archivo>`, en
@@ -265,7 +268,8 @@ Para publicar otro APK:
    repositorio).
 2. Si el archivo se llama igual que `ANDROID_APK_ASSET`, la web ya lo enlaza: `latest`
    pasa a esa release sola.
-3. Si el nombre cambia, actualiza `ANDROID_APK_ASSET`. Para no tocar la web en cada
+3. Si el nombre cambia, actualiza `ANDROID_APK_ASSET` y el mismo enlace en
+   `apps/web/public/app-movil.html` y `mobile-app.html`. Para no tocar la web en cada
    versión, sube el APK siempre con el mismo nombre.
 
 Para pasar a Play Store: `distribution: 'play-store'` y la URL de la ficha. El botón pasa

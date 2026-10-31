@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>App móvil — Hourglass Pomodoro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="La app Android de Hourglass Pomodoro: la arena reacciona al mover la mano y al inclinar el móvil." />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #efe8de;
+        --card: #f8f4ee;
+        --fg: #3b352f;
+        --muted: #7a6f63;
+        --line: #ddd2c4;
+        --link: #8a5a2b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #25211d;
+          --card: #2e2924;
+          --fg: #ece4d8;
+          --muted: #b3a796;
+          --line: #443c34;
+          --link: #e0b47f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          17px/1.65 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 1.1rem 1.25rem 3rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 2rem 1.75rem;
+      }
+      h1 {
+        font-weight: 300;
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 0.75rem;
+      }
+      .lang {
+        color: var(--muted);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        min-height: 2.5rem;
+        margin: 0 7rem 1rem 0;
+      }
+      a {
+        color: var(--link);
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+      figure {
+        margin: 0.25rem 0 1.25rem;
+      }
+      img {
+        display: block;
+        width: min(100%, 22rem);
+        height: auto;
+        margin: 0 auto;
+        border-radius: 18px;
+        background: #efe8de;
+      }
+      figcaption {
+        margin-top: 0.55rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        margin-top: 0.25rem;
+        padding: 0.55rem 1.15rem;
+        border-radius: 999px;
+        background: #3b352f;
+        color: #f8f4ee;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      @media (prefers-color-scheme: dark) {
+        .download {
+          background: #e0b47f;
+          color: #2e2924;
+        }
+      }
+      footer.links {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+      }
+      .leave {
+        position: fixed;
+        z-index: 5;
+        top: 1.1rem;
+        right: 1.25rem;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <button type="button" class="leave" id="leave-page">Cerrar</button>
+    <main>
+      <p class="lang">Español · <a href="mobile-app.html" hreflang="en">English</a></p>
+      <div class="card">
+        <h1>App móvil</h1>
+        <p>
+          En Android el reloj está en la mano. Al moverla o inclinar el móvil, la arena se desliza y se
+          apoya en un lado: la superficie queda en diagonal, más alta de un lado que del otro. Tumbarlo
+          pausa. Voltearlo empieza de cero.
+        </p>
+        <figure>
+          <img
+            src="app-inclinado.jpg"
+            width="800"
+            height="672"
+            alt="Bulbo del reloj inclinado: la arena está más alta a la izquierda y la superficie baja hacia la derecha."
+          />
+          <figcaption>Inclinado unos 25°. La arena se amontona en un lado.</figcaption>
+        </figure>
+        <p>
+          <a
+            class="download"
+            href="https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.12.apk"
+            >Descargar el APK</a
+          >
+        </p>
+      </div>
+      <footer class="links">
+        <a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> ·
+        <a href="cookies.html">Cookies</a> · <a href="app-movil.html">App móvil</a> ·
+        <a href="#configure-cookies">Configurar cookies</a>
+      </footer>
+    </main>
+    <script>
+      (function () {
+        function configure(e) {
+          if (e) e.preventDefault();
+          location.href = '/?configure-cookies=1';
+        }
+        document.querySelectorAll('a[href="#configure-cookies"]').forEach(function (a) {
+          a.addEventListener('click', configure);
+        });
+        if (location.hash === '#configure-cookies') configure();
+
+        function leave() {
+          location.href = '/';
+        }
+        var closer = document.getElementById('leave-page');
+        if (closer) closer.addEventListener('click', leave);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') leave();
+        });
+        document.addEventListener('click', function (e) {
+          var t = e.target;
+          if (!t || !t.closest) return;
+          if (t.closest('a, button, .card, footer')) return;
+          leave();
+        });
+      })();
+    </script>
+  </body>
+</html>

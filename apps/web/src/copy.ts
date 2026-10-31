@@ -31,6 +31,7 @@ export function footerCopy(lang: Language) {
       legal: 'Aviso legal',
       privacy: 'Privacidad',
       cookies: 'Cookies',
+      app: 'App móvil',
       settings: 'Configurar cookies',
     };
   }
@@ -38,6 +39,7 @@ export function footerCopy(lang: Language) {
     legal: 'Legal notice',
     privacy: 'Privacy',
     cookies: 'Cookies',
+    app: 'Mobile app',
     settings: 'Cookie settings',
   };
 }
@@ -48,12 +50,14 @@ export function legalHrefs(lang: Language) {
       legal: '/aviso-legal.html',
       privacy: '/privacidad.html',
       cookies: '/cookies.html',
+      app: '/app-movil.html',
     };
   }
   return {
     legal: '/legal-notice.html',
     privacy: '/privacy.html',
     cookies: '/cookies-en.html',
+    app: '/mobile-app.html',
   };
 }
 
@@ -65,7 +69,7 @@ export interface AndroidPromoCopy {
   readonly dismiss: string;
 }
 
-/** Aviso y fila del menú de la app Android. El botón depende de dónde se descarga. */
+/** Aviso discreto de la app Android. El botón depende de dónde se descarga. */
 export function androidPromoCopy(lang: Language, distribution: AndroidDistribution): AndroidPromoCopy {
   const es = lang === 'es';
   const action = androidActionLabel(lang, distribution);
