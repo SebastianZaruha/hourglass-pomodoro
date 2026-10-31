@@ -2,7 +2,7 @@
  * Aviso de la app Android: URL de la release, cierre en localStorage y cuándo se muestra.
  */
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -59,6 +59,36 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
       }),
       'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk',
     );
+  } finally {
+    cleanup();
+  }
+});
+
+test('el pie abre una página con la misma URL y una foto de la arena inclinada', async () => {
+  const { mod, cleanup } = await bundle(
+    `export { ANDROID_APP } from './src/androidApp.ts';
+     export { footerCopy, legalHrefs } from './src/copy.ts';\n`,
+  );
+  try {
+    assert.equal(mod.footerCopy('es').app, 'App móvil');
+    assert.equal(mod.footerCopy('en').app, 'Mobile app');
+    assert.equal(mod.legalHrefs('es').app, '/app-movil.html');
+    assert.equal(mod.legalHrefs('en').app, '/mobile-app.html');
+
+    const es = readFileSync(path.join(webRoot, 'public/app-movil.html'), 'utf8');
+    const en = readFileSync(path.join(webRoot, 'public/mobile-app.html'), 'utf8');
+    const sheet = readFileSync(path.join(webRoot, 'src/components/SettingsSheet.tsx'), 'utf8');
+    assert.match(es, /id="leave-page"/);
+    assert.match(en, /id="leave-page"/);
+    assert.match(es, /app-inclinado\.jpg/);
+    assert.match(en, /app-inclinado\.jpg/);
+    assert.ok(es.includes(mod.ANDROID_APP.url));
+    assert.ok(en.includes(mod.ANDROID_APP.url));
+    assert.match(es, /amontona/);
+    assert.match(en, /leans to one side/);
+    assert.doesNotMatch(sheet, /android-link|App Android|PhoneIcon/);
+    const photo = statSync(path.join(webRoot, 'public/app-inclinado.jpg'));
+    assert.ok(photo.size > 20_000 && photo.size < 200_000);
   } finally {
     cleanup();
   }

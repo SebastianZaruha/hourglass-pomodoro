@@ -33,24 +33,6 @@ export function GlobeIcon({ size = 18 }: IconProps) {
   );
 }
 
-export function PhoneIcon({ size = 18 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <rect
-        x="7"
-        y="3.5"
-        width="10"
-        height="17"
-        rx="2.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path d="M11 17.2h2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export function SpeakerIcon({ size = 18, off = false }: IconProps & { readonly off?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">

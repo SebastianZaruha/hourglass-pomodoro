@@ -348,7 +348,7 @@ a {
   right: clamp(0.75rem, 3.5vw, 1.25rem);
   bottom: max(0.85rem, env(safe-area-inset-bottom));
   width: auto;
-  max-height: min(46vh, calc(100vh - 14rem));
+  max-height: min(40vh, calc(100vh - 18rem));
   transform: translateY(calc(100% + 3rem));
 }
 
@@ -603,8 +603,7 @@ a {
 .site-footer button:focus-visible,
 .menu-btn:focus-visible,
 .app-promo-action:focus-visible,
-.app-promo-dismiss:focus-visible,
-.android-link:focus-visible {
+.app-promo-dismiss:focus-visible {
   outline: 2px solid var(--menu);
   outline-offset: 2px;
 }
@@ -763,45 +762,6 @@ a {
   .app-promo {
     bottom: calc(4.15rem + env(safe-area-inset-bottom));
   }
-}
-
-.android-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 16px;
-  background: var(--track);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.android-link-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.android-link-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-}
-
-.android-link-pitch {
-  font-size: 0.75rem;
-  line-height: 1.35;
-  color: var(--ink-soft);
-}
-
-.android-link-action {
-  flex: none;
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .banner {
