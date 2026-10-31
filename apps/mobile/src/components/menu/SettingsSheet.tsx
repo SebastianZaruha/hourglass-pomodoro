@@ -15,8 +15,9 @@
  *
  * Disposición compacta (1.8.8, «B»): la hoja queda baja, cerca del pulgar.
  *   - Sesión como pestañas («Sesión única» / «Ciclos») que solo muestran lo
- *     de la pestaña elegida: los tiempos rápidos o el ciclo. La pestaña es
- *     el modo de sesión de los ajustes, así que al abrir sale siempre el
+ *     de la pestaña elegida: los tiempos rápidos (y, en sesión única,
+ *     «Personalizado» con una barra a todo el ancho) o el ciclo. La pestaña
+ *     es el modo de sesión de los ajustes, así que al abrir sale siempre el
  *     último modo usado.
  *   - Al pie, UNA fila de botones redondos (QuickSettings): Tema e Idioma
  *     (rotan al tocarlos) │ Sonido, Vibración y Ventana flotante.
@@ -64,7 +65,7 @@ import type { AlertsNotice } from '../../background/useBackgroundTimer';
 import { useT } from '../../i18n/I18n';
 import { announce } from '../../hooks/useScreenReader';
 import type { HourglassTheme } from '../../theme/theme';
-import { Chip, Segmented, Stepper, type SegmentOption } from './controls';
+import { Chip, DurationSlider, Segmented, Stepper, type SegmentOption } from './controls';
 import { QuickTooltip, RoundButton, themeIcon, useQuickTooltip } from './QuickSettings';
 import { useMenuStyles, type MenuFonts } from './themedStyles';
 import { SHEET_DENSITY, type SheetState } from './useSheet';
@@ -227,6 +228,19 @@ export function SettingsSheet({
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
+  // Igual que en la web: «Personalizado» sigue elegido aunque el minuto
+  // coincida con un tiempo rápido, y se enciende solo si la duración no es uno.
+  const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
+  const [singleCustom, setSingleCustom] = useState(() => !onPreset);
+  // Si la duración deja de ser un tiempo rápido (p. ej. al deslizar el reloj),
+  // Personalizado se queda elegido aunque luego el minuto vuelva a coincidir.
+  // Ajuste durante el render: es la respuesta a un cambio de los ajustes, no un efecto.
+  const [trackedPreset, setTrackedPreset] = useState(onPreset);
+  if (onPreset !== trackedPreset) {
+    setTrackedPreset(onPreset);
+    if (!onPreset) setSingleCustom(true);
+  }
+  const customOn = singleCustom || !onPreset;
   const summary = cycles
     ? t.summaryCycles(cycle.workMin, cycle.breakMin, cycle.rounds)
     : t.summarySingle(formatMinutes(lastMin));
@@ -292,6 +306,7 @@ export function SettingsSheet({
       <GestureDetector gesture={bodyPan}>
         <ScrollView
           scrollEnabled={scrollable}
+          directionalLockEnabled
           showsVerticalScrollIndicator={scrollable}
           bounces={false}
           style={styles.scroll}
@@ -377,22 +392,46 @@ export function SettingsSheet({
                 </Animated.Text>
               </Section>
             ) : (
-              /* Sesión única: tiempos rápidos. */
+              /* Sesión única: tiempos rápidos y, si hace falta, la barra de Personalizado. */
               <Section label={t.quickTimesMin} styles={s} fonts={fonts}>
-                <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t.quickTimes}>
-                  {QUICK_TIMES_MIN.map((min) => (
-                    <Chip
-                      {...base}
-                      key={min}
-                      round
-                      label={String(min)}
-                      selected={lastMin === min}
-                      accessibilityLabel={t.minutes(min)}
-                      onPress={() => update({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS })}
-                      testID={`rapido-${min}`}
-                    />
-                  ))}
+                <View accessibilityRole="radiogroup" accessibilityLabel={t.quickTimes}>
+                  <View style={styles.chips}>
+                    {QUICK_TIMES_MIN.map((min) => (
+                      <Chip
+                        {...base}
+                        key={min}
+                        round
+                        label={String(min)}
+                        selected={!customOn && lastMin === min}
+                        accessibilityLabel={t.minutes(min)}
+                        onPress={() => {
+                          setSingleCustom(false);
+                          update({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
+                        }}
+                        testID={`rapido-${min}`}
+                      />
+                    ))}
+                  </View>
+                  <Chip
+                    {...base}
+                    style={styles.customChoice}
+                    label={t.custom}
+                    selected={customOn}
+                    accessibilityLabel={t.custom}
+                    onPress={() => setSingleCustom(true)}
+                    testID="personalizado"
+                  />
                 </View>
+                {customOn ? (
+                  <DurationSlider
+                    {...base}
+                    durationMs={settings.lastDurationMs}
+                    label={t.session}
+                    blockSheet={bodyPan}
+                    onChangeDuration={(lastDurationMs) => update({ sessionMode: 'single', lastDurationMs })}
+                    testID="barra-personalizado"
+                  />
+                ) : null}
               </Section>
             )}
 
@@ -560,6 +599,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 10.5, letterSpacing: 1.8, marginBottom: 10 },
   tabs: { marginBottom: 18 },
   chips: { flexDirection: 'row', justifyContent: 'space-between' },
+  // «Personalizado» a todo el ancho: en la fila de círculos no cabe el texto.
+  customChoice: { marginTop: 10, alignSelf: 'stretch' },
   presets: { flexDirection: 'row', gap: 6 },
   // Los preajustes se reparten el sitio que deja «Personalizado», que toma
   // solo el ancho de su texto (así nunca se corta, ni en móviles estrechos).

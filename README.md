@@ -52,7 +52,8 @@ un fondo cálido y difuso. Todo se maneja con gestos; los ajustes viven en un me
 | **Voltear** (180°)          | Como uno real: empieza de cero y cae la arena del otro lado.            |
 
 Además, el menú (las dos rayas de abajo a la derecha abren una hoja baja, cerca del pulgar)
-tiene pestañas para sesión única (tiempos rápidos) o ciclos de trabajo y descanso y, en una fila
+tiene pestañas para sesión única (tiempos rápidos, o Personalizado con una barra a todo el
+ancho que se arrastra a izquierda y derecha) o ciclos de trabajo y descanso y, en una fila
 de botones redondos, tema claro, oscuro o automático, español e inglés, sonido, vibración y, en
 Android, una ventana flotante con el reloj encima de otras apps (mantén pulsado un botón redondo
 para ver su nombre). La pantalla **«Gestos»** explica todo lo anterior: sale sola la primera vez
