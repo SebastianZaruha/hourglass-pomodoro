@@ -468,7 +468,10 @@ constante se ignora.
 - **Disposición compacta (1.8.8):** la hoja queda baja, cerca del pulgar (en sesión única
   ~380 dp en un móvil Android con el aviso de permisos, frente a ~800 dp de la 1.8.7).
   - **Pestañas «Sesión única» / «Ciclos»** (el ajuste `sessionMode`): solo se ve lo de la
-    elegida. Sesión única: tiempos rápidos (chips redondos de 5 a 60 min). Ciclos: preajustes,
+    elegida. Sesión única: tiempos rápidos (chips redondos de 5 a 60 min) y Personalizado,
+    una barra a todo el ancho: se arrastra en horizontal por los mismos escalones (1–180 min)
+    y − / + siguen un paso. El gesto nace en la barra, así que no pelea con deslizar el reloj
+    ni con cerrar la hoja. Ciclos: preajustes,
     Personalizado con steppers y un resumen. Tocar un stepper con un preajuste elegido pasa a
     Personalizado copiando sus valores. Como la pestaña es el modo guardado, al abrir sale
     siempre el último modo usado.
