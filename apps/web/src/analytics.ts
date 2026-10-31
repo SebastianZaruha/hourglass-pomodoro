@@ -34,18 +34,29 @@ export function deleteGaCookies(): void {
 
 let loadedId: string | null = null;
 
-/** Inserta gtag. No hace nada si no hay un id real o si ya está el mismo. */
+/**
+ * Inserta gtag. No hace nada si no hay un id real o si ya está el mismo.
+ *
+ * gtag.js solo ejecuta `js` / `config` / `event` si la entrada del dataLayer
+ * es un objeto Arguments (`function gtag(){ dataLayer.push(arguments); }`).
+ * Un rest (`...args`) empuja un Array: el script carga con 200 y no hay
+ * ningún hit a /g/collect. Esta función clásica se mantiene así tras el
+ * minify de Vite (esbuild y oxc); no hace falta `anonymize_ip` en GA4
+ * (la IP ya no se guarda).
+ */
 export function enableGoogleAnalytics(id: string | null): void {
   if (!id) return;
   (window as unknown as Record<string, boolean>)[disableFlag(id)] = false;
   if (loadedId === id) return;
   loadedId = id;
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer?.push(args);
+  window.gtag = function gtag() {
+    // gtag.js exige Arguments. Un rest Array no cuenta como comando.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments);
   };
   window.gtag('js', new Date());
-  window.gtag('config', id, { anonymize_ip: true });
+  window.gtag('config', id);
   const script = document.createElement('script');
   script.async = true;
   script.src = `${GA_HOST}?id=${encodeURIComponent(id)}`;
