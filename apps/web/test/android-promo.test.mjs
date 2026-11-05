@@ -45,19 +45,19 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
   try {
     assert.equal(mod.ANDROID_APP.distribution, 'github-release');
     assert.equal(mod.ANDROID_REPO, 'SebastianZaruha/hourglass-pomodoro');
-    assert.equal(mod.ANDROID_APK_ASSET, 'hourglass-pomodoro-1.8.12.apk');
+    assert.equal(mod.ANDROID_APK_ASSET, 'hourglass-pomodoro-1.8.13.apk');
     assert.equal(mod.ANDROID_APP.url, mod.githubLatestApkUrl(mod.ANDROID_REPO, mod.ANDROID_APK_ASSET));
     assert.equal(
       mod.ANDROID_APP.url,
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.12.apk',
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.13.apk',
     );
     assert.equal(
       mod.githubReleaseApkUrl({
         repo: mod.ANDROID_REPO,
-        tag: 'v1.8.12',
+        tag: 'v1.8.13',
         asset: mod.ANDROID_APK_ASSET,
       }),
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.12/hourglass-pomodoro-1.8.12.apk',
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.13/hourglass-pomodoro-1.8.13.apk',
     );
   } finally {
     cleanup();
@@ -82,6 +82,8 @@ test('el pie abre una página con la misma URL y una foto de la arena inclinada'
     assert.match(en, /id="leave-page"/);
     assert.match(es, /app-inclinado\.jpg/);
     assert.match(en, /app-inclinado\.jpg/);
+    assert.match(es, /Play Protect/);
+    assert.match(en, /Play Protect/);
     assert.ok(es.includes(mod.ANDROID_APP.url));
     assert.ok(en.includes(mod.ANDROID_APP.url));
     assert.match(es, /amontona/);
@@ -169,12 +171,14 @@ test('el texto habla de la mano y de inclinar, en español y en inglés', async 
     assert.match(es.pitch, /inclinar/);
     assert.equal(es.action, 'Descargar');
     assert.match(es.actionHint, /GitHub Releases/);
+    assert.match(es.installNote, /Play Protect/);
 
     const en = mod.androidPromoCopy('en', 'github-release');
     assert.equal(en.title, 'Android app');
     assert.match(en.pitch, /hand/);
     assert.match(en.pitch, /tilt/i);
     assert.equal(en.action, 'Download');
+    assert.match(en.installNote, /unknown sources/i);
 
     const play = mod.androidPromoCopy('es', 'play-store');
     assert.equal(play.action, 'Play Store');

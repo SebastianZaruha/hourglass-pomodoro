@@ -16,6 +16,7 @@ export function AndroidPromo({ lang, onDismiss }: Props) {
       <p className="app-promo-text">
         <span className="app-promo-title">{copy.title}</span>
         <span className="app-promo-pitch">{copy.pitch}</span>
+        <span className="app-promo-install">{copy.installNote}</span>
       </p>
       <a
         className="app-promo-action"

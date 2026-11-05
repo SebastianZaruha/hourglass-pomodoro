@@ -3,7 +3,7 @@
  *
  * Hoy: `releases/latest/download/<archivo>` en SebastianZaruha/hourglass-pomodoro.
  * Ese enlace sigue a la última release que lleve ese nombre de asset.
- * La v1.8.12 publica `hourglass-pomodoro-1.8.12.apk`.
+ * La v1.8.13 publica `hourglass-pomodoro-1.8.13.apk`.
  * Mañana, Play Store: `distribution: 'play-store'` y la URL de la ficha.
  * El botón («Descargar» / «Play Store») sale de `androidPromoCopy`.
  * Para colgar otro APK, ver README › «App de navegador».
@@ -15,11 +15,11 @@ export const ANDROID_REPO = 'SebastianZaruha/hourglass-pomodoro';
 
 /**
  * Nombre exacto del asset en GitHub Releases.
- * La release latest (v1.8.12) adjunta este archivo. Si la siguiente release
+ * La release latest (v1.8.13) adjunta este archivo. Si la siguiente release
  * cambia el nombre, actualiza esta constante, o sube el APK siempre con
  * el mismo nombre para no tocar la web.
  */
-export const ANDROID_APK_ASSET = 'hourglass-pomodoro-1.8.12.apk';
+export const ANDROID_APK_ASSET = 'hourglass-pomodoro-1.8.13.apk';
 
 /** `releases/latest/download/<archivo>`: el APK de la última release con ese nombre. */
 export function githubLatestApkUrl(repo: string, asset: string): string {

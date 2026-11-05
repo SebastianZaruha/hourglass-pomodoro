@@ -64,9 +64,25 @@ export function legalHrefs(lang: Language) {
 export interface AndroidPromoCopy {
   readonly title: string;
   readonly pitch: string;
+  /** Aviso breve sobre Play Protect al instalar fuera de Google Play. */
+  readonly installNote: string;
   readonly action: string;
   readonly actionHint: string;
   readonly dismiss: string;
+}
+
+/** Misma nota que en el aviso y en las páginas estáticas de la app móvil. */
+export function androidInstallNote(lang: Language): string {
+  if (lang === 'es') {
+    return (
+      'Fuera de Google Play, Android puede avisarte (Play Protect o fuentes desconocidas). ' +
+      'Es normal al instalar un APK directo del desarrollador.'
+    );
+  }
+  return (
+    'Outside Google Play, Android may warn you (Play Protect or unknown sources). ' +
+    'That’s normal for a direct APK from the developer.'
+  );
 }
 
 /** Aviso discreto de la app Android. El botón depende de dónde se descarga. */
@@ -74,10 +90,12 @@ export function androidPromoCopy(lang: Language, distribution: AndroidDistributi
   const es = lang === 'es';
   const action = androidActionLabel(lang, distribution);
   const actionHint = androidActionHint(lang, distribution);
+  const installNote = androidInstallNote(lang);
   if (es) {
     return {
       title: 'App Android',
       pitch: 'La arena reacciona al mover la mano y al inclinar el móvil.',
+      installNote,
       action,
       actionHint,
       dismiss: 'Cerrar el aviso de la app',
@@ -86,6 +104,7 @@ export function androidPromoCopy(lang: Language, distribution: AndroidDistributi
   return {
     title: 'Android app',
     pitch: 'The sand reacts to your hand and to tilting the phone.',
+    installNote,
     action,
     actionHint,
     dismiss: 'Dismiss the app notice',
