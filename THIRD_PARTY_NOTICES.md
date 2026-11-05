@@ -26,6 +26,8 @@ repositorio: se descargan con `npm install`.
 | react-native-gesture-handler                          | 3.3.0   | MIT          | Software Mansion                                          |
 | react-native-safe-area-context                        | 5.10.1  | MIT          | Th3rd Wave                                                |
 | @react-native-async-storage/async-storage             | 2.2.0   | MIT          | Facebook, Inc. (React Native Community)                   |
+| @react-native-firebase/app, analytics, crashlytics    | 27.1.0  | Apache-2.0   | Invertase Limited                                         |
+| Firebase Android SDK (Analytics y Crashlytics)        | 35.0.2  | Apache-2.0   | Google LLC                                                |
 | @expo-google-fonts/manrope (paquete)                  | 0.4.2   | MIT          | Expo                                                      |
 | **Fuente Manrope** (ExtraLight a SemiBold)            | —       | SIL OFL 1.1  | The Manrope Project Authors (github.com/sharanda/manrope) |
 
@@ -34,9 +36,9 @@ se puede usar, incluir y redistribuir con la app libremente; no se puede vender 
 separado y su texto de licencia debe acompañarla si se redistribuye como archivo de fuente.
 
 Los textos completos de cada licencia están en `node_modules/<paquete>/LICENSE` tras
-`npm install`. Las licencias MIT y BSD-3-Clause exigen conservar el aviso de copyright y la
-licencia; para una versión publicada (Google Play) conviene mostrarlos en una pantalla de
-«Licencias» o enlazar a este archivo.
+`npm install`. Las licencias MIT, BSD-3-Clause y Apache-2.0 exigen conservar el aviso de
+copyright y la licencia; para una versión publicada (Google Play) conviene mostrarlos en una
+pantalla de «Licencias» o enlazar a este archivo.
 
 ## Herramientas de desarrollo (no se distribuyen con la app)
 

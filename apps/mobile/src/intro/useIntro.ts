@@ -47,6 +47,11 @@ export interface Intro {
   readonly active: boolean;
   /** Opacidad del tiempo y del botón de menú (0 → 1 al final). */
   readonly chrome: SharedValue<number>;
+  /**
+   * El tiempo y el botón ya se ven (el fundido terminó, o no había intro).
+   * Va un poco después de `active`: el reloj se asienta antes de que acabe el fundido.
+   */
+  readonly chromeSettled: boolean;
 }
 
 export function useIntro(reduceMotion: boolean): Intro {
@@ -54,6 +59,7 @@ export function useIntro(reduceMotion: boolean): Intro {
   const [play] = useState(() => !introPlayed);
   const animate = play && !reduceMotion;
   const [active, setActive] = useState(play);
+  const [chromeSettled, setChromeSettled] = useState(!play);
 
   const rotate = useSharedValue(0);
   const scale = useSharedValue(animate ? INTRO.startScale : 1);
@@ -74,14 +80,19 @@ export function useIntro(reduceMotion: boolean): Intro {
     }
     if (!play) return;
     introPlayed = true;
-    // Al terminar, avisamos a React (en el hilo de JS) para quitar las capas.
+    // Al terminar el reloj, avisamos a React (en el hilo de JS) para quitar las capas.
     const done = (finished?: boolean) => {
       'worklet';
       if (finished) scheduleOnRN(setActive, false);
     };
+    // El tiempo y el menú acaban de aparecer: es el momento de una pantalla encima.
+    const chromeDone = (finished?: boolean) => {
+      'worklet';
+      if (finished) scheduleOnRN(setChromeSettled, true);
+    };
     if (!animate) {
       opacity.set(withTiming(1, { duration: INTRO.reducedFade }, done));
-      chrome.set(withTiming(1, { duration: INTRO.reducedFade }));
+      chrome.set(withTiming(1, { duration: INTRO.reducedFade }, chromeDone));
       return;
     }
     const settle = { duration: INTRO.settle, easing: Easing.out(Easing.cubic) };
@@ -90,7 +101,7 @@ export function useIntro(reduceMotion: boolean): Intro {
     scale.set(withDelay(INTRO.spin, withTiming(1, settle)));
     centered.set(withDelay(INTRO.spin, withTiming(0, settle)));
     shadow.set(withDelay(INTRO.spin, withTiming(1, settle, done)));
-    chrome.set(withDelay(INTRO.chromeDelay, withTiming(1, { duration: INTRO.chromeFade })));
+    chrome.set(withDelay(INTRO.chromeDelay, withTiming(1, { duration: INTRO.chromeFade }, chromeDone)));
   }, [play, animate, rotate, scale, centered, opacity, shadow, chrome]);
 
   // Siempre el mismo objeto: así <Hourglass> (memo) no se re-renderiza por él.
@@ -98,5 +109,5 @@ export function useIntro(reduceMotion: boolean): Intro {
     () => ({ rotate, scale, centered, opacity, shadow }),
     [rotate, scale, centered, opacity, shadow],
   );
-  return { pose, active, chrome };
+  return { pose, active, chrome, chromeSettled };
 }

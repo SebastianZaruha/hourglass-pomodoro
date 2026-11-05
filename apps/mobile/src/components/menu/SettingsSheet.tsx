@@ -108,6 +108,15 @@ interface Props {
   } | null;
   /** ¿Está encendido el lector de pantalla? (para el aviso al abrir) */
   readonly screenReader?: boolean;
+  /**
+   * Analítica y estabilidad (Android). null fuera de Android.
+   * «Cambiar» abre el mismo diálogo que el primer arranque.
+   */
+  readonly analytics?: {
+    readonly enabled: boolean;
+    readonly onChange: () => void;
+    readonly onPrivacy: () => void;
+  } | null;
 }
 
 export function SettingsSheet({
@@ -124,6 +133,7 @@ export function SettingsSheet({
   alertsNotice = null,
   floating = null,
   screenReader = false,
+  analytics = null,
 }: Props) {
   const t = useT();
   const s = useMenuStyles(themeProgress);
@@ -519,6 +529,35 @@ export function SettingsSheet({
                 </Pressable>
               ) : null,
             )}
+            {analytics ? (
+              <View style={styles.legal}>
+                <Pressable
+                  onPress={analytics.onChange}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t.analyticsTitle}. ${analytics.enabled ? t.analyticsOn : t.analyticsOff}. ${t.analyticsChange}`}
+                  style={({ pressed }) => [styles.legalRow, pressed && styles.helpPressed]}
+                  testID="analitica-cambiar"
+                >
+                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.inkSoft]}>
+                    {t.analyticsTitle} · {analytics.enabled ? t.analyticsOn : t.analyticsOff}
+                  </Animated.Text>
+                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.ink]}>
+                    {t.analyticsChange}
+                  </Animated.Text>
+                </Pressable>
+                <Pressable
+                  onPress={analytics.onPrivacy}
+                  accessibilityRole="link"
+                  accessibilityLabel={t.privacyPolicy}
+                  style={({ pressed }) => [styles.legalRow, pressed && styles.helpPressed]}
+                  testID="politica-privacidad"
+                >
+                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.inkSoft]}>
+                    {t.privacyPolicy}
+                  </Animated.Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       </GestureDetector>
@@ -620,4 +659,6 @@ const styles = StyleSheet.create({
   quickDivider: { width: StyleSheet.hairlineWidth, height: 28 },
   notice: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
   noticeText: { fontSize: 12, textAlign: 'center', letterSpacing: 0.2, textDecorationLine: 'underline' },
+  legal: { marginTop: 8 },
+  legalRow: { minHeight: 44, justifyContent: 'center' },
 });

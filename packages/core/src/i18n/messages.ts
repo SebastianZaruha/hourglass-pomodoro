@@ -153,6 +153,13 @@ export const es = {
   floatingLabel: 'Reloj de arena flotante',
   floatingHint: 'Toca para abrir la app. Mantén pulsado para pausar o seguir.',
   floatingClose: 'Quitar la ventana flotante',
+  // ─── Analítica Firebase (app Android, 1.8.13) ───
+  /** Fila de Ajustes. El diálogo largo vive en el texto legal, no aquí. */
+  analyticsTitle: 'Analítica y estabilidad',
+  analyticsOn: 'Activada',
+  analyticsOff: 'Desactivada',
+  analyticsChange: 'Cambiar',
+  privacyPolicy: 'Política de privacidad',
 };
 
 export type Messages = typeof es;
@@ -261,6 +268,11 @@ export const en: Messages = {
   floatingLabel: 'Floating hourglass',
   floatingHint: 'Tap to open the app. Press and hold to pause or resume.',
   floatingClose: 'Remove the floating window',
+  analyticsTitle: 'Analytics and stability',
+  analyticsOn: 'On',
+  analyticsOff: 'Off',
+  analyticsChange: 'Change',
+  privacyPolicy: 'Privacy policy',
 };
 
 export const MESSAGES: Readonly<Record<Language, Messages>> = { es, en };

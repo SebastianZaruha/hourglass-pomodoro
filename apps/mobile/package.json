@@ -1,6 +1,6 @@
 {
   "name": "@reloj/mobile",
-  "version": "1.8.12",
+  "version": "1.8.13",
   "private": true,
   "description": "App Expo / React Native del Reloj de Arena (Android, iOS y web).",
   "license": "PolyForm-Noncommercial-1.0.0",
@@ -17,11 +17,15 @@
     "web": "expo start --web",
     "export:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs",
     "postinstall": "setup-skia-web public"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-firebase/analytics": "^27.1.0",
+    "@react-native-firebase/app": "^27.1.0",
+    "@react-native-firebase/crashlytics": "^27.1.0",
     "@reloj/core": "*",
     "@shopify/react-native-skia": "2.14.0",
     "expo": "~58.0.17",

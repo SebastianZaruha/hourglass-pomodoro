@@ -9,6 +9,33 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.13 — Analítica Firebase con consentimiento (Android)
+
+La app sigue usable al 100 % si se rechaza. Analytics y Crashlytics nacen apagados y
+solo se encienden con Aceptar.
+
+- Un diálogo (Aceptar / Rechazar al mismo nivel) para «Analítica y estabilidad (Firebase)».
+  Sale cuando la intro ha terminado (el reloj ya está en su sitio y el tiempo y el menú
+  se han fundido), no encima del primer fotograma. El texto es el borrador del 5 de
+  noviembre de 2026. Si cambia, o pasan unos 12 meses, se vuelve a preguntar. La elección
+  se guarda en el dispositivo (momento, versión del texto, flags y versión de la app).
+- En Ajustes: «Cambiar» abre el mismo diálogo; «Política de privacidad» abre
+  `privacidad-app.html` / `privacy-app.html`.
+- Tras Aceptar: eventos `timer_start` y `timer_complete` (modo y cubo de duración, sin
+  el minuto exacto) y propiedades de idioma, tema y modo. Sin datos personales. Los
+  anuncios quedan denegados (`AD_STORAGE`, `AD_USER_DATA`, `AD_PERSONALIZATION`).
+- `google-services.json` del proyecto `hourglass-f57b8`, paquete
+  `com.sebastianzaruha.relojdearena`. No hay cuenta de servicio.
+- Política de la app en español e inglés, en la web
+  (`apps/web/public/privacidad-app.html` y `privacy-app.html`).
+
+El APK no se publica con este cambio. En la consola de Firebase, Sebastián tiene que
+aceptar el DPA de Google (paso suyo, no está en el código).
+
+### Versión
+
+- `versionCode` 10813.
+
 ## 1.8.12 — Icono limpio: sin bordes claros y a sangre
 
 Solo cambia el icono; el código es el de la 1.8.10.

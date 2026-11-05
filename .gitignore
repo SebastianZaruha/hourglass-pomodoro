@@ -43,7 +43,11 @@ local.properties
 *.key
 *.mobileprovision
 *.pem
+# google-services.json lleva la api_key del cliente Android: va en el APK y
+# Firebase la trata como identificador de la app, no como secreto de servidor.
+# Una cuenta de servicio (service account) sí es un secreto y no se versiona.
 google-services.json
+!apps/mobile/google-services.json
 GoogleService-Info.plist
 credentials.json
 play-store-*.json
