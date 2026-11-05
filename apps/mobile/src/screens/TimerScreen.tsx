@@ -294,9 +294,11 @@ export function TimerScreen({ settings, fonts }: Props) {
     { language: uiLanguage, theme: prefs.theme, mode: prefs.sessionMode },
     analyticsDurationMs,
   );
-  // El diálogo va antes que la ayuda de gestos: no se recoge nada, y no se
-  // tapa la pregunta con otra pantalla.
-  const autoHelp = !prefs.gesturesSeen && !intro.active && consent.ready && !consent.prompt;
+  // El diálogo va después de la intro (reloj asentado y tiempo ya visible),
+  // y antes que la ayuda de gestos. Hasta Aceptar no se recoge nada.
+  const consentVisible = consent.prompt && !intro.active && intro.chromeSettled;
+  const autoHelp =
+    !prefs.gesturesSeen && !intro.active && intro.chromeSettled && consent.ready && !consent.prompt;
   useEffect(() => {
     if (!autoHelp) return;
     const id = setTimeout(() => {
@@ -581,9 +583,9 @@ export function TimerScreen({ settings, fonts }: Props) {
           onAccessibilityAction={onAccessibilityAction}
           // Con el menú abierto, el lector de pantalla solo ve el menú.
           importantForAccessibility={
-            sheet.open || infoOpen || consent.prompt ? 'no-hide-descendants' : 'auto'
+            sheet.open || infoOpen || consentVisible ? 'no-hide-descendants' : 'auto'
           }
-          accessibilityElementsHidden={sheet.open || infoOpen || consent.prompt}
+          accessibilityElementsHidden={sheet.open || infoOpen || consentVisible}
           testID="reloj"
         >
           <HourglassBoundary onReload={() => saveSessionAndReload(latest.current.state)}>
@@ -714,7 +716,7 @@ export function TimerScreen({ settings, fonts }: Props) {
           móvil está volteado, el texto del consentimiento se lee derecho. */}
       <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
         <ConsentDialog
-          visible={consent.prompt}
+          visible={consentVisible}
           dismissible={consent.record !== null}
           saving={consent.saving}
           onChoose={consent.choose}

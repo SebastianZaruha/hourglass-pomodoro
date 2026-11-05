@@ -15,9 +15,10 @@ La app sigue usable al 100 % si se rechaza. Analytics y Crashlytics nacen apagad
 solo se encienden con Aceptar.
 
 - Un diálogo (Aceptar / Rechazar al mismo nivel) para «Analítica y estabilidad (Firebase)».
-  El texto es el borrador del 5 de noviembre de 2026. Si cambia, o pasan unos 12 meses,
-  se vuelve a preguntar. La elección se guarda en el dispositivo (momento, versión del
-  texto, flags y versión de la app).
+  Sale cuando la intro ha terminado (el reloj ya está en su sitio y el tiempo y el menú
+  se han fundido), no encima del primer fotograma. El texto es el borrador del 5 de
+  noviembre de 2026. Si cambia, o pasan unos 12 meses, se vuelve a preguntar. La elección
+  se guarda en el dispositivo (momento, versión del texto, flags y versión de la app).
 - En Ajustes: «Cambiar» abre el mismo diálogo; «Política de privacidad» abre
   `privacidad-app.html` / `privacy-app.html`.
 - Tras Aceptar: eventos `timer_start` y `timer_complete` (modo y cubo de duración, sin
