@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "878477581978",
+    "project_id": "hourglass-f57b8",
+    "storage_bucket": "hourglass-f57b8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878477581978:android:3788d1d7bf2031b23d0923",
+        "android_client_info": {
+          "package_name": "com.sebastianzaruha.relojdearena"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeODVl4gqOocAfgI1aRGJwlz-Hjvwe__c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -49,6 +49,7 @@ import {
   pauseRule,
   planForCycle,
   activeCycleConfig,
+  resolveLanguage,
   samePlan,
   sessionCue,
   sessionPlanFor,
@@ -66,6 +67,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppState,
+  Platform,
   Pressable,
   StyleSheet,
   useWindowDimensions,
@@ -93,6 +95,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBackgroundTimer } from '../background/useBackgroundTimer';
 import { useFloatingWindow } from '../background/useFloatingWindow';
 import { appShouldAlert, systemPromptOpen } from '../background/visibility';
+import { ConsentDialog } from '../components/ConsentDialog';
 import { FloatingHelp } from '../components/FloatingHelp';
 import { GesturesHelp } from '../components/GesturesHelp';
 import { HourglassBoundary } from '../components/HourglassBoundary';
@@ -112,7 +115,9 @@ import { announce, useRefreshWhile, useScreenReaderEnabled } from '../hooks/useS
 import { useSession } from '../hooks/useSession';
 import type { UseSettings } from '../hooks/useSettings';
 import { useIntro } from '../intro/useIntro';
-import { useT } from '../i18n/I18n';
+import { deviceLocale, useT } from '../i18n/I18n';
+import { useFirebaseConsent } from '../consent/useFirebaseConsent';
+import { useTimerAnalytics } from '../consent/useTimerAnalytics';
 import { useDeviceTilt } from '../motion/useDeviceTilt';
 import { saveSessionAndReload } from '../recovery/sessionRecovery';
 import { useCueSound } from '../sound/useCueSound';
@@ -279,7 +284,19 @@ export function TimerScreen({ settings, fonts }: Props) {
   }, [pip]);
   // Primer arranque: al terminar la entrada, se muestra sola (y queda
   // guardado que ya se vio, aunque se cierre la app sin cerrarla).
-  const autoHelp = !prefs.gesturesSeen && !intro.active;
+  const consent = useFirebaseConsent();
+  const uiLanguage = resolveLanguage(prefs.language, deviceLocale());
+  const analyticsDurationMs =
+    prefs.sessionMode === 'cycles' ? activeCycleConfig(prefs).workMin * MINUTE_MS : prefs.lastDurationMs;
+  useTimerAnalytics(
+    consent.record?.choice === 'accepted',
+    view,
+    { language: uiLanguage, theme: prefs.theme, mode: prefs.sessionMode },
+    analyticsDurationMs,
+  );
+  // El diálogo va antes que la ayuda de gestos: no se recoge nada, y no se
+  // tapa la pregunta con otra pantalla.
+  const autoHelp = !prefs.gesturesSeen && !intro.active && consent.ready && !consent.prompt;
   useEffect(() => {
     if (!autoHelp) return;
     const id = setTimeout(() => {
@@ -398,7 +415,7 @@ export function TimerScreen({ settings, fonts }: Props) {
   ticker.current ??= new StepTicker();
   // Con el menú abierto, los gestos del reloj se apagan (además, el velo y
   // la hoja lo tapan, así que tampoco recibirían toques).
-  const gesturesOn = !sheet.open && !infoOpen;
+  const gesturesOn = !sheet.open && !infoOpen && consent.ready && !consent.prompt;
 
   // Zona de guarda del botón del menú (1.6): un toque, una pulsación larga o
   // un deslizamiento que EMPIEZA en la esquina del botón no llega al reloj.
@@ -563,8 +580,10 @@ export function TimerScreen({ settings, fonts }: Props) {
           ]}
           onAccessibilityAction={onAccessibilityAction}
           // Con el menú abierto, el lector de pantalla solo ve el menú.
-          importantForAccessibility={sheet.open || infoOpen ? 'no-hide-descendants' : 'auto'}
-          accessibilityElementsHidden={sheet.open || infoOpen}
+          importantForAccessibility={
+            sheet.open || infoOpen || consent.prompt ? 'no-hide-descendants' : 'auto'
+          }
+          accessibilityElementsHidden={sheet.open || infoOpen || consent.prompt}
           testID="reloj"
         >
           <HourglassBoundary onReload={() => saveSessionAndReload(latest.current.state)}>
@@ -651,6 +670,15 @@ export function TimerScreen({ settings, fonts }: Props) {
                 ? { value: floating.enabled, onChange: toggleFloating, notice: floating.notice }
                 : null
             }
+            analytics={
+              Platform.OS === 'android'
+                ? {
+                    enabled: consent.record?.choice === 'accepted',
+                    onChange: consent.openPrompt,
+                    onPrivacy: consent.openPrivacy,
+                  }
+                : null
+            }
           />
           <MenuButton
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
@@ -682,6 +710,22 @@ export function TimerScreen({ settings, fonts }: Props) {
           />
         </View>
       )}
+      {/* Fuera de la rama de imagen en imagen, pero con el mismo giro: si el
+          móvil está volteado, el texto del consentimiento se lee derecho. */}
+      <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
+        <ConsentDialog
+          visible={consent.prompt}
+          dismissible={consent.record !== null}
+          saving={consent.saving}
+          onChoose={consent.choose}
+          onDismiss={consent.dismissPrompt}
+          onPrivacy={consent.openPrivacy}
+          theme={theme}
+          fonts={fonts}
+          safeTop={tilt.flipped ? safe.bottom : safe.top}
+          safeBottom={tilt.flipped ? safe.top : safe.bottom}
+        />
+      </View>
     </View>
   );
 }

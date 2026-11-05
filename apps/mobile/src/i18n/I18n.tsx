@@ -10,7 +10,7 @@
  * nuevas. Se vuelve a leer al volver a la app, por si se ha cambiado el
  * idioma del sistema mientras tanto.
  */
-import { es, messagesFor, type LanguagePreference, type Messages } from '@reloj/core';
+import { es, messagesFor, type Language, type LanguagePreference, type Messages } from '@reloj/core';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
 
@@ -55,4 +55,9 @@ export function I18nProvider({
 /** Textos del idioma actual. */
 export function useT(): Messages {
   return useContext(I18nContext);
+}
+
+/** Idioma ya resuelto (es o en), el mismo objeto que reparte `useT`. */
+export function useLanguage(): Language {
+  return useContext(I18nContext) === es ? 'es' : 'en';
 }
