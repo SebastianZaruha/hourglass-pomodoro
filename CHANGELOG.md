@@ -9,6 +9,13 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.15 — Ajustes más bajos (Android)
+
+- Hoja de ajustes más compacta: analítica y privacidad en un bloque bajo (enlace
+  pequeño a la política); «Cambiar» sigue con área táctil de 44 px.
+- Sesión única: tiempos rápidos 5, 10, 15 y 25 min (se quitan 45 y 60); «Personalizado»
+  ocupa el ancho de dos círculos en la misma fila; la barra ± solo si está elegido.
+
 ## 1.8.14 — Pista de pausa al tumbar el móvil (Android)
 
 - La primera vez que entras en la pausa de lado (reloj difuminado), una pista breve

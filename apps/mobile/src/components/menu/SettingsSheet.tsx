@@ -15,8 +15,8 @@
  *
  * Disposición compacta (1.8.8, «B»): la hoja queda baja, cerca del pulgar.
  *   - Sesión como pestañas («Sesión única» / «Ciclos») que solo muestran lo
- *     de la pestaña elegida: los tiempos rápidos (y, en sesión única,
- *     «Personalizado» con una barra a todo el ancho) o el ciclo. La pestaña
+ *     de la pestaña elegida: cuatro tiempos rápidos y «Personalizado» (doble
+ *     ancho en la misma fila; barra ± solo si está elegido) o el ciclo. La pestaña
  *     es el modo de sesión de los ajustes, así que al abrir sale siempre el
  *     último modo usado.
  *   - Al pie, UNA fila de botones redondos (QuickSettings): Tema e Idioma
@@ -70,8 +70,13 @@ import { QuickTooltip, RoundButton, themeIcon, useQuickTooltip } from './QuickSe
 import { useMenuStyles, type MenuFonts } from './themedStyles';
 import { SHEET_DENSITY, type SheetState } from './useSheet';
 
-/** Tiempos rápidos (minutos). */
-export const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
+/** Tiempos rápidos (minutos). Sin 45 ni 60: caben cuatro círculos + «Personalizado» ancho. */
+export const QUICK_TIMES_MIN = [5, 10, 15, 25] as const;
+
+const CHIP_ROUND = 50;
+const CHIP_GAP = 6;
+/** Dos círculos de ancho: misma fila que los preajustes (1.8.15). */
+const CUSTOM_CHIP_WIDTH = CHIP_ROUND * 2 + CHIP_GAP;
 
 const modeOptions = (t: Messages): readonly SegmentOption<SessionMode>[] => [
   { value: 'single', label: t.single },
@@ -404,27 +409,30 @@ export function SettingsSheet({
             ) : (
               /* Sesión única: tiempos rápidos y, si hace falta, la barra de Personalizado. */
               <Section label={t.quickTimesMin} styles={s} fonts={fonts}>
-                <View accessibilityRole="radiogroup" accessibilityLabel={t.quickTimes}>
-                  <View style={styles.chips}>
-                    {QUICK_TIMES_MIN.map((min) => (
-                      <Chip
-                        {...base}
-                        key={min}
-                        round
-                        label={String(min)}
-                        selected={!customOn && lastMin === min}
-                        accessibilityLabel={t.minutes(min)}
-                        onPress={() => {
-                          setSingleCustom(false);
-                          update({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
-                        }}
-                        testID={`rapido-${min}`}
-                      />
-                    ))}
-                  </View>
+                <View
+                  style={styles.chipsRow}
+                  accessibilityRole="radiogroup"
+                  accessibilityLabel={t.quickTimes}
+                >
+                  {QUICK_TIMES_MIN.map((min) => (
+                    <Chip
+                      {...base}
+                      key={min}
+                      round
+                      label={String(min)}
+                      selected={!customOn && lastMin === min}
+                      accessibilityLabel={t.minutes(min)}
+                      onPress={() => {
+                        setSingleCustom(false);
+                        update({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
+                      }}
+                      testID={`rapido-${min}`}
+                    />
+                  ))}
                   <Chip
                     {...base}
-                    style={styles.customChoice}
+                    round
+                    style={styles.customChipWide}
                     label={t.custom}
                     selected={customOn}
                     accessibilityLabel={t.custom}
@@ -531,31 +539,40 @@ export function SettingsSheet({
             )}
             {analytics ? (
               <View style={styles.legal}>
-                <Pressable
-                  onPress={analytics.onChange}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t.analyticsTitle}. ${analytics.enabled ? t.analyticsOn : t.analyticsOff}. ${t.analyticsChange}`}
-                  style={({ pressed }) => [styles.legalRow, pressed && styles.helpPressed]}
-                  testID="analitica-cambiar"
-                >
-                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.inkSoft]}>
-                    {t.analyticsTitle} · {analytics.enabled ? t.analyticsOn : t.analyticsOff}
-                  </Animated.Text>
-                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.ink]}>
-                    {t.analyticsChange}
-                  </Animated.Text>
-                </Pressable>
-                <Pressable
-                  onPress={analytics.onPrivacy}
-                  accessibilityRole="link"
-                  accessibilityLabel={t.privacyPolicy}
-                  style={({ pressed }) => [styles.legalRow, pressed && styles.helpPressed]}
-                  testID="politica-privacidad"
-                >
-                  <Animated.Text style={[styles.noticeText, { fontFamily: fonts.medium }, s.inkSoft]}>
-                    {t.privacyPolicy}
-                  </Animated.Text>
-                </Pressable>
+                <View style={styles.legalRow}>
+                  <View style={styles.legalMain}>
+                    <Animated.Text
+                      style={[styles.legalStatus, { fontFamily: fonts.regular }, s.inkSoft]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    >
+                      {t.analyticsTitle} · {analytics.enabled ? t.analyticsOn : t.analyticsOff}
+                    </Animated.Text>
+                    <Pressable
+                      onPress={analytics.onPrivacy}
+                      accessibilityRole="link"
+                      accessibilityLabel={t.privacyPolicy}
+                      hitSlop={{ top: 4, bottom: 8, left: 4, right: 4 }}
+                      style={({ pressed }) => [pressed && styles.helpPressed]}
+                      testID="politica-privacidad"
+                    >
+                      <Animated.Text style={[styles.legalPrivacy, { fontFamily: fonts.regular }, s.inkSoft]}>
+                        {t.privacyPolicy}
+                      </Animated.Text>
+                    </Pressable>
+                  </View>
+                  <Pressable
+                    onPress={analytics.onChange}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t.analyticsTitle}. ${analytics.enabled ? t.analyticsOn : t.analyticsOff}. ${t.analyticsChange}`}
+                    style={({ pressed }) => [styles.legalChange, pressed && styles.helpPressed]}
+                    testID="analitica-cambiar"
+                  >
+                    <Animated.Text style={[styles.legalChangeText, { fontFamily: fonts.medium }, s.ink]}>
+                      {t.analyticsChange}
+                    </Animated.Text>
+                  </Pressable>
+                </View>
               </View>
             ) : null}
           </View>
@@ -637,9 +654,8 @@ const styles = StyleSheet.create({
   section: { marginBottom: 22 },
   label: { fontSize: 10.5, letterSpacing: 1.8, marginBottom: 10 },
   tabs: { marginBottom: 18 },
-  chips: { flexDirection: 'row', justifyContent: 'space-between' },
-  // «Personalizado» a todo el ancho: en la fila de círculos no cabe el texto.
-  customChoice: { marginTop: 10, alignSelf: 'stretch' },
+  chipsRow: { flexDirection: 'row', gap: CHIP_GAP, justifyContent: 'space-between' },
+  customChipWide: { width: CUSTOM_CHIP_WIDTH },
   presets: { flexDirection: 'row', gap: 6 },
   // Los preajustes se reparten el sitio que deja «Personalizado», que toma
   // solo el ancho de su texto (así nunca se corta, ni en móviles estrechos).
@@ -659,6 +675,11 @@ const styles = StyleSheet.create({
   quickDivider: { width: StyleSheet.hairlineWidth, height: 28 },
   notice: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
   noticeText: { fontSize: 12, textAlign: 'center', letterSpacing: 0.2, textDecorationLine: 'underline' },
-  legal: { marginTop: 8 },
-  legalRow: { minHeight: 44, justifyContent: 'center' },
+  legal: { marginTop: 6 },
+  legalRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  legalMain: { flex: 1, paddingTop: 2 },
+  legalStatus: { fontSize: 12, letterSpacing: 0.2 },
+  legalPrivacy: { fontSize: 10, letterSpacing: 0.15, marginTop: 2, textDecorationLine: 'underline' },
+  legalChange: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end', paddingLeft: 8 },
+  legalChangeText: { fontSize: 12, letterSpacing: 0.2, textDecorationLine: 'underline' },
 });
