@@ -45,19 +45,19 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
   try {
     assert.equal(mod.ANDROID_APP.distribution, 'github-release');
     assert.equal(mod.ANDROID_REPO, 'SebastianZaruha/hourglass-pomodoro');
-    assert.equal(mod.ANDROID_APK_ASSET, 'hourglass-pomodoro-1.8.14.apk');
+    assert.equal(mod.ANDROID_APK_ASSET, 'hourglass-pomodoro-1.8.15.apk');
     assert.equal(mod.ANDROID_APP.url, mod.githubLatestApkUrl(mod.ANDROID_REPO, mod.ANDROID_APK_ASSET));
     assert.equal(
       mod.ANDROID_APP.url,
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.14.apk',
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest/download/hourglass-pomodoro-1.8.15.apk',
     );
     assert.equal(
       mod.githubReleaseApkUrl({
         repo: mod.ANDROID_REPO,
-        tag: 'v1.8.14',
+        tag: 'v1.8.15',
         asset: mod.ANDROID_APK_ASSET,
       }),
-      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.14/hourglass-pomodoro-1.8.14.apk',
+      'https://github.com/SebastianZaruha/hourglass-pomodoro/releases/download/v1.8.15/hourglass-pomodoro-1.8.15.apk',
     );
   } finally {
     cleanup();
