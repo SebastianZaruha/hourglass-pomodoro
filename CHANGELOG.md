@@ -15,8 +15,8 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
   explica que girar el móvil pone en pausa. Se cierra con un toque; no bloquea el
   temporizador. La elección queda guardada en el dispositivo.
 - Web: el aviso y las páginas «App móvil» / «Mobile app» aclaran que Play Protect
-  al instalar fuera de Google Play es normal; el APK apunta a `1.8.13` en GitHub
-  Releases (este APK UX es `1.8.14`).
+  al instalar fuera de Google Play es normal; el enlace de descarga apunta al APK
+  `1.8.14` en GitHub Releases (analítica con consentimiento + pista de pausa).
 
 ## 1.8.13 — Analítica Firebase con consentimiento (Android)
 
