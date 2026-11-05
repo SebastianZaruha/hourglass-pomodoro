@@ -98,6 +98,7 @@ import { appShouldAlert, systemPromptOpen } from '../background/visibility';
 import { ConsentDialog } from '../components/ConsentDialog';
 import { FloatingHelp } from '../components/FloatingHelp';
 import { GesturesHelp } from '../components/GesturesHelp';
+import { LandscapePauseHint } from '../components/LandscapePauseHint';
 import { HourglassBoundary } from '../components/HourglassBoundary';
 import { FrostedPanel } from '../components/menu/FrostedPanel';
 import { MenuButton } from '../components/menu/MenuButton';
@@ -108,6 +109,7 @@ import { PauseLabel } from '../components/PauseLabel';
 import { TIME_LINE_HEIGHT, TimeDisplay } from '../components/TimeDisplay';
 import { appClock } from '../dev/devClock';
 import { playSelectionTick, playTimerHaptic, useTimerHaptics } from '../haptics';
+import { useLandscapePauseHint } from '../hints/useLandscapePauseHint';
 import { Hourglass, type PauseBlur } from '../hourglass';
 import { useKeepAwakeWhile } from '../hooks/useKeepAwakeWhile';
 import { useLatest } from '../hooks/useLatest';
@@ -391,6 +393,20 @@ export function TimerScreen({ settings, fonts }: Props) {
   const look = pausePresentation(view.status, tilt.sideways);
   const blurred = look.landscape;
   const pauseBlur: PauseBlur = infoOpen ? 'full' : look.blur;
+  const landscapeHintEligible =
+    paused && blurred && !infoOpen && !sheet.open && !consentVisible;
+  const landscapeHint = useLandscapePauseHint(landscapeHintEligible);
+  const landscapeHintAnnounced = useRef(false);
+  useEffect(() => {
+    if (!landscapeHint.visible) {
+      landscapeHintAnnounced.current = false;
+      return;
+    }
+    if (landscapeHintAnnounced.current) return;
+    landscapeHintAnnounced.current = true;
+    announce(tr.pauseLandscapeHint);
+  }, [landscapeHint.visible, tr.pauseLandscapeHint]);
+  const landscapeHintBottom = (tilt.flipped ? safe.top : safe.bottom) + TIME_BOTTOM + 72;
 
   // ─── Elegir el tiempo (deslizar y TalkBack) ─────────────────────────────
   /** Duración que se ajusta: la de la sesión única o el TRABAJO de los ciclos. */
@@ -640,6 +656,19 @@ export function TimerScreen({ settings, fonts }: Props) {
           />
         </View>
       )}
+
+      {pip ? null : landscapeHint.visible ? (
+        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
+          <LandscapePauseHint
+            text={tr.pauseLandscapeHint}
+            dismissLabel={tr.dismissLandscapePauseHint}
+            bottom={landscapeHintBottom}
+            font={fonts.hint}
+            theme={theme}
+            onDismiss={landscapeHint.dismiss}
+          />
+        </View>
+      ) : null}
 
       {pip ? null : (
         <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">

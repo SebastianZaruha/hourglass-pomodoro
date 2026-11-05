@@ -9,6 +9,15 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.14 — Pista de pausa al tumbar el móvil (Android)
+
+- La primera vez que entras en la pausa de lado (reloj difuminado), una pista breve
+  explica que girar el móvil pone en pausa. Se cierra con un toque; no bloquea el
+  temporizador. La elección queda guardada en el dispositivo.
+- Web: el aviso y las páginas «App móvil» / «Mobile app» aclaran que Play Protect
+  al instalar fuera de Google Play es normal; el APK apunta a `1.8.13` en GitHub
+  Releases (este APK UX es `1.8.14`).
+
 ## 1.8.13 — Analítica Firebase con consentimiento (Android)
 
 La app sigue usable al 100 % si se rechaza. Analytics y Crashlytics nacen apagados y

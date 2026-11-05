@@ -39,6 +39,9 @@ export const es = {
   paused: 'Pausa',
   /** Pista al tocar con el móvil de lado (1.8.6): de lado sigue en pausa. */
   pauseUprightHint: 'ponlo de pie para seguir',
+  /** Primera pausa al tumbar el móvil de lado (1.8.14). */
+  pauseLandscapeHint: 'Girar el móvil pone en pausa',
+  dismissLandscapePauseHint: 'Cerrar la pista',
   work: 'Trabajo',
   break: 'Descanso',
   phaseLabel: (kind: PhaseKindName, round: number, rounds: number) =>
@@ -174,6 +177,8 @@ export const en: Messages = {
   restart: 'Restart',
   paused: 'Paused',
   pauseUprightHint: 'stand it up to resume',
+  pauseLandscapeHint: 'Turning the phone sideways pauses',
+  dismissLandscapePauseHint: 'Dismiss hint',
   work: 'Work',
   break: 'Break',
   phaseLabel: (kind, round, rounds) => `${kind === 'focus' ? 'Work' : 'Break'} ${round}/${rounds}`,

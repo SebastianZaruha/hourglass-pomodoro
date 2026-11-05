@@ -712,6 +712,13 @@ a {
   color: var(--ink-soft);
 }
 
+.app-promo-install {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 0.12rem;
+}
+
 .app-promo-action {
   flex: none;
   display: inline-flex;

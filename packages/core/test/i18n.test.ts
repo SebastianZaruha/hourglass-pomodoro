@@ -51,6 +51,8 @@ describe('i18n', () => {
     expect(en.hintPaused).toBe('tap to resume · press and hold to restart');
     expect(es.pauseUprightHint).toBe('ponlo de pie para seguir');
     expect(en.pauseUprightHint).toBe('stand it up to resume');
+    expect(es.pauseLandscapeHint).toBe('Girar el móvil pone en pausa');
+    expect(en.pauseLandscapeHint).toBe('Turning the phone sideways pauses');
   });
 
   it('los nombres de idioma van en su propio idioma', () => {
