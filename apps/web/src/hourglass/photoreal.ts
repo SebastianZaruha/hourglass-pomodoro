@@ -22,6 +22,7 @@ let ambientMod: AmbientMod | null = null;
 let ambientLoading = false;
 
 function ambientFor(id: MaterialId): AmbientMod | null {
+  // Miel y nieve están ocultas: la abeja y el zorro no se piden.
   if (id !== 'miel' && id !== 'nieve') return null;
   if (!ambientMod && !ambientLoading) {
     ambientLoading = true;
@@ -544,17 +545,33 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
         g.restore();
         return;
       }
-      if (ready(tex)) g.drawImage(tex, 0, 0, plate!.width, plate!.height);
+      if (kind === 'water') {
+        const y0 = surface * plate!.height;
+        const grad = g.createLinearGradient(0, y0, 0, box[1] * plate!.height + box[3] * plate!.height);
+        grad.addColorStop(0, 'rgba(214, 236, 238, 0.22)');
+        grad.addColorStop(0.45, 'rgba(120, 176, 186, 0.38)');
+        grad.addColorStop(1, 'rgba(46, 110, 128, 0.55)');
+        g.fillStyle = grad;
+        g.fillRect(0, y0, plate!.width, plate!.height);
+        g.globalAlpha = 0.9;
+        g.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(0, y0);
+        g.lineTo(plate!.width, y0);
+        g.stroke();
+        g.globalAlpha = frame.reduceMotion ? 0.12 : 0.1 + 0.04 * Math.sin(frame.phase * 1.2);
+        g.fillStyle = 'rgba(230, 250, 255, 0.9)';
+        g.beginPath();
+        g.ellipse(plate!.width * 0.42, y0 + plate!.height * 0.08, plate!.width * 0.16, plate!.height * 0.03, 0, 0, Math.PI * 2);
+        g.fill();
+        g.globalAlpha = 1;
+      } else if (ready(tex)) {
+        g.drawImage(tex, 0, 0, plate!.width, plate!.height);
+      }
       if (kind === 'honey' && ready(surfaceTex)) {
         const y = surface * plate!.height;
         g.drawImage(surfaceTex, 0, y - 10, plate!.width, 22);
-      }
-      if (kind === 'water' && ready(surfaceTex)) {
-        g.save();
-        g.globalAlpha = frame.reduceMotion ? 0.35 : 0.32 + 0.1 * Math.sin(frame.phase * 1.4);
-        const y = surface * plate!.height;
-        g.drawImage(surfaceTex, 0, y - 6, plate!.width, 14);
-        g.restore();
       }
       g.restore();
     };
@@ -600,31 +617,26 @@ function drawRain(
   frame: PhotoFrame,
 ): void {
   const span = to - from;
-  const count = frame.reduceMotion ? 5 : 20;
+  const count = frame.reduceMotion ? 4 : 12;
   const t = frame.reduceMotion ? 0 : frame.streamTime;
   for (let i = 0; i < count; i++) {
     const seed = i * 9.73 + 0.4;
-    const speed = 0.48 + ((i * 13) % 8) * 0.08;
+    const speed = 1.35 + ((i * 13) % 8) * 0.22;
     const travel = frame.reduceMotion ? 0.12 + (i % 5) * 0.17 : ((t * speed + seed) % 1 + 1) % 1;
     const y = from + span * Math.min(travel, 0.97);
     const x = center + Math.sin(seed * 1.6) * 8 + (frame.reduceMotion ? 0 : Math.sin(seed + travel * 5) * 2.2);
-    const len = 8 + (i % 4) * 1.8;
-    const wide = 2.2 + (i % 3) * 0.4;
+    const len = 11 + (i % 5) * 3.2;
+    const wide = 0.7 + (i % 3) * 0.25;
     ctx.save();
     ctx.translate(x, y);
-    ctx.globalAlpha = 0.62;
-    ctx.fillStyle = 'rgba(176, 210, 220, 0.55)';
+    const streak = ctx.createLinearGradient(0, -len, 0, len * 0.35);
+    streak.addColorStop(0, 'rgba(255,255,255,0)');
+    streak.addColorStop(0.35, 'rgba(210, 232, 238, 0.18)');
+    streak.addColorStop(0.72, 'rgba(186, 220, 228, 0.55)');
+    streak.addColorStop(1, 'rgba(255,255,255,0.8)');
+    ctx.fillStyle = streak;
     ctx.beginPath();
     ctx.ellipse(0, 0, wide, len, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.4;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.beginPath();
-    ctx.ellipse(-wide * 0.28, -len * 0.38, wide * 0.32, len * 0.16, -0.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     if (!frame.reduceMotion && travel > 0.9) {

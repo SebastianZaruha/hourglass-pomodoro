@@ -583,7 +583,7 @@ function Timer({
       </div>
       {paused ? (
         <div className="pause-screen">
-          <span className="pause-word">{t.paused}</span>
+          <span className="pause-word">{lang === 'es' ? 'En pausa' : t.paused}</span>
           {hint ? <span className="pause-hint">{hint}</span> : null}
         </div>
       ) : null}

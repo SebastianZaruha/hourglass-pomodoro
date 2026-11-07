@@ -1,5 +1,4 @@
 import {
-  MATERIAL_IDS,
   CYCLE_LIMITS,
   CYCLE_PRESETS,
   DURATION_STEPS_MIN,
@@ -24,6 +23,7 @@ import {
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { ESCENAS_ACTIVAS } from '../scenes';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -86,7 +86,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       </div>
 
       <div className="chip-row scene-row" role="radiogroup" aria-label={t.settings}>
-        {MATERIAL_IDS.map((id) => (
+        {ESCENAS_ACTIVAS.map((id) => (
           <button
             key={id}
             type="button"

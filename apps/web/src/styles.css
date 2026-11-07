@@ -83,6 +83,7 @@ a {
   --accent-ink: #2c2418;
   --glass-fill: rgba(255, 255, 255, 0.1);
   --glass-blur: blur(44px) saturate(1.7);
+  --menu-blur: blur(56px) saturate(1.85);
   background:
     radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
@@ -205,9 +206,10 @@ a {
   height: 100%;
 }
 
+.app.is-paused .scene,
 .app.is-paused .scene-photo,
 .app.is-paused .blades {
-  filter: blur(22px);
+  filter: blur(18px);
 }
 
 .pause-screen {
@@ -293,7 +295,7 @@ a {
   border-radius: 0.26em;
   border: 0;
   background: var(--glass-fill);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   color: #fff;
@@ -458,8 +460,8 @@ a {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.16);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--menu-blur);
+  -webkit-backdrop-filter: var(--menu-blur);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -1037,8 +1039,8 @@ a {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--menu-blur);
+  -webkit-backdrop-filter: var(--menu-blur);
 }
 
 .banner p {
@@ -1209,6 +1211,7 @@ a {
     filter: none;
   }
 
+  .app.is-paused .scene,
   .app.is-paused .scene-photo,
   .app.is-paused .blades {
     filter: none;

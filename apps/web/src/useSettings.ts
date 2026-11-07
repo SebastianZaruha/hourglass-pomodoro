@@ -5,16 +5,15 @@
 import { DEFAULT_SETTINGS, sanitizeSettings, updateSettings, type Settings } from '@reloj/core';
 import { useCallback, useState } from 'react';
 
+import { escenaActiva } from './scenes';
+
 export const WEB_SETTINGS_KEY = 'hourglass-web/ajustes';
 
-const WEB_SCENES = ['arena', 'lluvia', 'miel', 'nieve'] as const;
-
-/** Primera visita, valor ausente o escena desconocida: lluvia. */
-function storedScene(raw: unknown): (typeof WEB_SCENES)[number] | null {
-  if (typeof raw !== 'object' || raw === null) return null;
+/** Primera visita, valor ausente, miel o nieve: lluvia. */
+function storedScene(raw: unknown): 'lluvia' | 'arena' {
+  if (typeof raw !== 'object' || raw === null) return 'lluvia';
   const id = (raw as { contentId?: unknown }).contentId;
-  for (const scene of WEB_SCENES) if (scene === id) return scene;
-  return null;
+  return escenaActiva(typeof id === 'string' ? id : null);
 }
 
 function freshWebSettings(): Settings {
@@ -26,7 +25,7 @@ export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage
     const raw = storage.getItem(WEB_SETTINGS_KEY);
     if (raw === null) return freshWebSettings();
     const parsed: unknown = JSON.parse(raw);
-    const scene = storedScene(parsed) ?? 'lluvia';
+    const scene = storedScene(parsed);
     const settings = sanitizeSettings(parsed);
     return settings.contentId === scene ? settings : { ...settings, contentId: scene };
   } catch {

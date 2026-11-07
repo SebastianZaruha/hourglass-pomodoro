@@ -4,9 +4,15 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
-La pausa solo desenfoca la foto de fondo (`blur(22px)`); el frasco, el material, la nube y el reloj siguen nítidos. El cristal de la interfaz es un velo claro (`rgba(255,255,255,0.08–0.14)` según la escena) con blur fuerte, texto blanco y sombra suave. El pie son letras blancas pequeñas, sin pastilla. El botón de menú es ese mismo cristal, un poco mayor, con icono blanco. La sombra del suelo no gira: se apaga con el ángulo y vuelve de pie. La arena usa los granos de main dentro de la máscara del frasco. La lluvia cae en gotas, no en una columna, y el agua de dentro no se desplaza de lado. Avisos de cookies en el mismo cristal, en español.
+`ESCENAS_ACTIVAS` en `apps/web/src/scenes.ts` es `['lluvia','arena']`. Miel y nieve no salen en el menú y un valor guardado vuelve a lluvia. El código y los archivos siguen. La abeja y el zorro no se cargan mientras esas escenas están ocultas.
 
-Capturas: `verify-arena-run-1440.png`, `verify-lluvia-run-1440.png`, `verify-lluvia-pause-1440.png`, `verify-cookie-1440.png`, `verify-cookie-390.png`.
+La nube de `nube-original.mp4` no se ha sustituido. El damero está horneado y, al recortarlo, el borde sigue con cuadrados. Recorte: `docs/audit/cloud-key-dark.png` y `cloud-key-light.png`. Sigue la nube anterior.
+
+La pausa desenfoca la escena entera (frasco, nube y reloj) y deja «En pausa» centrado. El menú usa blur de 56 px. La tarjeta del reloj no tiene sombra de caída. El agua del bulbo es un velo con profundidad, menisco y cáustica, sin la foto. La lluvia son trazos finos. Parado, el nivel sigue `sandLevelForDuration` (log de 1 min a 3 h) y al empezar drena desde ahí.
+
+## Hecho antes
+
+La pausa solo desenfocaba la foto. El cristal es un velo claro. El pie son letras blancas. La arena usa los granos de main. Capturas: `verify-arena-run-1440.png`, `verify-lluvia-run-1440.png`, `verify-lluvia-pause-1440.png`, `verify-cookie-1440.png`, `verify-cookie-390.png`.
 
 ## Hecho antes
 

@@ -172,6 +172,7 @@ export function useHourglass(
       phase: 0,
       cloudTime: 0,
       streamTime: 0,
+      shownTop: undefined as number | undefined,
     };
 
     const paintSand = () => {
@@ -366,7 +367,12 @@ export function useHourglass(
       const spinAngle = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
       const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
-      const top = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const ratio = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const targetTop = sandLevelForDuration(snap.durationMs) * ratio;
+      if (loop.shownTop === undefined) loop.shownTop = targetTop;
+      const ease = 1 - Math.exp(-Math.min(0.08, frameDt) * 7);
+      loop.shownTop += (targetTop - loop.shownTop) * ease;
+      const top = loop.shownTop;
       const photoId = p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena';
       const photoLayout = photoVesselLayout(cssW, cssH, photoId);
       if (photoLayout) loop.layout = photoLayout;
