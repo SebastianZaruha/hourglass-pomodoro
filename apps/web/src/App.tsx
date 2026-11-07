@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/react';
 import {
   activeCycleConfig,
   dockIsRoomy,
@@ -16,6 +15,8 @@ import {
   type ThemePreference,
 } from '@reloj/core';
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -27,7 +28,6 @@ import {
 } from 'react';
 
 import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
-import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
 import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
@@ -42,11 +42,12 @@ import { HourglassView } from './hourglass/HourglassView';
 import type { HourglassHandle, HourglassParams } from './hourglass/useEngine';
 import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
-import { playCue, primeAudio } from './sound';
 import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
+
+const Analytics = lazy(() => import('@vercel/analytics/react').then((mod) => ({ default: mod.Analytics })));
 
 function allowAnalyticsEvent<E>(event: E): E {
   return event;
@@ -161,12 +162,15 @@ function Timer({
   }, [lang, scheme]);
 
   useEffect(() => {
-    const id = gaMeasurementId();
-    if (consentChoice === 'accepted') enableGoogleAnalytics(id);
-    else if (consentChoice === 'rejected') {
-      disableGoogleAnalytics(id);
-      stopVercelWebAnalytics();
-    }
+    if (!consentChoice) return;
+    void import('./analytics').then((mod) => {
+      const id = mod.gaMeasurementId();
+      if (consentChoice === 'accepted') mod.enableGoogleAnalytics(id);
+      else {
+        mod.disableGoogleAnalytics(id);
+        stopVercelWebAnalytics();
+      }
+    });
   }, [consentChoice]);
 
   const chooseCookies = (choice: ConsentChoice) => {
@@ -211,7 +215,7 @@ function Timer({
     const cue = sessionCue(prevCue.current, view);
     prevCue.current = view;
     if (!cue) return;
-    if (settings.sound) playCue(cue);
+    if (settings.sound) void import('./sound').then((mod) => mod.playCue(cue));
     showPhaseNotification(t, cue, view, lang);
   }, [view, settings.sound, t, lang]);
 
@@ -223,7 +227,7 @@ function Timer({
   }, [state, tick]);
 
   const doToggle = useCallback(() => {
-    primeAudio();
+    void import('./sound').then((mod) => mod.primeAudio());
     const status = state.timer.status;
     if (status === 'idle' || status === 'finished') void ensureNotificationPermission();
     toggle();
@@ -442,7 +446,11 @@ function Timer({
       data-roomy={dockIsRoomy(window.innerWidth, window.innerHeight) ? 'yes' : 'no'}
       style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
-      {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      {consentChoice === 'accepted' ? (
+        <Suspense fallback={null}>
+          <Analytics beforeSend={allowAnalyticsEvent} />
+        </Suspense>
+      ) : null}
       <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
       <div className="scene">
         <div

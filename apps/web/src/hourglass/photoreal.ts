@@ -18,7 +18,21 @@ import {
   type MaterialId,
 } from '@reloj/core';
 
-import { drawAmbient, preloadAmbient } from './ambient';
+type AmbientMod = typeof import('./ambient');
+let ambientMod: AmbientMod | null = null;
+let ambientLoading = false;
+
+function ambientFor(id: MaterialId): AmbientMod | null {
+  if (id !== 'miel' && id !== 'nieve') return null;
+  if (!ambientMod && !ambientLoading) {
+    ambientLoading = true;
+    void import('./ambient').then((mod) => {
+      ambientMod = mod;
+      mod.preloadAmbient(id);
+    });
+  }
+  return ambientMod;
+}
 
 const FRAME_W = 96;
 const FRAME_H = 512;
@@ -41,10 +55,12 @@ function load(src: string): HTMLImageElement {
   return image;
 }
 
-const back = load('/glass/hi/jar-back.webp');
-const front = load('/glass/hi/jar-front-highlights.webp');
-const mask = load('/glass/hi/jar-interior-mask.webp');
-const shadow = load('/glass/hi/jar-shadow.webp');
+const glassDir =
+  typeof matchMedia === 'function' && matchMedia('(max-width: 900px)').matches ? '/glass/' : '/glass/hi/';
+const back = load(`${glassDir}jar-back.webp`);
+const front = load(`${glassDir}jar-front-highlights.webp`);
+const mask = load(`${glassDir}jar-interior-mask.webp`);
+const shadow = load(`${glassDir}jar-shadow.webp`);
 const cloud = load('/glass/cloud-real.webp');
 const surfaceTex = load('/glass/tex-water-surface.webp');
 const textures: Record<Kind, HTMLImageElement> = {
@@ -53,18 +69,24 @@ const textures: Record<Kind, HTMLImageElement> = {
   honey: load('/glass/tex-honey.webp'),
   snow: load('/glass/tex-snow.webp'),
 };
-const atlases: Record<Kind, HTMLImageElement> = {
-  sand: load('/streams/sand-atlas.webp'),
-  water: load('/streams/water-atlas.webp'),
-  honey: load('/streams/honey-atlas.webp'),
-  snow: load('/streams/snow-atlas.webp'),
-};
-const splashes: Record<Kind, HTMLImageElement> = {
-  sand: load('/streams/sand-splash.webp'),
-  water: load('/streams/water-splash.webp'),
-  honey: load('/streams/honey-splash.webp'),
-  snow: load('/streams/snow-splash.webp'),
-};
+let atlases: Record<Kind, HTMLImageElement> | null = null;
+let splashes: Record<Kind, HTMLImageElement> | null = null;
+
+function ensureSheets(): void {
+  if (atlases && splashes) return;
+  atlases = {
+    sand: load('/streams/sand-atlas.webp'),
+    water: load('/streams/water-atlas.webp'),
+    honey: load('/streams/honey-atlas.webp'),
+    snow: load('/streams/snow-atlas.webp'),
+  };
+  splashes = {
+    sand: load('/streams/sand-splash.webp'),
+    water: load('/streams/water-splash.webp'),
+    honey: load('/streams/honey-splash.webp'),
+    snow: load('/streams/snow-splash.webp'),
+  };
+}
 
 const videos = new Map<Kind, HTMLVideoElement>();
 
@@ -217,7 +239,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const heap = kind === 'sand' ? 0.045 : kind === 'snow' ? 0.032 : 0;
 
   ctx.clearRect(0, 0, frame.viewW, frame.viewH);
-  drawAmbient(ctx, frame, jar, 'behind');
+  ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'behind');
 
   const footX = place.footX;
   const footY = place.footY;
@@ -271,7 +293,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
         g.drawImage(alphaMask, 0, 0, plate.width, plate.height);
         g.globalCompositeOperation = 'source-over';
         ctx.save();
-        ctx.globalAlpha = 0.72;
+        ctx.globalAlpha = 0.22;
         ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
         ctx.restore();
       }
@@ -345,7 +367,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
     ctx.restore();
   }
 
-  drawAmbient(ctx, frame, jar, 'front');
+  ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'front');
   return true;
 }
 
@@ -367,22 +389,25 @@ function drawStream(
     video.pause();
     if (frame.reduceMotion) video.currentTime = 0;
   }
-  const width = kind === 'honey' ? 54 : kind === 'sand' ? 46 : kind === 'snow' ? 72 : 42;
+  const width = kind === 'honey' ? 54 : kind === 'sand' ? 46 : kind === 'snow' ? 72 : 56;
   const x = center - width / 2;
   const useVideo = !frame.reduceMotion && video.readyState >= 2 && video.videoWidth > 0;
+  ensureSheets();
+  const sheet = atlases?.[kind];
+  const splash = splashes?.[kind];
   ctx.save();
   if (useVideo) {
     ctx.drawImage(video, x, from, width, span);
-  } else if (ready(atlases[kind])) {
+  } else if (sheet && ready(sheet)) {
     const index = streamFrame(frame.streamTime, frame.reduceMotion);
-    ctx.drawImage(atlases[kind], index * FRAME_W, 0, FRAME_W, FRAME_H, x, from, width, span);
+    ctx.drawImage(sheet, index * FRAME_W, 0, FRAME_W, FRAME_H, x, from, width, span);
   }
-  if (ready(splashes[kind])) {
+  if (splash && ready(splash)) {
     const index = streamFrame(frame.streamTime, frame.reduceMotion || !flowing);
     const srcH = kind === 'honey' ? 70 : SPLASH_H;
     const sw = kind === 'honey' ? 42 : 48;
     const sh = kind === 'honey' ? 26 : 22;
-    ctx.drawImage(splashes[kind], index * SPLASH_W, 0, SPLASH_W, srcH, center - sw / 2, to - sh * 0.7, sw, sh);
+    ctx.drawImage(splash, index * SPLASH_W, 0, SPLASH_W, srcH, center - sw / 2, to - sh * 0.7, sw, sh);
   }
   ctx.restore();
 }
@@ -391,9 +416,8 @@ function drawStream(
 export function preloadJar(id: MaterialId): void {
   const kind = KIND[id];
   const hrefs = [
-    '/glass/hi/jar-back.webp',
-    '/glass/hi/jar-front-highlights.webp',
-    `/streams/${kind}.webm`,
+    `${glassDir}jar-back.webp`,
+    `${glassDir}jar-front-highlights.webp`,
     `/glass/tex-${kind}.webp`,
   ];
   for (const href of hrefs) {
@@ -405,6 +429,9 @@ export function preloadJar(id: MaterialId): void {
     link.dataset.jar = href;
     document.head.appendChild(link);
   }
-  streamVideo(kind);
-  preloadAmbient(id);
+  window.setTimeout(() => {
+    ensureSheets();
+    streamVideo(kind);
+    ambientFor(id);
+  }, 1600);
 }

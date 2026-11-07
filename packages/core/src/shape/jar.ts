@@ -7,7 +7,7 @@
  */
 import type { MaterialId } from '../catalog/contents';
 import table from './jarTable.json';
-import { coverFrame, groundContact, groundJarHeight, type Frame } from './plate';
+import { groundContact, groundJarHeight, type Frame } from './plate';
 
 type Row = readonly [number, number];
 
@@ -89,14 +89,20 @@ export function dioramaPlacement(
   const iw = imageW > 0 ? imageW : 1;
   const ih = imageH > 0 ? imageH : 1;
   const wide = viewW >= viewH;
-  // El apoyo va abajo y, en horizontal, a la izquierda, para que el panel
-  // de ajustes quepa a la derecha sin tapar el vidrio. Si hace falta, la
-  // foto se acerca: miel y nieve no pueden quedarse flotando.
-  const preferX = wide ? viewW * 0.28 : viewW * 0.5;
-  const preferY = viewH * 0.86;
-  const scene = coverFrame(viewW, viewH, iw, ih, preferX, preferY, contact.x, contact.y);
-  const footX = preferX;
-  const footY = preferY;
+  // Cover mínimo: se ve el diorama entero. El contacto se acerca al suelo
+  // solo hasta donde la foto sigue cubriendo, sin acercar de más.
+  const scale = Math.max(viewW / iw, viewH / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const preferX = wide ? viewW * 0.3 : viewW * 0.5;
+  const preferY = viewH * 0.84;
+  let x = preferX - contact.x * dw;
+  let y = preferY - contact.y * dh;
+  x = Math.min(0, Math.max(Math.min(0, viewW - dw), x));
+  y = Math.min(0, Math.max(Math.min(0, viewH - dh), y));
+  const scene = { x, y, w: dw, h: dh };
+  const footX = x + contact.x * dw;
+  const footY = y + contact.y * dh;
   let jh = groundJarHeight(id, imageWide) * scene.h;
   const maxH = viewH * 0.68;
   if (jh > maxH) jh = maxH;

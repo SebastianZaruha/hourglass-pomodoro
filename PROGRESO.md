@@ -1,42 +1,37 @@
 # Progreso — web fotográfica (`feature/materiales-3d`, PR #14)
 
-No está mergeado. El móvil sigue con su renderer anterior.
+No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets/glass/` no se commitea.
 
 ## Hecho en este paso
 
-- El pie de arena, miel y nieve se ancla abajo a la izquierda con el mismo recorte ampliado (`coverFrame`), no con el cover mínimo que dejaba la miel flotando. El panel de Ajustes queda a la derecha (`right` + `32vw`) para no tapar el frasco.
-- La nube se recompuso en premultiplicado: el borde ya no es una costra negra; los flecos son grises y translúcidos.
-- El chorro de miel ya no aplasta toda la rosca en un borrón: solo se dibujan los 70 px de arriba, como un hilo sobre la superficie. Los bucles de agua y miel se regeneraron más gruesos y con brillo.
-- La hora va sobre una pastilla de cristal (`backdrop-filter`) para leerse encima de las piedras y las flores.
-- Las fotos de escena y las briznas nacen ocultas y se muestran al colocarlas. Eso bajó el CLS de 0,88 a 0.
+- La hora es texto blanco fino, sin pastilla. En horizontal queda en el cielo de la derecha; en 390 queda arriba, sobre el cielo.
+- El encuadre vuelve al cover mínimo (toda la isla de lluvia: orbes, charca y rocas). El contacto se acerca al suelo solo hasta donde la foto sigue cubriendo, sin zoom extra.
+- El cristal vacío no lleva velo de color. La refracción del fondo va al 22 %. En arena el bulbo de arriba deja ver el atardecer. Si detrás hay roca oscura, el vidrio se ve oscuro porque la roca lo es.
+- El chorro de agua es un hilo casi recto (un solo vaivén de 2 px) y se dibuja a 56 px. La miel sigue siendo hilo más una rosca corta en la superficie.
+- A un 40 % transcurrido el volumen de arriba es 0,6 (superficie y ≈ 0,17) y el de abajo 0,4 (superficie y ≈ 0,82). El de arriba ocupa más alto de bulbo.
+- La nube se remateó desde `cloud-real.png`: el fleco es gris azulado luminoso (≈ 186, 196, 210) y el cuerpo ≈ 151, 160, 176. No queda costra negra.
+- El panel y la barra son cristal ahumado (relleno oscuro y translúcido, blur fuerte). El acento ya no es oliva: arena ámbar, lluvia ámbar del orbe, miel oro, nieve azul gris. Va en el botón activo, los toggles y el relleno del slider.
+- En viewports ≤ 900 px las capas del frasco son las de 1024. El vídeo del chorro, los atlas, el ambiente, el sonido y Analytics se cargan después del primer pintado.
 
-## Lighthouse (preview de producción, `vite preview` en el puerto 4173, no el dev server)
+## Lighthouse (preview de producción, puerto 4173, 7 nov 2026)
 
-| | Puntuación | FCP | LCP | TBT | CLS |
-| --- | --- | --- | --- | --- | --- |
-| Móvil | 87 | 1,9 s | 2,5 s | 370 ms | 0 |
-| Escritorio | 100 | 0,2 s | 0,5 s | 50 ms | 0 |
+| | Puntuación | FCP | LCP | TBT | CLS | SI |
+| --- | --- | --- | --- | --- | --- | --- |
+| Móvil | 95 | 0,9 s | 2,1 s | 230 ms | 0 | 1,7 s |
 
-Medido el 7 nov 2026 contra el build de esta rama. El dev server daba 23/49 porque sirve cada módulo suelto; no vale. El móvil no llega a 90 por el TBT (370 ms). La calidad de las capas 2048 se mantiene.
+El escritorio de la medición anterior seguía en 100; no se ha vuelto a pasar en este paso.
 
 ## Capturas comprobadas (no blancas)
 
-`/opt/cursor/artifacts/v2-*.png`, reloj en marcha, texto `00:36` de un minuto (40 % transcurrido), 0 % de píxeles blancos, sin excepciones en consola:
+Reloj en marcha, texto `00:36` de un minuto. Tamaño y % de blanco medidos en el PNG:
 
-- `v2-arena-1440.png`, `v2-lluvia-1440.png`, `v2-nieve-1440.png`
-- `v2-miel-1440-menu.png` (menú abierto, panel a la derecha)
-- `v2-lluvia-390.png` (esta usa el pie al 80 % de alto; el retrato se acaba de bajar al 86 % y no se ha vuelto a capturar)
+- `r4-arena-1440.png` (1,3 MB, 0,29 %), `r4-miel-1440-menu.png` (1,4 MB, 0,01 %, menú abierto), `r4-nieve-1440.png` (1,2 MB, 0,18 %)
+- `r6-lluvia-1440.png` (762 KB, 0,19 %) y `r6-lluvia-390.png` (306 KB, 0,11 %, hora arriba)
 
-La nube de `v3-lluvia-cloud.png` es la versión con el borde suavizado.
+Están en `/opt/cursor/artifacts/`.
 
-## Hallazgo de las capturas blancas
+## Qué no está
 
-`fix-*.png` (5851 bytes) son un PNG blanco. Causa: Vite servía un `index.ts` sin `export * from './shape/visit'`, y el navegador lanzaba `does not provide an export named 'freshVisitClock'` antes de pintar. Reiniciar Vite lo arregló. No fiarse de una descripción de una imagen de 5 KB.
-
-## Siguiente
-
-- Volver a capturar 390×844 con el pie al 86 %.
-- El chorro, aunque es un WebM con alfa, en el cuello sigue viéndose estrecho. Si el dueño lo quiere más grueso, subir el ancho de dibujo en `drawStream`.
-- No hay MP4 HEVC con alfa.
-- Abeja y nieve ambiental no salen en estas capturas: esperan 3–6 min y el reloj en marcha.
-- No mergear. No APK. No igualar el móvil.
+- No hay MP4 HEVC con alfa; el bucle es WebM VP9 y el atlas.
+- Abeja, zorro y ventisca no salen en estas capturas: esperan unos minutos con el reloj en marcha.
+- No mergear. No APK.
