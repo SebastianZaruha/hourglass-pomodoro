@@ -16,33 +16,27 @@ import {
   LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
-  type MaterialId,
   type Messages,
-  type Settings,
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
-import { ESCENAS_ACTIVAS } from '../scenes';
+import { ESCENAS_ACTIVAS, type EscenaActiva } from '../scenes';
+import type { SettingsPatch, WebSettings } from '../useSettings';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
-function sceneName(t: Messages, id: MaterialId): string {
+function sceneName(t: Messages, id: EscenaActiva): string {
+  if (id === 'claro') return t.materialSand === 'Sand' ? 'Simple' : 'Claro';
   if (id === 'lluvia') return t.materialRain;
-  if (id === 'miel') return t.materialHoney;
-  if (id === 'nieve') return t.materialSnow;
   return t.materialSand;
 }
 
 interface Props {
   readonly open: boolean;
-  readonly settings: Settings;
+  readonly settings: WebSettings;
   readonly t: Messages;
-  readonly onChange: (
-    patch:
-      | Partial<Omit<Settings, 'version' | 'updatedAt'>>
-      | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
-  ) => void;
+  readonly onChange: (patch: SettingsPatch | ((current: WebSettings) => SettingsPatch)) => void;
   readonly onClose: () => void;
 }
 

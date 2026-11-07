@@ -9,7 +9,6 @@ import {
   sessionSnapshot,
   stepMinutes,
   stepToDuration,
-  type Settings,
   type ThemePreference,
 } from '@reloj/core';
 import {
@@ -41,7 +40,7 @@ import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
-import { useSettings, type SettingsPatch } from './useSettings';
+import { useSettings, type SettingsPatch, type WebSettings } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
 
 const Analytics = lazy(() => import('@vercel/analytics/react').then((mod) => ({ default: mod.Analytics })));
@@ -109,8 +108,8 @@ function Timer({
   settings,
   update,
 }: {
-  settings: Settings;
-  update: (patch: SettingsPatch | ((current: Settings) => SettingsPatch)) => void;
+  settings: WebSettings;
+  update: (patch: SettingsPatch | ((current: WebSettings) => SettingsPatch)) => void;
 }) {
   const systemDark = useSystemDark();
   const reduceMotion = useReducedMotion();
@@ -476,18 +475,24 @@ function Timer({
       ref={appRef}
       className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${chromeOn || menu ? ' chrome' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
-      data-material={getContent(settings.contentId).id}
+      data-material={settings.contentId}
       data-layout={wide ? 'wide' : 'narrow'}
       data-compact={compact ? 'yes' : 'no'}
       data-roomy="no"
-      style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
+      style={
+        settings.contentId === 'claro'
+          ? undefined
+          : pageTint(scheme, getContent(settings.contentId).atmosphere)
+      }
     >
       {consentChoice === 'accepted' ? (
         <Suspense fallback={null}>
           <Analytics beforeSend={allowAnalyticsEvent} />
         </Suspense>
       ) : null}
-      <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
+      {settings.contentId === 'claro' ? null : (
+        <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
+      )}
       <div className="scene">
         <div
           ref={stageRef}

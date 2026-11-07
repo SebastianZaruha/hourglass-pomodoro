@@ -34,10 +34,9 @@ function ambientFor(id: MaterialId): AmbientMod | null {
   return ambientMod;
 }
 
-const CLOUD_W = 480;
-const CLOUD_H = 228;
-const CLOUD_FRAMES = 24;
-const CLOUD_FPS = 5;
+const CLOUD_W = 1100;
+const CLOUD_H = 438;
+const CLOUD_FPS = 24;
 
 type Kind = 'sand' | 'water' | 'honey' | 'snow';
 
@@ -61,26 +60,55 @@ const back = load(`${glassDir}jar-back.webp`);
 const front = load(`${glassDir}jar-front-highlights.webp`);
 const mask = load(`${glassDir}jar-interior-mask.webp`);
 const shadow = load(`${glassDir}jar-shadow.webp`);
-const cloudSheet = load('/streams/cloud-atlas.webp');
-let cloudClip: HTMLVideoElement | null = null;
+const cloudPoster = load('/streams/cloud-poster.png');
+let cloudFront: HTMLVideoElement | null = null;
+let cloudBack: HTMLVideoElement | null = null;
+let cloudFrontMask: HTMLVideoElement | null = null;
+let cloudBackMask: HTMLVideoElement | null = null;
 
-function cloudVideo(): HTMLVideoElement {
-  if (cloudClip) return cloudClip;
+const safariCloud =
+  typeof navigator !== 'undefined' &&
+  /safari/i.test(navigator.userAgent) &&
+  !/chrome|chromium|crios|android|edg/i.test(navigator.userAgent);
+
+function makeCloudVideo(src: string): HTMLVideoElement {
   const video = document.createElement('video');
   video.muted = true;
   video.loop = true;
   video.playsInline = true;
   video.preload = 'auto';
-  video.src = '/streams/cloud.webm';
-  cloudClip = video;
+  video.src = src;
   return video;
 }
 
-function cloudIndex(seconds: number, reduceMotion: boolean): number {
-  if (reduceMotion || !Number.isFinite(seconds)) return 0;
-  const loop = CLOUD_FRAMES / CLOUD_FPS;
-  const t = ((seconds % loop) + loop) % loop;
-  return Math.floor(t * CLOUD_FPS) % CLOUD_FRAMES;
+function cloudClip(which: 'front' | 'back'): HTMLVideoElement {
+  const existing = which === 'front' ? cloudFront : cloudBack;
+  if (existing) return existing;
+  const video = makeCloudVideo(safariCloud ? '/streams/cloud-color.mp4' : '/streams/cloud.webm');
+  const mask = safariCloud ? makeCloudVideo('/streams/cloud-mask.mp4') : null;
+  if (which === 'front') {
+    cloudFront = video;
+    cloudFrontMask = mask;
+  } else {
+    cloudBack = video;
+    cloudBackMask = mask;
+  }
+  return video;
+}
+
+function cloudMask(which: 'front' | 'back'): HTMLVideoElement | null {
+  cloudClip(which);
+  return which === 'front' ? cloudFrontMask : cloudBackMask;
+}
+
+function seekCloud(video: HTMLVideoElement, time: number): void {
+  if (Math.abs(video.currentTime - time) > 0.08) {
+    try {
+      video.currentTime = time;
+    } catch {
+      /* el vídeo aún no admite seek */
+    }
+  }
 }
 const surfaceTex = load('/glass/tex-water-surface.webp');
 const textures: Record<Kind, HTMLImageElement> = {
@@ -170,25 +198,131 @@ function clipFill(
   heap: number,
   wave: number,
   meniscus: number,
+  tilt = 0,
+  heightOff = 0,
 ): boolean {
-  const ySurf = surface * h;
+  const ySurf = (surface + heightOff) * h;
   const y0 = box[1] * h;
   const y1 = box[3] * h;
-  if (ySurf >= y1 - 1) return false;
+  if (ySurf >= y1 - 1 && Math.abs(tilt) < 0.08) return false;
+  const gx = Math.sin(tilt);
+  const gy = Math.cos(tilt);
+  if (Math.abs(tilt) < 0.004) {
+    ctx.beginPath();
+    ctx.moveTo(0, y1);
+    ctx.lineTo(w, y1);
+    const steps = 28;
+    for (let i = steps; i >= 0; i--) {
+      const t = i / steps;
+      const bell = Math.sin(t * Math.PI);
+      const yy = Math.max(y0, ySurf - heap * bell * h + meniscus * (1 - bell) * h + wave * Math.sin(t * Math.PI * 2));
+      ctx.lineTo(t * w, yy);
+    }
+    ctx.closePath();
+    ctx.clip();
+    return true;
+  }
+  const depth = Math.min(y1 - y0, Math.max(0, y1 - (surface * h)));
+  if (depth < 1 && Math.abs(gy) > 0.2) return false;
+  if (Math.abs(gy) < 0.18) {
+    const frac = Math.min(1, Math.max(0.04, depth / Math.max(1, y1 - y0)));
+    const xSplit = gx > 0 ? w * (1 - frac) : w * frac;
+    ctx.beginPath();
+    if (gx > 0) ctx.rect(xSplit, y0, w - xSplit, y1 - y0);
+    else ctx.rect(0, y0, xSplit, y1 - y0);
+    ctx.clip();
+    return true;
+  }
+  const lowY = gy >= 0 ? y1 : y0;
+  const yBase = gy >= 0 ? lowY - depth : lowY + depth;
+  const slope = gx / gy;
   ctx.beginPath();
-  ctx.moveTo(0, y1);
-  ctx.lineTo(w, y1);
-  const steps = 28;
+  if (gy >= 0) {
+    ctx.moveTo(0, y1);
+    ctx.lineTo(w, y1);
+  } else {
+    ctx.moveTo(0, y0);
+    ctx.lineTo(w, y0);
+  }
+  const steps = 32;
   for (let i = steps; i >= 0; i--) {
     const t = i / steps;
     const bell = Math.sin(t * Math.PI);
-    const yy = Math.max(y0, ySurf - heap * bell * h + meniscus * (1 - bell) * h + wave * Math.sin(t * Math.PI * 2));
-    ctx.lineTo(t * w, yy);
+    const x = t * w;
+    let y = yBase + heightOff * h - (x - w / 2) * slope;
+    y += -heap * bell * h + meniscus * (1 - bell) * h + wave * Math.sin(t * Math.PI * 2);
+    ctx.lineTo(x, Math.max(y0 - 2, Math.min(y1 + 2, y)));
   }
   ctx.closePath();
   ctx.clip();
   return true;
 }
+
+/** Muelle corto del agua: el ángulo sigue la gravedad y la altura se asienta. */
+const slosh = {
+  angle: 0,
+  vel: 0,
+  height: 0,
+  hVel: 0,
+  prevRot: 0,
+  ready: false,
+  moving: false,
+  last: 0,
+};
+
+export function waterSloshMoving(): boolean {
+  return slosh.moving;
+}
+
+function stepWaterSlosh(rotation: number, frozen: boolean): { angle: number; height: number } {
+  const now = performance.now();
+  const dt = Math.min(0.05, slosh.last ? (now - slosh.last) / 1000 : 1 / 60);
+  slosh.last = now;
+  if (!slosh.ready) {
+    slosh.angle = rotation;
+    slosh.prevRot = rotation;
+    slosh.ready = true;
+    slosh.moving = false;
+    return { angle: rotation, height: 0 };
+  }
+  const raw = rotation - slosh.prevRot;
+  if (Math.abs(raw) > 2.2) slosh.angle += raw;
+  slosh.prevRot = rotation;
+  if (frozen) {
+    slosh.angle = rotation;
+    slosh.vel = 0;
+    slosh.height = 0;
+    slosh.hVel = 0;
+    slosh.moving = false;
+    return { angle: rotation, height: 0 };
+  }
+  const acc = 58 * (rotation - slosh.angle) - 7.2 * slosh.vel;
+  slosh.vel += acc * dt;
+  slosh.angle += slosh.vel * dt;
+  slosh.hVel += raw * 0.015;
+  slosh.hVel += (42 * (0 - slosh.height) - 7.4 * slosh.hVel) * dt;
+  slosh.height = Math.max(-0.03, Math.min(0.03, slosh.height + slosh.hVel * dt));
+  slosh.moving =
+    Math.abs(slosh.vel) > 0.02 ||
+    Math.abs(slosh.angle - rotation) > 0.012 ||
+    Math.abs(slosh.hVel) > 0.004 ||
+    Math.abs(slosh.height) > 0.0015;
+  return { angle: slosh.angle, height: slosh.height };
+}
+
+/** Luz neutra de Claro: sin el sol de las dunas. */
+const PLAIN_LIGHT: SceneLight = {
+  dx: 0.06,
+  key: 0.58,
+  highlight: '#fff8ee',
+  shade: 'rgba(48, 42, 36, 0.2)',
+  ambient: 'rgba(255, 250, 244, 0.26)',
+  gleam: 'rgba(255, 252, 248, 0.5)',
+  bounce: 'rgba(232, 222, 208, 0.18)',
+  caustic: 'rgba(255, 244, 230, 0.1)',
+  shadow: 'rgba(62, 50, 40, 0.22)',
+  filter: 'brightness(1.03) contrast(1.02) saturate(0.92)',
+};
 
 export interface PhotoFrame {
   readonly id: MaterialId;
@@ -203,6 +337,8 @@ export interface PhotoFrame {
   readonly viewW: number;
   readonly viewH: number;
   readonly rotation: number;
+  /** Claro: el mismo frasco, sin foto ni luz de las dunas. */
+  readonly plain?: boolean;
   /** Arena: granos y caída de la simulación de main, recortados a la máscara. */
   readonly grains?: {
     readonly image: CanvasImageSource;
@@ -348,21 +484,63 @@ export function placedPhotoJar(
 } {
   const place = dioramaPlacement(viewW, viewH, imageW, imageH, id, true, id === 'lluvia');
   const sink = place.jar.h * 0.016;
+  let jarX = place.jar.x;
   let jarY = place.jar.y + sink;
+  let footX = place.footX;
   let footY = place.footY;
+  let sceneX = place.scene.x;
   let sceneY = place.scene.y;
-  if (viewH > viewW) {
-    const dy = viewH * 0.97 - (footY + sink);
-    const shift = jarY + dy < 4 ? 4 - jarY : dy;
-    jarY += shift;
-    footY += shift;
-    sceneY += shift;
+  if (viewH > viewW && id === 'lluvia') {
+    const jar = { x: jarX, y: jarY, w: place.jar.w, h: place.jar.h };
+    const cloud = portraitCloudBox(jar);
+    const groupTop = Math.min(cloud.y, cloud.y - cloud.height * 0.04);
+    const groupBottom = jar.y + jar.h;
+    const groupLeft = Math.min(jar.x, cloud.x - cloud.width * 0.08);
+    const groupRight = Math.max(jar.x + jar.w, cloud.x + cloud.width);
+    const dy = (viewH - (groupBottom - groupTop)) / 2 - groupTop;
+    const dx = (viewW - (groupRight - groupLeft)) / 2 - groupLeft;
+    jarX += dx;
+    jarY += dy;
+    footX += dx;
+    footY += dy;
+    sceneX += dx;
+    sceneY += dy;
   }
   return {
-    jar: { x: place.jar.x, y: jarY, w: place.jar.w, h: place.jar.h },
-    footX: place.footX,
+    jar: { x: jarX, y: jarY, w: place.jar.w, h: place.jar.h },
+    footX,
     footY,
-    scene: { ...place.scene, y: sceneY },
+    scene: { ...place.scene, x: sceneX, y: sceneY },
+  };
+}
+
+/** El borde de abajo tapa el remate y un 12 % del bulbo de arriba. */
+function cloudCoverY(jar: { y: number; h: number }, height: number): number {
+  const bulbTop = JAR_TOP_BOX[1];
+  const bulbSpan = JAR_TOP_BOX[3] - JAR_TOP_BOX[1];
+  return jar.y + jar.h * (bulbTop + 0.12 * bulbSpan) - height;
+}
+
+function cloudAspect(): number {
+  const video = cloudFront;
+  if (video && video.videoWidth > 0 && video.videoHeight > 0) return video.videoHeight / video.videoWidth;
+  return CLOUD_H / CLOUD_W;
+}
+
+/** Caja de la nube delantera, la misma que pinta `drawCloud`. */
+function portraitCloudBox(jar: { x: number; y: number; w: number; h: number }): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const width = jar.w * 1.9;
+  const height = width * cloudAspect();
+  return {
+    x: jar.x + jar.w / 2 - width / 2,
+    y: cloudCoverY(jar, height),
+    width,
+    height,
   };
 }
 
@@ -370,7 +548,8 @@ export function placedPhotoJar(
  * Vídeo sobre negro (sin alfa real): el alfa sale de la luminancia y el negro
  * se quita del color. Listo para la próxima nube de Sebastián.
  */
-function alphaFromBlack(data: Uint8ClampedArray): void {
+/** Clave de negro a alfa. La nube publicada ya viene recortada; esto queda para el fuente. */
+export function alphaFromBlack(data: Uint8ClampedArray): void {
   for (let i = 0; i < data.length; i += 4) {
     const luma = ((data[i] ?? 0) + (data[i + 1] ?? 0) + (data[i + 2] ?? 0)) / 3;
     const alpha = Math.max(0, Math.min(255, (luma - 6) * 1.55));
@@ -386,64 +565,62 @@ function alphaFromBlack(data: Uint8ClampedArray): void {
   }
 }
 
-function softenCloudEdges(data: Uint8ClampedArray, width: number, height: number): void {
-  for (let y = 0; y < height; y++) {
-    const yIn = Math.min(y / (height * 0.16), (height - 1 - y) / (height * 0.14));
-    for (let x = 0; x < width; x++) {
-      const xIn = Math.min(x / (width * 0.14), (width - 1 - x) / (width * 0.22));
-      const t = Math.max(0, Math.min(1, Math.min(xIn, yIn)));
-      const fade = t * t * (3 - 2 * t);
-      const i = (y * width + x) * 4 + 3;
-      data[i] = Math.round((data[i] ?? 0) * fade);
-    }
-  }
-}
-
-let cloudBuf: HTMLCanvasElement | null = null;
-
-/** Tapa baja y ancha: se apoya en el capuchón, el agua queda debajo. */
+/** Tapa baja: el borde de abajo cubre el remate y un poco del bulbo de arriba. */
 function drawCloud(
   ctx: CanvasRenderingContext2D,
   jar: { x: number; y: number; w: number; h: number },
   frame: PhotoFrame,
 ): void {
-  const width = jar.w * 1.72;
-  const height = width * (CLOUD_H / CLOUD_W) * 0.72;
-  const bottom = jar.y + jar.w * 0.06;
+  const width = jar.w * 1.9;
+  const height = width * cloudAspect();
   const x = jar.x + jar.w / 2 - width / 2;
-  const y = bottom - height;
-  const video = cloudVideo();
-  const loop = CLOUD_FRAMES / CLOUD_FPS;
+  const y = cloudCoverY(jar, height);
+  const clip = cloudClip('front');
+  const loop = clip.duration && Number.isFinite(clip.duration) && clip.duration > 0.4 ? clip.duration : 286 / CLOUD_FPS;
   const t = frame.reduceMotion ? 0 : ((frame.cloudTime % loop) + loop) % loop;
-  if (!cloudBuf) {
-    cloudBuf = document.createElement('canvas');
-    cloudBuf.width = CLOUD_W;
-    cloudBuf.height = CLOUD_H;
-  }
-  const g = cloudBuf.getContext('2d', { willReadFrequently: true });
-  if (!g) return;
-  g.clearRect(0, 0, CLOUD_W, CLOUD_H);
-  if (video.readyState >= 2) {
-    if (Math.abs(video.currentTime - t) > 0.12) {
-      try {
-        video.currentTime = t;
-      } catch {
-        /* el vídeo aún no admite seek */
-      }
+  const paint = (
+    which: 'front' | 'back',
+    time: number,
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+    alpha: number,
+    mirror: boolean,
+  ) => {
+    const video = cloudClip(which);
+    const mask = cloudMask(which);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (mirror) {
+      ctx.translate(dx + dw / 2, dy + dh / 2);
+      ctx.scale(-1, 1);
+      ctx.translate(-(dx + dw / 2), -(dy + dh / 2));
     }
-    g.drawImage(video, 0, 0, CLOUD_W, CLOUD_H);
-  } else if (ready(cloudSheet)) {
-    const index = cloudIndex(frame.cloudTime, frame.reduceMotion);
-    g.drawImage(cloudSheet, index * CLOUD_W, 0, CLOUD_W, CLOUD_H, 0, 0, CLOUD_W, CLOUD_H);
-  } else return;
-  const pixels = g.getImageData(0, 0, CLOUD_W, CLOUD_H);
-  const data = pixels.data;
-  const corner = data[3] ?? 0;
-  const cornerLuma = ((data[0] ?? 0) + (data[1] ?? 0) + (data[2] ?? 0)) / 3;
-  if (corner > 200 && cornerLuma < 28) alphaFromBlack(data);
-  softenCloudEdges(data, CLOUD_W, CLOUD_H);
-  g.putImageData(pixels, 0, 0);
-  ctx.drawImage(cloudBuf, x, y, width, height);
+    if (!frame.reduceMotion && video.readyState >= 2 && (!mask || mask.readyState >= 2)) {
+      seekCloud(video, time);
+      if (mask) {
+        seekCloud(mask, time);
+        const g = scratch(dw, dh);
+        if (g && plate) {
+          g.drawImage(video, 0, 0, plate.width, plate.height);
+          const color = g.getImageData(0, 0, plate.width, plate.height);
+          g.drawImage(mask, 0, 0, plate.width, plate.height);
+          const matte = g.getImageData(0, 0, plate.width, plate.height);
+          const cd = color.data;
+          const md = matte.data;
+          for (let i = 0; i < cd.length; i += 4) cd[i + 3] = md[i] ?? 0;
+          g.putImageData(color, 0, 0);
+          ctx.drawImage(plate, dx, dy, dw, dh);
+        }
+      } else ctx.drawImage(video, dx, dy, dw, dh);
+    } else if (ready(cloudPoster)) {
+      ctx.drawImage(cloudPoster, dx, dy, dw, dh);
+    }
+    ctx.restore();
+  };
+  paint('back', t + loop * 0.5, x - width * 0.06, y - height * 0.06, width * 0.68, height * 0.68, 0.42, true);
+  paint('front', t, x, y, width, height, 1, false);
 }
 
 export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame): boolean {
@@ -453,8 +630,8 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const imageH = photo?.naturalHeight || 1080;
   const place = placedPhotoJar(frame.viewW, frame.viewH, imageW, imageH, frame.id);
   const jar = place.jar;
-  const light = SCENE_LIGHT[frame.id];
-  const grade = frame.id === 'lluvia' ? { ...light, dx: -light.dx, key: 1 - light.key } : light;
+  const light = frame.plain ? PLAIN_LIGHT : SCENE_LIGHT[frame.id];
+  const grade = !frame.plain && frame.id === 'lluvia' ? { ...light, dx: -light.dx, key: 1 - light.key } : light;
   const kind = KIND[frame.id];
   const heap = kind === 'sand' ? 0.074 : kind === 'snow' ? 0.06 : 0;
   const meniscus = kind === 'honey' ? 0.022 : kind === 'water' ? 0.008 : 0;
@@ -468,41 +645,33 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   if (shadowAmt > 0.004) {
     ctx.save();
     ctx.globalAlpha = shadowAmt;
-    if (frame.id === 'nieve') {
-    ctx.filter = 'blur(34px)';
-    ctx.fillStyle = 'rgba(58, 78, 104, 0.34)';
-    ctx.beginPath();
-    ctx.ellipse(footX + grade.dx * jar.w * 0.12, footY + jar.w * 0.045, jar.w * 0.9, jar.w * 0.18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.filter = 'blur(10px)';
-    ctx.fillStyle = 'rgba(42, 58, 78, 0.32)';
-    ctx.beginPath();
-    ctx.ellipse(footX, footY + jar.w * 0.012, jar.w * 0.2, jar.w * 0.04, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.filter = 'none';
-  } else {
-    ctx.fillStyle = 'rgba(8, 6, 4, 0.55)';
-    ctx.beginPath();
-    ctx.ellipse(footX, footY + 2, jar.w * 0.2, Math.max(4, jar.w * 0.026), 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = grade.shadow;
+    const lean = grade.dx * jar.w * (frame.plain ? 0.035 : 0.09);
+    ctx.filter = frame.plain ? 'blur(18px)' : 'blur(14px)';
+    ctx.fillStyle = frame.plain ? 'rgba(72, 60, 48, 0.26)' : grade.shadow;
     ctx.beginPath();
     ctx.ellipse(
-      footX + grade.dx * jar.w,
-      footY + jar.h * 0.012,
-      jar.w * (0.42 + Math.abs(grade.dx)),
-      Math.max(7, jar.w * 0.055),
-      grade.dx * 0.35,
+      footX + lean,
+      footY + jar.w * 0.01,
+      jar.w * (frame.plain ? 0.26 : 0.3),
+      Math.max(5, jar.w * (frame.plain ? 0.038 : 0.046)),
+      0,
       0,
       Math.PI * 2,
     );
     ctx.fill();
-  }
-  ctx.globalCompositeOperation = 'screen';
-  ctx.fillStyle = grade.caustic;
-  ctx.beginPath();
-  ctx.ellipse(footX - grade.dx * jar.w * 0.35, footY + jar.h * 0.006, jar.w * 0.24, Math.max(4, jar.w * 0.02), 0, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.filter = 'none';
+    ctx.fillStyle = frame.plain ? 'rgba(42, 34, 28, 0.5)' : 'rgba(10, 8, 6, 0.78)';
+    ctx.beginPath();
+    ctx.ellipse(footX, footY + 1, jar.w * 0.145, Math.max(2.4, jar.w * 0.015), 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (!frame.plain) {
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = shadowAmt * 0.7;
+      ctx.fillStyle = grade.caustic;
+      ctx.beginPath();
+      ctx.ellipse(footX - lean * 0.35, footY + 2, jar.w * 0.16, Math.max(3, jar.w * 0.012), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -524,7 +693,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
 
   const g = scratch(jar.w, jar.h);
   if (g && plate) {
-    const blur = photo ? blurredScene(photo, frame.id) : null;
+    const blur = !frame.plain && photo ? blurredScene(photo, frame.id) : null;
     if (blur) {
       g.save();
       g.translate(plate.width / 2, plate.height / 2);
@@ -589,9 +758,10 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
     const topY = jarSurface('top', frame.top * 0.84);
     const botY = jarSurface('bot', frame.bottom);
     const wave = kind === 'honey' && !frame.reduceMotion ? Math.sin(frame.phase * 2.2) * 0.004 : 0;
+    const liquid = kind === 'water' ? stepWaterSlosh(frame.rotation, frame.reduceMotion || frame.paused) : null;
     const paintBulb = (surface: number, box: readonly [number, number, number, number]) => {
       g.save();
-      if (!clipFill(g, plate!.width, plate!.height, surface, box, heap, wave * plate!.height, meniscus)) {
+      if (!clipFill(g, plate!.width, plate!.height, surface, box, heap, wave * plate!.height, meniscus, liquid?.angle ?? 0, liquid?.height ?? 0)) {
         g.restore();
         return;
       }
@@ -667,37 +837,36 @@ function drawRain(
   frame: PhotoFrame,
 ): void {
   const span = to - from;
-  const count = frame.reduceMotion ? 4 : 12;
+  const count = frame.reduceMotion ? 2 : 5;
   const t = frame.reduceMotion ? 0 : frame.streamTime;
   for (let i = 0; i < count; i++) {
     const seed = i * 9.73 + 0.4;
-    const speed = 1.35 + ((i * 13) % 8) * 0.22;
-    const travel = frame.reduceMotion ? 0.12 + (i % 5) * 0.17 : ((t * speed + seed) % 1 + 1) % 1;
+    const speed = 3.2 + ((i * 13) % 5) * 0.48;
+    const travel = frame.reduceMotion ? 0.18 + (i % 4) * 0.2 : ((t * speed + seed) % 1 + 1) % 1;
     const y = from + span * Math.min(travel, 0.97);
-    const x = center + Math.sin(seed * 1.6) * 8 + (frame.reduceMotion ? 0 : Math.sin(seed + travel * 5) * 2.2);
-    const len = 11 + (i % 5) * 3.2;
-    const wide = 0.7 + (i % 3) * 0.25;
+    const x = center + Math.sin(seed * 1.6) * 4;
+    const len = 20 + (i % 4) * 5;
+    const wide = 0.16 + (i % 3) * 0.04;
     ctx.save();
     ctx.translate(x, y);
-    const streak = ctx.createLinearGradient(0, -len, 0, len * 0.35);
+    const streak = ctx.createLinearGradient(0, -len, 0, len * 0.15);
     streak.addColorStop(0, 'rgba(255,255,255,0)');
-    streak.addColorStop(0.35, 'rgba(210, 232, 238, 0.18)');
-    streak.addColorStop(0.72, 'rgba(186, 220, 228, 0.55)');
-    streak.addColorStop(1, 'rgba(255,255,255,0.8)');
+    streak.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+    streak.addColorStop(0.84, 'rgba(255,255,255,0.26)');
+    streak.addColorStop(1, 'rgba(255,255,255,0.34)');
     ctx.fillStyle = streak;
     ctx.beginPath();
     ctx.ellipse(0, 0, wide, len, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-    if (!frame.reduceMotion && travel > 0.9) {
-      const k = (travel - 0.9) / 0.1;
+    if (!frame.reduceMotion && travel > 0.93) {
+      const k = (travel - 0.93) / 0.07;
       ctx.save();
-      ctx.globalAlpha = (1 - k) * 0.5;
-      ctx.strokeStyle = 'rgba(214, 232, 236, 0.95)';
-      ctx.lineWidth = 1;
+      ctx.globalAlpha = (1 - k) * 0.16;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.beginPath();
-      ctx.ellipse(x, to, 2.5 + k * 11, 1.1 + k * 2.4, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.ellipse(x, to, 0.7 + k * 1.8, 0.28 + k * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
   }
@@ -817,7 +986,10 @@ export function preloadJar(id: MaterialId): void {
     document.head.appendChild(link);
   }
   window.setTimeout(() => {
-    if (id === 'lluvia') cloudVideo();
+    if (id === 'lluvia') {
+      cloudClip('front');
+      cloudClip('back');
+    }
     ambientFor(id);
   }, 1600);
 }

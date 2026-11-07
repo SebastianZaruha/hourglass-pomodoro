@@ -33,7 +33,7 @@ import {
   type GlassLayout,
   type Scheme,
 } from './draw';
-import { drawPhotoreal, jarLayersReady, placedPhotoJar, preloadJar } from './photoreal';
+import { drawPhotoreal, jarLayersReady, placedPhotoJar, preloadJar, waterSloshMoving } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -389,6 +389,7 @@ export function useHourglass(
         viewW: cssW,
         viewH: cssH,
         rotation: spinAngle,
+        plain: p.contentId === 'claro',
         grains:
           photoId === 'arena'
             ? {
@@ -433,7 +434,8 @@ export function useHourglass(
         p.gestureActive ||
         p.introActive ||
         Math.abs(p.gestureAngle) > 0.0008 ||
-        (jarLayersReady() && p.contentId === 'lluvia' && snap.status !== 'paused' && !p.reduceMotion);
+        (jarLayersReady() && p.contentId === 'lluvia' && snap.status !== 'paused' && !p.reduceMotion) ||
+        waterSloshMoving();
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };

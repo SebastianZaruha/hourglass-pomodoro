@@ -4,6 +4,18 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+La nube de `apps/web/assets-src/nube/nube-negro.mp4` sustituye a la anterior. Se tira el primer fotograma blanco, se recorta con `alphaFromBlack`, un choke de 1 px y un borde suave, y el bucle es un ping-pong. WebM VP9 con alfa, más `cloud-color.mp4` y `cloud-mask.mp4` para Safari (el HEVC de este ffmpeg no guarda el alfa). Hay una segunda nube más pequeña, más tenue y espejada. El borde de abajo tapa el remate y un 12 % del bulbo de arriba. Al girar no se tumba: sube y se aclara.
+
+El menú usa `blur(92px) saturate(1.28) brightness(1.06)` con prefijo `-webkit-`. La hora ya no tiene tarjeta: solo los dígitos, teñidos con la paleta de la escena y una sombra muy suave en lluvia y arena. El pie usa el mismo tinte, más bajo. La entrada desenfoca el fondo y el frasco aparece en su sitio (opacidad y un poco de escala).
+
+La lluvia del cuello son pocos trazos finos, casi blancos, al 25–34 % de opacidad, con un salpicado mínimo. Al inclinar el frasco el agua de los dos bulbos sigue un muelle: la superficie se queda horizontal en el mundo, el agua va al lado bajo y se asienta. En reposo no hay vaivén.
+
+Lluvia, arena y claro tienen tokens propios (cristal, acento, dígitos, pie, texto del menú). Claro es el frasco y la arena de Arena, sin foto, sobre el beige de la web publicada, con la hora, el menú y el pie en los colores claros de main y una luz neutra. La sombra de contacto va centrada bajo la base; la sombra blanda nace en la base y solo se inclina un poco al lado contrario de la luz.
+
+Los avisos legales (el diálogo y las páginas sueltas) dejan el beige. El diálogo es el mismo cristal del menú sobre la escena. La página suelta lleva ese cristal sobre la escena desenfocada. Capturas en `docs/audit`: `lluvia-run-1440.png`, `lluvia-menu-1440.png`, `arena-menu-1440.png`, `lluvia-390.png`, `lluvia-600.png`, `legal-1440.png`, `legal-390.png`, `lluvia-tilt-1440.png`, `claro-1440.png`, `claro-390.png`, `cloud-edge.png`.
+
+## Hecho en este paso
+
 La nube se difumina en el borde del fotograma para que no quede un corte recto. `alphaFromBlack` queda listo para la próxima nube sobre negro. El agua del bulbo ya no lleva la refracción oscura de las rocas. La pausa escala la escena desenfocada para tapar el marco claro, y «En pausa» es blanco. El idioma por defecto de la web es español aunque el navegador no lo sea.
 
 `ESCENAS_ACTIVAS` en `apps/web/src/scenes.ts` es `['lluvia','arena']`. Miel y nieve no salen en el menú y un valor guardado vuelve a lluvia. El código y los archivos siguen. La abeja y el zorro no se cargan mientras esas escenas están ocultas.
