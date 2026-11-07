@@ -86,8 +86,6 @@ function cloudIndex(seconds: number, reduceMotion: boolean): number {
   return Math.floor(t * CLOUD_FPS) % CLOUD_FRAMES;
 }
 const surfaceTex = load('/glass/tex-water-surface.webp');
-const frameWood = load('/glass/frame-wood.webp');
-const frameMetal = load('/glass/frame-metal.webp');
 const textures: Record<Kind, HTMLImageElement> = {
   sand: load('/glass/tex-sand.webp'),
   water: load('/glass/tex-water.webp'),
@@ -323,60 +321,6 @@ function gradeGlass(
   ctx.restore();
 }
 
-function frameTexture(id: MaterialId): HTMLImageElement {
-  return id === 'arena' || id === 'miel' ? frameWood : frameMetal;
-}
-
-function drawCap(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  w: number,
-  thick: number,
-  tex: HTMLImageElement,
-  gleam: string,
-  key: number,
-): void {
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + thick * 0.32, w / 2, thick * 0.34, 0, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(tex, cx - w / 2, cy, w, thick * 0.75);
-  ctx.restore();
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, w / 2, thick * 0.32, 0, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(tex, 30, 6, 220, 90, cx - w / 2, cy - thick * 0.32, w, thick * 0.7);
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.4;
-  ctx.fillStyle = gleam;
-  ctx.beginPath();
-  ctx.ellipse(cx + (key - 0.5) * w * 0.5, cy - thick * 0.04, w * 0.2, thick * 0.1, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawPosts(
-  ctx: CanvasRenderingContext2D,
-  jar: { x: number; y: number; w: number; h: number },
-  tex: HTMLImageElement,
-  layer: 'back' | 'front',
-): void {
-  const cx = jar.x + jar.w / 2;
-  const top = jar.y + jar.w * 0.02;
-  const bot = jar.y + jar.h - jar.w * 0.015;
-  const spots = layer === 'back' ? [-0.15, 0.17] : [-0.46, 0.44];
-  const thick = jar.w * (layer === 'back' ? 0.02 : 0.028);
-  ctx.save();
-  ctx.globalAlpha = layer === 'back' ? 0.72 : 0.96;
-  for (const spot of spots) {
-    const x = cx + spot * jar.w * 1.08 - thick / 2;
-    ctx.drawImage(tex, 8, 20, 28, 140, x, top, thick, Math.max(4, bot - top));
-  }
-  ctx.restore();
-}
-
 function drawSnowLip(
   ctx: CanvasRenderingContext2D,
   footX: number,
@@ -385,11 +329,33 @@ function drawSnowLip(
 ): void {
   const snow = textures.snow;
   if (!ready(snow)) return;
+  const w = Math.max(8, Math.round(jarW));
+  const h = Math.max(8, Math.round(jarW * 0.28));
+  const g = scratch(w, h);
+  if (!g || !plate) return;
+  g.drawImage(snow, 0, 0, w, h);
+  g.globalCompositeOperation = 'destination-in';
+  const puffs: readonly [number, number, number][] = [
+    [0.5, 0.58, 0.22],
+    [0.34, 0.66, 0.14],
+    [0.66, 0.64, 0.13],
+    [0.44, 0.74, 0.09],
+    [0.6, 0.76, 0.08],
+    [0.28, 0.72, 0.07],
+  ];
+  for (const [sx, sy, rad] of puffs) {
+    const gx = sx * w;
+    const gy = sy * h;
+    const grd = g.createRadialGradient(gx, gy, 0, gx, gy, rad * w);
+    grd.addColorStop(0, 'rgba(255,255,255,0.45)');
+    grd.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(gx - rad * w, gy - rad * w, rad * w * 2, rad * w * 2);
+  }
   ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(footX, footY + jarW * 0.02, jarW * 0.26, jarW * 0.05, 0, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(snow, footX - jarW * 0.26, footY - jarW * 0.02, jarW * 0.52, jarW * 0.1);
+  ctx.globalAlpha = 0.72;
+  ctx.drawImage(plate, footX - w / 2, footY - h * 0.15, w, h);
   ctx.restore();
 }
 
@@ -437,7 +403,6 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const liquid = kind === 'water' || kind === 'honey';
   const heap = kind === 'sand' ? 0.074 : kind === 'snow' ? 0.06 : 0;
   const meniscus = kind === 'honey' ? 0.022 : kind === 'water' ? 0.008 : 0;
-  const stand = frameTexture(frame.id);
 
   ctx.clearRect(0, 0, frame.viewW, frame.viewH);
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'behind');
@@ -477,12 +442,6 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   ctx.ellipse(footX - grade.dx * jar.w * 0.35, footY + jar.h * 0.006, jar.w * 0.24, Math.max(4, jar.w * 0.02), 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-
-  if (ready(stand)) {
-    drawPosts(ctx, jar, stand, 'back');
-    drawCap(ctx, jar.x + jar.w / 2, jar.y + jar.w * 0.015, jar.w * 1.12, jar.w * 0.085, stand, grade.gleam, grade.key);
-    drawCap(ctx, footX, footY - jar.w * 0.012 + bury, jar.w * 1.16, jar.w * 0.095, stand, grade.gleam, grade.key);
-  }
 
   ctx.save();
   ctx.filter = grade.filter;
@@ -560,7 +519,6 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   drawStream(ctx, kind, jar.x + jar.w / 2, from, Math.max(from + 12, to), frame);
 
   gradeGlass(ctx, jar, grade);
-  if (ready(stand)) drawPosts(ctx, jar, stand, 'front');
   if (frame.id === 'nieve') drawSnowLip(ctx, footX, footY + bury, jar.w);
 
   if (frame.id === 'lluvia' && frame.top > 0.04) drawCloud(ctx, jar, frame);
