@@ -7,7 +7,7 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 - La hora es texto blanco fino, sin pastilla. En horizontal queda en el cielo de la derecha; en 390 queda arriba, sobre el cielo.
 - El encuadre vuelve al cover mínimo (toda la isla de lluvia: orbes, charca y rocas). El contacto se acerca al suelo solo hasta donde la foto sigue cubriendo, sin zoom extra.
 - El cristal vacío no lleva velo de color. La refracción del fondo va al 22 %. En arena el bulbo de arriba deja ver el atardecer. Si detrás hay roca oscura, el vidrio se ve oscuro porque la roca lo es.
-- El chorro de agua es un hilo casi recto (un solo vaivén de 2 px) y se dibuja a 56 px. La miel sigue siendo hilo más una rosca corta en la superficie.
+- Los cuatro chorros son bucles de las fotos (`tex-*.jpg`), 12 fotogramas a 10 fps, WebM con alfa y atlas. El alfa solo recorta; el color es la textura. Al dibujar se tiñen con el brillo de la escena (`source-atop` al 18 %). Agua: hilo fino transparente con los cáusticos de la foto y un solo vaivén, más una onda al caer. Miel: hilo ámbar grueso y lento, con una rosca corta de la misma foto. Arena: granos de la foto, sueltos en el borde, y un montón al caer. Nieve: copos y polvo de la foto, en una columna ancha, y un montón blando.
 - A un 40 % transcurrido el volumen de arriba es 0,6 (superficie y ≈ 0,17) y el de abajo 0,4 (superficie y ≈ 0,82). El de arriba ocupa más alto de bulbo.
 - La nube se remateó desde `cloud-real.png`: el fleco es gris azulado luminoso (≈ 186, 196, 210) y el cuerpo ≈ 151, 160, 176. No queda costra negra.
 - El panel y la barra son cristal ahumado (relleno oscuro y translúcido, blur fuerte). El acento ya no es oliva: arena ámbar, lluvia ámbar del orbe, miel oro, nieve azul gris. Va en el botón activo, los toggles y el relleno del slider.
@@ -29,6 +29,7 @@ Reloj en marcha, texto `00:36` de un minuto. Tamaño y % de blanco medidos en el
 - `r4-arena-1440.png` (1,3 MB, 0,29 %), `r4-miel-1440-menu.png` (1,4 MB, 0,01 %, menú abierto), `r4-nieve-1440.png` (1,2 MB, 0,18 %)
 - `r6-lluvia-1440.png` (762 KB, 0,19 %) y `r6-lluvia-390.png` (306 KB, 0,11 %, hora arriba)
 - Luz por escena, frasco lleno arriba: `light-arena-1440.png`, `light-lluvia-1440.png`, `light-miel-1440.png`, `light-nieve-1440.png` (0,16–0,26 % blanco)
+- Chorro en marcha a `00:36`: `stream-arena-1440.png`, `stream-lluvia-1440.png`, `stream-miel-1440.png`, `stream-nieve-1440.png` (0,18–0,29 % blanco). En lluvia el centro del cuello mide ~[116, 126, 122] contra el vidrio oscuro ~[9, 7, 5].
 
 Están en `/opt/cursor/artifacts/`.
 

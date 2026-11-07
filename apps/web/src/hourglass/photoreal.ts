@@ -38,7 +38,6 @@ function ambientFor(id: MaterialId): AmbientMod | null {
 const FRAME_W = 96;
 const FRAME_H = 512;
 const SPLASH_W = 128;
-const SPLASH_H = 220;
 
 type Kind = 'sand' | 'water' | 'honey' | 'snow';
 
@@ -454,27 +453,87 @@ function drawStream(
     video.pause();
     if (frame.reduceMotion) video.currentTime = 0;
   }
-  const width = kind === 'honey' ? 54 : kind === 'sand' ? 46 : kind === 'snow' ? 72 : 56;
+  const width = kind === 'honey' ? 62 : kind === 'sand' ? 44 : kind === 'snow' ? 78 : 40;
   const x = center - width / 2;
   const useVideo = !frame.reduceMotion && video.readyState >= 2 && video.videoWidth > 0;
   ensureSheets();
   const sheet = atlases?.[kind];
   const splash = splashes?.[kind];
+  const tint = SCENE_LIGHT[frame.id].highlight;
   ctx.save();
   if (useVideo) {
-    ctx.drawImage(video, x, from, width, span);
+    drawTinted(ctx, video, 0, 0, video.videoWidth, video.videoHeight, x, from, width, span, tint);
   } else if (sheet && ready(sheet)) {
     const index = streamFrame(frame.streamTime, frame.reduceMotion);
-    ctx.drawImage(sheet, index * FRAME_W, 0, FRAME_W, FRAME_H, x, from, width, span);
+    drawTinted(ctx, sheet, index * FRAME_W, 0, FRAME_W, FRAME_H, x, from, width, span, tint);
   }
   if (splash && ready(splash)) {
     const index = streamFrame(frame.streamTime, frame.reduceMotion || !flowing);
-    const srcH = kind === 'honey' ? 70 : SPLASH_H;
-    const sw = kind === 'honey' ? 42 : 48;
-    const sh = kind === 'honey' ? 26 : 22;
-    ctx.drawImage(splash, index * SPLASH_W, 0, SPLASH_W, srcH, center - sw / 2, to - sh * 0.7, sw, sh);
+    const box =
+      kind === 'honey'
+        ? { srcH: 56, sw: 46, sh: 30 }
+        : kind === 'sand'
+          ? { srcH: 48, sw: 44, sh: 16 }
+          : kind === 'snow'
+            ? { srcH: 52, sw: 60, sh: 20 }
+            : { srcH: 40, sw: 40, sh: 14 };
+    drawTinted(
+      ctx,
+      splash,
+      index * SPLASH_W,
+      0,
+      SPLASH_W,
+      box.srcH,
+      center - box.sw / 2,
+      to - box.sh * 0.65,
+      box.sw,
+      box.sh,
+      tint,
+    );
   }
   ctx.restore();
+}
+
+let tintCanvas: HTMLCanvasElement | null = null;
+let tintCtx: CanvasRenderingContext2D | null = null;
+
+/** Tiñe el bucle con la luz de la escena sin pintar los píxeles transparentes. */
+function drawTinted(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sx: number,
+  sy: number,
+  sw: number,
+  sh: number,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  color: string,
+): void {
+  const w = Math.max(2, Math.round(dw));
+  const h = Math.max(2, Math.round(dh));
+  if (!tintCanvas || tintCanvas.width !== w || tintCanvas.height !== h) {
+    tintCanvas = document.createElement('canvas');
+    tintCanvas.width = w;
+    tintCanvas.height = h;
+    tintCtx = tintCanvas.getContext('2d');
+  }
+  const g = tintCtx;
+  if (!g || !tintCanvas) {
+    ctx.drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh);
+    return;
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, w, h);
+  g.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
+  g.globalCompositeOperation = 'source-atop';
+  g.globalAlpha = 0.18;
+  g.fillStyle = color;
+  g.fillRect(0, 0, w, h);
+  ctx.drawImage(tintCanvas, dx, dy);
 }
 
 /** Precarga la capa grande del frasco y el chorro del material visible. */
