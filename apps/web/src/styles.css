@@ -432,7 +432,12 @@ a {
 .stepper-row.stepper-solo {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  margin-top: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

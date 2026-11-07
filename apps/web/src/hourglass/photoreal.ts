@@ -151,7 +151,13 @@ function scratch(w: number, h: number): CanvasRenderingContext2D | null {
     plate.height = height;
     plateCtx = plate.getContext('2d');
   }
-  plateCtx?.clearRect(0, 0, width, height);
+  if (plateCtx) {
+    plateCtx.setTransform(1, 0, 0, 1, 0, 0);
+    plateCtx.globalAlpha = 1;
+    plateCtx.globalCompositeOperation = 'source-over';
+    plateCtx.filter = 'none';
+    plateCtx.clearRect(0, 0, width, height);
+  }
   return plateCtx;
 }
 
@@ -316,19 +322,12 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   ctx.restore();
 
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(jar.x, jar.y, jar.w, jar.h);
-  ctx.clip();
-  ctx.globalCompositeOperation = 'soft-light';
-  ctx.globalAlpha = 0.55;
-  ctx.fillStyle = grade.tint;
-  ctx.fillRect(jar.x, jar.y, jar.w, jar.h);
   ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.7;
   ctx.fillStyle = grade.gleam;
-  const lit = grade.dx < 0 ? 0.7 : 0.3;
+  const lit = grade.dx < 0 ? 0.68 : 0.32;
   ctx.beginPath();
-  ctx.ellipse(jar.x + jar.w * lit, jar.y + jar.h * 0.2, jar.w * 0.11, jar.h * 0.07, -0.5, 0, Math.PI * 2);
+  ctx.ellipse(jar.x + jar.w * lit, jar.y + jar.h * 0.18, jar.w * 0.07, jar.h * 0.045, -0.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
