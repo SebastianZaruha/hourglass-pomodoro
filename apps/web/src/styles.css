@@ -206,10 +206,21 @@ a {
   height: 100%;
 }
 
-.app.is-paused .scene,
+.app.is-paused .scene {
+  filter: blur(18px);
+  transform: scale(1.08);
+  transform-origin: center center;
+}
+
 .app.is-paused .scene-photo,
 .app.is-paused .blades {
-  filter: blur(18px);
+  filter: blur(22px);
+  transform: scale(1.16);
+}
+
+.app[data-material='lluvia'].is-paused .scene-photo,
+.app[data-material='lluvia'].is-paused .blades {
+  transform: scale(1.16) scaleX(-1);
 }
 
 .pause-screen {
@@ -228,10 +239,8 @@ a {
   font-size: clamp(3.4rem, 8vw, 6rem);
   letter-spacing: 0.01em;
   line-height: 1;
-  color: var(--pause);
-  text-shadow:
-    0 0 22px var(--pause-veil),
-    0 0 42px var(--bg-bottom);
+  color: #fff;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .pause-hint {
@@ -243,7 +252,8 @@ a {
   padding: 0 1.2rem;
   text-align: center;
   font-size: 1rem;
-  color: var(--hint);
+  color: #fff;
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
 .glass-frame {

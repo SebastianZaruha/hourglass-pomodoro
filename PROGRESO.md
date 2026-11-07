@@ -4,6 +4,8 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+La nube se difumina en el borde del fotograma para que no quede un corte recto. `alphaFromBlack` queda listo para la próxima nube sobre negro. El agua del bulbo ya no lleva la refracción oscura de las rocas. La pausa escala la escena desenfocada para tapar el marco claro, y «En pausa» es blanco. El idioma por defecto de la web es español aunque el navegador no lo sea.
+
 `ESCENAS_ACTIVAS` en `apps/web/src/scenes.ts` es `['lluvia','arena']`. Miel y nieve no salen en el menú y un valor guardado vuelve a lluvia. El código y los archivos siguen. La abeja y el zorro no se cargan mientras esas escenas están ocultas.
 
 La nube de `nube-original.mp4` no se ha sustituido. El damero está horneado y, al recortarlo, el borde sigue con cuadrados. Recorte: `docs/audit/cloud-key-dark.png` y `cloud-key-light.png`. Sigue la nube anterior.

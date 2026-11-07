@@ -366,6 +366,41 @@ export function placedPhotoJar(
   };
 }
 
+/**
+ * Vídeo sobre negro (sin alfa real): el alfa sale de la luminancia y el negro
+ * se quita del color. Listo para la próxima nube de Sebastián.
+ */
+function alphaFromBlack(data: Uint8ClampedArray): void {
+  for (let i = 0; i < data.length; i += 4) {
+    const luma = ((data[i] ?? 0) + (data[i + 1] ?? 0) + (data[i + 2] ?? 0)) / 3;
+    const alpha = Math.max(0, Math.min(255, (luma - 6) * 1.55));
+    if (alpha > 8) {
+      const lift = 255 / alpha;
+      data[i] = Math.min(255, Math.round((data[i] ?? 0) * lift));
+      data[i + 1] = Math.min(255, Math.round((data[i + 1] ?? 0) * lift));
+      data[i + 2] = Math.min(255, Math.round((data[i + 2] ?? 0) * lift));
+    } else {
+      data[i] = data[i + 1] = data[i + 2] = 0;
+    }
+    data[i + 3] = alpha;
+  }
+}
+
+function softenCloudEdges(data: Uint8ClampedArray, width: number, height: number): void {
+  for (let y = 0; y < height; y++) {
+    const yIn = Math.min(y / (height * 0.16), (height - 1 - y) / (height * 0.14));
+    for (let x = 0; x < width; x++) {
+      const xIn = Math.min(x / (width * 0.14), (width - 1 - x) / (width * 0.22));
+      const t = Math.max(0, Math.min(1, Math.min(xIn, yIn)));
+      const fade = t * t * (3 - 2 * t);
+      const i = (y * width + x) * 4 + 3;
+      data[i] = Math.round((data[i] ?? 0) * fade);
+    }
+  }
+}
+
+let cloudBuf: HTMLCanvasElement | null = null;
+
 /** Tapa baja y ancha: se apoya en el capuchón, el agua queda debajo. */
 function drawCloud(
   ctx: CanvasRenderingContext2D,
@@ -380,6 +415,14 @@ function drawCloud(
   const video = cloudVideo();
   const loop = CLOUD_FRAMES / CLOUD_FPS;
   const t = frame.reduceMotion ? 0 : ((frame.cloudTime % loop) + loop) % loop;
+  if (!cloudBuf) {
+    cloudBuf = document.createElement('canvas');
+    cloudBuf.width = CLOUD_W;
+    cloudBuf.height = CLOUD_H;
+  }
+  const g = cloudBuf.getContext('2d', { willReadFrequently: true });
+  if (!g) return;
+  g.clearRect(0, 0, CLOUD_W, CLOUD_H);
   if (video.readyState >= 2) {
     if (Math.abs(video.currentTime - t) > 0.12) {
       try {
@@ -388,12 +431,19 @@ function drawCloud(
         /* el vídeo aún no admite seek */
       }
     }
-    ctx.drawImage(video, x, y, width, height);
-    return;
-  }
-  if (!ready(cloudSheet)) return;
-  const index = cloudIndex(frame.cloudTime, frame.reduceMotion);
-  ctx.drawImage(cloudSheet, index * CLOUD_W, 0, CLOUD_W, CLOUD_H, x, y, width, height);
+    g.drawImage(video, 0, 0, CLOUD_W, CLOUD_H);
+  } else if (ready(cloudSheet)) {
+    const index = cloudIndex(frame.cloudTime, frame.reduceMotion);
+    g.drawImage(cloudSheet, index * CLOUD_W, 0, CLOUD_W, CLOUD_H, 0, 0, CLOUD_W, CLOUD_H);
+  } else return;
+  const pixels = g.getImageData(0, 0, CLOUD_W, CLOUD_H);
+  const data = pixels.data;
+  const corner = data[3] ?? 0;
+  const cornerLuma = ((data[0] ?? 0) + (data[1] ?? 0) + (data[2] ?? 0)) / 3;
+  if (corner > 200 && cornerLuma < 28) alphaFromBlack(data);
+  softenCloudEdges(data, CLOUD_W, CLOUD_H);
+  g.putImageData(pixels, 0, 0);
+  ctx.drawImage(cloudBuf, x, y, width, height);
 }
 
 export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame): boolean {
@@ -495,7 +545,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
         g.drawImage(alphaMask, 0, 0, plate.width, plate.height);
         g.globalCompositeOperation = 'source-over';
         ctx.save();
-        ctx.globalAlpha = 0.22;
+        ctx.globalAlpha = kind === 'water' ? 0.08 : 0.22;
         ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
         ctx.restore();
       }
@@ -548,9 +598,9 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
       if (kind === 'water') {
         const y0 = surface * plate!.height;
         const grad = g.createLinearGradient(0, y0, 0, box[1] * plate!.height + box[3] * plate!.height);
-        grad.addColorStop(0, 'rgba(214, 236, 238, 0.22)');
-        grad.addColorStop(0.45, 'rgba(120, 176, 186, 0.38)');
-        grad.addColorStop(1, 'rgba(46, 110, 128, 0.55)');
+        grad.addColorStop(0, 'rgba(226, 242, 244, 0.16)');
+        grad.addColorStop(0.55, 'rgba(150, 198, 206, 0.28)');
+        grad.addColorStop(1, 'rgba(110, 176, 188, 0.34)');
         g.fillStyle = grad;
         g.fillRect(0, y0, plate!.width, plate!.height);
         g.globalAlpha = 0.9;

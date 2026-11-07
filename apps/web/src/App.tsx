@@ -116,8 +116,8 @@ function Timer({
   const reduceMotion = useReducedMotion();
   const { wide, compact } = useLayoutFlags();
   const scheme = resolveScheme(settings.theme, systemDark);
-  const lang = resolveLanguage(settings.language, navigator.language);
-  const t = messagesFor(settings.language, navigator.language);
+  const lang = resolveLanguage(settings.language, 'es');
+  const t = messagesFor(settings.language, 'es');
 
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, tick, view, state } = session;
