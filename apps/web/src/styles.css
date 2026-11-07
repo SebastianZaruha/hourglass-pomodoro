@@ -88,11 +88,22 @@ a {
 .scene-photo,
 .blades {
   position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   max-width: none;
   max-height: none;
   pointer-events: none;
   user-select: none;
+  /* Hasta que JS fija el recorte, ocultas: si no, el salto de tamaño
+     destroza el CLS (se midió 0,88 en la foto de las briznas). */
+  visibility: hidden;
+}
+
+.scene-photo.placed,
+.blades.placed {
+  visibility: visible;
 }
 
 .blades {

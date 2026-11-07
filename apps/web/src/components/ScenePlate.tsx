@@ -51,6 +51,7 @@ export function ScenePlate({ id }: Props) {
         img.style.top = top;
         img.style.width = width;
         img.style.height = height;
+        img.classList.add('placed');
       }
       if (blades.getAttribute('src') !== BLADES[id]) blades.src = BLADES[id];
     };

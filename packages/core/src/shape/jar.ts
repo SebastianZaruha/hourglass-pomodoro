@@ -93,7 +93,7 @@ export function dioramaPlacement(
   // de ajustes quepa a la derecha sin tapar el vidrio. Si hace falta, la
   // foto se acerca: miel y nieve no pueden quedarse flotando.
   const preferX = wide ? viewW * 0.28 : viewW * 0.5;
-  const preferY = viewH * (wide ? 0.86 : 0.8);
+  const preferY = viewH * 0.86;
   const scene = coverFrame(viewW, viewH, iw, ih, preferX, preferY, contact.x, contact.y);
   const footX = preferX;
   const footY = preferY;
