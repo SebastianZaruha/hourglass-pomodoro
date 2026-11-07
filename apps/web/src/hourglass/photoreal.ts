@@ -12,6 +12,7 @@ import {
   JAR_TOP_BOX,
   SCENE_LIGHT,
   cloudIdle,
+  type SceneLight,
   dioramaPlacement,
   jarSurface,
   streamFrame,
@@ -225,6 +226,80 @@ export interface PhotoFrame {
   readonly viewH: number;
 }
 
+/** Brillos, sombra de forma y rebote, recortados al vidrio. El negro del frente sigue siendo identidad en SCREEN. */
+function gradeGlass(
+  ctx: CanvasRenderingContext2D,
+  jar: { x: number; y: number; w: number; h: number },
+  grade: SceneLight,
+): void {
+  const g = scratch(jar.w, jar.h);
+  if (!g || !plate) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.92;
+    ctx.drawImage(front, jar.x, jar.y, jar.w, jar.h);
+    ctx.restore();
+    return;
+  }
+  const w = plate.width;
+  const h = plate.height;
+  g.filter = grade.filter;
+  g.drawImage(front, 0, 0, w, h);
+  g.filter = 'none';
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = grade.highlight;
+  g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'source-over';
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.94;
+  ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
+  ctx.restore();
+
+  const paintWash = () => {
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+    g.filter = 'none';
+    g.clearRect(0, 0, w, h);
+    const wash = g.createLinearGradient(grade.key * w, h * 0.04, (1 - grade.key) * w, h * 0.72);
+    wash.addColorStop(0, grade.gleam);
+    wash.addColorStop(0.3, grade.ambient);
+    wash.addColorStop(0.58, 'rgba(0,0,0,0)');
+    wash.addColorStop(1, grade.shade);
+    g.fillStyle = wash;
+    g.fillRect(0, 0, w, h);
+    g.save();
+    g.globalCompositeOperation = 'screen';
+    const bounce = g.createLinearGradient(0, h * 0.7, 0, h);
+    bounce.addColorStop(0, 'rgba(0,0,0,0)');
+    bounce.addColorStop(1, grade.bounce);
+    g.fillStyle = bounce;
+    g.fillRect(0, Math.round(h * 0.55), w, h);
+    g.restore();
+  };
+
+  paintWash();
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(back, 0, 0, w, h);
+  ctx.save();
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.globalAlpha = 0.95;
+  ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
+  ctx.restore();
+
+  const cut = lumenMask();
+  if (!cut) return;
+  paintWash();
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(cut, 0, 0, w, h);
+  ctx.save();
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.globalAlpha = 0.4;
+  ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
+  ctx.restore();
+}
+
 export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame): boolean {
   if (!jarLayersReady()) return false;
   const photo = document.querySelector<HTMLImageElement>('.scene-photo');
@@ -244,18 +319,18 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const footX = place.footX;
   const footY = place.footY;
   ctx.save();
-  ctx.fillStyle = 'rgba(12, 8, 4, 0.72)';
+  ctx.fillStyle = 'rgba(8, 6, 4, 0.55)';
   ctx.beginPath();
-  ctx.ellipse(footX, footY + 2, jar.w * 0.22, Math.max(4, jar.w * 0.028), 0, 0, Math.PI * 2);
+  ctx.ellipse(footX, footY + 2, jar.w * 0.2, Math.max(4, jar.w * 0.026), 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(20, 14, 8, 0.38)';
+  ctx.fillStyle = grade.shadow;
   ctx.beginPath();
   ctx.ellipse(
     footX + grade.dx * jar.w,
-    footY + jar.h * 0.02,
-    jar.w * 0.55,
-    Math.max(8, jar.w * 0.07),
-    0,
+    footY + jar.h * 0.012,
+    jar.w * (0.42 + Math.abs(grade.dx)),
+    Math.max(7, jar.w * 0.055),
+    grade.dx * 0.35,
     0,
     Math.PI * 2,
   );
@@ -263,12 +338,16 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   ctx.globalCompositeOperation = 'screen';
   ctx.fillStyle = grade.caustic;
   ctx.beginPath();
-  ctx.ellipse(footX - grade.dx * jar.w * 0.3, footY + jar.h * 0.008, jar.w * 0.22, Math.max(4, jar.w * 0.02), 0, 0, Math.PI * 2);
+  ctx.ellipse(footX - grade.dx * jar.w * 0.35, footY + jar.h * 0.006, jar.w * 0.24, Math.max(4, jar.w * 0.02), 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
+  ctx.save();
+  ctx.filter = grade.filter;
   if (ready(shadow)) ctx.drawImage(shadow, jar.x, jar.y, jar.w, jar.h);
   ctx.drawImage(back, jar.x, jar.y, jar.w, jar.h);
+  ctx.filter = 'none';
+  ctx.restore();
 
   const g = scratch(jar.w, jar.h);
   if (g && plate) {
@@ -337,21 +416,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const to = jar.y + jarSurface('bot', Math.max(frame.bottom, 0.015)) * jar.h;
   drawStream(ctx, kind, jar.x + jar.w / 2, from, Math.max(from + 12, to), frame);
 
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.92;
-  ctx.drawImage(front, jar.x, jar.y, jar.w, jar.h);
-  ctx.restore();
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.7;
-  ctx.fillStyle = grade.gleam;
-  const lit = grade.dx < 0 ? 0.68 : 0.32;
-  ctx.beginPath();
-  ctx.ellipse(jar.x + jar.w * lit, jar.y + jar.h * 0.18, jar.w * 0.07, jar.h * 0.045, -0.4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  gradeGlass(ctx, jar, grade);
 
   if (frame.id === 'lluvia' && frame.top > 0.04 && ready(cloud)) {
     const idle = cloudIdle(frame.cloudTime, !frame.reduceMotion);

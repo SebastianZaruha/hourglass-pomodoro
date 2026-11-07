@@ -12,6 +12,7 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 - La nube se remateó desde `cloud-real.png`: el fleco es gris azulado luminoso (≈ 186, 196, 210) y el cuerpo ≈ 151, 160, 176. No queda costra negra.
 - El panel y la barra son cristal ahumado (relleno oscuro y translúcido, blur fuerte). El acento ya no es oliva: arena ámbar, lluvia ámbar del orbe, miel oro, nieve azul gris. Va en el botón activo, los toggles y el relleno del slider.
 - En viewports ≤ 900 px las capas del frasco son las de 1024. El vídeo del chorro, los atlas, el ambiente, el sonido y Analytics se cargan después del primer pintado.
+- La luz del frasco sale de `SCENE_LIGHT`, sin regenerar capas. El sol de arena está a la derecha (sombra a la izquierda, oro); el de miel a la izquierda (sombra a la derecha, oro); lluvia toma el orbe izquierdo (ámbar, cielo neutro, sombra a la derecha); nieve toma el cielo frío (azul gris, sombra corta a la derecha). Los brillos de `jar-front` se multiplican por ese color, un degradado soft-light sombrea el lado oscuro y aclara el lado de la luz, y un rebote del suelo sube por el pie. En la captura, la arena del bulbo de arriba es más clara a la derecha y la miel más clara a la izquierda.
 
 ## Lighthouse (preview de producción, puerto 4173, 7 nov 2026)
 
@@ -27,6 +28,7 @@ Reloj en marcha, texto `00:36` de un minuto. Tamaño y % de blanco medidos en el
 
 - `r4-arena-1440.png` (1,3 MB, 0,29 %), `r4-miel-1440-menu.png` (1,4 MB, 0,01 %, menú abierto), `r4-nieve-1440.png` (1,2 MB, 0,18 %)
 - `r6-lluvia-1440.png` (762 KB, 0,19 %) y `r6-lluvia-390.png` (306 KB, 0,11 %, hora arriba)
+- Luz por escena, frasco lleno arriba: `light-arena-1440.png`, `light-lluvia-1440.png`, `light-miel-1440.png`, `light-nieve-1440.png` (0,16–0,26 % blanco)
 
 Están en `/opt/cursor/artifacts/`.
 

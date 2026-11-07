@@ -115,13 +115,75 @@ export function dioramaPlacement(
   };
 }
 
-/** Luz dominante de cada escena: la sombra cae al lado contrario. */
-export const SCENE_LIGHT: Record<
-  MaterialId,
-  { readonly dx: number; readonly tint: string; readonly gleam: string; readonly caustic: string }
-> = {
-  arena: { dx: -0.26, tint: 'rgba(255, 210, 150, 0.95)', gleam: 'rgba(255, 236, 196, 0.55)', caustic: 'rgba(255, 186, 96, 0.34)' },
-  lluvia: { dx: -0.1, tint: 'rgba(206, 224, 230, 0.9)', gleam: 'rgba(255, 214, 160, 0.42)', caustic: 'rgba(160, 210, 216, 0.3)' },
-  miel: { dx: -0.18, tint: 'rgba(255, 214, 160, 0.95)', gleam: 'rgba(255, 232, 190, 0.5)', caustic: 'rgba(255, 176, 64, 0.36)' },
-  nieve: { dx: 0.16, tint: 'rgba(190, 214, 240, 0.9)', gleam: 'rgba(226, 240, 255, 0.48)', caustic: 'rgba(176, 210, 255, 0.26)' },
+/**
+ * Luz de cada escena. `key` es el lado iluminado (0 izquierda, 1 derecha).
+ * `dx` desplaza la sombra al lado contrario. Los colores tiñen brillos,
+ * cristal y rebote del suelo; no hace falta regenerar las capas.
+ */
+export interface SceneLight {
+  readonly dx: number;
+  readonly key: number;
+  readonly highlight: string;
+  readonly shade: string;
+  readonly ambient: string;
+  readonly gleam: string;
+  readonly bounce: string;
+  readonly caustic: string;
+  readonly shadow: string;
+  readonly filter: string;
+}
+
+export const SCENE_LIGHT: Record<MaterialId, SceneLight> = {
+  // Sol arriba a la derecha. Sombra hacia la izquierda. Oro cálido.
+  arena: {
+    dx: -0.42,
+    key: 0.82,
+    highlight: '#ffd7a4',
+    shade: 'rgba(92, 40, 12, 0.72)',
+    ambient: 'rgba(255, 186, 104, 0.55)',
+    gleam: 'rgba(255, 236, 204, 0.9)',
+    bounce: 'rgba(255, 156, 64, 0.55)',
+    caustic: 'rgba(255, 186, 96, 0.42)',
+    shadow: 'rgba(78, 32, 6, 0.46)',
+    filter: 'brightness(1.07) contrast(1.05) saturate(1.14)',
+  },
+  // Orbe de la izquierda. Cielo neutro, brillo ámbar, sombra a la derecha.
+  lluvia: {
+    dx: 0.28,
+    key: 0.22,
+    highlight: '#ffe0b4',
+    shade: 'rgba(22, 26, 28, 0.7)',
+    ambient: 'rgba(214, 204, 184, 0.4)',
+    gleam: 'rgba(255, 220, 176, 0.75)',
+    bounce: 'rgba(214, 176, 110, 0.4)',
+    caustic: 'rgba(176, 206, 196, 0.28)',
+    shadow: 'rgba(14, 16, 14, 0.5)',
+    filter: 'brightness(0.98) contrast(1.08) saturate(0.9)',
+  },
+  // Sol arriba a la izquierda. Sombra hacia la derecha. Oro de miel.
+  miel: {
+    dx: 0.4,
+    key: 0.18,
+    highlight: '#ffd09a',
+    shade: 'rgba(78, 42, 10, 0.68)',
+    ambient: 'rgba(255, 190, 110, 0.55)',
+    gleam: 'rgba(255, 228, 186, 0.9)',
+    bounce: 'rgba(232, 160, 60, 0.5)',
+    caustic: 'rgba(255, 176, 64, 0.4)',
+    shadow: 'rgba(70, 36, 6, 0.44)',
+    filter: 'brightness(1.08) contrast(1.03) saturate(1.16)',
+  },
+  // Cielo frío arriba a la izquierda. Sombra corta a la derecha. Azul gris.
+  nieve: {
+    dx: 0.16,
+    key: 0.3,
+    highlight: '#d5e4f4',
+    shade: 'rgba(24, 36, 58, 0.66)',
+    ambient: 'rgba(166, 188, 214, 0.5)',
+    gleam: 'rgba(232, 242, 255, 0.8)',
+    bounce: 'rgba(186, 208, 228, 0.55)',
+    caustic: 'rgba(176, 210, 255, 0.24)',
+    shadow: 'rgba(36, 48, 68, 0.4)',
+    filter: 'brightness(1.05) contrast(0.96) saturate(0.82)',
+  },
 };
