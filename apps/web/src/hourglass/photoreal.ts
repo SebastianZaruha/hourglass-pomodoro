@@ -242,12 +242,21 @@ function gradeGlass(
   }
   const w = plate.width;
   const h = plate.height;
-  g.filter = grade.filter;
   g.drawImage(front, 0, 0, w, h);
-  g.filter = 'none';
-  g.globalCompositeOperation = 'multiply';
+  // El frente trae el interior en negro opaco. Si se multiplica o se pasa
+  // en SCREEN, el rectángulo del frasco tapa la escena. Solo quedan los brillos.
+  const pixels = g.getImageData(0, 0, w, h);
+  const data = pixels.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const lit = (data[i] ?? 0) * 0.3 + (data[i + 1] ?? 0) * 0.59 + (data[i + 2] ?? 0) * 0.11;
+    data[i + 3] = lit < 18 ? 0 : Math.min(data[i + 3] ?? 0, Math.round(lit));
+  }
+  g.putImageData(pixels, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.globalAlpha = 0.4;
   g.fillStyle = grade.highlight;
   g.fillRect(0, 0, w, h);
+  g.globalAlpha = 1;
   g.globalCompositeOperation = 'source-over';
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
@@ -283,18 +292,7 @@ function gradeGlass(
   g.drawImage(back, 0, 0, w, h);
   ctx.save();
   ctx.globalCompositeOperation = 'soft-light';
-  ctx.globalAlpha = 0.95;
-  ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
-  ctx.restore();
-
-  const cut = lumenMask();
-  if (!cut) return;
-  paintWash();
-  g.globalCompositeOperation = 'destination-in';
-  g.drawImage(cut, 0, 0, w, h);
-  ctx.save();
-  ctx.globalCompositeOperation = 'soft-light';
-  ctx.globalAlpha = 0.4;
+  ctx.globalAlpha = 0.85;
   ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
   ctx.restore();
 }
