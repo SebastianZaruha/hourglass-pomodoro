@@ -412,10 +412,15 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const bury = frame.id === 'nieve' ? jar.w * 0.028 : 0;
   ctx.save();
   if (frame.id === 'nieve') {
-    ctx.filter = 'blur(20px)';
-    ctx.fillStyle = 'rgba(78, 98, 120, 0.2)';
+    ctx.filter = 'blur(34px)';
+    ctx.fillStyle = 'rgba(58, 78, 104, 0.34)';
     ctx.beginPath();
-    ctx.ellipse(footX + grade.dx * jar.w * 0.2, footY + jar.w * 0.03, jar.w * 0.7, jar.w * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(footX + grade.dx * jar.w * 0.12, footY + jar.w * 0.045, jar.w * 0.9, jar.w * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.filter = 'blur(10px)';
+    ctx.fillStyle = 'rgba(42, 58, 78, 0.32)';
+    ctx.beginPath();
+    ctx.ellipse(footX, footY + jar.w * 0.012, jar.w * 0.2, jar.w * 0.04, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.filter = 'none';
   } else {

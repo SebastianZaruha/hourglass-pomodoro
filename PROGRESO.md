@@ -5,8 +5,9 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 ## Hecho en este paso
 
 - El marco de líneas se quitó: no había un raster fotográfico que aguantara al lado del vidrio.
-- La nube se aclaró a un gris azulado luminoso y el borde se descontaminó (el fleco mide ~198, 208, 220, sin costra negra). El tamaño y el sitio no cambian.
-- La nieve del pie ya no es un óvalo blanco: son manchas suaves de polvo que se funden con el suelo.
+- La tarjeta de la hora es más alta y ancha: el relleno es ~0,38 em arriba y a los lados respecto al tamaño de los dígitos, con aire entre la hora y el texto. Sigue el cristal ahumado y se escala con la ventana.
+- La nube se aclaró a un gris azulado luminoso. El alfa del borde se difumina (~8 px) para que el contorno no quede granulado. El tamaño y el sitio no cambian.
+- Nieve recupera una sombra de contacto muy difusa y una oclusión suave justo en el pie. No hay óvalo blanco.
 - El bulbo de arriba deja aire (el volumen se dibuja al 84 %). Arena y nieve hacen montículo, la miel un menisco y el agua una superficie suave. La nieve se rotó y se desenfocó para quitar el tramado diagonal.
 - La sombra de nieve es un óvalo grande y muy difuso. El pie se hunde un poco y hay nieve delante de la base.
 - Los enlaces del pie van en una pastilla clara (`#3a322c` sobre `rgba(255,250,244,0.84)`), por encima de 4,5:1 aunque el fondo sea blanco o negro.
