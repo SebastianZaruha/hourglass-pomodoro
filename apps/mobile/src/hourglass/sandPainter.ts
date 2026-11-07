@@ -44,7 +44,6 @@ import {
   TileMode,
   type ImageInfo,
   type SkCanvas,
-  type SkImage,
   type SkPaint,
   type SkPicture,
   type SkPictureRecorder,
@@ -161,7 +160,6 @@ export class SandPainter {
     private readonly theme: HourglassTheme,
     private readonly lut: Uint8Array,
     shaders: ShaderSet,
-    private readonly grain: SkImage | null = null,
   ) {
     this.pixels = new Uint8Array(layout.cols * layout.rows * 4);
     this.imageInfo = {
@@ -203,8 +201,6 @@ export class SandPainter {
     this.glintPaint = Skia.Paint();
     this.glintPaint.setAntiAlias(true);
     this.glintPaint.setColor(Skia.Color('rgba(255, 250, 238, 0.55)'));
-    this.grainPaint = Skia.Paint();
-    this.grainPaint.setAlphaf(0.045);
   }
 
   /** Graba un SkPicture con la arena y el chorro. */
@@ -237,18 +233,6 @@ export class SandPainter {
       canvas.save();
       canvas.clipPath(layout.innerPath, ClipOp.Intersect, true);
       canvas.drawRect(this.gridRect, this.sandPaint);
-      if (this.grain) {
-        const grainShader = this.grain.makeShaderOptions(
-          TileMode.Repeat,
-          TileMode.Repeat,
-          FilterMode.Linear,
-          MipmapMode.None,
-        );
-        this.grainPaint.setShader(grainShader);
-        canvas.drawRect(this.gridRect, this.grainPaint);
-        this.grainPaint.setShader(null);
-        grainShader.dispose();
-      }
       if (stream.particles?.active) this.drawParticles(canvas, stream.particles, inputs.tilt);
       canvas.restore();
     }
@@ -270,7 +254,6 @@ export class SandPainter {
     safeDispose(this.sandPaint);
     safeDispose(this.grainPaint);
     safeDispose(this.glintPaint);
-    safeDispose(this.grainPaint);
     safeDispose(this.recorder);
   }
 

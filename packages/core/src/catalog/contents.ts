@@ -1,92 +1,44 @@
 /**
- * Registro de materiales del reloj.
+ * Catálogo de contenidos: lo que hay dentro del reloj.
  *
- * Arena: simulación grano a grano (la de siempre). Lluvia, miel y nieve:
- * una entrada de esta tabla y el porcentaje de tiempo (ver shape/geometry).
- * Añadir otro material con un aspecto que ya exista es otra entrada aquí.
- * Un aspecto nuevo necesita su pintor.
+ * Fase 1: solo arena. El tipo ya distingue entre contenido granular (arena,
+ * se simula grano a grano) y fluido (agua, fase futura) para que el
+ * renderizador pueda elegir la simulación adecuada sin cambiar la app.
  */
-import type { StreamProfile } from './streamProfile';
-import { SAND_STREAM } from './streamProfile';
 
-export type { StreamProfile };
-export { SAND_STREAM };
-
-export type ContentKind = 'granular' | 'shape';
+export type ContentKind = 'granular' | 'fluid';
 
 /** Color RGB en 0..255. */
 export type Rgb = readonly [number, number, number];
 
-export const MATERIAL_IDS = ['arena', 'lluvia', 'miel', 'nieve'] as const;
-export type MaterialId = (typeof MATERIAL_IDS)[number];
-
-/** Qué pintor usa. `granos` es el de la arena. */
-export type MaterialLook = 'granos' | 'lluvia' | 'miel' | 'nieve';
-
 export interface ContentPalette {
+  /** Tonos de los granos (se mezclan al azar para dar textura). */
   readonly grainTones: readonly Rgb[];
+  /** Tono de los granos oscuros ocasionales ("motas"). */
   readonly speck: Rgb;
+  /** Proporción de motas (0..1). */
   readonly speckRatio: number;
 }
 
-/** Desplazamiento del fondo, en unidades 0..255. [0, 0, 0] no cambia nada. */
-export type AtmosphereShift = readonly [number, number, number];
-
-interface MaterialBase {
-  readonly id: MaterialId;
+export interface ContentDefinition {
+  readonly id: string;
   readonly name: string;
+  readonly kind: ContentKind;
+  /** Paleta para tema claro y oscuro. */
   readonly palette: { readonly light: ContentPalette; readonly dark: ContentPalette };
-  readonly look: MaterialLook;
-  readonly atmosphere: { readonly light: AtmosphereShift; readonly dark: AtmosphereShift };
-}
-
-/** Arena: el autómata de granos. Estos números son los de la 1.8. */
-export interface GranularMaterial extends MaterialBase {
-  readonly kind: 'granular';
+  /**
+   * Tendencia a deslizar lateralmente (0..1). Controla el ángulo de reposo:
+   * más alto = montones más planos.
+   */
   readonly slideChance: number;
-  readonly staticFriction: number;
+  /** Fracción de la capacidad del bulbo que ocupa toda la arena. */
   readonly fillRatio: number;
-  readonly idleCrater: number;
-  readonly flowCrater: number;
-  readonly sparkle: boolean;
-  readonly stream: StreamProfile;
 }
 
-/**
- * Material dibujado desde el porcentaje. El chorro va a `ribbonSpeed`
- * ciclos por segundo, da igual cuánto dure el reloj.
- */
-export interface ShapeMaterial extends MaterialBase {
-  readonly kind: 'shape';
-  /** Cuánto del bulbo ocupa el «lleno», para no pegarse al vidrio. */
-  readonly fullFraction: number;
-  /** Altura de la onda, en unidades del perfil. 0 = superficie quieta. */
-  readonly waves: number;
-  /** Ciclos de onda por segundo, solo mientras corre. */
-  readonly waveSpeed: number;
-  /** Cúpula en el centro (miel). 0 = nivel. */
-  readonly mound: number;
-  /** Ciclos del chorro por segundo. */
-  readonly ribbonSpeed: number;
-  readonly ribbonCount: number;
-  /** Nube de algodón en el bulbo de arriba (lluvia). */
-  readonly cloud: boolean;
-  /** Copos con presupuesto fijo (nieve). Si no, el chorro son rayas o gotas. */
-  readonly flakes: boolean;
-}
-
-export type MaterialDefinition = GranularMaterial | ShapeMaterial;
-
-/** @deprecated El pintor importaba este nombre. Es el mismo registro. */
-export type ContentDefinition = MaterialDefinition;
-
-const NO_TINT: AtmosphereShift = [0, 0, 0];
-
-export const SAND: GranularMaterial = {
+export const SAND: ContentDefinition = {
   id: 'arena',
   name: 'Arena',
   kind: 'granular',
-  look: 'granos',
   palette: {
     light: {
       grainTones: [
@@ -112,155 +64,15 @@ export const SAND: GranularMaterial = {
     },
   },
   slideChance: 0.55,
-  staticFriction: 0.3,
   fillRatio: 0.86,
-  idleCrater: 0.25,
-  flowCrater: 0.35,
-  sparkle: true,
-  stream: SAND_STREAM,
-  atmosphere: { light: NO_TINT, dark: NO_TINT },
 };
 
-/** Nube que encoge, lluvia continua y agua que se acumula abajo. */
-export const RAIN: ShapeMaterial = {
-  id: 'lluvia',
-  name: 'Lluvia',
-  kind: 'shape',
-  look: 'lluvia',
-  palette: {
-    light: {
-      grainTones: [
-        [168, 184, 190],
-        [154, 172, 180],
-        [186, 198, 202],
-        [142, 160, 170],
-      ],
-      speck: [120, 140, 150],
-      speckRatio: 0.02,
-    },
-    dark: {
-      grainTones: [
-        [126, 146, 154],
-        [112, 132, 142],
-        [146, 164, 170],
-        [100, 120, 130],
-      ],
-      speck: [80, 100, 110],
-      speckRatio: 0.02,
-    },
-  },
-  fullFraction: 0.9,
-  waves: 0.012,
-  waveSpeed: 1.15,
-  mound: 0,
-  ribbonSpeed: 1.35,
-  ribbonCount: 11,
-  cloud: true,
-  flakes: false,
-  atmosphere: { light: [-8, -3, 8], dark: [-5, -2, 6] },
-};
+/** Registro de contenidos disponibles. El agua se añadirá aquí en su fase. */
+export const CONTENT_CATALOG: readonly ContentDefinition[] = [SAND];
 
-/** Miel: nivel ámbar, cúpula suave y un hilo grueso y lento. */
-export const HONEY: ShapeMaterial = {
-  id: 'miel',
-  name: 'Miel',
-  kind: 'shape',
-  look: 'miel',
-  palette: {
-    light: {
-      grainTones: [
-        [210, 160, 72],
-        [196, 142, 56],
-        [224, 178, 98],
-        [180, 126, 48],
-      ],
-      speck: [140, 90, 36],
-      speckRatio: 0.04,
-    },
-    dark: {
-      grainTones: [
-        [188, 140, 62],
-        [170, 120, 48],
-        [206, 158, 82],
-        [154, 106, 40],
-      ],
-      speck: [110, 72, 32],
-      speckRatio: 0.04,
-    },
-  },
-  fullFraction: 0.88,
-  waves: 0.007,
-  waveSpeed: 0.55,
-  mound: 0.045,
-  ribbonSpeed: 0.42,
-  ribbonCount: 5,
-  cloud: false,
-  flakes: false,
-  atmosphere: { light: [10, 4, -12], dark: [8, 3, -6] },
-};
+export const DEFAULT_CONTENT_ID = SAND.id;
 
-/**
- * Nieve: un manto arriba que mengua, una capa que crece abajo y copos
- * con un presupuesto fijo. El frío es leve: nada de azul eléctrico.
- */
-export const SNOW: ShapeMaterial = {
-  id: 'nieve',
-  name: 'Nieve',
-  kind: 'shape',
-  look: 'nieve',
-  palette: {
-    light: {
-      grainTones: [
-        [236, 240, 244],
-        [220, 228, 234],
-        [245, 248, 250],
-        [206, 216, 224],
-      ],
-      speck: [168, 180, 190],
-      speckRatio: 0.03,
-    },
-    dark: {
-      grainTones: [
-        [186, 198, 208],
-        [168, 180, 192],
-        [200, 210, 218],
-        [154, 168, 180],
-      ],
-      speck: [130, 144, 156],
-      speckRatio: 0.03,
-    },
-  },
-  fullFraction: 0.86,
-  waves: 0.004,
-  waveSpeed: 0.35,
-  mound: 0.055,
-  ribbonSpeed: 0.85,
-  ribbonCount: 14,
-  cloud: false,
-  flakes: true,
-  atmosphere: { light: [-6, 1, 8], dark: [-3, 1, 6] },
-};
-
-export const MATERIALS: Readonly<Record<MaterialId, MaterialDefinition>> = {
-  arena: SAND,
-  lluvia: RAIN,
-  miel: HONEY,
-  nieve: SNOW,
-};
-
-export const CONTENT_CATALOG: readonly MaterialDefinition[] = MATERIAL_IDS.map((id) => MATERIALS[id]);
-
-export const DEFAULT_CONTENT_ID: MaterialId = SAND.id;
-
-export function isMaterialId(id: string): id is MaterialId {
-  return (MATERIAL_IDS as readonly string[]).includes(id);
-}
-
-export function isShapeMaterial(material: MaterialDefinition): material is ShapeMaterial {
-  return material.kind === 'shape';
-}
-
-/** Busca un material; si el id no existe (ajustes viejos o rotos) devuelve arena. */
-export function getContent(id: string | undefined | null): MaterialDefinition {
-  return id && isMaterialId(id) ? MATERIALS[id] : SAND;
+/** Busca un contenido por id; si no existe devuelve el de por defecto. */
+export function getContent(id: string | undefined | null): ContentDefinition {
+  return CONTENT_CATALOG.find((c) => c.id === id) ?? SAND;
 }

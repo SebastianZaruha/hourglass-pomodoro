@@ -111,7 +111,6 @@ describe('TiltLod (menos detalle solo en un giro fuerte, 1.8.9)', () => {
 
   it('con la gravedad en escalones de 10° la arena acaba en el mismo lado', () => {
     const content = getContent(null);
-    if (content.kind !== 'granular') throw new Error('la arena es granular');
     const make = () => {
       const sim = new SandSimulation({
         profile: CLASSIC_MODEL.profile,

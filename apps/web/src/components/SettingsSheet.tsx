@@ -311,7 +311,7 @@ function Stepper({
   const scrub = onScrubIndex != null && scrubIndex != null && scrubMax != null;
   const drag = useRef<{
     pointerId: number;
-    startY: number;
+    startX: number;
     startIndex: number;
     moved: boolean;
     sent: number;
@@ -322,7 +322,7 @@ function Stepper({
     if (!scrub || scrubIndex == null || event.button !== 0) return;
     drag.current = {
       pointerId: event.pointerId,
-      startY: event.clientY,
+      startX: event.clientX,
       startIndex: scrubIndex,
       moved: false,
       sent: scrubIndex,
@@ -340,13 +340,13 @@ function Stepper({
     ) {
       return;
     }
-    const dy = gesture.startY - event.clientY;
-    if (!gesture.moved && Math.abs(dy) < 5) return;
+    const dx = event.clientX - gesture.startX;
+    if (!gesture.moved && Math.abs(dx) < 5) return;
     if (!gesture.moved && !event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     gesture.moved = true;
-    const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dy / SCRUB_PX)));
+    const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dx / SCRUB_PX)));
     if (index === gesture.sent) return;
     gesture.sent = index;
     onScrubIndex(index);
@@ -400,15 +400,6 @@ function Stepper({
           +
         </button>
       </div>
-      {scrub && scrubMax != null && scrubIndex != null ? (
-        <span className="glass-cap" aria-hidden="true">
-          <span
-            className="glass-cap-fill"
-            style={{ height: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
-          />
-          <span className="glass-cap-line" />
-        </span>
-      ) : null}
       <span className="stepper-label">
         <span className="sr-only">{spoken}. </span>
         {label}
