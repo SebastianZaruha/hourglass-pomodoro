@@ -37,16 +37,37 @@ import {
   vec,
   type SkImage,
 } from '@shopify/react-native-skia';
-import { glassFade } from '@reloj/core';
+import { glassFade, type MaterialId } from '@reloj/core';
 import { interpolateColor, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import { DARK_THEME, LIGHT_THEME } from '../../theme/theme';
 
 /** Radio de las esquinas superiores de la hoja. */
 export const SHEET_RADIUS = 36;
-/** Tinte ahumado: deja ver el fondo desenfocado. */
-const PANEL_LIGHT = ['rgba(255, 252, 247, 0.38)', 'rgba(236, 228, 216, 0.52)'] as const;
-const PANEL_DARK = ['rgba(36, 30, 26, 0.42)', 'rgba(18, 14, 12, 0.58)'] as const;
+/**
+ * Velo por material. Nieve y miel son claras: el vidrio se vuelve más
+ * opaco para que el texto oscuro siga leyéndose. La lluvia es un diorama
+ * gris: el velo claro tapa ese gris. En oscuro el velo es humo, más denso
+ * sobre la nieve para que el texto claro no se pierda.
+ */
+const VEIL: Record<MaterialId, { light: readonly [string, string]; dark: readonly [string, string] }> = {
+  arena: {
+    light: ['rgba(255, 244, 228, 0.66)', 'rgba(236, 214, 184, 0.78)'],
+    dark: ['rgba(42, 32, 24, 0.58)', 'rgba(22, 16, 12, 0.74)'],
+  },
+  lluvia: {
+    light: ['rgba(244, 246, 244, 0.8)', 'rgba(226, 230, 228, 0.9)'],
+    dark: ['rgba(28, 30, 32, 0.66)', 'rgba(14, 16, 18, 0.8)'],
+  },
+  miel: {
+    light: ['rgba(255, 250, 242, 0.76)', 'rgba(244, 230, 210, 0.88)'],
+    dark: ['rgba(40, 30, 22, 0.64)', 'rgba(20, 14, 10, 0.8)'],
+  },
+  nieve: {
+    light: ['rgba(246, 248, 250, 0.84)', 'rgba(228, 234, 238, 0.92)'],
+    dark: ['rgba(16, 22, 30, 0.74)', 'rgba(8, 12, 18, 0.88)'],
+  },
+};
 /** Alto de la sombra sobre el canto. */
 const SHADOW_H = 28;
 
@@ -66,9 +87,19 @@ interface Props {
   readonly frost?: SkImage | null;
   /** Dónde cae esa foto en la pantalla (el mismo recorte que el fondo). */
   readonly frostFrame?: { readonly x: number; readonly y: number; readonly w: number; readonly h: number } | null;
+  readonly material?: MaterialId;
 }
 
-export function FrostedPanel({ width, height, top, openness, themeProgress, frost, frostFrame }: Props) {
+export function FrostedPanel({
+  width,
+  height,
+  top,
+  openness,
+  themeProgress,
+  frost,
+  frostFrame,
+  material = 'arena',
+}: Props) {
   // La forma se prolonga por debajo de la pantalla para que las esquinas
   // redondeadas de abajo nunca se vean.
   const shape = useDerivedValue(() =>
@@ -88,9 +119,10 @@ export function FrostedPanel({ width, height, top, openness, themeProgress, fros
   const scrim = useDerivedValue(() => interpolateColor(themeProgress.value, [0, 1], [L.scrim, D.scrim]));
   const panelStart = useDerivedValue(() => vec(0, top.value));
   const panelEnd = useDerivedValue(() => vec(0, height));
+  const veil = VEIL[material];
   const panelColors = useDerivedValue(() => [
-    interpolateColor(themeProgress.value, [0, 1], [PANEL_LIGHT[0], PANEL_DARK[0]]),
-    interpolateColor(themeProgress.value, [0, 1], [PANEL_LIGHT[1], PANEL_DARK[1]]),
+    interpolateColor(themeProgress.value, [0, 1], [veil.light[0], veil.dark[0]]),
+    interpolateColor(themeProgress.value, [0, 1], [veil.light[1], veil.dark[1]]),
   ]);
   const shadowColors = useDerivedValue(() => [
     'rgba(60, 44, 30, 0)',

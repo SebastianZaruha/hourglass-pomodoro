@@ -10,14 +10,15 @@
   "legacyStoneLayers": "transparent compatibility placeholders; do not position/render a pedestal",
   "scenes": {
     "arena-v": {
+      "location": "sunset coastal sand dunes and dry marram grass",
       "scene": "apps/mobile/assets/materials/scene-arena-v.webp",
       "contact": {
-        "x": 0.5,
-        "y": 0.85
+        "x": 0.5101851851851852,
+        "y": 0.8302083333333333
       },
       "contactPixels": {
-        "x": 540,
-        "y": 1632
+        "x": 551,
+        "y": 1594
       },
       "jarWidth": 0.32037037037037036,
       "jarHeight": 0.4515625,
@@ -33,14 +34,15 @@
       ]
     },
     "arena-h": {
+      "location": "sunset coastal sand dunes and dry marram grass",
       "scene": "apps/web/public/backgrounds/scene-arena.webp",
       "contact": {
-        "x": 0.5,
-        "y": 0.8601851851851852
+        "x": 0.5098958333333333,
+        "y": 0.8398148148148148
       },
       "contactPixels": {
-        "x": 960,
-        "y": 929
+        "x": 979,
+        "y": 907
       },
       "jarWidth": 0.15989583333333332,
       "jarHeight": 0.7129629629629629,
@@ -56,14 +58,15 @@
       ]
     },
     "lluvia-v": {
+      "location": "neutral-grey studio wet-stone moss diorama and reflective pool",
       "scene": "apps/mobile/assets/materials/scene-lluvia-v.webp",
       "contact": {
         "x": 0.5,
-        "y": 0.85
+        "y": 0.8697916666666666
       },
       "contactPixels": {
         "x": 540,
-        "y": 1632
+        "y": 1670
       },
       "jarWidth": 0.32037037037037036,
       "jarHeight": 0.4515625,
@@ -79,14 +82,15 @@
       ]
     },
     "lluvia-h": {
+      "location": "neutral-grey studio wet-stone moss diorama and reflective pool",
       "scene": "apps/web/public/backgrounds/scene-lluvia.webp",
       "contact": {
-        "x": 0.5,
-        "y": 0.8601851851851852
+        "x": 0.6,
+        "y": 0.9
       },
       "contactPixels": {
-        "x": 960,
-        "y": 929
+        "x": 1152,
+        "y": 972
       },
       "jarWidth": 0.15989583333333332,
       "jarHeight": 0.7129629629629629,
@@ -102,14 +106,15 @@
       ]
     },
     "miel-v": {
+      "location": "late-afternoon wildflower meadow",
       "scene": "apps/mobile/assets/materials/scene-miel-v.webp",
       "contact": {
         "x": 0.5,
-        "y": 0.85
+        "y": 0.8401041666666667
       },
       "contactPixels": {
         "x": 540,
-        "y": 1632
+        "y": 1613
       },
       "jarWidth": 0.32037037037037036,
       "jarHeight": 0.4515625,
@@ -125,14 +130,15 @@
       ]
     },
     "miel-h": {
+      "location": "late-afternoon wildflower meadow",
       "scene": "apps/web/public/backgrounds/scene-miel.webp",
       "contact": {
         "x": 0.5,
-        "y": 0.8601851851851852
+        "y": 0.8398148148148148
       },
       "contactPixels": {
         "x": 960,
-        "y": 929
+        "y": 907
       },
       "jarWidth": 0.15989583333333332,
       "jarHeight": 0.7129629629629629,
@@ -148,6 +154,7 @@
       ]
     },
     "nieve-v": {
+      "location": "blue-hour snow-covered pine forest",
       "scene": "apps/mobile/assets/materials/scene-nieve-v.webp",
       "contact": {
         "x": 0.5,
@@ -171,14 +178,15 @@
       ]
     },
     "nieve-h": {
+      "location": "blue-hour snow-covered pine forest",
       "scene": "apps/web/public/backgrounds/scene-nieve.webp",
       "contact": {
         "x": 0.5,
-        "y": 0.8796296296296297
+        "y": 0.85
       },
       "contactPixels": {
         "x": 960,
-        "y": 950
+        "y": 918
       },
       "jarWidth": 0.15989583333333332,
       "jarHeight": 0.7129629629629629,

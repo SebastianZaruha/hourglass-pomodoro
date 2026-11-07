@@ -262,11 +262,9 @@ interface DurationSliderProps extends Base {
 }
 
 /**
- * Barra de minutos de sesión única «Personalizado», a todo el ancho: − a la
- * izquierda, el valor en el centro, + a la derecha. Arrastrar en horizontal
- * recorre los mismos escalones que el reloj (1–180 min). Un movimiento claro
- * hacia arriba o abajo no cambia el tiempo: lo suelta para que la hoja pueda
- * cerrarse o desplazarse.
+ * Cápsula vertical de cristal para «Personalizado». Arrastrar hacia arriba
+ * sube los minutos (los mismos escalones que el reloj). Un movimiento claro
+ * en horizontal suelta el gesto para que la hoja pueda moverse.
  */
 export function DurationSlider({
   durationMs,
@@ -314,10 +312,8 @@ export function DurationSlider({
       return {
         runOnJS: true,
         maxPointers: 1,
-        activeOffsetX: [-8, 8] as [number, number],
-        // Por encima de esto, en vertical, el gesto falla y la hoja puede
-        // cerrarse o la lista desplazarse. Por debajo, manda el eje horizontal.
-        failOffsetY: [-16, 16] as [number, number],
+        activeOffsetY: [-8, 8] as [number, number],
+        failOffsetX: [-18, 18] as [number, number],
         shouldCancelWhenOutside: false,
         block: blockSheet,
         onActivate: () => {
@@ -329,8 +325,8 @@ export function DurationSlider({
           // El dedo pudo bajar sobre − o +: ese toque no debe contar como un paso.
           swallowPress.current = true;
         },
-        onUpdate: (event: { translationX: number }) => {
-          const next = durationFromDrag(startMs.current, event.translationX, PX_PER_STEP);
+        onUpdate: (event: { translationY: number }) => {
+          const next = durationFromDrag(startMs.current, -event.translationY, PX_PER_STEP);
           if (next === sentMs.current) return;
           sentMs.current = next;
           if (ticker.current?.update(next, Date.now())) playSelectionTick();
@@ -367,6 +363,7 @@ export function DurationSlider({
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel={label}
+          accessibilityHint={t.dragUpForMore}
           aria-valuetext={spoken}
           aria-valuenow={shown}
           aria-valuemin={minMinutes}
@@ -378,38 +375,42 @@ export function DurationSlider({
           onAccessibilityAction={(e) => pressStep(e.nativeEvent.actionName === 'increment' ? 1 : -1)}
         >
           <View style={st.sliderRow}>
-            <StepButton
-              glyph="−"
-              enabled={index > 0}
-              onPress={() => pressStep(-1)}
-              styles={s}
-              fonts={fonts}
-              testID={testID && `${testID}-menos`}
-            />
-            <Animated.Text style={[st.sliderValue, { fontFamily: fonts.light }, s.ink]} numberOfLines={1}>
-              {shown}
-              <Animated.Text style={[st.stepUnit, { fontFamily: fonts.medium }, s.inkSoft]}>
-                {' '}
-                min
+            <View style={st.sliderReadout}>
+              <Animated.Text style={[st.sliderValue, { fontFamily: fonts.light }, s.ink]} numberOfLines={1}>
+                {shown}
+                <Animated.Text style={[st.stepUnit, { fontFamily: fonts.medium }, s.inkSoft]}>
+                  {' '}
+                  min
+                </Animated.Text>
               </Animated.Text>
-            </Animated.Text>
-            <StepButton
-              glyph="+"
-              enabled={index < DURATION_STEPS_MIN.length - 1}
-              onPress={() => pressStep(1)}
-              styles={s}
-              fonts={fonts}
-              testID={testID && `${testID}-mas`}
-            />
-          </View>
-          <View style={st.sliderTrack}>
-            <Animated.View
-              style={[
-                st.sliderFill,
-                s.accentBg,
-                { width: `${Math.round((index / Math.max(1, DURATION_STEPS_MIN.length - 1)) * 100)}%` },
-              ]}
-            />
+              <View style={st.sliderSteps}>
+                <StepButton
+                  glyph="−"
+                  enabled={index > 0}
+                  onPress={() => pressStep(-1)}
+                  styles={s}
+                  fonts={fonts}
+                  testID={testID && `${testID}-menos`}
+                />
+                <StepButton
+                  glyph="+"
+                  enabled={index < DURATION_STEPS_MIN.length - 1}
+                  onPress={() => pressStep(1)}
+                  styles={s}
+                  fonts={fonts}
+                  testID={testID && `${testID}-mas`}
+                />
+              </View>
+            </View>
+            <View style={st.capsule} accessibilityElementsHidden>
+              <View
+                style={[
+                  st.capsuleFill,
+                  { height: `${Math.round((index / Math.max(1, DURATION_STEPS_MIN.length - 1)) * 100)}%` },
+                ]}
+              />
+              <View style={st.capsuleLine} />
+            </View>
           </View>
           <Animated.Text style={[st.sliderLabel, { fontFamily: fonts.medium }, s.inkSoft]}>
             {label}
@@ -505,7 +506,30 @@ const st = StyleSheet.create({
   },
   sliderFill: { height: 3, borderRadius: 2 },
   sliderHit: { minHeight: 44 },
-  sliderRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
+  sliderRow: { minHeight: 120, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sliderReadout: { flex: 1, alignItems: 'center' },
+  sliderSteps: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  capsule: {
+    width: 28,
+    height: 120,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 252, 246, 0.85)',
+    backgroundColor: 'rgba(255, 252, 247, 0.28)',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    marginRight: 8,
+  },
+  capsuleFill: { backgroundColor: 'rgba(107, 115, 68, 0.85)', width: '100%' },
+  capsuleLine: {
+    position: 'absolute',
+    left: 12,
+    top: 10,
+    bottom: 10,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: 'rgba(154, 176, 92, 0.95)',
+  },
   sliderValue: {
     flex: 1,
     textAlign: 'center',

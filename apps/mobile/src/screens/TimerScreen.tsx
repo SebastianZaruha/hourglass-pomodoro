@@ -598,9 +598,10 @@ export function TimerScreen({ settings, fonts }: Props) {
         themeProgress={themeProgress}
         frost={frost}
         frostFrame={frostFrame}
+        material={content.id}
       />
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress, frost, frostFrame],
+    [sheet.top, sheet.openness, width, height, themeProgress, frost, frostFrame, content.id],
   );
   const displayMs = view.status === 'idle' ? view.durationMs : view.remainingMs;
   const hint = blurred ? null : hintFor(view, interacted, tr);

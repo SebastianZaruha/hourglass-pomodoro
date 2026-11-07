@@ -437,6 +437,7 @@ function Timer({
       ref={appRef}
       className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
+      data-material={getContent(settings.contentId).id}
       data-layout={wide ? 'wide' : 'narrow'}
       data-roomy={dockIsRoomy(window.innerWidth, window.innerHeight) ? 'yes' : 'no'}
       style={pageTint(scheme, getContent(settings.contentId).atmosphere)}

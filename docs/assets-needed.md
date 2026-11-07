@@ -89,7 +89,9 @@ No incluir perfil de color raro ni metadatos enormes.
 
 ---
 
-## Prioridad 2 — foto de producto en cuatro capas (todo estático)
+## Prioridad 2 — foto de producto (escena y primer plano)
+
+Las piedras van dentro de la escena, a los lados. No hay un archivo de piedra debajo del frasco: `stone-*.webp` no se usa. El apoyo lo marca `packages/core/src/shape/anchors-ground.json`.
 
 No hay vídeo ni hierba que se mueva. Es una foto quieta, como el frasco apoyado en una piedra en el césped: el paisaje tiene profundidad de campo y unas briznas pasan por delante del vidrio. El reloj sigue dibujándose en Skia, entre la piedra y las briznas.
 

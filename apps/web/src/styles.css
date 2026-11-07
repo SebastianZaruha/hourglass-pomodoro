@@ -51,13 +51,6 @@
   --footer: #8a7d72;
   --menu: #796c60;
   --line: rgba(255, 236, 214, 0.08);
-  background-image:
-    linear-gradient(rgba(12, 10, 8, 0.42), rgba(12, 10, 8, 0.42)),
-    var(--scene-image, none),
-    radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
-    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
-  background-size: auto, var(--scene-size, auto), auto, auto;
-  background-position: center, var(--scene-pos, center), center, center;
 }
 
 * {
@@ -86,21 +79,32 @@ a {
 .app {
   height: 100%;
   color: var(--ink);
-  background-image:
-    var(--scene-image, none),
+  background:
     radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
-  background-repeat: no-repeat, no-repeat, no-repeat;
-  background-size: var(--scene-size, auto), auto, auto;
-  background-position: var(--scene-pos, center), center, center;
   position: relative;
 }
 
+.scene-photo,
 .blades {
   position: fixed;
-  z-index: 4;
+  z-index: 1;
   pointer-events: none;
   user-select: none;
+}
+
+.blades {
+  z-index: 4;
+}
+
+.glass-frame,
+.glass-canvas {
+  position: relative;
+  z-index: 2;
+}
+
+.app[data-scheme='dark'] .scene-photo {
+  filter: brightness(0.62);
 }
 
 .app[data-layout='narrow'] {
@@ -366,8 +370,60 @@ a {
 }
 
 .app[data-scheme='dark'] .sheet {
-  background: rgba(28, 24, 20, 0.52);
+  background: rgba(28, 24, 20, 0.62);
   border-color: rgba(255, 238, 214, 0.28);
+}
+
+.app[data-material='arena'] .sheet {
+  background: rgba(255, 244, 228, 0.7);
+}
+.app[data-material='lluvia'] .sheet {
+  background: rgba(244, 246, 244, 0.84);
+}
+.app[data-material='miel'] .sheet {
+  background: rgba(255, 250, 242, 0.8);
+}
+.app[data-material='nieve'] .sheet {
+  background: rgba(246, 248, 250, 0.88);
+}
+.app[data-scheme='dark'][data-material='nieve'] .sheet {
+  background: rgba(16, 22, 30, 0.78);
+}
+.app[data-scheme='dark'][data-material='lluvia'] .sheet {
+  background: rgba(22, 24, 26, 0.72);
+}
+
+.glass-cap {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 112px;
+  margin-left: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 252, 246, 0.9);
+  background: rgba(255, 252, 247, 0.28);
+  overflow: hidden;
+}
+.glass-cap-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(107, 115, 68, 0.88);
+}
+.glass-cap-line {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(154, 176, 92, 0.95);
+}
+.stepper-row.stepper-solo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

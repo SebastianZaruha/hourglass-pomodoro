@@ -368,6 +368,10 @@ const SURFACE: SurfacePoint[] = Array.from({ length: 28 }, () => ({ x: 0, y: 0 }
 const RIBBONS: RibbonMark[] = Array.from({ length: 16 }, () => ({ x: 0, t: 0, len: 0, alpha: 0 }));
 const PUFFS: CloudPuff[] = Array.from({ length: 12 }, () => ({ x: 0, y: 0, r: 0, alpha: 0, shade: 0 }));
 const FLAKES = Array.from({ length: 16 }, () => ({ x: 0, t: 0, r: 0, alpha: 0 }));
+const puffTex = new Image();
+puffTex.src = '/materials/cloud-puff.png';
+const shadeTex = new Image();
+shadeTex.src = '/materials/cloud-shade.png';
 
 function drawShapeFill(
   ctx: CanvasRenderingContext2D,
@@ -470,6 +474,14 @@ function drawShapeFill(
     const x = layout.cx + puff.x * layout.halfW * 0.72;
     const y = layout.cy - layout.halfH * 0.52 + puff.y * layout.halfH * 0.34;
     const a = Math.min(0.95, puff.alpha);
+    const tex = puff.shade < 0.7 && shadeTex.complete && shadeTex.naturalWidth ? shadeTex : puffTex;
+    if (tex.complete && tex.naturalWidth) {
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.drawImage(tex, x - r, y - r, r * 2, r * 2);
+      ctx.restore();
+      continue;
+    }
     const grd = ctx.createRadialGradient(x - r * 0.2, y - r * 0.25, r * 0.05, x, y, Math.max(1, r));
     // El centro es luz; el cuerpo es el gris frío de la paleta. Blanco puro
     // sobre el cristal crema no se lee como nube.

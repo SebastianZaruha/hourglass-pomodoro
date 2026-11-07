@@ -1,8 +1,9 @@
 /**
- * Césped detrás del frasco y briznas delante.
+ * Césped detrás del frasco y briznas delante, solo en la columna del reloj.
  *
- * Las dos fotos comparten el recorte: el punto de apoyo del JSON cae en el
- * pie del vidrio. Las briznas no reciben el ratón.
+ * El recorte es el del lienzo, no el de toda la ventana: si no, un apoyo
+ * descentrado (la lluvia horizontal) agranda la foto hasta sacar el suelo.
+ * Las dos capas usan el mismo recorte. Las briznas no reciben el ratón.
  */
 import { coverFrame, groundContact, type MaterialId } from '@reloj/core';
 import { useEffect, type RefObject } from 'react';
@@ -30,40 +31,40 @@ interface Props {
 
 export function ScenePlate({ id, layoutRef }: Props) {
   useEffect(() => {
-    const app = document.querySelector('.app');
-    const blades = document.querySelector<HTMLImageElement>('.blades');
     const scene = new Image();
     scene.src = SCENE[id];
     let alive = true;
 
     const place = () => {
-      if (!alive || !scene.naturalWidth || !app) return;
+      if (!alive || !scene.naturalWidth) return;
       const canvas = document.querySelector('.glass-canvas');
+      const photo = document.querySelector<HTMLImageElement>('.scene-photo');
+      const blades = document.querySelector<HTMLImageElement>('.blades');
       const box = layoutRef.current?.layoutCss();
-      if (!canvas || !box) return;
+      if (!canvas || !photo || !blades || !box) return;
       const rect = canvas.getBoundingClientRect();
       const contact = groundContact(id, true);
       const frame = coverFrame(
-        window.innerWidth,
-        window.innerHeight,
+        rect.width,
+        rect.height,
         scene.naturalWidth,
         scene.naturalHeight,
-        rect.left + box.cx,
-        rect.top + box.cy + box.halfH,
+        box.cx,
+        box.cy + box.halfH,
         contact.x,
         contact.y,
       );
-      const root = document.documentElement;
-      root.style.setProperty('--scene-image', `url("${SCENE[id]}")`);
-      root.style.setProperty('--scene-size', `${frame.w}px ${frame.h}px`);
-      root.style.setProperty('--scene-pos', `${frame.x}px ${frame.y}px`);
-      if (blades) {
-        blades.src = BLADES[id];
-        blades.style.left = `${frame.x}px`;
-        blades.style.top = `${frame.y}px`;
-        blades.style.width = `${frame.w}px`;
-        blades.style.height = `${frame.h}px`;
+      const left = `${rect.left + frame.x}px`;
+      const top = `${rect.top + frame.y}px`;
+      const width = `${frame.w}px`;
+      const height = `${frame.h}px`;
+      for (const img of [photo, blades]) {
+        img.style.left = left;
+        img.style.top = top;
+        img.style.width = width;
+        img.style.height = height;
       }
+      blades.src = BLADES[id];
     };
 
     scene.onload = place;
@@ -71,15 +72,24 @@ export function ScenePlate({ id, layoutRef }: Props) {
     const observer = new ResizeObserver(place);
     if (canvas) observer.observe(canvas);
     window.addEventListener('resize', place);
-    const kick = window.setTimeout(place, 600);
+    let tries = 0;
+    const kick = window.setInterval(() => {
+      place();
+      tries += 1;
+      if (tries > 15) window.clearInterval(kick);
+    }, 200);
     return () => {
       alive = false;
       observer.disconnect();
       window.removeEventListener('resize', place);
-      window.clearTimeout(kick);
-      document.documentElement.style.removeProperty('--scene-image');
+      window.clearInterval(kick);
     };
   }, [id, layoutRef]);
 
-  return <img className="blades" alt="" src={BLADES[id]} />;
+  return (
+    <>
+      <img className="scene-photo" alt="" src={SCENE[id]} />
+      <img className="blades" alt="" src={BLADES[id]} />
+    </>
+  );
 }
