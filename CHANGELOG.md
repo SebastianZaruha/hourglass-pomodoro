@@ -9,6 +9,16 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.8.16 — Lluvia y miel (Android)
+
+- Dentro del reloj, además de la arena: lluvia (nube que encoge y agua abajo)
+  y miel. El nivel sigue el porcentaje de tiempo, sin simular gota a gota.
+  El chorro es un dibujo continuo, igual de vivo en 5 minutos que en 60.
+- La arena no cambia: sigue siendo la simulación de granos.
+- El fondo toma un tinte muy leve según el material. El menú conserva sus colores.
+- Ajustes: una fila Arena / Lluvia / Miel. Lo guardado en la 1.8.15 sigue en arena.
+- Medir fotogramas: mantener pulsado el título «Ajustes». Apagado no hace nada.
+
 ## 1.8.15 — Ajustes más bajos (Android)
 
 - Hoja de ajustes más compacta: analítica y privacidad en un bloque bajo (enlace

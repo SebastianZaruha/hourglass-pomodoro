@@ -44,9 +44,11 @@ import { objectPose } from './objectPose';
 import { computeLayout, isUsableSize, type LayoutInsets } from './layout';
 import { createShaderSet, shaderSetDisposables } from './resources';
 import { SandPainter, buildPaletteLut } from './sandPainter';
+import { ShapePainter } from './shapePainter';
 import { GlassPainter } from './staticLayers';
 import { STILL_MOTION, type HourglassSnapshot, type MotionSource } from './types';
 import { useSandEngine } from './useSandEngine';
+import { useShapeEngine } from './useShapeEngine';
 import { useThemeCrossfade } from './useThemeCrossfade';
 
 /**
@@ -153,23 +155,36 @@ function HourglassCanvas({
   const layout = useMemo(() => computeLayout(width, height, model, insets), [width, height, model, insets]);
   useEffect(() => () => disposeLater([layout.outerPath, layout.innerPath]), [layout]);
 
+  const granular = content.kind === 'granular' ? content : null;
+  const shape = content.kind === 'shape' ? content : null;
+  const palette = theme.scheme === 'dark' ? content.palette.dark : content.palette.light;
+
   const sim = useMemo(
     () =>
-      new SandSimulation({
-        profile: model.profile,
-        cols: layout.cols,
-        slideChance: content.slideChance,
-        fillRatio: content.fillRatio,
-        seed: 7,
-      }),
-    [model, layout.cols, content],
+      granular
+        ? new SandSimulation({
+            profile: model.profile,
+            cols: layout.cols,
+            slideChance: granular.slideChance,
+            staticFriction: granular.staticFriction,
+            fillRatio: granular.fillRatio,
+            seed: 7,
+          })
+        : null,
+    [model, layout.cols, granular],
   );
 
-  const painter = useMemo(() => {
-    const palette = theme.scheme === 'dark' ? content.palette.dark : content.palette.light;
-    return new SandPainter(layout, model, theme, buildPaletteLut(palette), shaders);
-  }, [layout, model, theme, content, shaders]);
-  useEffect(() => () => disposeLater([painter]), [painter]);
+  const painter = useMemo(
+    () => (granular ? new SandPainter(layout, model, theme, buildPaletteLut(palette), shaders) : null),
+    [granular, layout, model, theme, palette, shaders],
+  );
+  useEffect(() => () => disposeLater(painter ? [painter] : []), [painter]);
+
+  const shapePainter = useMemo(
+    () => (shape ? new ShapePainter(layout, model.profile, theme, palette, shape) : null),
+    [shape, layout, model.profile, theme, palette],
+  );
+  useEffect(() => () => disposeLater(shapePainter ? [shapePainter] : []), [shapePainter]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.
   const glass = useMemo(
@@ -178,7 +193,7 @@ function HourglassCanvas({
   );
   useEffect(() => () => disposeLater([glass]), [glass]);
 
-  const { background, shadow, body, sand, front, rotation, spin } = useSandEngine({
+  const sandPics = useSandEngine({
     sim,
     painter,
     glass,
@@ -190,6 +205,18 @@ function HourglassCanvas({
     onError,
     onTurnChange: setTurning,
   });
+  const shapePics = useShapeEngine({
+    material: shape,
+    painter: shapePainter,
+    glass,
+    motion,
+    getSnapshot,
+    status,
+    reduceMotion,
+    onError,
+    onTurnChange: setTurning,
+  });
+  const { background, shadow, body, sand, front, rotation, spin } = shape ? shapePics : sandPics;
 
   // Giro de 180° al voltear, alrededor del centro de la pantalla.
   const transform = useDerivedValue(() => [{ rotate: rotation.value }]);

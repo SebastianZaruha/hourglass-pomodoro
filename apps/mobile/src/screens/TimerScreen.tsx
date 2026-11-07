@@ -70,6 +70,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
   type AccessibilityActionEvent,
@@ -123,6 +124,8 @@ import { useTimerAnalytics } from '../consent/useTimerAnalytics';
 import { useDeviceTilt } from '../motion/useDeviceTilt';
 import { saveSessionAndReload } from '../recovery/sessionRecovery';
 import { useCueSound } from '../sound/useCueSound';
+import { frameReport } from '../hourglass/frameProbe';
+import { themeWithAtmosphere } from '../theme/theme';
 import { useAppTheme } from '../theme/useAppTheme';
 
 /** Píxeles de arrastre para avanzar un escalón de duración. */
@@ -154,12 +157,17 @@ export function TimerScreen({ settings, fonts }: Props) {
   const safe = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const tr = useT();
+  const [frameProbe, setFrameProbe] = useState(false);
 
   // Tema efectivo (Claro / Oscuro / Automático) con transición suave.
-  const { theme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
+  const { theme: baseTheme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
 
   const model = getHourglassModel(prefs.hourglassModelId);
   const content = getContent(prefs.contentId);
+  const theme = useMemo(() => {
+    const shift = baseTheme.scheme === 'dark' ? content.atmosphere.dark : content.atmosphere.light;
+    return themeWithAtmosphere(baseTheme, shift);
+  }, [baseTheme, content]);
 
   // ─── Sesión (sesión única o ciclos) ─────────────────────────────────────
   // El plan sale de los ajustes. Si cambian (menú), la sesión vuelve al
@@ -393,8 +401,7 @@ export function TimerScreen({ settings, fonts }: Props) {
   const look = pausePresentation(view.status, tilt.sideways);
   const blurred = look.landscape;
   const pauseBlur: PauseBlur = infoOpen ? 'full' : look.blur;
-  const landscapeHintEligible =
-    paused && blurred && !infoOpen && !sheet.open && !consentVisible;
+  const landscapeHintEligible = paused && blurred && !infoOpen && !sheet.open && !consentVisible;
   const landscapeHint = useLandscapePauseHint(landscapeHintEligible);
   const landscapeHintAnnounced = useRef(false);
   useEffect(() => {
@@ -582,6 +589,7 @@ export function TimerScreen({ settings, fonts }: Props) {
     <View style={[styles.root, { backgroundColor: theme.solid }]}>
       {/* Volteado, la barra de estado quedaría abajo y del revés: la ocultamos. */}
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} hidden={tilt.flipped} />
+      {frameProbe ? <FrameProbeBanner /> : null}
       <GestureDetector gesture={gesture}>
         <View
           style={StyleSheet.absoluteFill}
@@ -695,6 +703,7 @@ export function TimerScreen({ settings, fonts }: Props) {
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
             onShowGestures={showGestures}
             screenReader={screenReader}
+            onFrameProbe={setFrameProbe}
             alertsNotice={alertsNotice}
             floating={
               floating.available
@@ -807,7 +816,37 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
   }
 }
 
+function FrameProbeBanner() {
+  const [text, setText] = useState('midiendo…');
+  useEffect(() => {
+    const id = setInterval(() => {
+      const report = frameReport();
+      if (!report) return;
+      setText(
+        `${report.fps.toFixed(0)} fps · js ${report.jsP50.toFixed(1)}/${report.jsP95.toFixed(1)} ms · sim ${report.simP50.toFixed(1)} · ${report.level}`,
+      );
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <View style={styles.probe} pointerEvents="none">
+      <Text style={styles.probeText}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flipped: { transform: [{ rotate: '180deg' }] },
+  probe: {
+    position: 'absolute',
+    top: 8,
+    left: 12,
+    zIndex: 20,
+    backgroundColor: 'rgba(40, 34, 28, 0.72)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  probeText: { color: '#F6F1EA', fontSize: 11 },
 });

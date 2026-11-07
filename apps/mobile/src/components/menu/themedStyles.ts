@@ -48,6 +48,8 @@ export function useMenuStyles(progress: SharedValue<number>) {
     trackBg: useThemedBackground(progress, 'track'),
     pillBg: useThemedBackground(progress, 'pill'),
     accentBg: useThemedBackground(progress, 'accent'),
+    glassBg: useThemedBackground(progress, 'glass'),
+    glassBorder: useThemedBorder(progress, 'glassEdge'),
     lineBg: useThemedBackground(progress, 'line'),
     inkSoftBg: useThemedBackground(progress, 'inkSoft'),
     lineBorder: useThemedBorder(progress, 'inkSoft'),
