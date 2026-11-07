@@ -53,7 +53,11 @@ En esta máquina virtual, solo el hilo de JavaScript, con Vitest, rejilla de 121
 | Un paso de arena ya quieta                         | 0,18 ms      |
 | Pose de porcentaje + altura de la superficie       | 0,016 ms     |
 
-A 120 Hz caben 8,3 ms. Un paso caro de arena cabe, pero el shader de microgranos (GPU) no está en este número. La pose de la lluvia y la miel es unas cien veces más barata que ese paso caro, en CPU. Para medir el móvil de verdad: mantener pulsado el título «Ajustes» enseña fps y milisegundos (apagado no hace nada).
+A 120 Hz caben 8,3 ms. Un paso caro de arena cabe, pero el shader de microgranos (GPU) no está en este número. La pose de la lluvia y la miel es unas cien veces más barata que ese paso caro, en CPU.
+
+En Chrome headless de esta misma máquina, con la lluvia en marcha, 179 fotogramas seguidos salieron a 16,7 ms (60 fps: el tope del compositor, no un techo de la app). No es el Galaxy A55.
+
+Para medir el móvil de verdad: mantener pulsado el título «Ajustes» enseña fps y milisegundos (apagado no hace nada).
 
 No se generó un APK en esta máquina: no hay SDK de Android en el entorno. El `versionCode` queda en 10816.
 
