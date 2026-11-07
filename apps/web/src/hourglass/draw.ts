@@ -440,15 +440,21 @@ function drawShapeFill(
     }
   }
   if (!material.cloud) return;
+  const tones = (_dark ? material.palette.dark : material.palette.light).grainTones;
+  const tone = tones[1] ?? [160, 176, 184];
   const count = writeCloud(pose.top * material.fullFraction, pose.slope, 0, PUFFS);
   for (let i = 0; i < count; i++) {
     const puff = PUFFS[i]!;
     const r = puff.r * layout.halfW * 1.15;
     const x = layout.cx + puff.x * layout.halfW * 0.72;
     const y = layout.cy - layout.halfH * 0.52 + puff.y * layout.halfH * 0.34;
+    const a = Math.min(0.95, puff.alpha);
     const grd = ctx.createRadialGradient(x - r * 0.2, y - r * 0.25, r * 0.05, x, y, Math.max(1, r));
-    grd.addColorStop(0, `rgba(250, 248, 244, ${Math.min(0.9, puff.alpha)})`);
-    grd.addColorStop(1, 'rgba(250, 248, 244, 0)');
+    // El centro es luz; el cuerpo es el gris frío de la paleta. Blanco puro
+    // sobre el cristal crema no se lee como nube.
+    grd.addColorStop(0, `rgba(255, 252, 248, ${a})`);
+    grd.addColorStop(0.42, `rgba(${tone[0]}, ${tone[1]}, ${tone[2]}, ${(a * 0.78).toFixed(3)})`);
+    grd.addColorStop(1, `rgba(${tone[0]}, ${tone[1]}, ${tone[2]}, 0)`);
     ctx.fillStyle = grd;
     ctx.beginPath();
     ctx.arc(x, y, Math.max(1, r), 0, Math.PI * 2);

@@ -1000,6 +1000,19 @@ a {
   }
 }
 
+.dock[data-roomy='no'] {
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 4px;
+}
+
+.dock[data-roomy='no'] .dock-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
 .dock-btn {
   min-width: 44px;
   height: 44px;
