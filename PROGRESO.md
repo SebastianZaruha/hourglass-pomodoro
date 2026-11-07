@@ -4,6 +4,17 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+La especificación está en `docs/DISENO-WEB.md`, con las correcciones de Sebastián: el reloj sube al abrir (como en main), el botón sigue abajo a la derecha, la primera visita es lluvia y se guarda, y el cristal no lleva franja blanca.
+
+- La escena es el primer control de Ajustes. Sin nada guardado, o con un valor que no vale, o si el almacenamiento falla, entra lluvia. Arena, miel y nieve se restauran en la visita siguiente (`hourglass-web/ajustes`).
+- En ancha el panel queda centrado bajo el reloj (desvío medido 0 px en 1440 y 1 px en 1024). El reloj sube 181 px en 1440. En 768 y 390 el reloj queda encima del panel, sin solaparse. En 480×360 el reloj se queda a la derecha y el panel hace scroll (166 px, no 72).
+- Personalizado es una pista horizontal (370×28 en 1440). Arrastrarla pasó la hora de 05:00 a 2:00:00.
+- El cristal del reloj, del panel y de los botones es un velo oscuro (`rgba(22, 20, 18, 0.46)` la tarjeta, `0.5` el panel), blur 32 y saturación. El filo es 1 px al 6 % de blanco, no una tapa clara. El activo lleva el acento de la escena al 35 %.
+- Arrastrar el frasco que se ve lo gira. El suelte pasado 0,45π voltea. El doble clic no reinicia. Un clic pasó el título de 05:00 a 04:59 y el segundo lo dejó ahí. La rueda, parado, pasó de 04:59 a 08:00. Escape cierra el panel.
+- Capturas (tamaño y % de blanco): `docs/audit/verify-1440-closed.png` (807 KB, 0,18 %), `verify-1440-open.png` (830 KB, 0,20 %), `verify-390-open.png` (266 KB, 0,13 %), `verify-480-open.png` (171 KB, 0,14 %), `verify-1440-flip.png` (779 KB, 0,19 %).
+
+## Hecho antes
+
 - El marco de líneas se quitó: no había un raster fotográfico que aguantara al lado del vidrio.
 - La tarjeta de la hora es más alta y ancha: el relleno es ~0,38 em arriba y a los lados respecto al tamaño de los dígitos, con aire entre la hora y el texto. Sigue el cristal ahumado y se escala con la ventana.
 - La nube se aclaró a un gris azulado luminoso. El alfa del borde se difumina (~8 px) para que el contorno no quede granulado. El tamaño y el sitio no cambian.

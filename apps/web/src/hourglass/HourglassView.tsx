@@ -1,7 +1,7 @@
 import { useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
 import { hitVessel } from './draw';
-import { useHourglass, type HourglassHandle, type HourglassParams } from './useEngine';
+import { photoVesselLayout, useHourglass, type HourglassHandle, type HourglassParams } from './useEngine';
 
 /** A partir de aquí el suelte completa el medio giro (180°). */
 const FLIP_COMMIT = Math.PI * 0.45;
@@ -25,6 +25,13 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, onFlip }
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
+  const vesselAt = (canvas: HTMLCanvasElement) => {
+    const box = canvas.getBoundingClientRect();
+    return (
+      photoVesselLayout(box.width, box.height, paramsRef.current.contentId) ?? handleRef.current?.layoutCss()
+    );
+  };
+
   return (
     <div className="glass-frame">
       <canvas
@@ -33,7 +40,7 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, onFlip }
         aria-hidden="true"
         onPointerDown={(e) => {
           if (paramsRef.current.flipBusy) return;
-          const layout = handleRef.current?.layoutCss();
+          const layout = vesselAt(e.currentTarget);
           if (!layout) return;
           const p = localPoint(e);
           if (!hitVessel(layout, p.x, p.y)) return;
@@ -45,7 +52,7 @@ export function HourglassView({ paramsRef, handleRef, suppressClickRef, onFlip }
         }}
         onPointerMove={(e) => {
           if (!drag.current.on) return;
-          const layout = handleRef.current?.layoutCss();
+          const layout = vesselAt(e.currentTarget);
           if (!layout) return;
           const p = localPoint(e);
           const ang = Math.atan2(p.y - layout.cy, p.x - layout.cx);

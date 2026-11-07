@@ -7,13 +7,30 @@ import { useCallback, useState } from 'react';
 
 export const WEB_SETTINGS_KEY = 'hourglass-web/ajustes';
 
+const WEB_SCENES = ['arena', 'lluvia', 'miel', 'nieve'] as const;
+
+/** Primera visita, valor ausente o escena desconocida: lluvia. */
+function storedScene(raw: unknown): (typeof WEB_SCENES)[number] | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const id = (raw as { contentId?: unknown }).contentId;
+  for (const scene of WEB_SCENES) if (scene === id) return scene;
+  return null;
+}
+
+function freshWebSettings(): Settings {
+  return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false, language: 'es', contentId: 'lluvia' });
+}
+
 export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage): Settings {
   try {
     const raw = storage.getItem(WEB_SETTINGS_KEY);
-    if (raw === null) return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false, language: 'es' });
-    return sanitizeSettings(JSON.parse(raw));
+    if (raw === null) return freshWebSettings();
+    const parsed: unknown = JSON.parse(raw);
+    const scene = storedScene(parsed) ?? 'lluvia';
+    const settings = sanitizeSettings(parsed);
+    return settings.contentId === scene ? settings : { ...settings, contentId: scene };
   } catch {
-    return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false });
+    return freshWebSettings();
   }
 }
 

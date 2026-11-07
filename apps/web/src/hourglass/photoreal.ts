@@ -247,6 +247,7 @@ export interface PhotoFrame {
   readonly reduceMotion: boolean;
   readonly viewW: number;
   readonly viewH: number;
+  readonly rotation: number;
 }
 
 /** Brillos, sombra de forma y rebote, recortados al vidrio. El negro del frente sigue siendo identidad en SCREEN. */
@@ -406,6 +407,14 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
 
   ctx.clearRect(0, 0, frame.viewW, frame.viewH);
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'behind');
+  const pivotX = jar.x + jar.w / 2;
+  const pivotY = jar.y + jar.h / 2;
+  ctx.save();
+  if (frame.rotation) {
+    ctx.translate(pivotX, pivotY);
+    ctx.rotate(frame.rotation);
+    ctx.translate(-pivotX, -pivotY);
+  }
 
   const footX = place.footX;
   const footY = place.footY;
@@ -529,6 +538,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   if (frame.id === 'lluvia' && frame.top > 0.04) drawCloud(ctx, jar, frame);
 
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'front');
+  ctx.restore();
   return true;
 }
 
@@ -633,9 +643,13 @@ function drawTinted(
   ctx.drawImage(tintCanvas, dx, dy);
 }
 
-/** Precarga la capa grande del frasco y el chorro del material visible. */
+/** Precarga la capa grande del frasco y el chorro del material visible. Una vez por escena. */
+let primedJar: string | null = null;
 export function preloadJar(id: MaterialId): void {
   const kind = KIND[id];
+  const token = `${glassDir}${kind}`;
+  if (primedJar === token) return;
+  primedJar = token;
   const hrefs = [
     `${glassDir}jar-back.webp`,
     `${glassDir}jar-front-highlights.webp`,

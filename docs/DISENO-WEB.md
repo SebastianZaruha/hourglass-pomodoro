@@ -59,11 +59,11 @@ Una sola regla de composición, un solo material de cristal, un solo sitio para 
 
 ### Composición
 
-Ancha. El frasco ocupa la mitad izquierda y se apoya en el suelo de la foto. El reloj ocupa la mitad derecha, centrado en vertical. El panel de Ajustes, cuando está abierto, tiene el mismo centro horizontal que el reloj y empieza 16 px bajo el reloj. No empuja el reloj.
+Ancha. El frasco ocupa la mitad izquierda y se apoya en el suelo de la foto. El reloj ocupa la mitad derecha, centrado en vertical. Al abrir Ajustes el reloj sube, igual que en la web publicada, y el panel aparece debajo, centrado en el mismo eje horizontal que el reloj. El botón de menú sigue abajo a la derecha.
 
-Estrecha. El frasco arriba, el reloj debajo, el panel como hoja inferior que no tapa el reloj. El slider cabe dentro de la hoja.
+Estrecha. El frasco arriba y el reloj debajo. El panel queda bajo el reloj y no lo tapa. Su borde inferior queda por encima del pie, para que la pastilla de enlaces no se vea a través del slider. El slider cabe dentro de la hoja.
 
-El corte ancho es el de main. Ancho de al menos 46 rem y ancho mayor que alto × 1,05. Una ventana apaisada por debajo de 46 rem (480×360) no puede usar la hoja de 40 vh pensada para un teléfono alto. En ese caso el panel es una hoja con scroll, de alto como máximo la mitad de la ventana, y el reloj sigue a la derecha si cabe una columna de 16 rem. Si no cabe, se apila y el panel hace scroll.
+El corte ancho es el de main. Ancho de al menos 46 rem y ancho mayor que alto × 1,05. Una ventana apaisada más corta, desde 28 rem (480×360 entra), no usa la hoja de teléfono. El reloj sigue a la derecha, sube al abrir, y el panel es una hoja con scroll de alto como máximo la mitad de la ventana. Por debajo de eso se apila y el panel hace scroll sin tapar el reloj.
 
 ### Fondo
 
@@ -77,8 +77,8 @@ Un solo material, el de la referencia. Lo usan la tarjeta del reloj, el panel y 
 | --- | --- |
 | `--glass-tint` | `rgba(22, 20, 18, 0.46)` |
 | `--glass-blur` | `blur(32px) saturate(1.35)` |
-| `--glass-rim` | 1 px, blanco 0,55 arriba a la izquierda hasta blanco 0,08 abajo a la derecha |
-| `--glass-inset` | `inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -12px 24px rgba(0, 0, 0, 0.18)` |
+| `--glass-rim` | Ninguna línea blanca. Como mucho un filo de refracción `inset 0 0 0 1px rgba(255, 255, 255, 0.06)` |
+| `--glass-inset` | `inset 0 -12px 24px rgba(0, 0, 0, 0.2)` y sombra exterior suave |
 | `--glass-radius` | `28px` en paneles, `999px` en botones redondos |
 | `--accent` | Por escena. Arena ámbar, lluvia ámbar del orbe, miel oro, nieve azul gris. |
 
@@ -90,7 +90,7 @@ La tarjeta del reloj usa el tamaño de los dígitos como `em`. Relleno superior 
 
 Orden, de arriba abajo.
 
-1. Escena. Cuatro opciones. Arena, Lluvia, Miel, Nieve. Es el primer control.
+1. Escena. Cuatro opciones. Arena, Lluvia, Miel, Nieve. Es el primer control. La primera visita usa lluvia. La elección se guarda en `hourglass-web/ajustes` y se restaura. Si el valor no vale o el almacenamiento falla, se usa lluvia.
 2. Sesión única o Ciclos.
 3. Presets de 5, 10, 15, 25, 45 y 60.
 4. Personalizado. Un slider horizontal de ancho completo y 28 px de alto. El thumb es un círculo de cristal. No existe `.glass-cap` vertical.
@@ -98,7 +98,7 @@ Orden, de arriba abajo.
 
 ### Cuándo se ve el botón
 
-Sin puntero dentro de la ventana solo se ven el frasco y el reloj. `mousemove` o `mouseenter` muestran el botón. `mouseleave` lo esconde. Si el puntero sigue dentro y no se mueve, se esconde a los 3 s. En táctil, un toque lo muestra y el mismo plazo lo esconde. Con el panel abierto el botón no hace falta. El panel no se cierra solo por ese plazo.
+El botón sigue abajo a la derecha. Sin puntero dentro de la ventana solo se ven el frasco y el reloj. `mousemove` o `mouseenter` muestran el botón. `mouseleave` lo esconde. Si el puntero sigue dentro y no se mueve, se esconde a los 3 s. En táctil, un toque lo muestra y el mismo plazo lo esconde. Con el panel abierto el botón no hace falta. El panel no se cierra solo por ese plazo.
 
 ### Interacción
 
@@ -112,7 +112,7 @@ Sin puntero dentro de la ventana solo se ven el frasco y el reloj. `mousemove` o
 | Escape | Cierra el menú o el texto legal. |
 | Reducir movimiento | Sin giro de entrada, nube en el fotograma 0, superficies quietas. |
 
-El arrastre tiene que acertar el frasco que se ve (`dioramaPlacement`) y `drawPhotoreal` tiene que aplicar el mismo ángulo. Hoy ninguna de las dos cosas ocurre.
+El arrastre acierta el frasco que se ve (`dioramaPlacement`) y `drawPhotoreal` aplica ese ángulo. El giro de entrada no mueve el frasco fotográfico.
 
 ### Lista de comprobación
 
@@ -120,16 +120,16 @@ Hay que hacer el gesto, no solo mirar una foto.
 
 1. En 1440×900, sin mover el ratón, no hay botón ni barra. Al moverlo, aparece el botón. A los 3 s se va.
 2. Abrir Ajustes. El primer control cambia Arena, Lluvia, Miel y Nieve, y la foto cambia.
-3. El centro horizontal del panel coincide con el del reloj, con 8 px de tolerancia. El reloj no se mueve al abrir.
+3. El centro horizontal del panel coincide con el del reloj, con 8 px de tolerancia. Al abrir, el reloj sube (760 ms, la misma curva que en main) y el panel entra debajo. No se tapan.
 4. Personalizado es una pista más ancha que alta. Arrastrarla cambia la hora.
 5. El panel y la tarjeta usan `--glass-tint` y no tienen una franja blanca de relleno arriba.
 6. Clic. El título baja un segundo. Otro clic lo deja parado.
 7. Doble clic. La cuenta no vuelve a empezar desde el principio.
 8. Rueda con el reloj parado. La hora cambia. Con el reloj en marcha, no cambia.
 9. Arrastre sobre el frasco. El vidrio que se ve gira. Un arrastre largo lo voltea.
-10. Repetir 2, 3 y 4 en 1024×768, 768×1024, 390×844 y 480×360. En 480×360 el panel hace scroll y no queda en 72 px. En 390 y 768 el reloj sigue visible encima del panel.
+10. Repetir 2, 3 y 4 en 1024×768, 768×1024, 390×844 y 480×360. En 480×360 el reloj queda a la derecha, el panel hace scroll y no queda en 72 px, y el botón no pisa el reloj. En 390 y 768 el reloj sigue visible encima del panel.
 11. Escape cierra el panel.
 
-## Qué no se toca hasta confirmar
+## Implementación
 
-Ningún archivo de `apps/web` ni de `packages/core` cambia con este documento. El orden, cuando se confirme, es el menú (escena, slider horizontal, sitio bajo el reloj, cristal), después el arrastre del frasco fotográfico, y al final el corte de 480×360. El marco no entra en ese orden.
+Lo de arriba es la especificación que sigue `apps/web`. El marco no vuelve. `packages/core` no cambia el idioma ni la escena por defecto del móvil: la lluvia de la primera visita es solo de la web.

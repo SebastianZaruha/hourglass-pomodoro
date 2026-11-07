@@ -13,6 +13,7 @@ import {
   SAND,
   StreamParticles,
   SandSimulation,
+  dioramaPlacement,
   flowBudget,
   flowPose,
   getContent,
@@ -24,7 +25,15 @@ import {
 } from '@reloj/core';
 import { useEffect, type RefObject } from 'react';
 
-import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, type Scheme } from './draw';
+import {
+  buildPaletteLut,
+  drawHourglass,
+  layoutFor,
+  makeGrainNoise,
+  paintCells,
+  type GlassLayout,
+  type Scheme,
+} from './draw';
 import { drawPhotoreal, jarLayersReady, preloadJar } from './photoreal';
 
 const TURN_MS = 950;
@@ -48,6 +57,29 @@ function introPoseScale(
   const room = Math.min(cssW, cssH) * 0.92;
   if (span <= room || span < 1) return base;
   return (base * room) / span;
+}
+
+/** Caja del frasco fotográfico, para que el arrastre acierte el vidrio que se ve. */
+export function photoVesselLayout(viewW: number, viewH: number, contentId: string): GlassLayout | null {
+  const photo = document.querySelector<HTMLImageElement>('.scene-photo');
+  if (!photo || photo.naturalWidth <= 0 || viewW <= 0 || viewH <= 0) return null;
+  const id = contentId === 'lluvia' || contentId === 'miel' || contentId === 'nieve' ? contentId : 'arena';
+  const placed = dioramaPlacement(
+    viewW,
+    viewH,
+    photo.naturalWidth,
+    photo.naturalHeight,
+    id,
+    true,
+    id === 'lluvia',
+  );
+  const sink = placed.jar.h * 0.016;
+  return {
+    cx: placed.jar.x + placed.jar.w / 2,
+    cy: placed.jar.y + sink + placed.jar.h / 2,
+    halfW: Math.max(8, placed.jar.w / 2),
+    halfH: Math.max(8, placed.jar.h / 2),
+  };
 }
 
 export interface HourglassParams {
@@ -345,8 +377,11 @@ export function useHourglass(
       const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
       const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
       const top = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const photoId = p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena';
+      const photoLayout = photoVesselLayout(cssW, cssH, photoId);
+      if (photoLayout) loop.layout = photoLayout;
       const drew = drawPhotoreal(ctx, {
-        id: (p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena'),
+        id: photoId,
         top,
         bottom: 1 - top,
         phase: loop.phase,
@@ -357,6 +392,7 @@ export function useHourglass(
         reduceMotion: p.reduceMotion,
         viewW: cssW,
         viewH: cssH,
+        rotation: spinAngle,
       });
       if (!drew) {
         drawHourglass(ctx, {

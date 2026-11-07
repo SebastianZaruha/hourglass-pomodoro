@@ -1,4 +1,5 @@
 import {
+  MATERIAL_IDS,
   CYCLE_LIMITS,
   CYCLE_PRESETS,
   DURATION_STEPS_MIN,
@@ -16,6 +17,7 @@ import {
   LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
+  type MaterialId,
   type Messages,
   type Settings,
 } from '@reloj/core';
@@ -24,6 +26,13 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
+
+function sceneName(t: Messages, id: MaterialId): string {
+  if (id === 'lluvia') return t.materialRain;
+  if (id === 'miel') return t.materialHoney;
+  if (id === 'nieve') return t.materialSnow;
+  return t.materialSand;
+}
 
 interface Props {
   readonly open: boolean;
@@ -74,6 +83,21 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
           ×
         </button>
+      </div>
+
+      <div className="chip-row scene-row" role="radiogroup" aria-label={t.settings}>
+        {MATERIAL_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={settings.contentId === id}
+            className={settings.contentId === id ? 'chip chip-on' : 'chip'}
+            onClick={() => onChange({ contentId: id })}
+          >
+            {sceneName(t, id)}
+          </button>
+        ))}
       </div>
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
@@ -401,12 +425,40 @@ function Stepper({
         </button>
       </div>
       {scrub && scrubMax != null && scrubIndex != null ? (
-        <span className="glass-cap" aria-hidden="true">
+        <span
+          className="glass-cap"
+          role="slider"
+          aria-valuemin={0}
+          aria-valuemax={scrubMax}
+          aria-valuenow={scrubIndex}
+          aria-label={label}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            const track = event.currentTarget;
+            const apply = (clientX: number) => {
+              const rect = track.getBoundingClientRect();
+              const span = rect.width || 1;
+              const t = Math.min(1, Math.max(0, (clientX - rect.left) / span));
+              onScrubIndex?.(Math.round(t * scrubMax));
+            };
+            apply(event.clientX);
+            const move = (ev: PointerEvent) => apply(ev.clientX);
+            const up = () => {
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', up);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', up);
+          }}
+        >
           <span
             className="glass-cap-fill"
-            style={{ height: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
+            style={{ width: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
           />
-          <span className="glass-cap-line" />
+          <span
+            className="glass-cap-line"
+            style={{ left: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
+          />
         </span>
       ) : null}
       <span className="stepper-label">

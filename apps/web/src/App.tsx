@@ -79,22 +79,25 @@ function useReducedMotion() {
   return reduce;
 }
 
-function isWideLayout(): boolean {
+function layoutFlags(): { wide: boolean; compact: boolean } {
   const w = window.innerWidth;
   const h = window.innerHeight;
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  return w >= rem * 46 && w > h * 1.05;
+  const landscape = w > h * 1.05;
+  const desk = landscape && w >= rem * 46;
+  const compact = landscape && !desk && w >= rem * 28;
+  return { wide: desk || compact, compact };
 }
 
-function useWideLayout() {
-  const [wide, setWide] = useState(isWideLayout);
+function useLayoutFlags() {
+  const [flags, setFlags] = useState(layoutFlags);
   useEffect(() => {
-    const apply = () => setWide(isWideLayout());
+    const apply = () => setFlags(layoutFlags());
     apply();
     window.addEventListener('resize', apply);
     return () => window.removeEventListener('resize', apply);
   }, []);
-  return wide;
+  return flags;
 }
 
 export function App() {
@@ -111,7 +114,7 @@ function Timer({
 }) {
   const systemDark = useSystemDark();
   const reduceMotion = useReducedMotion();
-  const wide = useWideLayout();
+  const { wide, compact } = useLayoutFlags();
   const scheme = resolveScheme(settings.theme, systemDark);
   const lang = resolveLanguage(settings.language, navigator.language);
   const t = messagesFor(settings.language, navigator.language);
@@ -288,12 +291,17 @@ function Timer({
     if (!app || !side) return;
     const apply = () => {
       const sideRect = side.getBoundingClientRect();
+      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
+      const sheetW = Math.min(Math.max(0, sideRect.width - rem * 2), 26 * rem);
+      const sheetLeft = sideRect.left + (sideRect.width - sheetW) / 2;
       app.style.setProperty('--side-left', `${Math.round(sideRect.left)}px`);
       app.style.setProperty('--side-width', `${Math.round(sideRect.width)}px`);
       app.style.setProperty('--side-bottom', `${Math.round(window.innerHeight - sideRect.bottom)}px`);
+      app.style.setProperty('--side-height', `${Math.round(sideRect.height)}px`);
+      app.style.setProperty('--sheet-left', `${Math.round(sheetLeft)}px`);
+      app.style.setProperty('--sheet-width', `${Math.round(sheetW)}px`);
       const sheet = app.querySelector('.sheet');
       const readout = side.querySelector('.readout');
-      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
       if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
         app.style.setProperty('--clock-lift', '0px');
         app.style.removeProperty('--menu-pad');
@@ -302,20 +310,26 @@ function Timer({
       const sheetH = sheet.getBoundingClientRect().height;
       const gap = rem * 1.15;
       if (!wide) {
+        const underSheet = parseFloat(getComputedStyle(sheet).bottom) || 0;
         app.style.setProperty('--clock-lift', '0px');
-        app.style.setProperty('--menu-pad', `${Math.round(sheetH + gap)}px`);
+        app.style.setProperty('--menu-pad', `${Math.round(sheetH + underSheet + gap)}px`);
         return;
       }
       app.style.removeProperty('--menu-pad');
-      const readH = readout.getBoundingClientRect().height;
+      const readRect = readout.getBoundingClientRect();
+      const sheetRect = sheet.getBoundingClientRect();
+      const readH = readRect.height;
       const sideH = sideRect.height;
       const sheetInset = rem * 0.75;
       const clockBottom = (sideH + readH) / 2;
       const sheetTop = sideH - sheetInset - sheetH;
       const centeringLift = (sheetH + sheetInset) / 2;
       const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
+      const currentLift = parseFloat(app.style.getPropertyValue('--clock-lift')) || 0;
+      const unliftedBottom = readRect.bottom + currentLift;
+      const clearLift = Math.max(0, unliftedBottom + gap - sheetRect.top);
       const maxLift = Math.max(0, (sideH - readH) / 2 - rem * 0.5);
-      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift));
+      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift, clearLift));
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
     apply();
@@ -464,6 +478,7 @@ function Timer({
       data-scheme={scheme}
       data-material={getContent(settings.contentId).id}
       data-layout={wide ? 'wide' : 'narrow'}
+      data-compact={compact ? 'yes' : 'no'}
       data-roomy="no"
       style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
