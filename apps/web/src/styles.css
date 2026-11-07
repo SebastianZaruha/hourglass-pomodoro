@@ -1054,4 +1054,5 @@ a {
 .app[data-roomy='yes'] .menu-btn {
   opacity: 0;
   pointer-events: none;
+  animation: none;
 }
