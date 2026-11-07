@@ -10,7 +10,7 @@ export const WEB_SETTINGS_KEY = 'hourglass-web/ajustes';
 export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage): Settings {
   try {
     const raw = storage.getItem(WEB_SETTINGS_KEY);
-    if (raw === null) return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false });
+    if (raw === null) return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false, language: 'es' });
     return sanitizeSettings(JSON.parse(raw));
   } catch {
     return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false });

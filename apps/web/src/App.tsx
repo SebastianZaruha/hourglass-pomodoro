@@ -1,6 +1,6 @@
-import { Analytics } from '@vercel/analytics/react';
 import {
   activeCycleConfig,
+  getContent,
   messagesFor,
   nearestStepIndex,
   resolveLanguage,
@@ -13,20 +13,23 @@ import {
   type ThemePreference,
 } from '@reloj/core';
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 
 import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
-import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
 import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
+import { ScenePlate } from './components/ScenePlate';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
@@ -36,11 +39,12 @@ import { HourglassView } from './hourglass/HourglassView';
 import type { HourglassHandle, HourglassParams } from './hourglass/useEngine';
 import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
-import { playCue, primeAudio } from './sound';
 import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
+
+const Analytics = lazy(() => import('@vercel/analytics/react').then((mod) => ({ default: mod.Analytics })));
 
 function allowAnalyticsEvent<E>(event: E): E {
   return event;
@@ -120,6 +124,30 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [chromeOn, setChromeOn] = useState(false);
+  useEffect(() => {
+    let timer = 0;
+    const show = () => {
+      setChromeOn(true);
+      window.clearTimeout(timer);
+      if (!menu) timer = window.setTimeout(() => setChromeOn(false), 3200);
+    };
+    const hide = () => {
+      window.clearTimeout(timer);
+      setChromeOn(false);
+    };
+    document.addEventListener('mousemove', show);
+    document.addEventListener('mouseenter', show);
+    document.addEventListener('mouseleave', hide);
+    document.addEventListener('pointerdown', show);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('mousemove', show);
+      document.removeEventListener('mouseenter', show);
+      document.removeEventListener('mouseleave', hide);
+      document.removeEventListener('pointerdown', show);
+    };
+  }, [menu]);
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const legalRef = useRef<{ href: string; title: string } | null>(null);
@@ -155,12 +183,15 @@ function Timer({
   }, [lang, scheme]);
 
   useEffect(() => {
-    const id = gaMeasurementId();
-    if (consentChoice === 'accepted') enableGoogleAnalytics(id);
-    else if (consentChoice === 'rejected') {
-      disableGoogleAnalytics(id);
-      stopVercelWebAnalytics();
-    }
+    if (!consentChoice) return;
+    void import('./analytics').then((mod) => {
+      const id = mod.gaMeasurementId();
+      if (consentChoice === 'accepted') mod.enableGoogleAnalytics(id);
+      else {
+        mod.disableGoogleAnalytics(id);
+        stopVercelWebAnalytics();
+      }
+    });
   }, [consentChoice]);
 
   const chooseCookies = (choice: ConsentChoice) => {
@@ -187,23 +218,25 @@ function Timer({
     introAngle: 0,
     introScale: 1,
     introShadow: 1,
+    contentId: settings.contentId,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
   paramsRef.current.reduceMotion = reduceMotion;
+  paramsRef.current.contentId = settings.contentId;
   const handleRef = useRef<HourglassHandle | null>(null);
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
     handleRef.current?.wake();
-  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion]);
+  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion, settings.contentId]);
 
   const prevCue = useRef(view);
   useEffect(() => {
     const cue = sessionCue(prevCue.current, view);
     prevCue.current = view;
     if (!cue) return;
-    if (settings.sound) playCue(cue);
+    if (settings.sound) void import('./sound').then((mod) => mod.playCue(cue));
     showPhaseNotification(t, cue, view, lang);
   }, [view, settings.sound, t, lang]);
 
@@ -215,7 +248,7 @@ function Timer({
   }, [state, tick]);
 
   const doToggle = useCallback(() => {
-    primeAudio();
+    void import('./sound').then((mod) => mod.primeAudio());
     const status = state.timer.status;
     if (status === 'idle' || status === 'finished') void ensureNotificationPermission();
     toggle();
@@ -427,11 +460,19 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${chromeOn || menu ? ' chrome' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
+      data-material={getContent(settings.contentId).id}
       data-layout={wide ? 'wide' : 'narrow'}
+      data-roomy="no"
+      style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
-      {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      {consentChoice === 'accepted' ? (
+        <Suspense fallback={null}>
+          <Analytics beforeSend={allowAnalyticsEvent} />
+        </Suspense>
+      ) : null}
+      <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
       <div className="scene">
         <div
           ref={stageRef}
@@ -533,4 +574,26 @@ function Timer({
       ) : null}
     </div>
   );
+}
+
+/** Mismos colores que `--bg-top` / `--bg-bottom`. El menú no usa estas variables. */
+function pageTint(
+  scheme: string,
+  atmosphere: { readonly light: readonly [number, number, number]; readonly dark: readonly [number, number, number] },
+): CSSProperties {
+  const dark = scheme === 'dark';
+  const shift = dark ? atmosphere.dark : atmosphere.light;
+  return {
+    '--bg-top': shiftHex(dark ? '#2A241F' : '#F6F1EA', shift),
+    '--bg-bottom': shiftHex(dark ? '#16130F' : '#E3D9CC', shift),
+  } as CSSProperties;
+}
+
+function shiftHex(hexColor: string, shift: readonly number[]): string {
+  const n = parseInt(hexColor.slice(1), 16);
+  const ch = (v: number, i: number) =>
+    Math.min(255, Math.max(0, v + Math.round(shift[i] ?? 0)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${ch((n >> 16) & 255, 0)}${ch((n >> 8) & 255, 1)}${ch(n & 255, 2)}`;
 }

@@ -14,6 +14,8 @@ import {
   StreamParticles,
   SandSimulation,
   flowBudget,
+  flowPose,
+  getContent,
   sandLevelForDuration,
   syncSandToTarget,
   targetSourceGrains,
@@ -23,6 +25,7 @@ import {
 import { useEffect, type RefObject } from 'react';
 
 import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, type Scheme } from './draw';
+import { drawPhotoreal, jarLayersReady, preloadJar } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -64,6 +67,8 @@ export interface HourglassParams {
   introAngle: number;
   introScale: number;
   introShadow: number;
+  /** arena | lluvia | miel. La arena usa la simulación; el resto, el porcentaje. */
+  contentId: string;
 }
 
 export interface HourglassHandle {
@@ -142,6 +147,9 @@ export function useHourglass(
       flipFrom: 0,
       flipDir: 1,
       flipHold: false,
+      phase: 0,
+      cloudTime: 0,
+      streamTime: 0,
     };
 
     const paintSand = () => {
@@ -274,8 +282,33 @@ export function useHourglass(
       }
       loop.mode = snap.status;
 
+      const material = getContent(p.contentId);
+      const shapeMat = material.kind === 'shape' ? material : null;
+      let shapeDraw:
+        | {
+            material: typeof shapeMat & object;
+            pose: ReturnType<typeof flowPose>;
+            phase: number;
+          }
+        | undefined;
+      if (shapeMat) {
+        const pose = flowPose({
+          remainingMs: snap.remainingMs,
+          durationMs: snap.durationMs,
+          gravityX: 0,
+          gravityY: 1,
+          running: snap.status === 'running' && !turning,
+        });
+        if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
+        const breathe = shapeMat.cloud && !p.reduceMotion;
+        if (breathe && snap.status === 'running') loop.cloudTime += frameDt;
+        shapeDraw = { material: shapeMat, pose, phase: loop.phase };
+      }
+
       let moved = false;
-      if (turning) {
+      if (shapeMat) {
+        // El nivel sale del porcentaje. La rejilla de arena no se mueve.
+      } else if (turning) {
         // Durante el giro la arena va pegada al vidrio.
       } else if (loop.populated && snap.status !== 'idle') {
         const target = targetSourceGrains(loop.runInitial, snap.remainingMs, snap.durationMs);
@@ -289,14 +322,16 @@ export function useHourglass(
         for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
       }
 
-      const streaming =
-        !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
-      input.dt = frameDt;
-      input.emitting = streaming;
-      input.intensity = streamIntensity(snap.durationMs);
-      input.calm = p.reduceMotion;
-      input.gravity = GRAVITY_DOWN;
-      particles.update(sim, input);
+      if (!shapeMat) {
+        const streaming =
+          !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
+        input.dt = frameDt;
+        input.emitting = streaming;
+        input.intensity = streamIntensity(snap.durationMs);
+        input.calm = p.reduceMotion;
+        input.gravity = GRAVITY_DOWN;
+        particles.update(sim, input);
+      }
 
       if (moved || loop.flipStart !== null) loop.paint = true;
       if (loop.paint) {
@@ -304,32 +339,54 @@ export function useHourglass(
         loop.paint = false;
       }
 
+      const playing = snap.status === 'running' && !p.reduceMotion;
+      if (playing) loop.streamTime += frameDt;
       const spinAngle = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
       const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
-      drawHourglass(ctx, {
-        profile,
-        layout,
-        scheme,
-        sand: sandCanvas,
-        noise,
-        sim,
-        particles,
-        lut,
-        rotation,
-        poseScale,
-        shadow: p.introActive ? p.introShadow : 1,
+      const top = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const drew = drawPhotoreal(ctx, {
+        id: (p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena'),
+        top,
+        bottom: 1 - top,
+        phase: loop.phase,
+        streamTime: loop.streamTime,
+        cloudTime: loop.cloudTime,
+        running: snap.status === 'running',
+        paused: snap.status === 'paused',
+        reduceMotion: p.reduceMotion,
+        viewW: cssW,
+        viewH: cssH,
       });
+      if (!drew) {
+        drawHourglass(ctx, {
+          profile,
+          layout,
+          scheme,
+          sand: sandCanvas,
+          noise,
+          sim,
+          particles,
+          lut,
+          rotation,
+          poseScale,
+          shadow: p.introActive ? p.introShadow : 1,
+          shape: shapeDraw,
+        });
+      } else {
+        preloadJar(p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena');
+      }
 
       const keep =
         snap.status === 'running' ||
-        !sim.isSettled ||
+        (shapeMat ? false : !sim.isSettled) ||
         particles.active ||
         turning ||
         p.flipBusy ||
         p.gestureActive ||
         p.introActive ||
-        Math.abs(p.gestureAngle) > 0.0008;
+        Math.abs(p.gestureAngle) > 0.0008 ||
+        (jarLayersReady() && p.contentId === 'lluvia' && snap.status !== 'paused' && !p.reduceMotion);
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };

@@ -24,6 +24,7 @@
  * Unidades: CELDAS de la rejilla de la simulación (x a la derecha, y hacia
  * abajo). El pintor las convierte a píxeles.
  */
+import { SAND_STREAM, type StreamProfile } from '../catalog/streamProfile';
 import { GRAVITY_DOWN, normalize, type Vec2 } from '../physics/vector';
 import { createRng, type Rng } from './random';
 import type { SandSimulation } from './sandSimulation';
@@ -45,6 +46,16 @@ export interface StreamInput {
   gravity: Vec2;
   /** Versión calmada (accesibilidad: reducir movimiento). */
   calm: boolean;
+  /**
+   * Perfil del material. Si no viene, el de la arena (el de siempre):
+   * así los tests y la web no tienen que conocer los materiales.
+   */
+  profile?: StreamProfile;
+  /**
+   * 0..1, calidad adaptativa. 1 = todas las partículas. Si no viene, 1.
+   * No cambia el tamaño ni la física, solo cuántas se crean.
+   */
+  detail?: number;
 }
 
 export interface StreamOptions {
@@ -138,19 +149,30 @@ export class StreamParticles {
     // Sin gravedad "vertical" suficiente no hay chorro (reloj tumbado).
     const dir = g.y >= 0 ? 1 : -1;
     const vertical = Math.abs(g.y) >= 0.25;
+    const profile = input.profile ?? SAND_STREAM;
+    const rawDetail = input.detail;
+    const detail = rawDetail == null || !Number.isFinite(rawDetail) ? 1 : clamp01(rawDetail);
 
     const n = Math.max(1, Math.ceil(dt / MAX_SUBSTEP - 1e-6));
     const h = dt / n;
     for (let k = 0; k < n; k++) {
       this.time += h;
-      if (input.emitting && vertical) this.emit(sim, g, dir, h, input);
-      this.integrate(sim, g, dir, h, input.calm);
+      if (input.emitting && vertical) this.emit(sim, g, dir, h, input, profile, detail);
+      this.integrate(sim, g, dir, h, input.calm, profile);
     }
   }
 
   // ───────────────────────── emisión ─────────────────────────
 
-  private emit(sim: SandSimulation, g: Vec2, dir: number, dt: number, input: StreamInput): void {
+  private emit(
+    sim: SandSimulation,
+    g: Vec2,
+    dir: number,
+    dt: number,
+    input: StreamInput,
+    profile: StreamProfile,
+    detail: number,
+  ): void {
     const rng = this.rng;
     const t = this.time;
     const ph = this.phase;
@@ -162,7 +184,14 @@ export class StreamParticles {
     // a ratos casi corta el chorro y a ratos lo espesa → huecos naturales.
     const burst = 0.35 + 0.5 * Math.sin(t * 7.3 + ph[0]!) + 0.35 * Math.sin(t * 19.7 + ph[1]!);
     const calmK = input.calm ? 0.45 : 1;
-    const rate = BASE_RATE * (0.45 + 0.55 * intensity) * flow * Math.max(0.04, burst) * calmK;
+    const rate =
+      BASE_RATE *
+      profile.rateScale *
+      detail *
+      (0.45 + 0.55 * intensity) *
+      flow *
+      Math.max(0.04, burst) *
+      calmK;
     // Ancho que tiembla un poco (y se estrecha al final).
     const width =
       (0.7 + 0.3 * Math.sin(t * 5.3 + ph[2]!) + 0.15 * Math.sin(t * 17.9 + ph[3]!)) *
@@ -183,19 +212,19 @@ export class StreamParticles {
       this.y[i] = ey + g.x * off * dir + g.y * rng() * 0.6;
       const v0 = 3 + rng() * 9;
       // Algún grano se separa un poco del chorro (4 %).
-      const stray = rng() < (input.calm ? 0.01 : 0.04) ? 3.5 : 1;
+      const stray = rng() < (input.calm ? 0.01 : profile.strayChance) ? 3.5 : 1;
       const side = (rng() - 0.5) * 2.2 * stray;
       this.vx[i] = g.x * v0 - g.y * side * dir;
       this.vy[i] = g.y * v0 + g.x * side * dir;
       this.accel[i] = 0.8 + 0.2 * rng();
       this.life[i] = 3;
-      this.size[i] = 0.22 + 0.16 * rng();
+      this.size[i] = (0.22 + 0.16 * rng()) * profile.sizeScale;
       this.tone[i] = 1 + Math.floor(rng() * 254);
     }
 
     // Remolino en la boca del embudo (solo con el chorro "lleno").
-    if (input.calm) return;
-    this.swirlDebt += 28 * flow * dt;
+    if (input.calm || profile.swirlPerSec <= 0) return;
+    this.swirlDebt += profile.swirlPerSec * flow * dt;
     while (this.swirlDebt >= 1) {
       this.swirlDebt -= 1;
       const i = this.spawn(PARTICLE_SWIRL);
@@ -210,14 +239,21 @@ export class StreamParticles {
       this.vy[i] = dir * speed * (0.5 + rng() * 0.5);
       this.accel[i] = 0.25;
       this.life[i] = 0.25 + rng() * 0.25;
-      this.size[i] = 0.28 + 0.2 * rng();
+      this.size[i] = (0.28 + 0.2 * rng()) * profile.sizeScale;
       this.tone[i] = 1 + Math.floor(rng() * 254);
     }
   }
 
   // ───────────────────────── movimiento ─────────────────────────
 
-  private integrate(sim: SandSimulation, g: Vec2, dir: number, dt: number, calm: boolean): void {
+  private integrate(
+    sim: SandSimulation,
+    g: Vec2,
+    dir: number,
+    dt: number,
+    calm: boolean,
+    profile: StreamProfile,
+  ): void {
     const { x, y, vx, vy, life, accel, kind } = this;
     const neckX = sim.centerCol + 0.5;
     const neckY = sim.gateRow + 0.5;
@@ -239,7 +275,7 @@ export class StreamParticles {
         continue;
       }
 
-      const a = GRAVITY * accel[i]!;
+      const a = GRAVITY * profile.gravityScale * accel[i]!;
       vx[i] = vx[i]! + g.x * a * dt;
       vy[i] = vy[i]! + g.y * a * dt;
       if (k === PARTICLE_SWIRL) {
@@ -288,7 +324,7 @@ export class StreamParticles {
         continue;
       }
       if (pastNeck && sim.cells[idx] !== 0) {
-        if (k === PARTICLE_FALL && !calm && this.rng() < 0.16) {
+        if (k === PARTICLE_FALL && !calm && this.rng() < profile.splashChance) {
           this.splash(i, px, py, g);
           i++;
           continue;

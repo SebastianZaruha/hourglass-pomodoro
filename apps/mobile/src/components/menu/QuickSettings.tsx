@@ -33,6 +33,7 @@ import Animated, {
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
+  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -79,13 +80,16 @@ function Icon({
   size,
   progress,
   colorKey,
+  forceLight = false,
 }: {
   name: IconName;
   size: number;
   progress: SharedValue<number>;
   colorKey: keyof UiPalette;
+  forceLight?: boolean;
 }) {
-  const color = useThemedColor(progress, colorKey);
+  const themed = useThemedColor(progress, colorKey);
+  const color = useDerivedValue(() => (forceLight ? '#F4F1EA' : themed.value));
   const transform = [{ scale: size / 32 }];
   const fill = FILLS[name];
   return (
@@ -147,6 +151,12 @@ export function RoundButton({
 }: RoundProps) {
   const isSwitch = value !== undefined;
   const on = value === true;
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const sprung = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const springTo = (to: number) => {
+    scale.set(reduceMotion ? to : withSpring(to, { damping: 16, stiffness: 320, mass: 0.35 }));
+  };
   // Una pulsación a la vez por botón (estado al momento, no de React).
   const [press] = useState(() => new QuickPress());
   // Centro del botón dentro de la fila (para colocar la etiqueta encima).
@@ -159,7 +169,10 @@ export function RoundButton({
   return (
     <Pressable
       onLayout={onLayout}
-      onPressIn={(e) => press.begin(...point(e))}
+      onPressIn={(e) => {
+        press.begin(...point(e));
+        springTo(0.92);
+      }}
       onPressMove={(e) => press.move(...point(e))}
       onLongPress={
         withTip
@@ -171,7 +184,10 @@ export function RoundButton({
           : undefined
       }
       delayLongPress={TOOLTIP_DELAY_MS}
-      onPressOut={withTip ? () => tip.release() : undefined}
+      onPressOut={() => {
+        springTo(1);
+        if (withTip) tip.release();
+      }}
       // Pressable ya no llama a onPress tras una pulsación larga ni si el dedo
       // se suelta lejos; QuickPress además cancela en cuanto el dedo se va.
       onPress={() => {
@@ -186,9 +202,14 @@ export function RoundButton({
     >
       <Animated.View
         style={[
+          sprung,
           st.round,
-          on ? s.accentBg : isSwitch ? s.trackBg : s.pillBg,
-          !isSwitch && { boxShadow: pillShadow },
+          st.glassEdge,
+          s.glassBorder,
+          on ? s.accentBg : { backgroundColor: 'rgba(16, 18, 20, 0.46)' },
+          on
+            ? { boxShadow: '0px 0px 14px rgba(107, 115, 68, 0.55)' }
+            : { boxShadow: pillShadow },
         ]}
       >
         {icon ? (
@@ -196,10 +217,11 @@ export function RoundButton({
             name={icon}
             size={ICON_SIZE}
             progress={progress}
-            colorKey={on ? 'onAccent' : isSwitch ? 'inkSoft' : 'ink'}
+            colorKey={on ? 'onAccent' : 'onAccent'}
+            forceLight={!on}
           />
         ) : (
-          <Animated.Text style={[st.glyph, { fontFamily: fonts.semibold }, s.ink]} numberOfLines={1}>
+          <Animated.Text style={[st.glyph, { fontFamily: fonts.semibold, color: '#F4F1EA' }]} numberOfLines={1}>
             {glyph}
           </Animated.Text>
         )}
@@ -314,6 +336,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  glassEdge: { borderWidth: 1 },
   glyph: { fontSize: 13.5, letterSpacing: 0.4 },
   tooltip: {
     position: 'absolute',
