@@ -17,3 +17,5 @@ export * from './persistence';
 export * from './recovery';
 export * from './i18n';
 export * from './menu';
+export * from './shape/geometry';
+export * from './shape/plate';

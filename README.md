@@ -52,8 +52,9 @@ un fondo cálido y difuso. Todo se maneja con gestos; los ajustes viven en un me
 | **Voltear** (180°)          | Como uno real: empieza de cero y cae la arena del otro lado.            |
 
 Además, el menú (las dos rayas de abajo a la derecha abren una hoja baja, cerca del pulgar)
-tiene pestañas para sesión única (tiempos rápidos, o Personalizado con una barra a todo el
-ancho que se arrastra a izquierda y derecha) o ciclos de trabajo y descanso y, en una fila
+tiene el material del reloj (arena, lluvia, miel o nieve), pestañas para sesión única
+(tiempos rápidos, o Personalizado con una cápsula vertical que se arrastra hacia arriba)
+o ciclos de trabajo y descanso y, en una fila
 de botones redondos, tema claro, oscuro o automático, español e inglés, sonido, vibración y, en
 Android, una ventana flotante con el reloj encima de otras apps (mantén pulsado un botón redondo
 para ver su nombre). La pantalla **«Gestos»** explica todo lo anterior: sale sola la primera vez
@@ -162,16 +163,16 @@ TypeScript se cargan desde el PC sin APK nuevo). La carpeta `android/` se **gene
 cd apps/mobile
 npx expo prebuild --platform android --clean
 cd android
-./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
-# APK: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease
+# APK: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-En Windows (PowerShell) el comando es `.\gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a`.
-El parámetro `-PreactNativeArchitectures=arm64-v8a` compila solo para arm64 (todos los Android
-de los últimos años) y tarda unas 4 veces menos. Desde la 1.8.6 el `prebuild` ya deja
-`reactNativeArchitectures=arm64-v8a` y `expo.useLegacyPackaging=true` en
-`android/gradle.properties` (plugin `modules/background-timer/app.plugin.js`); para incluir
-todas las arquitecturas, pasa `-PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64`.
+En Windows (PowerShell) el comando es `.\gradlew assembleRelease`.
+Desde la 1.8.6 el `prebuild` escribe `reactNativeArchitectures=arm64-v8a` y
+`expo.useLegacyPackaging=true` en `android/gradle.properties`
+(plugin `modules/background-timer/app.plugin.js`), así que `assembleRelease` no necesita
+propiedades extra. Para incluir todas las arquitecturas, pasa
+`-PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64`.
 Si Gradle se queda sin memoria, añade `-Dorg.gradle.jvmargs=-Xmx3g`.
 
 **APK que no necesita el PC** (desde la 1.8.1): desde la raíz, `npm run apk -- --out

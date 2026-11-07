@@ -63,7 +63,7 @@ export interface HourglassTheme {
  * | ink       | #4F443B | 8.0   | #E8DCCB | 12.3  |
  * | inkSoft   | #6B5E53 | 5.3   | #B9AB9C | 7.4   |
  * | label     | #716458 | 4.9   | #A39586 | 5.7   |
- * | accent    | #8C7660 | 3.7   | #B59D80 | 6.4   |
+ * | accent    | #6B7344 | 4.3   | #C5C8A4 | 9.7   |
  * | menuIcon  | #8F8272 | 3.0*  | #796C60 | 3.4*  |
  * | onAccent  | #FFFCF7 | 4.2** | #2A231D | 6.0** |
  *
@@ -83,8 +83,12 @@ export interface UiPalette {
   readonly pill: string;
   /** Sombra de la píldora (sintaxis CSS `boxShadow`). */
   readonly pillShadow: string;
-  /** Interruptor activado. */
+  /** Interruptor activado (verde oliva cálido, 1.8.16). */
   readonly accent: string;
+  /** Bandeja de cristal de los botones redondos. Sin desenfoque. */
+  readonly glass: string;
+  /** Borde claro de 1 px de esa bandeja y de cada botón. */
+  readonly glassEdge: string;
   /** Líneas separadoras finas. */
   readonly line: string;
   /** Brillo del canto superior de la hoja. */
@@ -178,7 +182,9 @@ export const LIGHT_THEME: HourglassTheme = {
     track: 'rgba(92, 78, 64, 0.075)',
     pill: 'rgba(255, 252, 247, 0.94)',
     pillShadow: '0px 1px 2px rgba(84, 64, 44, 0.10), 0px 4px 12px rgba(84, 64, 44, 0.07)',
-    accent: '#8C7660',
+    accent: '#6B7344',
+    glass: 'rgba(255, 252, 247, 0.62)',
+    glassEdge: 'rgba(255, 252, 246, 0.95)',
     line: 'rgba(92, 78, 64, 0.11)',
     panelEdge: 'rgba(255, 252, 246, 0.80)',
     scrim: 'rgba(235, 229, 221, 0.20)',
@@ -224,7 +230,9 @@ export const DARK_THEME: HourglassTheme = {
     track: 'rgba(255, 238, 214, 0.06)',
     pill: 'rgba(255, 238, 214, 0.14)',
     pillShadow: '0px 1px 2px rgba(0, 0, 0, 0.35)',
-    accent: '#B59D80',
+    accent: '#C5C8A4',
+    glass: 'rgba(255, 238, 214, 0.08)',
+    glassEdge: 'rgba(255, 238, 214, 0.28)',
     line: 'rgba(255, 238, 214, 0.08)',
     panelEdge: 'rgba(255, 238, 214, 0.10)',
     scrim: 'rgba(12, 10, 8, 0.22)',
@@ -237,6 +245,45 @@ export const DARK_THEME: HourglassTheme = {
 
 export function themeFor(scheme: ColorSchemeName | null | undefined): HourglassTheme {
   return scheme === 'dark' ? DARK_THEME : LIGHT_THEME;
+}
+
+/**
+ * Tinte fijo del fondo según el material. [0, 0, 0] devuelve el mismo tema
+ * (la arena no cambia nada). No anima: el fundido al cambiar de material lo
+ * hace la foto del lienzo. El menú no se toca: sus colores van en `ui`.
+ */
+export function themeWithAtmosphere(
+  base: HourglassTheme,
+  shift: readonly [number, number, number],
+): HourglassTheme {
+  if (shift[0] === 0 && shift[1] === 0 && shift[2] === 0) return base;
+  const bg = base.background;
+  return {
+    ...base,
+    background: {
+      ...bg,
+      top: shiftRgb(bg.top, shift),
+      bottom: shiftRgb(bg.bottom, shift),
+      glow: shiftRgb(bg.glow, shift),
+      vignette: shiftRgb(bg.vignette, shift),
+    },
+    solid: shiftHex(base.solid, shift),
+  };
+}
+
+function shiftRgb(color: Rgb01, shift: readonly number[]): Rgb01 {
+  const ch = (i: number) => Math.min(1, Math.max(0, (color[i] ?? 0) + (shift[i] ?? 0) / 255));
+  return [ch(0), ch(1), ch(2)];
+}
+
+function shiftHex(hexColor: string, shift: readonly number[]): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hexColor)) return hexColor;
+  const n = parseInt(hexColor.slice(1), 16);
+  const ch = (v: number, i: number) =>
+    Math.min(255, Math.max(0, v + Math.round(shift[i] ?? 0)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${ch((n >> 16) & 255, 0)}${ch((n >> 8) & 255, 1)}${ch(n & 255, 2)}`.toUpperCase();
 }
 
 /**
