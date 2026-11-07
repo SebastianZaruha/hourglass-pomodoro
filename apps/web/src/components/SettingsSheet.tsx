@@ -18,7 +18,7 @@ import {
   type CyclePresetId,
   type Messages,
 } from '@reloj/core';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 import { ESCENAS_ACTIVAS, type EscenaActiva } from '../scenes';
@@ -47,6 +47,74 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
   const [singleCustom, setSingleCustom] = useState(() => !onPreset);
   const customOn = singleCustom || !onPreset;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLImageElement>(null);
+  const bladesRef = useRef<HTMLImageElement>(null);
+  const glassRef = useRef<HTMLImageElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const place = (
+      live: Element | null,
+      copy: HTMLImageElement | null,
+      sheet: DOMRect,
+    ) => {
+      if (!copy) return;
+      if (!(live instanceof HTMLElement)) {
+        copy.hidden = true;
+        return;
+      }
+      const box = live.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) {
+        copy.hidden = true;
+        return;
+      }
+      copy.hidden = false;
+      copy.style.left = `${box.left - sheet.left}px`;
+      copy.style.top = `${box.top - sheet.top}px`;
+      copy.style.width = `${box.width}px`;
+      copy.style.height = `${box.height}px`;
+      copy.style.transform = getComputedStyle(live).transform;
+    };
+    const sync = () => {
+      if (!alive) return;
+      const sheetEl = sheetRef.current;
+      if (!sheetEl) return;
+      const sheet = sheetEl.getBoundingClientRect();
+      const photo = document.querySelector<HTMLImageElement>('.scene-photo');
+      const blades = document.querySelector<HTMLImageElement>('.blades');
+      if (photoRef.current && photo) {
+        photoRef.current.src = photo.currentSrc || photo.src;
+        place(photo, photoRef.current, sheet);
+      }
+      if (bladesRef.current && blades) {
+        bladesRef.current.src = blades.currentSrc || blades.src;
+        place(blades, bladesRef.current, sheet);
+      }
+      const canvas = document.querySelector('canvas.glass-canvas');
+      const glass = glassRef.current;
+      if (glass && canvas instanceof HTMLCanvasElement && canvas.width > 2) {
+        try {
+          glass.src = canvas.toDataURL('image/png');
+          place(canvas, glass, sheet);
+        } catch {
+          glass.hidden = true;
+        }
+      }
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    if (sheetRef.current) observer.observe(sheetRef.current);
+    window.addEventListener('resize', sync);
+    const timers = [80, 420, 760].map((ms) => window.setTimeout(sync, ms));
+    return () => {
+      alive = false;
+      observer.disconnect();
+      window.removeEventListener('resize', sync);
+      for (const timer of timers) window.clearTimeout(timer);
+    };
+  }, [open, settings.contentId]);
 
   useEffect(() => {
     if (!onPreset) setSingleCustom(true);
@@ -59,6 +127,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
 
   return (
     <div
+      ref={sheetRef}
       className={open ? 'sheet open' : 'sheet'}
       role="dialog"
       aria-modal="true"
@@ -72,6 +141,13 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         window.getSelection()?.removeAllRanges();
       }}
     >
+      <div className="sheet-blur" aria-hidden="true">
+        <img ref={photoRef} className="sheet-blur-photo" alt="" />
+        <img ref={bladesRef} className="sheet-blur-blades" alt="" />
+        <img ref={glassRef} className="sheet-blur-glass" alt="" />
+      </div>
+      <div className="sheet-veil" aria-hidden="true" />
+      <div className="sheet-body">
       <div className="sheet-head">
         <h2>{t.settings}</h2>
         <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
@@ -294,6 +370,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           <SpeakerIcon off={!settings.sound} />
           <span>{t.sound}</span>
         </button>
+      </div>
       </div>
     </div>
   );
