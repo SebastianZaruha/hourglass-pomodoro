@@ -30,6 +30,7 @@ import {
   PaintStyle,
   Skia,
   StrokeCap,
+  TileMode,
   type ImageInfo,
   type SkCanvas,
   type SkImage,
@@ -38,6 +39,8 @@ import {
   type SkPictureRecorder,
   type SkRect,
 } from '@shopify/react-native-skia';
+
+import { Platform } from 'react-native';
 
 import type { HourglassTheme } from '../theme/theme';
 import { safeDispose } from './disposal';
@@ -68,6 +71,9 @@ export class ShapePainter {
   private readonly drop: SkPaint;
   private readonly cloud: SkPaint;
   private readonly cloudHi: SkPaint;
+  private readonly cloudRgb: Rgb3;
+  private readonly cloudHiRgb: Rgb3;
+  private readonly puffPaint: SkPaint;
   private readonly puff: SkImage | null;
   private readonly surface: SurfacePoint[] = Array.from({ length: SURFACE_N }, () => ({ x: 0, y: 0 }));
   private readonly ribbons: RibbonMark[] = Array.from({ length: 16 }, () => ({
@@ -113,9 +119,14 @@ export class ShapePainter {
     this.streak.setStyle(PaintStyle.Stroke);
     this.streak.setStrokeCap(StrokeCap.Round);
     this.drop = fillPaint(body, 0.9);
-    this.cloud = fillPaint(mix(body, [236, 234, 228], 0.82), 1);
-    this.cloudHi = fillPaint(mix(body, [255, 252, 247], 0.9), 1);
-    this.puff = material.cloud ? makePuff(size) : null;
+    this.cloudRgb = mix(body, [248, 250, 252], 0.28);
+    this.cloudHiRgb = mix(body, [255, 252, 247], 0.62);
+    this.cloud = fillPaint(this.cloudRgb, 1);
+    this.cloudHi = fillPaint(this.cloudHiRgb, 1);
+    this.puffPaint = Skia.Paint();
+    this.puffPaint.setAntiAlias(true);
+    // La imagen no se compone en Skia web. Ahí el copo es un degradado.
+    this.puff = material.cloud && Platform.OS !== 'web' ? makePuff(size) : null;
   }
 
   paint(frame: ShapeFrame): SkPicture {
@@ -137,7 +148,7 @@ export class ShapePainter {
     if (pose.flowing && !frame.reduceMotion) this.drawRibbon(canvas, frame);
     else if (pose.flowing) this.drawRibbon(canvas, { ...frame, phase: 0 });
 
-    if (material.cloud && this.puff) this.drawCloud(canvas, topFill, pose.slope, frame);
+    if (material.cloud) this.drawCloud(canvas, topFill, pose.slope, frame);
 
     canvas.restore();
     return this.recorder.finishRecordingAsPicture();
@@ -153,6 +164,7 @@ export class ShapePainter {
     safeDispose(this.drop);
     safeDispose(this.cloud);
     safeDispose(this.cloudHi);
+    safeDispose(this.puffPaint);
     safeDispose(this.puff);
     safeDispose(this.recorder);
   }
@@ -256,7 +268,6 @@ export class ShapePainter {
 
   private drawCloud(canvas: SkCanvas, fill: number, slope: number, frame: ShapeFrame): void {
     const image = this.puff;
-    if (!image) return;
     const drift = frame.reduceMotion ? 0 : frame.drift;
     const n = Math.round(writeCloud(fill, slope, drift, this.puffs) * frame.puffs);
     const { layout } = this;
@@ -267,9 +278,26 @@ export class ShapePainter {
       if (!(r > 1)) continue;
       const x = layout.cx + puff.x * layout.halfW * 0.72;
       const y = anchorY + puff.y * layout.halfH * 0.34;
-      const paint = puff.shade > 0.8 ? this.cloudHi : this.cloud;
-      paint.setAlphaf(Math.min(1, puff.alpha));
-      canvas.drawImageRect(image, this.srcRect, Skia.XYWHRect(x - r, y - r, r * 2, r * 2), paint);
+      const rgb = puff.shade > 0.9 ? this.cloudHiRgb : this.cloudRgb;
+      const a = Math.min(1, puff.alpha);
+      const dest = Skia.XYWHRect(x - r, y - r, r * 2, r * 2);
+      if (image) {
+        const paint = puff.shade > 0.9 ? this.cloudHi : this.cloud;
+        paint.setAlphaf(a);
+        canvas.drawImageRect(image, this.srcRect, dest, paint);
+      } else {
+        const shader = Skia.Shader.MakeRadialGradient(
+          { x, y },
+          Math.max(1, r),
+          [rgba(rgb, a), rgba(rgb, 0)],
+          [0.2, 1],
+          TileMode.Clamp,
+        );
+        this.puffPaint.setShader(shader);
+        canvas.drawOval(dest, this.puffPaint);
+        this.puffPaint.setShader(null);
+        safeDispose(shader);
+      }
     }
   }
 
@@ -329,18 +357,20 @@ function makePuff(size: number): SkImage | null {
       if (d > 1) alpha = 0;
       const n = ((x * 13 + y * 47) % 17) / 17;
       alpha *= 0.84 + 0.16 * n;
+      const a = Math.round(Math.min(1, alpha) * 255);
       const o = (y * size + x) * 4;
-      px[o] = 255;
-      px[o + 1] = 255;
-      px[o + 2] = 255;
-      px[o + 3] = Math.round(Math.min(1, alpha) * 255);
+      // Premultiplicado: sin esto, Skia en la web no pinta el copo.
+      px[o] = a;
+      px[o + 1] = a;
+      px[o + 2] = a;
+      px[o + 3] = a;
     }
   }
   const info: ImageInfo = {
     width: size,
     height: size,
     colorType: ColorType.RGBA_8888,
-    alphaType: AlphaType.Unpremul,
+    alphaType: AlphaType.Premul,
   };
   const data = Skia.Data.fromBytes(px);
   const image = Skia.Image.MakeImage(info, data, size * 4);
