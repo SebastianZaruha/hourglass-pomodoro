@@ -14,6 +14,8 @@ Lluvia, arena y claro tienen tokens propios (cristal, acento, dígitos, pie, tex
 
 Los avisos legales (el diálogo y las páginas sueltas) dejan el beige. El diálogo es el mismo cristal del menú sobre la escena. La página suelta lleva ese cristal sobre la escena desenfocada. Capturas en `docs/audit`: `lluvia-run-1440.png`, `lluvia-menu-1440.png`, `arena-menu-1440.png`, `lluvia-390.png`, `lluvia-600.png`, `legal-1440.png`, `legal-390.png`, `lluvia-tilt-1440.png`, `claro-1440.png`, `claro-390.png`, `cloud-edge.png`.
 
+La primera pintura ya no usa el frasco de trazo ni la nube de círculos: si las fotos del vidrio (o el vídeo de la nube) no han decodificado, el lienzo queda vacío sobre la escena desenfocada y el bucle sigue hasta que entran, con reintento. La nube ya no se seekea cada fotograma: el vídeo muted, playsinline y loop se reproduce solo, y la caja se redondea a píxeles enteros. En oscuro la nube de lluvia baja a brillo 0.78 y saturación 0.9, con una transición. El menú ya no lleva `transform`: el cristal es `backdrop-filter` en una capa quieta y el panel entra moviendo `bottom`. Claro usa cristal crema y texto oscuro. Arena oscurece los dígitos.
+
 El menú no se desenfocaba: el panel lleva `transform` (el `translateY` de la entrada, también en 0) y Chrome no aplica `backdrop-filter` en esa capa. El capturador además va sin GPU. Detrás del panel hay una copia de la escena, desenfocada con `filter: blur(72px)` y recortada al cristal. Las etiquetas sin seleccionar usan el texto de la paleta al 88 %, mezclado con blanco, y una sombra suave.
 
 ## Hecho en este paso

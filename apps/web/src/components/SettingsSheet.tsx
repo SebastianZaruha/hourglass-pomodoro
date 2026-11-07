@@ -26,6 +26,10 @@ import type { SettingsPatch, WebSettings } from '../useSettings';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
+const menuBlurNative =
+  typeof CSS !== 'undefined' &&
+  (CSS.supports('backdrop-filter', 'blur(2px)') || CSS.supports('-webkit-backdrop-filter', 'blur(2px)'));
+
 function sceneName(t: Messages, id: EscenaActiva): string {
   if (id === 'claro') return t.materialSand === 'Sand' ? 'Simple' : 'Claro';
   if (id === 'lluvia') return t.materialRain;
@@ -53,7 +57,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   const glassRef = useRef<HTMLImageElement>(null);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || menuBlurNative) return;
     let alive = true;
     const place = (
       live: Element | null,
@@ -141,12 +145,15 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         window.getSelection()?.removeAllRanges();
       }}
     >
+      <div className="sheet-glass" aria-hidden="true" />
+      {menuBlurNative ? null : (
       <div className="sheet-blur" aria-hidden="true">
         <img ref={photoRef} className="sheet-blur-photo" alt="" />
         <img ref={bladesRef} className="sheet-blur-blades" alt="" />
         <img ref={glassRef} className="sheet-blur-glass" alt="" />
       </div>
-      <div className="sheet-veil" aria-hidden="true" />
+      )}
+      {menuBlurNative ? null : <div className="sheet-veil" aria-hidden="true" />}
       <div className="sheet-body">
       <div className="sheet-head">
         <h2>{t.settings}</h2>

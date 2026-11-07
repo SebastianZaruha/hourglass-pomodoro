@@ -36,7 +36,6 @@ function ambientFor(id: MaterialId): AmbientMod | null {
 
 const CLOUD_W = 1100;
 const CLOUD_H = 438;
-const CLOUD_FPS = 24;
 
 type Kind = 'sand' | 'water' | 'honey' | 'snow';
 
@@ -47,11 +46,47 @@ const KIND: Record<MaterialId, Kind> = {
   nieve: 'snow',
 };
 
+const assetJobs: Promise<void>[] = [];
+const readyListeners = new Set<() => void>();
+let jarDecoded = false;
+
+function notifyReady(): void {
+  if (!jarDecoded) return;
+  for (const listener of readyListeners) listener();
+}
+
+/** Imagen con reintento. `decode()` espera a que se pueda pintar. */
 function load(src: string): HTMLImageElement {
   const image = new Image();
   image.decoding = 'async';
-  image.src = src;
+  const job = new Promise<void>((resolve) => {
+    let tries = 3;
+    image.onload = () => {
+      const done = () => resolve();
+      if (typeof image.decode === 'function') image.decode().then(done).catch(done);
+      else done();
+    };
+    image.onerror = () => {
+      tries -= 1;
+      if (tries < 0) {
+        resolve();
+        return;
+      }
+      window.setTimeout(() => {
+        image.src = src;
+      }, 450);
+    };
+    image.src = src;
+  });
+  assetJobs.push(job);
   return image;
+}
+
+/** Avisa cuando las capas del frasco han decodificado (o agotado los reintentos). */
+export function onPhotoAssets(listener: () => void): () => void {
+  readyListeners.add(listener);
+  if (jarDecoded) listener();
+  return () => readyListeners.delete(listener);
 }
 
 const glassDir =
@@ -71,12 +106,53 @@ const safariCloud =
   /safari/i.test(navigator.userAgent) &&
   !/chrome|chromium|crios|android|edg/i.test(navigator.userAgent);
 
-function makeCloudVideo(src: string): HTMLVideoElement {
+function playCloud(video: HTMLVideoElement): void {
+  if (!video.paused && video.readyState >= 2) return;
+  const pending = video.play();
+  if (pending) pending.catch(() => { /* un gesto volverá a llamar a play */ });
+}
+
+function makeCloudVideo(src: string, offsetHalf: boolean): HTMLVideoElement {
   const video = document.createElement('video');
   video.muted = true;
+  video.defaultMuted = true;
   video.loop = true;
+  video.autoplay = true;
   video.playsInline = true;
   video.preload = 'auto';
+  video.setAttribute('muted', '');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  if (offsetHalf) {
+    video.addEventListener(
+      'loadedmetadata',
+      () => {
+        if (video.duration > 0.2) {
+          try {
+            video.currentTime = video.duration * 0.5;
+          } catch {
+            /* el seek de arranque puede esperar */
+          }
+        }
+      },
+      { once: true },
+    );
+  }
+  const arm = () => playCloud(video);
+  let tries = 2;
+  video.addEventListener('error', () => {
+    tries -= 1;
+    if (tries < 0) return;
+    window.setTimeout(() => {
+      video.src = src;
+      video.load();
+    }, 500);
+  });
+  video.addEventListener('canplay', arm);
+  video.addEventListener('canplaythrough', () => {
+    playCloud(video);
+    notifyReady();
+  });
   video.src = src;
   return video;
 }
@@ -84,8 +160,9 @@ function makeCloudVideo(src: string): HTMLVideoElement {
 function cloudClip(which: 'front' | 'back'): HTMLVideoElement {
   const existing = which === 'front' ? cloudFront : cloudBack;
   if (existing) return existing;
-  const video = makeCloudVideo(safariCloud ? '/streams/cloud-color.mp4' : '/streams/cloud.webm');
-  const mask = safariCloud ? makeCloudVideo('/streams/cloud-mask.mp4') : null;
+  const src = safariCloud ? '/streams/cloud-color.mp4' : '/streams/cloud.webm';
+  const video = makeCloudVideo(src, which === 'back');
+  const mask = safariCloud ? makeCloudVideo('/streams/cloud-mask.mp4', which === 'back') : null;
   if (which === 'front') {
     cloudFront = video;
     cloudFrontMask = mask;
@@ -96,19 +173,34 @@ function cloudClip(which: 'front' | 'back'): HTMLVideoElement {
   return video;
 }
 
+export function warmCloud(): void {
+  cloudClip('front');
+  cloudClip('back');
+}
+
 function cloudMask(which: 'front' | 'back'): HTMLVideoElement | null {
   cloudClip(which);
   return which === 'front' ? cloudFrontMask : cloudBackMask;
 }
 
-function seekCloud(video: HTMLVideoElement, time: number): void {
-  if (Math.abs(video.currentTime - time) > 0.08) {
-    try {
-      video.currentTime = time;
-    } catch {
-      /* el vídeo aún no admite seek */
-    }
-  }
+/** 1 en claro, 0.78 en oscuro. Se acerca con suavidad al cambiar el tema. */
+let cloudShade = 1;
+let cloudShadeAt = 0;
+
+export function cloudShadeMoving(): boolean {
+  return Math.abs(cloudShade - 1) > 0.012 && Math.abs(cloudShade - 0.78) > 0.012;
+}
+
+function cloudShadeNow(dark: boolean): { brightness: number; saturate: number } {
+  const now = performance.now();
+  const dt = Math.min(0.05, cloudShadeAt ? (now - cloudShadeAt) / 1000 : 0.016);
+  cloudShadeAt = now;
+  const target = dark ? 0.78 : 1;
+  cloudShade += (target - cloudShade) * (1 - Math.exp(-dt * 5.5));
+  if (Math.abs(cloudShade - target) < 0.004) cloudShade = target;
+  const t = (1 - cloudShade) / 0.22;
+  const saturate = 1 - 0.1 * Math.min(1, Math.max(0, t));
+  return { brightness: cloudShade, saturate };
 }
 const surfaceTex = load('/glass/tex-water-surface.webp');
 const textures: Record<Kind, HTMLImageElement> = {
@@ -312,8 +404,8 @@ function stepWaterSlosh(rotation: number, frozen: boolean): { angle: number; hei
 
 /** Luz neutra de Claro: sin el sol de las dunas. */
 const PLAIN_LIGHT: SceneLight = {
-  dx: 0.06,
-  key: 0.58,
+  dx: -0.22,
+  key: 0.72,
   highlight: '#fff8ee',
   shade: 'rgba(48, 42, 36, 0.2)',
   ambient: 'rgba(255, 250, 244, 0.26)',
@@ -339,6 +431,8 @@ export interface PhotoFrame {
   readonly rotation: number;
   /** Claro: el mismo frasco, sin foto ni luz de las dunas. */
   readonly plain?: boolean;
+  /** Lluvia en oscuro: la nube baja de brillo con la escena. */
+  readonly dark?: boolean;
   /** Arena: granos y caída de la simulación de main, recortados a la máscara. */
   readonly grains?: {
     readonly image: CanvasImageSource;
@@ -522,8 +616,6 @@ function cloudCoverY(jar: { y: number; h: number }, height: number): number {
 }
 
 function cloudAspect(): number {
-  const video = cloudFront;
-  if (video && video.videoWidth > 0 && video.videoHeight > 0) return video.videoHeight / video.videoWidth;
   return CLOUD_H / CLOUD_W;
 }
 
@@ -571,16 +663,13 @@ function drawCloud(
   jar: { x: number; y: number; w: number; h: number },
   frame: PhotoFrame,
 ): void {
-  const width = jar.w * 1.9;
-  const height = width * cloudAspect();
-  const x = jar.x + jar.w / 2 - width / 2;
-  const y = cloudCoverY(jar, height);
-  const clip = cloudClip('front');
-  const loop = clip.duration && Number.isFinite(clip.duration) && clip.duration > 0.4 ? clip.duration : 286 / CLOUD_FPS;
-  const t = frame.reduceMotion ? 0 : ((frame.cloudTime % loop) + loop) % loop;
+  const width = Math.round(jar.w * 1.9);
+  const height = Math.round(width * cloudAspect());
+  const x = Math.round(jar.x + jar.w / 2 - width / 2);
+  const y = Math.round(cloudCoverY(jar, height));
+  const shade = cloudShadeNow(frame.dark === true);
   const paint = (
     which: 'front' | 'back',
-    time: number,
     dx: number,
     dy: number,
     dw: number,
@@ -592,15 +681,22 @@ function drawCloud(
     const mask = cloudMask(which);
     ctx.save();
     ctx.globalAlpha = alpha;
+    if (shade.brightness < 0.995) {
+      ctx.filter = `brightness(${shade.brightness.toFixed(3)}) saturate(${shade.saturate.toFixed(3)})`;
+    }
     if (mirror) {
       ctx.translate(dx + dw / 2, dy + dh / 2);
       ctx.scale(-1, 1);
       ctx.translate(-(dx + dw / 2), -(dy + dh / 2));
     }
+    if (frame.reduceMotion) {
+      if (!video.paused) video.pause();
+    } else if (video.paused) {
+      playCloud(video);
+    }
     if (!frame.reduceMotion && video.readyState >= 2 && (!mask || mask.readyState >= 2)) {
-      seekCloud(video, time);
       if (mask) {
-        seekCloud(mask, time);
+        if (mask.paused && !frame.reduceMotion) playCloud(mask);
         const g = scratch(dw, dh);
         if (g && plate) {
           g.drawImage(video, 0, 0, plate.width, plate.height);
@@ -619,12 +715,22 @@ function drawCloud(
     }
     ctx.restore();
   };
-  paint('back', t + loop * 0.5, x - width * 0.06, y - height * 0.06, width * 0.68, height * 0.68, 0.42, true);
-  paint('front', t, x, y, width, height, 1, false);
+  paint('back', x - Math.round(width * 0.06), y - Math.round(height * 0.06), Math.round(width * 0.68), Math.round(height * 0.68), 0.42, true);
+  paint('front', x, y, width, height, 1, false);
+}
+
+let cloudDeadline = 0;
+
+function lluviaCloudReady(): boolean {
+  const video = cloudClip('front');
+  if (!cloudDeadline) cloudDeadline = performance.now() + 8000;
+  if (video.readyState >= 3) return true;
+  return jarDecoded && performance.now() > cloudDeadline;
 }
 
 export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame): boolean {
   if (!jarLayersReady()) return false;
+  if (frame.id === 'lluvia' && !frame.reduceMotion && !lluviaCloudReady()) return false;
   const photo = document.querySelector<HTMLImageElement>('.scene-photo');
   const imageW = photo?.naturalWidth || 1920;
   const imageH = photo?.naturalHeight || 1080;
@@ -645,7 +751,19 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   if (shadowAmt > 0.004) {
     ctx.save();
     ctx.globalAlpha = shadowAmt;
-    const lean = grade.dx * jar.w * (frame.plain ? 0.035 : 0.09);
+    if (frame.plain) {
+      ctx.filter = 'blur(40px)';
+      ctx.fillStyle = 'rgba(150, 124, 96, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(footX, footY + jar.w * 0.04, jar.w * 0.72, jar.w * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.filter = 'blur(26px)';
+      ctx.fillStyle = 'rgba(110, 86, 64, 0.16)';
+      ctx.beginPath();
+      ctx.ellipse(footX + grade.dx * jar.w * 0.28, footY + jar.w * 0.05, jar.w * 0.62, jar.w * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const lean = grade.dx * jar.w * (frame.plain ? 0.12 : 0.09);
     ctx.filter = frame.plain ? 'blur(18px)' : 'blur(14px)';
     ctx.fillStyle = frame.plain ? 'rgba(72, 60, 48, 0.26)' : grade.shadow;
     ctx.beginPath();
@@ -694,6 +812,25 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const g = scratch(jar.w, jar.h);
   if (g && plate) {
     const blur = !frame.plain && photo ? blurredScene(photo, frame.id) : null;
+    if (frame.plain) {
+      const wash = g.createLinearGradient(plate.width * 0.12, plate.height * 0.04, plate.width * 0.92, plate.height);
+      wash.addColorStop(0, 'rgba(255, 250, 240, 0.42)');
+      wash.addColorStop(0.45, 'rgba(236, 214, 184, 0.16)');
+      wash.addColorStop(1, 'rgba(186, 156, 124, 0.22)');
+      g.fillStyle = wash;
+      g.fillRect(0, 0, plate.width, plate.height);
+      const alphaMask = lumenMask();
+      if (alphaMask) {
+        g.globalCompositeOperation = 'destination-in';
+        g.drawImage(alphaMask, 0, 0, plate.width, plate.height);
+        g.globalCompositeOperation = 'source-over';
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(plate, jar.x, jar.y, jar.w, jar.h);
+        ctx.restore();
+      }
+      g.clearRect(0, 0, plate.width, plate.height);
+    }
     if (blur) {
       g.save();
       g.translate(plate.width / 2, plate.height / 2);
@@ -993,3 +1130,10 @@ export function preloadJar(id: MaterialId): void {
     ambientFor(id);
   }, 1600);
 }
+
+queueMicrotask(() => {
+  void Promise.all(assetJobs).then(() => {
+    jarDecoded = true;
+    notifyReady();
+  });
+});

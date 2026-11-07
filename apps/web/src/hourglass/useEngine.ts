@@ -33,7 +33,7 @@ import {
   type GlassLayout,
   type Scheme,
 } from './draw';
-import { drawPhotoreal, jarLayersReady, placedPhotoJar, preloadJar, waterSloshMoving } from './photoreal';
+import { cloudShadeMoving, drawPhotoreal, jarLayersReady, onPhotoAssets, placedPhotoJar, preloadJar, warmCloud, waterSloshMoving } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -390,6 +390,7 @@ export function useHourglass(
         viewH: cssH,
         rotation: spinAngle,
         plain: p.contentId === 'claro',
+        dark: p.scheme === 'dark',
         grains:
           photoId === 'arena'
             ? {
@@ -406,7 +407,14 @@ export function useHourglass(
               }
             : undefined,
       });
-      if (!drew) {
+      const photoScene =
+        p.contentId === 'lluvia' ||
+        p.contentId === 'arena' ||
+        p.contentId === 'claro' ||
+        p.contentId === 'miel' ||
+        p.contentId === 'nieve';
+      canvas.closest('.app')?.classList.toggle('jar-ready', drew);
+      if (!drew && !photoScene) {
         drawHourglass(ctx, {
           profile,
           layout,
@@ -421,6 +429,8 @@ export function useHourglass(
           shadow: p.introActive ? p.introShadow : 1,
           shape: shapeDraw,
         });
+      } else if (!drew) {
+        ctx.clearRect(0, 0, cssW, cssH);
       } else {
         preloadJar(p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena');
       }
@@ -434,8 +444,10 @@ export function useHourglass(
         p.gestureActive ||
         p.introActive ||
         Math.abs(p.gestureAngle) > 0.0008 ||
-        (jarLayersReady() && p.contentId === 'lluvia' && snap.status !== 'paused' && !p.reduceMotion) ||
-        waterSloshMoving();
+        (jarLayersReady() && p.contentId === 'lluvia' && !p.reduceMotion) ||
+        waterSloshMoving() ||
+        cloudShadeMoving() ||
+        (photoScene && !drew);
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };
@@ -445,12 +457,17 @@ export function useHourglass(
       loop.last = 0;
       loop.raf = requestAnimationFrame(frame);
     };
+    warmCloud();
+    const stopAssets = onPhotoAssets(wake);
+    window.addEventListener('pointerdown', wake);
     handleRef.current = { wake, layoutCss: () => loop.layout };
     const observer = new ResizeObserver(() => wake());
     observer.observe(canvas);
     wake();
     return () => {
       loop.alive = false;
+      stopAssets();
+      window.removeEventListener('pointerdown', wake);
       observer.disconnect();
       if (loop.raf) cancelAnimationFrame(loop.raf);
       handleRef.current = null;
