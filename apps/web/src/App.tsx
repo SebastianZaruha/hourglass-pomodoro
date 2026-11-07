@@ -1,6 +1,8 @@
 import { Analytics } from '@vercel/analytics/react';
 import {
   activeCycleConfig,
+  dockIsRoomy,
+  getContent,
   messagesFor,
   nearestStepIndex,
   resolveLanguage,
@@ -9,6 +11,7 @@ import {
   sessionSnapshot,
   stepMinutes,
   stepToDuration,
+  type MaterialId,
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
@@ -27,6 +30,7 @@ import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from '
 import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
+import { GlassDock } from './components/GlassDock';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
@@ -187,16 +191,18 @@ function Timer({
     introAngle: 0,
     introScale: 1,
     introShadow: 1,
+    contentId: settings.contentId,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
   paramsRef.current.reduceMotion = reduceMotion;
+  paramsRef.current.contentId = settings.contentId;
   const handleRef = useRef<HourglassHandle | null>(null);
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
     handleRef.current?.wake();
-  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion]);
+  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion, settings.contentId]);
 
   const prevCue = useRef(view);
   useEffect(() => {
@@ -430,6 +436,7 @@ function Timer({
       className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
+      data-roomy={dockIsRoomy(window.innerWidth, window.innerHeight) ? 'yes' : 'no'}
     >
       {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
@@ -503,6 +510,22 @@ function Timer({
           t={t}
           onChange={update}
           onClose={() => setMenu(false)}
+        />
+        <GlassDock
+          t={t}
+          running={view.status === 'running'}
+          contentId={getContent(settings.contentId).id}
+          onToggle={doToggle}
+          onRestart={doRestart}
+          onMinutes={(min) => {
+            update({ sessionMode: 'single', lastDurationMs: min * 60_000 });
+            handleRef.current?.wake();
+          }}
+          onMaterial={(id: MaterialId) => {
+            update({ contentId: id });
+            handleRef.current?.wake();
+          }}
+          onMenu={() => setMenu(true)}
         />
         <SiteFooter
           lang={lang}

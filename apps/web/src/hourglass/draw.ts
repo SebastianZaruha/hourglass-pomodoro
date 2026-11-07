@@ -9,10 +9,18 @@ import {
   hash32,
   outlinePoints,
   radiusAt,
+  writeCloud,
+  writeLiquidSurface,
+  writeRibbons,
+  type CloudPuff,
   type ContentPalette,
+  type FlowPose,
   type HourglassProfile,
+  type RibbonMark,
   type SandSimulation,
+  type ShapeMaterial,
   type StreamParticles,
+  type SurfacePoint,
 } from '@reloj/core';
 
 export interface GlassLayout {
@@ -158,6 +166,12 @@ export interface DrawScene {
   readonly poseScale: number;
   /** 0 esconde la sombra del suelo (el vidrio está en el aire). 1 es la sombra normal. */
   readonly shadow: number;
+  /** Lluvia o miel. Si viene, no se dibuja la rejilla de arena. */
+  readonly shape?: {
+    readonly material: ShapeMaterial;
+    readonly pose: FlowPose;
+    readonly phase: number;
+  };
 }
 
 function oval(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) {
@@ -250,41 +264,46 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   trace(ctx, profile, layout, true);
   ctx.save();
   ctx.clip();
-  const left = cx - halfW;
-  const top = cy - halfH;
-  // Granos nítidos: la rejilla ya va a ~2 px, suavizarla la deja borrosa.
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(scene.sand, left, top, halfW * 2, halfH * 2);
+  if (scene.shape) {
+    drawShapeFill(ctx, layout, profile, scene.shape, dark);
+    ctx.restore();
+  } else {
+    const left = cx - halfW;
+    const top = cy - halfH;
+    // Granos nítidos: la rejilla ya va a ~2 px, suavizarla la deja borrosa.
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(scene.sand, left, top, halfW * 2, halfH * 2);
 
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.globalAlpha = dark ? 0.16 : 0.2;
-  const pattern = ctx.createPattern(scene.noise, 'repeat');
-  if (pattern) {
-    ctx.fillStyle = pattern;
-    ctx.fillRect(left, top, halfW * 2, halfH * 2);
-  }
-  ctx.restore();
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = dark ? 0.16 : 0.2;
+    const pattern = ctx.createPattern(scene.noise, 'repeat');
+    if (pattern) {
+      ctx.fillStyle = pattern;
+      ctx.fillRect(left, top, halfW * 2, halfH * 2);
+    }
+    ctx.restore();
 
-  const cellW = (halfW * 2) / scene.sim.cols;
-  const cellH = (halfH * 2) / scene.sim.rows;
-  const count = scene.particles.count;
-  ctx.imageSmoothingEnabled = true;
-  for (let i = 0; i < count; i++) {
-    const px = scene.particles.x[i] ?? 0;
-    const py = scene.particles.y[i] ?? 0;
-    const size = scene.particles.size[i] ?? 0.3;
-    const tone = scene.particles.tone[i] ?? 1;
-    const x = left + (px / scene.sim.cols) * halfW * 2;
-    const y = top + (py / scene.sim.rows) * halfH * 2;
-    const radius = Math.max(0.6, size * cellW * 1.15);
-    const l = tone * 3;
-    ctx.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
-    ctx.beginPath();
-    ctx.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
-    ctx.fill();
+    const cellW = (halfW * 2) / scene.sim.cols;
+    const cellH = (halfH * 2) / scene.sim.rows;
+    const count = scene.particles.count;
+    ctx.imageSmoothingEnabled = true;
+    for (let i = 0; i < count; i++) {
+      const px = scene.particles.x[i] ?? 0;
+      const py = scene.particles.y[i] ?? 0;
+      const size = scene.particles.size[i] ?? 0.3;
+      const tone = scene.particles.tone[i] ?? 1;
+      const x = left + (px / scene.sim.cols) * halfW * 2;
+      const y = top + (py / scene.sim.rows) * halfH * 2;
+      const radius = Math.max(0.6, size * cellW * 1.15);
+      const l = tone * 3;
+      ctx.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   // Canto interior, fino.
   ctx.lineWidth = Math.max(1, halfW * 0.012);
@@ -342,4 +361,97 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
   ctx.restore();
 
   ctx.restore();
+}
+
+const SURFACE: SurfacePoint[] = Array.from({ length: 28 }, () => ({ x: 0, y: 0 }));
+const RIBBONS: RibbonMark[] = Array.from({ length: 16 }, () => ({ x: 0, t: 0, len: 0, alpha: 0 }));
+const PUFFS: CloudPuff[] = Array.from({ length: 12 }, () => ({ x: 0, y: 0, r: 0, alpha: 0, shade: 0 }));
+
+function drawShapeFill(
+  ctx: CanvasRenderingContext2D,
+  layout: GlassLayout,
+  profile: HourglassProfile,
+  shape: NonNullable<DrawScene['shape']>,
+  _dark: boolean,
+): void {
+  const { material, pose, phase } = shape;
+  const wave = pose.flowing ? material.waves : 0;
+  const to = (x: number, y: number) => ({
+    x: layout.cx + x * layout.halfW,
+    y: layout.cy + y * layout.halfH,
+  });
+  const honey = 'rgba(212, 160, 72, 0.94)';
+  const water = 'rgba(176, 192, 194, 0.92)';
+  const color = material.look === 'miel' ? honey : water;
+  const pool = (fromNeck: boolean, fill: number, mound: number) => {
+    const n = writeLiquidSurface(profile, fromNeck, fill, pose.slope, mound, wave, phase, SURFACE);
+    if (n < 2) return;
+    const endY = fromNeck ? layout.cy : layout.cy + layout.halfH * 1.08;
+    const first = to(SURFACE[0]!.x, SURFACE[0]!.y);
+    ctx.beginPath();
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < n; i++) {
+      const p = to(SURFACE[i]!.x, SURFACE[i]!.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.lineTo(to(SURFACE[n - 1]!.x, 0).x, endY);
+    ctx.lineTo(first.x, endY);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < n; i++) {
+      const p = to(SURFACE[i]!.x, SURFACE[i]!.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = 'rgba(255, 252, 246, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  };
+  if (!material.cloud) pool(true, pose.top * material.fullFraction, material.mound);
+  pool(false, pose.bottom * material.fullFraction, material.mound * 0.35);
+  if (pose.flowing) {
+    const n = writeRibbons(phase * material.ribbonSpeed, material.ribbonCount, RIBBONS);
+    const glen = Math.hypot(pose.slope, 1);
+    const gx = pose.slope / glen;
+    const gy = 1 / glen;
+    for (let i = 0; i < n; i++) {
+      const mark = RIBBONS[i]!;
+      const along = mark.t * layout.halfH * 0.62;
+      const side = mark.x * layout.halfW * 0.07;
+      const x = layout.cx + gx * along - gy * side;
+      const y = layout.cy + gy * along + gx * side;
+      ctx.globalAlpha = 0.4 + 0.5 * mark.alpha;
+      if (material.look === 'miel') {
+        ctx.fillStyle = honey;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(2, layout.halfW * 0.03), 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = 'rgba(198, 210, 214, 0.95)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x - gx * layout.halfH * mark.len, y - gy * layout.halfH * mark.len);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (!material.cloud) return;
+  const count = writeCloud(pose.top * material.fullFraction, pose.slope, 0, PUFFS);
+  for (let i = 0; i < count; i++) {
+    const puff = PUFFS[i]!;
+    const r = puff.r * layout.halfW * 1.15;
+    const x = layout.cx + puff.x * layout.halfW * 0.72;
+    const y = layout.cy - layout.halfH * 0.52 + puff.y * layout.halfH * 0.34;
+    const grd = ctx.createRadialGradient(x - r * 0.2, y - r * 0.25, r * 0.05, x, y, Math.max(1, r));
+    grd.addColorStop(0, `rgba(250, 248, 244, ${Math.min(0.9, puff.alpha)})`);
+    grd.addColorStop(1, 'rgba(250, 248, 244, 0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(1, r), 0, Math.PI * 2);
+    ctx.fill();
+  }
 }

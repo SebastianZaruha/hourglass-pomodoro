@@ -949,3 +949,96 @@ a {
     filter: none;
   }
 }
+
+.dock {
+  position: fixed;
+  z-index: 28;
+  left: 50%;
+  bottom: calc(2.75rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: calc(100vw - 1.5rem);
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 252, 246, 0.95);
+  background: rgba(255, 252, 247, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 246, 0.9),
+    0 12px 32px rgba(84, 64, 44, 0.12);
+  backdrop-filter: blur(16px) saturate(1.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.app[data-scheme='dark'] .dock {
+  border-color: rgba(255, 238, 214, 0.28);
+  background: rgba(44, 37, 31, 0.72);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dock {
+    background: rgba(247, 242, 235, 0.96);
+  }
+  .app[data-scheme='dark'] .dock {
+    background: rgba(36, 30, 26, 0.96);
+  }
+}
+
+.dock.shown,
+.app:focus-within .dock {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .dock[data-roomy='no'] {
+    display: none;
+  }
+}
+
+.dock-btn {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 252, 246, 0.9);
+  background: rgba(255, 252, 247, 0.72);
+  color: #4f443b;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dock-btn:active {
+  transform: scale(0.92);
+}
+
+.dock-btn.on,
+.dock-main {
+  background: #6b7344;
+  color: #fffcf7;
+  border-color: transparent;
+}
+
+.app[data-scheme='dark'] .dock-btn {
+  background: rgba(255, 238, 214, 0.08);
+  color: #e8dccb;
+  border-color: rgba(255, 238, 214, 0.2);
+}
+
+.app[data-scheme='dark'] .dock-btn.on,
+.app[data-scheme='dark'] .dock-main {
+  background: #c5c8a4;
+  color: #2a231d;
+}
+
+.app[data-roomy='yes'] .menu-btn {
+  opacity: 0;
+  pointer-events: none;
+}
