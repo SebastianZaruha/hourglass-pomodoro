@@ -109,13 +109,14 @@ describe('ajustes', () => {
 
 describe('catálogos', () => {
   it('arena, lluvia y miel, con respaldo a arena si el id no existe', () => {
-    expect(CONTENT_CATALOG.map((m) => m.id)).toEqual(['arena', 'lluvia', 'miel']);
+    expect(CONTENT_CATALOG.map((m) => m.id)).toEqual(['arena', 'lluvia', 'miel', 'nieve']);
     expect(HOURGLASS_CATALOG).toHaveLength(1);
     expect(getContent('arena')).toBe(SAND);
     expect(getContent('lluvia')?.kind).toBe('shape');
     expect(getContent('miel')?.kind).toBe('shape');
     expect(getContent(undefined)).toBe(SAND);
-    expect(getContent('nieve')).toBe(SAND);
+    expect(getContent('nieve')?.kind).toBe('shape');
+    expect(getContent('nada')).toBe(SAND);
     expect(getHourglassModel('clasico')).toBe(CLASSIC_MODEL);
     expect(getHourglassModel(null)).toBe(CLASSIC_MODEL);
     expect(SAND.kind).toBe('granular');
@@ -139,6 +140,7 @@ describe('catálogos', () => {
     expect(sanitizeSettings({ ...v1815, contentId: undefined }).contentId).toBe('arena');
     expect(sanitizeSettings({ contentId: 'lluvia' }).contentId).toBe('lluvia');
     expect(sanitizeSettings({ contentId: 'miel' }).contentId).toBe('miel');
+    expect(sanitizeSettings({ contentId: 'nieve' }).contentId).toBe('nieve');
     expect(updateSettings(DEFAULT_SETTINGS, { contentId: 'miel' }, 4).contentId).toBe('miel');
   });
 });

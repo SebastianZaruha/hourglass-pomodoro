@@ -73,6 +73,7 @@ export function GlassDock(props: Props) {
     arena: props.t.materialSand,
     lluvia: props.t.materialRain,
     miel: props.t.materialHoney,
+    nieve: props.t.materialSnow,
   };
 
   return (

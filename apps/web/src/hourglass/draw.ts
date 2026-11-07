@@ -10,6 +10,7 @@ import {
   outlinePoints,
   radiusAt,
   writeCloud,
+  writeFlakes,
   writeLiquidSurface,
   writeRibbons,
   type CloudPuff,
@@ -366,6 +367,7 @@ export function drawHourglass(ctx: CanvasRenderingContext2D, scene: DrawScene): 
 const SURFACE: SurfacePoint[] = Array.from({ length: 28 }, () => ({ x: 0, y: 0 }));
 const RIBBONS: RibbonMark[] = Array.from({ length: 16 }, () => ({ x: 0, t: 0, len: 0, alpha: 0 }));
 const PUFFS: CloudPuff[] = Array.from({ length: 12 }, () => ({ x: 0, y: 0, r: 0, alpha: 0, shade: 0 }));
+const FLAKES = Array.from({ length: 16 }, () => ({ x: 0, t: 0, r: 0, alpha: 0 }));
 
 function drawShapeFill(
   ctx: CanvasRenderingContext2D,
@@ -382,7 +384,8 @@ function drawShapeFill(
   });
   const honey = 'rgba(212, 160, 72, 0.94)';
   const water = 'rgba(176, 192, 194, 0.92)';
-  const color = material.look === 'miel' ? honey : water;
+  const snow = 'rgba(236, 242, 246, 0.94)';
+  const color = material.look === 'miel' ? honey : material.look === 'nieve' ? snow : water;
   const pool = (fromNeck: boolean, fill: number, mound: number) => {
     const n = writeLiquidSurface(profile, fromNeck, fill, pose.slope, mound, wave, phase, SURFACE);
     if (n < 2) return;
@@ -411,7 +414,25 @@ function drawShapeFill(
   };
   if (!material.cloud) pool(true, pose.top * material.fullFraction, material.mound);
   pool(false, pose.bottom * material.fullFraction, material.mound * 0.35);
-  if (pose.flowing) {
+  if (pose.flowing && material.flakes) {
+    const n = writeFlakes(phase * material.ribbonSpeed, material.ribbonCount, FLAKES);
+    const glen = Math.hypot(pose.slope, 1);
+    const gx = pose.slope / glen;
+    const gy = 1 / glen;
+    for (let i = 0; i < n; i++) {
+      const mark = FLAKES[i]!;
+      const along = mark.t * layout.halfH * 0.7;
+      const side = mark.x * layout.halfW * 0.1;
+      const x = layout.cx + gx * along - gy * side;
+      const y = layout.cy + gy * along + gx * side;
+      ctx.globalAlpha = 0.35 + 0.55 * mark.alpha;
+      ctx.fillStyle = 'rgba(246, 248, 250, 0.95)';
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(1.2, layout.halfW * 0.012 * mark.r), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  } else if (pose.flowing) {
     const n = writeRibbons(phase * material.ribbonSpeed, material.ribbonCount, RIBBONS);
     const glen = Math.hypot(pose.slope, 1);
     const gx = pose.slope / glen;

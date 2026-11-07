@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import anchors from '../src/shape/anchors-ground.json';
 import {
   CLASSIC_MODEL,
   CLOUD_TEMPLATE,
@@ -12,7 +13,12 @@ import {
   surfaceU,
   writeCloud,
   writeLiquidSurface,
+  writeFlakes,
   writeRibbons,
+  FLAKE_CAP,
+  SNOW,
+  coverFrame,
+  groundContact,
   type CloudPuff,
   type RibbonMark,
   type SurfacePoint,
@@ -168,6 +174,39 @@ describe('chorro continuo y nube', () => {
     expect(writeCloud(0, 0, 0, into)).toBe(0);
     expect(RAIN.cloud).toBe(true);
     expect(HONEY.cloud).toBe(false);
+    expect(SNOW.flakes).toBe(true);
     expect(SAND.kind).toBe('granular');
+  });
+
+  it('los copos tienen un tope fijo y un ciclo los repite', () => {
+    const into = Array.from({ length: 24 }, () => ({ x: 0, t: 0, r: 0, alpha: 0 }));
+    expect(writeFlakes(0.2, 40, into)).toBe(FLAKE_CAP);
+    const first = into[3]!.t;
+    writeFlakes(1.2, FLAKE_CAP, into);
+    expect(into[3]!.t).toBeCloseTo(first);
+    expect(writeFlakes(0.2, 4, into)).toBe(4);
+  });
+});
+
+describe('el frasco se apoya en la hierba', () => {
+  it('el contacto sale del JSON, no de un número escrito en el código', () => {
+    const snow = groundContact('nieve', true);
+    const file = (anchors.scenes as Record<string, { contact: { x: number; y: number } }>)['nieve-h'];
+    expect(snow).toEqual(file?.contact);
+    expect(groundContact('arena', false).y).toBeGreaterThan(0.5);
+  });
+
+  it('el punto de hierba de la foto cae en el pie y la foto cubre la vista', () => {
+    const contact = groundContact('arena', false);
+    const frame = coverFrame(390, 844, 1080, 1920, 195, 640, contact.x, contact.y);
+    const scale = frame.w / 1080;
+    const footX = frame.x + contact.x * 1080 * scale;
+    const footY = frame.y + contact.y * 1920 * scale;
+    expect(footX).toBeCloseTo(195);
+    expect(footY).toBeCloseTo(640);
+    expect(frame.x).toBeLessThanOrEqual(0.01);
+    expect(frame.y).toBeLessThanOrEqual(0.01);
+    expect(frame.x + frame.w).toBeGreaterThanOrEqual(390 - 0.01);
+    expect(frame.y + frame.h).toBeGreaterThanOrEqual(844 - 0.01);
   });
 });

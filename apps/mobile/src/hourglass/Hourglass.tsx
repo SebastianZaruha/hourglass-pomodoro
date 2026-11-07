@@ -31,8 +31,31 @@
  * sustituyen (cambio de tamaño/tema) o el componente se desmonta, se liberan
  * con un pequeño retraso (ver disposal.ts). Nada vive a nivel de módulo.
  */
-import { SandSimulation, type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
-import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef } from '@shopify/react-native-skia';
+import {
+  SandSimulation,
+  coverFrame,
+  groundContact,
+  groundShadow,
+  shadowFrame,
+  type ContentDefinition,
+  type HourglassModel,
+  type TimerStatus,
+} from '@reloj/core';
+import {
+  Blur,
+  Canvas,
+  Group,
+  Image,
+  Oval,
+  Paint,
+  Picture,
+  RadialGradient,
+  Rect,
+  rect,
+  useCanvasRef,
+  useImage,
+  vec,
+} from '@shopify/react-native-skia';
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
@@ -47,6 +70,7 @@ import { SandPainter, buildPaletteLut } from './sandPainter';
 import { ShapePainter } from './shapePainter';
 import { GlassPainter } from './staticLayers';
 import { STILL_MOTION, type HourglassSnapshot, type MotionSource } from './types';
+import { PLATES, SPRITES } from './plates';
 import { useSandEngine } from './useSandEngine';
 import { useShapeEngine } from './useShapeEngine';
 import { useThemeCrossfade } from './useThemeCrossfade';
@@ -159,6 +183,14 @@ function HourglassCanvas({
   const shape = content.kind === 'shape' ? content : null;
   const palette = theme.scheme === 'dark' ? content.palette.dark : content.palette.light;
 
+  const puff = useImage(SPRITES.puff);
+  const shade = useImage(SPRITES.shade);
+  const streak = useImage(SPRITES.streak);
+  const drop = useImage(SPRITES.drop);
+  const grain = useImage(SPRITES.grain);
+  const scene = useImage(PLATES[content.id].scene);
+  const blades = useImage(PLATES[content.id].blades);
+
   const sim = useMemo(
     () =>
       granular
@@ -175,14 +207,22 @@ function HourglassCanvas({
   );
 
   const painter = useMemo(
-    () => (granular ? new SandPainter(layout, model, theme, buildPaletteLut(palette), shaders) : null),
-    [granular, layout, model, theme, palette, shaders],
+    () => (granular ? new SandPainter(layout, model, theme, buildPaletteLut(palette), shaders, grain) : null),
+    [granular, layout, model, theme, palette, shaders, grain],
   );
   useEffect(() => () => disposeLater(painter ? [painter] : []), [painter]);
 
   const shapePainter = useMemo(
-    () => (shape ? new ShapePainter(layout, model.profile, theme, palette, shape) : null),
-    [shape, layout, model.profile, theme, palette],
+    () =>
+      shape
+        ? new ShapePainter(layout, model.profile, theme, palette, shape, {
+            puff,
+            shade,
+            streak,
+            drop,
+          })
+        : null,
+    [shape, layout, model.profile, theme, palette, puff, shade, streak, drop],
   );
   useEffect(() => () => disposeLater(shapePainter ? [shapePainter] : []), [shapePainter]);
 
@@ -280,6 +320,18 @@ function HourglassCanvas({
   // es un degradado muy suave: desenfocado se ve igual, pero desenfocar toda
   // la pantalla en cada fotograma costaba unas tres veces más en la GPU.
   // Durante la introducción el reloj se mueve por la pantalla: sin recorte.
+  const footY = layout.cy + layout.halfH;
+  const contact = groundContact(content.id, false);
+  // Escena y briznas comparten el recorte: el apoyo de la foto cae en el pie.
+  const plateFrame = useMemo(() => {
+    const image = scene ?? blades;
+    if (!image) return null;
+    return coverFrame(width, height, image.width(), image.height(), layout.cx, footY, contact.x, contact.y);
+  }, [scene, blades, width, height, layout.cx, footY, contact.x, contact.y]);
+  const contactShadow = useMemo(
+    () => (plateFrame ? shadowFrame(plateFrame, layout.cx, footY, groundShadow(content.id, false)) : null),
+    [plateFrame, layout.cx, footY, content.id],
+  );
   const blurClip = useMemo(() => {
     const top = Math.max(0, layout.cy - layout.halfH - BLUR_MARGIN);
     const bottom = Math.min(height, layout.cy + layout.halfH + BLUR_MARGIN + 0.3 * layout.halfH);
@@ -307,7 +359,30 @@ function HourglassCanvas({
   return (
     <Canvas ref={canvasRef} style={{ width, height }}>
       <Group transform={transform} origin={origin}>
-        <Picture picture={background} />
+        {scene && plateFrame ? (
+          <Image
+            image={scene}
+            x={plateFrame.x}
+            y={plateFrame.y}
+            width={plateFrame.w}
+            height={plateFrame.h}
+            fit="fill"
+          />
+        ) : (
+          <Picture picture={background} />
+        )}
+        {scene && theme.scheme === 'dark' ? (
+          <Rect x={0} y={0} width={width} height={height} color="rgba(12, 10, 8, 0.38)" />
+        ) : null}
+        {scene && contactShadow ? (
+          <Oval x={contactShadow.x} y={contactShadow.y} width={contactShadow.w} height={contactShadow.h}>
+            <RadialGradient
+              c={vec(layout.cx, footY)}
+              r={contactShadow.w / 2}
+              colors={[`rgba(36, 28, 20, ${groundShadow(content.id, false).opacity})`, 'rgba(36, 28, 20, 0)']}
+            />
+          </Oval>
+        ) : null}
         <Group layer={layer} clip={blurLayerOn && !poseActive ? blurClip : undefined}>
           <Group layer={shadowLayer}>
             <Picture picture={shadow} />
@@ -317,6 +392,16 @@ function HourglassCanvas({
             <Picture picture={sand} />
             <Picture picture={front} />
           </Group>
+          {blades && plateFrame ? (
+            <Image
+              image={blades}
+              x={plateFrame.x}
+              y={plateFrame.y}
+              width={plateFrame.w}
+              height={plateFrame.h}
+              fit="fill"
+            />
+          ) : null}
         </Group>
         {children}
       </Group>

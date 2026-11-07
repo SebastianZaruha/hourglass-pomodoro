@@ -12,10 +12,12 @@
  */
 import {
   writeCloud,
+  writeFlakes,
   writeLiquidSurface,
   writeRibbons,
   type CloudPuff,
   type ContentPalette,
+  type FlakeMark,
   type FlowPose,
   type HourglassProfile,
   type RibbonMark,
@@ -75,7 +77,17 @@ export class ShapePainter {
   private readonly cloudHiRgb: Rgb3;
   private readonly puffPaint: SkPaint;
   private readonly puff: SkImage | null;
+  private readonly ownsPuff: boolean;
+  private readonly shade: SkImage | null;
+  private readonly streakImage: SkImage | null;
+  private readonly dropImage: SkImage | null;
   private readonly surface: SurfacePoint[] = Array.from({ length: SURFACE_N }, () => ({ x: 0, y: 0 }));
+  private readonly flakes: FlakeMark[] = Array.from({ length: 16 }, () => ({
+    x: 0,
+    t: 0,
+    r: 0,
+    alpha: 0,
+  }));
   private readonly ribbons: RibbonMark[] = Array.from({ length: 16 }, () => ({
     x: 0,
     t: 0,
@@ -98,6 +110,7 @@ export class ShapePainter {
     theme: HourglassTheme,
     palette: ContentPalette,
     readonly material: ShapeMaterial,
+    sprites?: { puff?: SkImage | null; shade?: SkImage | null; streak?: SkImage | null; drop?: SkImage | null },
   ) {
     this.profile = profile;
     this.recorder = Skia.PictureRecorder();
@@ -126,7 +139,11 @@ export class ShapePainter {
     this.puffPaint = Skia.Paint();
     this.puffPaint.setAntiAlias(true);
     // La imagen no se compone en Skia web. Ahí el copo es un degradado.
-    this.puff = material.cloud && Platform.OS !== 'web' ? makePuff(size) : null;
+    this.ownsPuff = !sprites?.puff;
+    this.puff = sprites?.puff ?? (material.cloud && Platform.OS !== 'web' ? makePuff(size) : null);
+    this.shade = sprites?.shade ?? null;
+    this.streakImage = sprites?.streak ?? null;
+    this.dropImage = sprites?.drop ?? null;
   }
 
   paint(frame: ShapeFrame): SkPicture {
@@ -165,7 +182,7 @@ export class ShapePainter {
     safeDispose(this.cloud);
     safeDispose(this.cloudHi);
     safeDispose(this.puffPaint);
-    safeDispose(this.puff);
+    if (this.ownsPuff) safeDispose(this.puff);
     safeDispose(this.recorder);
   }
 
@@ -227,6 +244,10 @@ export class ShapePainter {
   }
 
   private drawRibbon(canvas: ReturnType<SkPictureRecorder['beginRecording']>, frame: ShapeFrame): void {
+    if (this.material.flakes) {
+      this.drawFlakes(canvas, frame);
+      return;
+    }
     const count = Math.max(1, Math.round(this.material.ribbonCount * frame.ribbons));
     const n = writeRibbons(frame.phase * this.material.ribbonSpeed, count, this.ribbons);
     const { layout } = this;
@@ -239,7 +260,30 @@ export class ShapePainter {
       const side = mark.x * layout.halfW * 0.07;
       const x = layout.cx + g.x * along - g.y * side;
       const y = neckY + g.y * along + g.x * side;
-      if (this.material.look === 'miel') {
+      if (this.material.look === 'miel' && this.dropImage) {
+        const r = layout.cell * (3.2 + mark.len * 5);
+        this.drop.setAlphaf(0.55 + 0.4 * mark.alpha);
+        canvas.drawImageRect(
+          this.dropImage,
+          Skia.XYWHRect(0, 0, this.dropImage.width(), this.dropImage.height()),
+          Skia.XYWHRect(x - r, y - r, r * 2, r * 2),
+          this.drop,
+        );
+      } else if (this.material.look === 'lluvia' && this.streakImage) {
+        const len = layout.halfH * mark.len * 1.4;
+        const thick = Math.max(2, layout.cell * 0.7);
+        this.streak.setAlphaf(0.35 + 0.55 * mark.alpha);
+        canvas.save();
+        canvas.translate(x, y);
+        canvas.rotate((Math.atan2(g.x, g.y) * 180) / Math.PI, 0, 0);
+        canvas.drawImageRect(
+          this.streakImage,
+          Skia.XYWHRect(0, 0, this.streakImage.width(), this.streakImage.height()),
+          Skia.XYWHRect(-thick / 2, -len, thick, len),
+          this.streak,
+        );
+        canvas.restore();
+      } else if (this.material.look === 'miel') {
         const r = layout.cell * (2.1 + mark.len * 4);
         this.color[0] = 0.78;
         this.color[1] = 0.55;
@@ -266,6 +310,28 @@ export class ShapePainter {
     }
   }
 
+  private drawFlakes(canvas: SkCanvas, frame: ShapeFrame): void {
+    const count = Math.max(1, Math.round(this.material.ribbonCount * frame.ribbons));
+    const n = writeFlakes(frame.phase * this.material.ribbonSpeed, count, this.flakes);
+    const { layout } = this;
+    const g = frameGravity(frame.pose.slope);
+    const travel = layout.halfH * 0.7;
+    for (let i = 0; i < n; i++) {
+      const mark = this.flakes[i]!;
+      const along = mark.t * travel;
+      const side = mark.x * layout.halfW * 0.1;
+      const x = layout.cx + g.x * along - g.y * side;
+      const y = layout.cy + g.y * along + g.x * side;
+      const r = Math.max(1.2, layout.cell * mark.r * 0.9);
+      this.color[0] = 0.95;
+      this.color[1] = 0.97;
+      this.color[2] = 0.98;
+      this.color[3] = 0.35 + 0.55 * mark.alpha;
+      this.drop.setColor(this.color);
+      canvas.drawCircle(x, y, r, this.drop);
+    }
+  }
+
   private drawCloud(canvas: SkCanvas, fill: number, slope: number, frame: ShapeFrame): void {
     const image = this.puff;
     const drift = frame.reduceMotion ? 0 : frame.drift;
@@ -281,10 +347,16 @@ export class ShapePainter {
       const rgb = puff.shade > 0.9 ? this.cloudHiRgb : this.cloudRgb;
       const a = Math.min(1, puff.alpha);
       const dest = Skia.XYWHRect(x - r, y - r, r * 2, r * 2);
-      if (image) {
+      const sprite = puff.shade < 0.7 && this.shade ? this.shade : image;
+      if (sprite) {
         const paint = puff.shade > 0.9 ? this.cloudHi : this.cloud;
         paint.setAlphaf(a);
-        canvas.drawImageRect(image, this.srcRect, dest, paint);
+        canvas.drawImageRect(
+          sprite,
+          Skia.XYWHRect(0, 0, sprite.width(), sprite.height()),
+          dest,
+          paint,
+        );
       } else {
         const shader = Skia.Shader.MakeRadialGradient(
           { x, y },

@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "coordinateSystem": "normalized full scene; top-left origin; contact = lowest visible center of jar base; jarWidth = width / scene width",
+  "layerOrder": [
+    "scene",
+    "contactShadow (runtime)",
+    "jar (runtime)",
+    "blades"
+  ],
+  "legacyStoneLayers": "transparent compatibility placeholders; do not position/render a pedestal",
+  "scenes": {
+    "arena-v": {
+      "scene": "apps/mobile/assets/materials/scene-arena-v.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "contactPixels": {
+        "x": 540,
+        "y": 1632
+      },
+      "jarWidth": 0.32037037037037036,
+      "jarHeight": 0.4515625,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.30114814814814816,
+        "height": 0.0167078125,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1080,
+        1920
+      ]
+    },
+    "arena-h": {
+      "scene": "apps/web/public/backgrounds/scene-arena.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.8601851851851852
+      },
+      "contactPixels": {
+        "x": 960,
+        "y": 929
+      },
+      "jarWidth": 0.15989583333333332,
+      "jarHeight": 0.7129629629629629,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.15030208333333334,
+        "height": 0.026379629629629628,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1920,
+        1080
+      ]
+    },
+    "lluvia-v": {
+      "scene": "apps/mobile/assets/materials/scene-lluvia-v.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "contactPixels": {
+        "x": 540,
+        "y": 1632
+      },
+      "jarWidth": 0.32037037037037036,
+      "jarHeight": 0.4515625,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.30114814814814816,
+        "height": 0.0167078125,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1080,
+        1920
+      ]
+    },
+    "lluvia-h": {
+      "scene": "apps/web/public/backgrounds/scene-lluvia.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.8601851851851852
+      },
+      "contactPixels": {
+        "x": 960,
+        "y": 929
+      },
+      "jarWidth": 0.15989583333333332,
+      "jarHeight": 0.7129629629629629,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.15030208333333334,
+        "height": 0.026379629629629628,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1920,
+        1080
+      ]
+    },
+    "miel-v": {
+      "scene": "apps/mobile/assets/materials/scene-miel-v.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "contactPixels": {
+        "x": 540,
+        "y": 1632
+      },
+      "jarWidth": 0.32037037037037036,
+      "jarHeight": 0.4515625,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.30114814814814816,
+        "height": 0.0167078125,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1080,
+        1920
+      ]
+    },
+    "miel-h": {
+      "scene": "apps/web/public/backgrounds/scene-miel.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.8601851851851852
+      },
+      "contactPixels": {
+        "x": 960,
+        "y": 929
+      },
+      "jarWidth": 0.15989583333333332,
+      "jarHeight": 0.7129629629629629,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.15030208333333334,
+        "height": 0.026379629629629628,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1920,
+        1080
+      ]
+    },
+    "nieve-v": {
+      "scene": "apps/mobile/assets/materials/scene-nieve-v.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.85
+      },
+      "contactPixels": {
+        "x": 540,
+        "y": 1632
+      },
+      "jarWidth": 0.32037037037037036,
+      "jarHeight": 0.4515625,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.30114814814814816,
+        "height": 0.0167078125,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1080,
+        1920
+      ]
+    },
+    "nieve-h": {
+      "scene": "apps/web/public/backgrounds/scene-nieve.webp",
+      "contact": {
+        "x": 0.5,
+        "y": 0.8796296296296297
+      },
+      "contactPixels": {
+        "x": 960,
+        "y": 950
+      },
+      "jarWidth": 0.15989583333333332,
+      "jarHeight": 0.7129629629629629,
+      "referenceJarAspect": 0.3989547038327526,
+      "suggestedShadow": {
+        "width": 0.15030208333333334,
+        "height": 0.026379629629629628,
+        "opacity": 0.57
+      },
+      "measuredOn": [
+        1920,
+        1080
+      ]
+    }
+  }
+}

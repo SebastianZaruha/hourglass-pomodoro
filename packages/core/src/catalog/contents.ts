@@ -1,10 +1,10 @@
 /**
  * Registro de materiales del reloj.
  *
- * Arena: simulación grano a grano (la de siempre). Lluvia y miel: una
- * entrada de esta tabla y el porcentaje de tiempo (ver shape/geometry).
- * Añadir otro material con un aspecto que ya exista (`granos`, `lluvia`,
- * `miel`) es otra entrada aquí. Un aspecto nuevo necesita su pintor.
+ * Arena: simulación grano a grano (la de siempre). Lluvia, miel y nieve:
+ * una entrada de esta tabla y el porcentaje de tiempo (ver shape/geometry).
+ * Añadir otro material con un aspecto que ya exista es otra entrada aquí.
+ * Un aspecto nuevo necesita su pintor.
  */
 import type { StreamProfile } from './streamProfile';
 import { SAND_STREAM } from './streamProfile';
@@ -17,11 +17,11 @@ export type ContentKind = 'granular' | 'shape';
 /** Color RGB en 0..255. */
 export type Rgb = readonly [number, number, number];
 
-export const MATERIAL_IDS = ['arena', 'lluvia', 'miel'] as const;
+export const MATERIAL_IDS = ['arena', 'lluvia', 'miel', 'nieve'] as const;
 export type MaterialId = (typeof MATERIAL_IDS)[number];
 
 /** Qué pintor usa. `granos` es el de la arena. */
-export type MaterialLook = 'granos' | 'lluvia' | 'miel';
+export type MaterialLook = 'granos' | 'lluvia' | 'miel' | 'nieve';
 
 export interface ContentPalette {
   readonly grainTones: readonly Rgb[];
@@ -71,6 +71,8 @@ export interface ShapeMaterial extends MaterialBase {
   readonly ribbonCount: number;
   /** Nube de algodón en el bulbo de arriba (lluvia). */
   readonly cloud: boolean;
+  /** Copos con presupuesto fijo (nieve). Si no, el chorro son rayas o gotas. */
+  readonly flakes: boolean;
 }
 
 export type MaterialDefinition = GranularMaterial | ShapeMaterial;
@@ -154,6 +156,7 @@ export const RAIN: ShapeMaterial = {
   ribbonSpeed: 1.35,
   ribbonCount: 11,
   cloud: true,
+  flakes: false,
   atmosphere: { light: [-8, -3, 8], dark: [-5, -2, 6] },
 };
 
@@ -192,13 +195,57 @@ export const HONEY: ShapeMaterial = {
   ribbonSpeed: 0.42,
   ribbonCount: 5,
   cloud: false,
+  flakes: false,
   atmosphere: { light: [10, 4, -12], dark: [8, 3, -6] },
+};
+
+/**
+ * Nieve: un manto arriba que mengua, una capa que crece abajo y copos
+ * con un presupuesto fijo. El frío es leve: nada de azul eléctrico.
+ */
+export const SNOW: ShapeMaterial = {
+  id: 'nieve',
+  name: 'Nieve',
+  kind: 'shape',
+  look: 'nieve',
+  palette: {
+    light: {
+      grainTones: [
+        [236, 240, 244],
+        [220, 228, 234],
+        [245, 248, 250],
+        [206, 216, 224],
+      ],
+      speck: [168, 180, 190],
+      speckRatio: 0.03,
+    },
+    dark: {
+      grainTones: [
+        [186, 198, 208],
+        [168, 180, 192],
+        [200, 210, 218],
+        [154, 168, 180],
+      ],
+      speck: [130, 144, 156],
+      speckRatio: 0.03,
+    },
+  },
+  fullFraction: 0.86,
+  waves: 0.004,
+  waveSpeed: 0.35,
+  mound: 0.055,
+  ribbonSpeed: 0.85,
+  ribbonCount: 14,
+  cloud: false,
+  flakes: true,
+  atmosphere: { light: [-6, 1, 8], dark: [-3, 1, 6] },
 };
 
 export const MATERIALS: Readonly<Record<MaterialId, MaterialDefinition>> = {
   arena: SAND,
   lluvia: RAIN,
   miel: HONEY,
+  nieve: SNOW,
 };
 
 export const CONTENT_CATALOG: readonly MaterialDefinition[] = MATERIAL_IDS.map((id) => MATERIALS[id]);

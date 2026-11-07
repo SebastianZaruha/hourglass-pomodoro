@@ -231,6 +231,40 @@ export function writeCloud(fill: number, tilt: number, drift: number, into: Clou
   return n;
 }
 
+export interface FlakeMark {
+  /** −1..1, a lo ancho del cuello. */
+  x: number;
+  /** 0 en el cuello, 1 abajo. Se recicla con la fase. */
+  t: number;
+  /** Tamaño relativo. */
+  r: number;
+  alpha: number;
+}
+
+/** Tope de copos. La calidad lo baja; la duración del reloj no. */
+export const FLAKE_CAP = 16;
+
+/**
+ * Copos decorativos. `phase` son ciclos, no segundos de sesión: un reloj
+ * de 5 minutos y uno de 60 se ven igual de vivos. Un ciclo entero repite
+ * el dibujo.
+ */
+export function writeFlakes(phase: number, count: number, into: FlakeMark[]): number {
+  const n = Math.max(0, Math.min(Math.floor(count), into.length, FLAKE_CAP));
+  const base = Number.isFinite(phase) ? phase : 0;
+  for (let i = 0; i < n; i++) {
+    const seed = i + 1;
+    const t = frac(base + seed * 0.137);
+    const mark = into[i] ?? { x: 0, t: 0, r: 0, alpha: 0 };
+    mark.x = Math.sin(seed * 1.7 + t * 2.4) * 0.7;
+    mark.t = t;
+    mark.r = 0.45 + (seed % 4) * 0.22;
+    mark.alpha = 0.35 + 0.65 * Math.sin(Math.PI * t);
+    into[i] = mark;
+  }
+  return n;
+}
+
 function frac(v: number): number {
   return v - Math.floor(v);
 }

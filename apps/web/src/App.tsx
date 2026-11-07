@@ -32,6 +32,7 @@ import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
 import { GlassDock } from './components/GlassDock';
+import { ScenePlate } from './components/ScenePlate';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
@@ -441,6 +442,7 @@ function Timer({
       style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
       {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
       <div className="scene">
         <div
           ref={stageRef}
