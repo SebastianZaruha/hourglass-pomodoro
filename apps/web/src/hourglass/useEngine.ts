@@ -14,7 +14,6 @@ import {
   StreamParticles,
   SandSimulation,
   flowBudget,
-  cloudIdle,
   flowPose,
   getContent,
   sandLevelForDuration,
@@ -26,6 +25,7 @@ import {
 import { useEffect, type RefObject } from 'react';
 
 import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, type Scheme } from './draw';
+import { drawPhotoreal, jarLayersReady, preloadJar } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -149,6 +149,7 @@ export function useHourglass(
       flipHold: false,
       phase: 0,
       cloudTime: 0,
+      streamTime: 0,
     };
 
     const paintSand = () => {
@@ -284,7 +285,12 @@ export function useHourglass(
       const material = getContent(p.contentId);
       const shapeMat = material.kind === 'shape' ? material : null;
       let shapeDraw:
-        { material: typeof shapeMat & object; pose: ReturnType<typeof flowPose>; phase: number } | undefined;
+        | {
+            material: typeof shapeMat & object;
+            pose: ReturnType<typeof flowPose>;
+            phase: number;
+          }
+        | undefined;
       if (shapeMat) {
         const pose = flowPose({
           remainingMs: snap.remainingMs,
@@ -294,9 +300,9 @@ export function useHourglass(
           running: snap.status === 'running' && !turning,
         });
         if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
-        const breathe = !!shapeMat.cloud && !p.reduceMotion;
+        const breathe = shapeMat.cloud && !p.reduceMotion;
         if (breathe && snap.status !== 'paused') loop.cloudTime += frameDt;
-        shapeDraw = { material: shapeMat, pose, phase: loop.phase, idle: cloudIdle(loop.cloudTime, breathe) };
+        shapeDraw = { material: shapeMat, pose, phase: loop.phase };
       }
 
       let moved = false;
@@ -333,23 +339,43 @@ export function useHourglass(
         loop.paint = false;
       }
 
+      const playing = snap.status === 'running' && !p.reduceMotion;
+      if (playing) loop.streamTime += frameDt;
       const spinAngle = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
       const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
-      drawHourglass(ctx, {
-        profile,
-        layout,
-        scheme,
-        sand: sandCanvas,
-        noise,
-        sim,
-        particles,
-        lut,
-        rotation,
-        poseScale,
-        shadow: p.introActive ? p.introShadow : 1,
-        shape: shapeDraw,
+      const top = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const drew = drawPhotoreal(ctx, {
+        id: (p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena'),
+        top,
+        bottom: 1 - top,
+        phase: loop.phase,
+        streamTime: loop.streamTime,
+        cloudTime: loop.cloudTime,
+        running: snap.status === 'running',
+        paused: snap.status === 'paused',
+        reduceMotion: p.reduceMotion,
+        viewW: cssW,
+        viewH: cssH,
       });
+      if (!drew) {
+        drawHourglass(ctx, {
+          profile,
+          layout,
+          scheme,
+          sand: sandCanvas,
+          noise,
+          sim,
+          particles,
+          lut,
+          rotation,
+          poseScale,
+          shadow: p.introActive ? p.introShadow : 1,
+          shape: shapeDraw,
+        });
+      } else {
+        preloadJar(p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena');
+      }
 
       const keep =
         snap.status === 'running' ||
@@ -360,7 +386,7 @@ export function useHourglass(
         p.gestureActive ||
         p.introActive ||
         Math.abs(p.gestureAngle) > 0.0008 ||
-        (!!shapeMat?.cloud && !p.reduceMotion && snap.status !== 'paused');
+        (jarLayersReady() && p.contentId === 'lluvia' && snap.status !== 'paused' && !p.reduceMotion);
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };

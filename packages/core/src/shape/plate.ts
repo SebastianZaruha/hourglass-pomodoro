@@ -31,6 +31,7 @@ export interface GroundShadow {
 interface SceneAnchor {
   readonly contact?: { readonly x?: number; readonly y?: number };
   readonly suggestedShadow?: { readonly width?: number; readonly height?: number; readonly opacity?: number };
+  readonly jarHeight?: number;
 }
 
 const SCENES = anchors.scenes as Record<string, SceneAnchor>;
@@ -50,6 +51,13 @@ export function groundContact(id: MaterialId, wide: boolean): GroundContact {
     return FALLBACK_CONTACT;
   }
   return { x, y };
+}
+
+/** Alto del frasco, fracción de la altura de la escena ya en pantalla. */
+export function groundJarHeight(id: MaterialId, wide: boolean): number {
+  const height = SCENES[sceneKey(id, wide)]?.jarHeight;
+  if (typeof height === 'number' && height > 0 && height < 1.2) return height;
+  return wide ? 0.62 : 0.45;
 }
 
 export function groundShadow(id: MaterialId, wide: boolean): GroundShadow {

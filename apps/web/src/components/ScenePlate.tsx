@@ -1,15 +1,12 @@
 /**
- * Escena y briznas a pantalla completa.
- *
- * La foto cubre todo el viewport (cualquier ancho y proporción). El punto
- * de apoyo de la imagen queda en el pie del frasco, así que el suelo no
- * se desplaza aunque el reloj esté en la columna izquierda. Las briznas
- * usan el mismo recorte y no reciben el ratón.
+ * Escena y briznas a pantalla completa, en el mismo recorte que el frasco.
+ * El pie del sprite cae en el contacto de la foto. Las briznas quedan delante.
  */
-import { coverFrame, groundContact, type MaterialId } from '@reloj/core';
+import { dioramaPlacement, type MaterialId } from '@reloj/core';
 import { useEffect, type RefObject } from 'react';
 
 import type { HourglassHandle } from '../hourglass/useEngine';
+import { preloadJar } from '../hourglass/photoreal';
 
 const SCENE: Record<MaterialId, string> = {
   arena: '/backgrounds/scene-arena.webp',
@@ -30,35 +27,21 @@ interface Props {
   readonly layoutRef: RefObject<HourglassHandle | null>;
 }
 
-export function ScenePlate({ id, layoutRef }: Props) {
+export function ScenePlate({ id }: Props) {
   useEffect(() => {
+    preloadJar(id);
     const scene = new Image();
     scene.src = SCENE[id];
     let alive = true;
 
     const place = () => {
       if (!alive || !scene.naturalWidth) return;
-      const canvas = document.querySelector('.glass-canvas');
       const photo = document.querySelector<HTMLImageElement>('.scene-photo');
       const blades = document.querySelector<HTMLImageElement>('.blades');
-      const box = layoutRef.current?.layoutCss();
-      if (!canvas || !photo || !blades || !box) return;
-      const rect = canvas.getBoundingClientRect();
+      if (!photo || !blades) return;
       const viewW = document.documentElement.clientWidth;
       const viewH = document.documentElement.clientHeight;
-      // Los archivos de la web son las escenas horizontales. El contacto
-      // tiene que ser el de esa foto, no el de la proporción de la ventana.
-      const contact = groundContact(id, true);
-      const frame = coverFrame(
-        viewW,
-        viewH,
-        scene.naturalWidth,
-        scene.naturalHeight,
-        rect.left + box.cx,
-        rect.top + box.cy + box.halfH,
-        contact.x,
-        contact.y,
-      );
+      const frame = dioramaPlacement(viewW, viewH, scene.naturalWidth, scene.naturalHeight, id, true).scene;
       const left = `${frame.x}px`;
       const top = `${frame.y}px`;
       const width = `${frame.w}px`;
@@ -69,13 +52,11 @@ export function ScenePlate({ id, layoutRef }: Props) {
         img.style.width = width;
         img.style.height = height;
       }
-      blades.src = BLADES[id];
+      if (blades.getAttribute('src') !== BLADES[id]) blades.src = BLADES[id];
     };
 
     scene.onload = place;
-    const canvas = document.querySelector('.glass-canvas');
     const observer = new ResizeObserver(place);
-    if (canvas) observer.observe(canvas);
     observer.observe(document.documentElement);
     window.addEventListener('resize', place);
     window.visualViewport?.addEventListener('resize', place);
@@ -83,8 +64,8 @@ export function ScenePlate({ id, layoutRef }: Props) {
     const kick = window.setInterval(() => {
       place();
       tries += 1;
-      if (tries > 15) window.clearInterval(kick);
-    }, 200);
+      if (tries > 20) window.clearInterval(kick);
+    }, 150);
     return () => {
       alive = false;
       observer.disconnect();
@@ -92,7 +73,7 @@ export function ScenePlate({ id, layoutRef }: Props) {
       window.visualViewport?.removeEventListener('resize', place);
       window.clearInterval(kick);
     };
-  }, [id, layoutRef]);
+  }, [id]);
 
   return (
     <>

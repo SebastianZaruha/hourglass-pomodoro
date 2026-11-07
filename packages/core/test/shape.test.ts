@@ -21,6 +21,10 @@ import {
   SNOW,
   coverFrame,
   groundContact,
+  jarSurface,
+  dioramaPlacement,
+  freshVisitClock,
+  stepVisit,
   type CloudPuff,
   type RibbonMark,
   type SurfacePoint,
@@ -178,6 +182,38 @@ describe('chorro continuo y nube', () => {
     expect(HONEY.cloud).toBe(false);
     expect(SNOW.flakes).toBe(true);
     expect(SAND.kind).toBe('granular');
+  });
+
+  it('el nivel del frasco baja al vaciarse y la escena cubre el viewport', () => {
+    const full = jarSurface('top', 1);
+    const half = jarSurface('top', 0.4);
+    const empty = jarSurface('top', 0);
+    expect(full).toBeLessThan(half);
+    expect(half).toBeLessThan(empty);
+    const place = dioramaPlacement(1440, 900, 1920, 1080, 'lluvia', true);
+    expect(place.scene.x).toBeLessThanOrEqual(0.5);
+    expect(place.scene.x + place.scene.w).toBeGreaterThanOrEqual(1439);
+    expect(place.scene.y + place.scene.h).toBeGreaterThanOrEqual(899);
+    const footX = place.scene.x + 0.6 * place.scene.w;
+    expect(place.footX).toBeGreaterThan(0);
+    expect(place.jar.y + 0.9787 * place.jar.h).toBeCloseTo(place.footY, 0);
+    expect(Math.abs(place.footX - footX)).toBeLessThan(2);
+  });
+
+  it('la visita ambiental espera y no corre en pausa', () => {
+    const rand = () => 0;
+    const start = freshVisitClock(rand);
+    expect(start.nextAt).toBeGreaterThanOrEqual(180);
+    expect(start.nextAt).toBeLessThanOrEqual(360);
+    const paused = stepVisit(start, 400, false, true, rand);
+    expect(paused).toBe(start);
+    const off = stepVisit(start, 400, true, false, rand);
+    expect(off).toBe(start);
+    const early = stepVisit({ ...start, nextAt: 10 }, 20, true, true, rand);
+    expect(early.active).toBeNull();
+    const due = stepVisit({ elapsed: 0, nextAt: 30, active: null }, 31, true, true, rand);
+    expect(due.active).not.toBeNull();
+    expect(due.elapsed).toBeGreaterThanOrEqual(30);
   });
 
   it('la nube respira poco y se queda quieta si no toca', () => {
