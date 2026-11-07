@@ -4,4 +4,3 @@ export * from './pixel';
 export * from './sheetHeight';
 export * from './quickSettings';
 export * from './quickPress';
-export * from './dock';

@@ -70,7 +70,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
   type AccessibilityActionEvent,
@@ -124,11 +123,6 @@ import { useTimerAnalytics } from '../consent/useTimerAnalytics';
 import { useDeviceTilt } from '../motion/useDeviceTilt';
 import { saveSessionAndReload } from '../recovery/sessionRecovery';
 import { useCueSound } from '../sound/useCueSound';
-import { frameReport } from '../hourglass/frameProbe';
-import { useCachedSceneBlur } from '../hourglass/sceneBlur';
-import { themeWithAtmosphere } from '../theme/theme';
-import { coverFrame, groundContact } from '@reloj/core';
-import { computeLayout } from '../hourglass/layout';
 import { useAppTheme } from '../theme/useAppTheme';
 
 /** Píxeles de arrastre para avanzar un escalón de duración. */
@@ -160,17 +154,12 @@ export function TimerScreen({ settings, fonts }: Props) {
   const safe = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const tr = useT();
-  const [frameProbe, setFrameProbe] = useState(false);
 
   // Tema efectivo (Claro / Oscuro / Automático) con transición suave.
-  const { theme: baseTheme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
+  const { theme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
 
   const model = getHourglassModel(prefs.hourglassModelId);
   const content = getContent(prefs.contentId);
-  const theme = useMemo(() => {
-    const shift = baseTheme.scheme === 'dark' ? content.atmosphere.dark : content.atmosphere.light;
-    return themeWithAtmosphere(baseTheme, shift);
-  }, [baseTheme, content]);
 
   // ─── Sesión (sesión única o ciclos) ─────────────────────────────────────
   // El plan sale de los ajustes. Si cambian (menú), la sesión vuelve al
@@ -404,7 +393,8 @@ export function TimerScreen({ settings, fonts }: Props) {
   const look = pausePresentation(view.status, tilt.sideways);
   const blurred = look.landscape;
   const pauseBlur: PauseBlur = infoOpen ? 'full' : look.blur;
-  const landscapeHintEligible = paused && blurred && !infoOpen && !sheet.open && !consentVisible;
+  const landscapeHintEligible =
+    paused && blurred && !infoOpen && !sheet.open && !consentVisible;
   const landscapeHint = useLandscapePauseHint(landscapeHintEligible);
   const landscapeHintAnnounced = useRef(false);
   useEffect(() => {
@@ -564,30 +554,6 @@ export function TimerScreen({ settings, fonts }: Props) {
   // mismo fotograma que la hoja.
   //
   // 1.8.9: el vidrio es un panel sin desenfoque (ver FrostedPanel).
-  const frost = useCachedSceneBlur(content.id);
-  // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
-  const insets = useMemo(
-    () => (pip ? PIP_INSETS : { top: safe.top + 12, bottom: safe.bottom + BOTTOM_AREA }),
-    [pip, safe.top, safe.bottom],
-  );
-  const frostFrame = useMemo(() => {
-    if (!frost) return null;
-    const layout = computeLayout(width, height, model, insets);
-    const contact = groundContact(content.id, false);
-    const frame = coverFrame(
-      width,
-      height,
-      frost.width(),
-      frost.height(),
-      layout.cx,
-      layout.cy + layout.halfH,
-      contact.x,
-      contact.y,
-    );
-    layout.outerPath.dispose();
-    layout.innerPath.dispose();
-    return frame;
-  }, [frost, width, height, model, insets, content.id]);
   const frosted = useMemo(
     () => (
       <FrostedPanel
@@ -596,12 +562,14 @@ export function TimerScreen({ settings, fonts }: Props) {
         top={sheet.top}
         openness={sheet.openness}
         themeProgress={themeProgress}
-        frost={frost}
-        frostFrame={frostFrame}
-        material={content.id}
       />
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress, frost, frostFrame, content.id],
+    [sheet.top, sheet.openness, width, height, themeProgress],
+  );
+  // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
+  const insets = useMemo(
+    () => (pip ? PIP_INSETS : { top: safe.top + 12, bottom: safe.bottom + BOTTOM_AREA }),
+    [pip, safe.top, safe.bottom],
   );
   const displayMs = view.status === 'idle' ? view.durationMs : view.remainingMs;
   const hint = blurred ? null : hintFor(view, interacted, tr);
@@ -614,7 +582,6 @@ export function TimerScreen({ settings, fonts }: Props) {
     <View style={[styles.root, { backgroundColor: theme.solid }]}>
       {/* Volteado, la barra de estado quedaría abajo y del revés: la ocultamos. */}
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} hidden={tilt.flipped} />
-      {frameProbe ? <FrameProbeBanner material={content.name} /> : null}
       <GestureDetector gesture={gesture}>
         <View
           style={StyleSheet.absoluteFill}
@@ -728,7 +695,6 @@ export function TimerScreen({ settings, fonts }: Props) {
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
             onShowGestures={showGestures}
             screenReader={screenReader}
-            onFrameProbe={setFrameProbe}
             alertsNotice={alertsNotice}
             floating={
               floating.available
@@ -841,37 +807,7 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
   }
 }
 
-function FrameProbeBanner({ material }: { material: string }) {
-  const [text, setText] = useState(`${material} · midiendo…`);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const report = frameReport();
-      if (!report) return;
-      setText(
-        `${material} · ${report.level} · ${report.fps.toFixed(0)} fps · js ${report.jsP50.toFixed(1)}/${report.jsP95.toFixed(1)} ms · sim ${report.simP50.toFixed(1)}`,
-      );
-    }, 500);
-    return () => clearInterval(id);
-  }, [material]);
-  return (
-    <View style={styles.probe} pointerEvents="none">
-      <Text style={styles.probeText}>{text}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flipped: { transform: [{ rotate: '180deg' }] },
-  probe: {
-    position: 'absolute',
-    top: 8,
-    left: 12,
-    zIndex: 20,
-    backgroundColor: 'rgba(40, 34, 28, 0.72)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  probeText: { color: '#F6F1EA', fontSize: 11 },
 });

@@ -33,7 +33,6 @@ import Animated, {
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
-  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -148,12 +147,6 @@ export function RoundButton({
 }: RoundProps) {
   const isSwitch = value !== undefined;
   const on = value === true;
-  const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(1);
-  const sprung = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const springTo = (to: number) => {
-    scale.set(reduceMotion ? to : withSpring(to, { damping: 16, stiffness: 320, mass: 0.35 }));
-  };
   // Una pulsación a la vez por botón (estado al momento, no de React).
   const [press] = useState(() => new QuickPress());
   // Centro del botón dentro de la fila (para colocar la etiqueta encima).
@@ -166,10 +159,7 @@ export function RoundButton({
   return (
     <Pressable
       onLayout={onLayout}
-      onPressIn={(e) => {
-        press.begin(...point(e));
-        springTo(0.92);
-      }}
+      onPressIn={(e) => press.begin(...point(e))}
       onPressMove={(e) => press.move(...point(e))}
       onLongPress={
         withTip
@@ -181,10 +171,7 @@ export function RoundButton({
           : undefined
       }
       delayLongPress={TOOLTIP_DELAY_MS}
-      onPressOut={() => {
-        springTo(1);
-        if (withTip) tip.release();
-      }}
+      onPressOut={withTip ? () => tip.release() : undefined}
       // Pressable ya no llama a onPress tras una pulsación larga ni si el dedo
       // se suelta lejos; QuickPress además cancela en cuanto el dedo se va.
       onPress={() => {
@@ -199,10 +186,7 @@ export function RoundButton({
     >
       <Animated.View
         style={[
-          sprung,
           st.round,
-          st.glassEdge,
-          s.glassBorder,
           on ? s.accentBg : isSwitch ? s.trackBg : s.pillBg,
           !isSwitch && { boxShadow: pillShadow },
         ]}
@@ -330,7 +314,6 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glassEdge: { borderWidth: 1 },
   glyph: { fontSize: 13.5, letterSpacing: 0.4 },
   tooltip: {
     position: 'absolute',

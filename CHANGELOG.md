@@ -9,25 +9,6 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
-## 1.8.16 — Lluvia, miel y nieve (Android)
-
-- Dentro del reloj, además de la arena: lluvia (nube que encoge y agua abajo),
-  miel y nieve (manto que crece abajo y copos con un tope fijo). El nivel sigue
-  el porcentaje de tiempo. El chorro es un dibujo continuo, igual de vivo en 5
-  minutos que en 60.
-- Cada material tiene su lugar: dunas, diorama de lluvia, pradera o pinar nevado.
-  El frasco se apoya en el suelo de esa foto. No hay piedra debajo.
-- La hoja de ajustes es vidrio ahumado. En el móvil el desenfoque se calcula una
-  vez por escena. El velo es más opaco en la nieve y en la miel, que son claras.
-- La arena no cambia: sigue siendo la simulación de granos.
-- Ajustes: Arena / Lluvia / Miel / Nieve. Lo guardado en la 1.8.15 sigue en arena.
-  El material se queda en el dispositivo y no se envía en la analítica.
-- «Personalizado» es una cápsula vertical de cristal: arrastrar hacia arriba suma minutos.
-- Medir fotogramas: mantener pulsado el título «Ajustes». Muestra material, calidad y fps.
-  Apagado no hace nada.
-- `versionCode` 10816. Tras `npx expo prebuild -p android`, `./gradlew assembleRelease`
-  basta: el prebuild deja arm64 y las librerías comprimidas en `gradle.properties`.
-
 ## 1.8.15 — Ajustes más bajos (Android)
 
 - Hoja de ajustes más compacta: analítica y privacidad en un bloque bajo (enlace

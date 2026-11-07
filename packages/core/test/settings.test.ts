@@ -108,40 +108,15 @@ describe('ajustes', () => {
 });
 
 describe('catálogos', () => {
-  it('arena, lluvia y miel, con respaldo a arena si el id no existe', () => {
-    expect(CONTENT_CATALOG.map((m) => m.id)).toEqual(['arena', 'lluvia', 'miel', 'nieve']);
+  it('solo hay arena y un modelo en la fase 1, con respaldo por defecto', () => {
+    expect(CONTENT_CATALOG).toHaveLength(1);
     expect(HOURGLASS_CATALOG).toHaveLength(1);
     expect(getContent('arena')).toBe(SAND);
-    expect(getContent('lluvia')?.kind).toBe('shape');
-    expect(getContent('miel')?.kind).toBe('shape');
     expect(getContent(undefined)).toBe(SAND);
-    expect(getContent('nieve')?.kind).toBe('shape');
-    expect(getContent('nada')).toBe(SAND);
     expect(getHourglassModel('clasico')).toBe(CLASSIC_MODEL);
     expect(getHourglassModel(null)).toBe(CLASSIC_MODEL);
     expect(SAND.kind).toBe('granular');
     expect(CLASSIC_MODEL.renderer).toBe('2.5d');
-  });
-
-  it('los ajustes de la 1.8.15 siguen en arena y los nuevos materiales se guardan', () => {
-    const v1815 = {
-      version: 5,
-      lastDurationMs: 25 * MIN,
-      contentId: 'arena',
-      hourglassModelId: 'clasico',
-      theme: 'dark',
-      language: 'es',
-      haptics: false,
-      sound: true,
-      sessionMode: 'single',
-      updatedAt: 9,
-    };
-    expect(sanitizeSettings(v1815).contentId).toBe('arena');
-    expect(sanitizeSettings({ ...v1815, contentId: undefined }).contentId).toBe('arena');
-    expect(sanitizeSettings({ contentId: 'lluvia' }).contentId).toBe('lluvia');
-    expect(sanitizeSettings({ contentId: 'miel' }).contentId).toBe('miel');
-    expect(sanitizeSettings({ contentId: 'nieve' }).contentId).toBe('nieve');
-    expect(updateSettings(DEFAULT_SETTINGS, { contentId: 'miel' }, 4).contentId).toBe('miel');
   });
 });
 

@@ -44,8 +44,6 @@ import {
   type CyclePresetId,
   type Messages,
   type SessionMode,
-  MATERIAL_IDS,
-  type MaterialId,
   type Settings,
   snapToPixel,
 } from '@reloj/core';
@@ -64,7 +62,6 @@ import Animated, { Easing, useAnimatedStyle, withTiming, type SharedValue } from
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { AlertsNotice } from '../../background/useBackgroundTimer';
-import { toggleFrameProbe } from '../../hourglass/frameProbe';
 import { useT } from '../../i18n/I18n';
 import { announce } from '../../hooks/useScreenReader';
 import type { HourglassTheme } from '../../theme/theme';
@@ -85,18 +82,6 @@ const modeOptions = (t: Messages): readonly SegmentOption<SessionMode>[] => [
   { value: 'single', label: t.single },
   { value: 'cycles', label: t.cycles },
 ];
-
-const materialLabel = (t: Messages, id: MaterialId): string =>
-  id === 'lluvia'
-    ? t.materialRain
-    : id === 'miel'
-      ? t.materialHoney
-      : id === 'nieve'
-        ? t.materialSnow
-        : t.materialSand;
-
-const materialOptions = (t: Messages): readonly SegmentOption<MaterialId>[] =>
-  MATERIAL_IDS.map((id) => ({ value: id, label: materialLabel(t, id) }));
 
 /** Arrastre (fracción del alto) o velocidad (px/s) a partir de los que se cierra. */
 const CLOSE_FRACTION = 0.22;
@@ -128,8 +113,6 @@ interface Props {
   } | null;
   /** ¿Está encendido el lector de pantalla? (para el aviso al abrir) */
   readonly screenReader?: boolean;
-  /** Mantener pulsado el título enciende la medida de fotogramas (apagada de serie). */
-  readonly onFrameProbe?: (on: boolean) => void;
   /**
    * Analítica y estabilidad (Android). null fuera de Android.
    * «Cambiar» abre el mismo diálogo que el primer arranque.
@@ -155,7 +138,6 @@ export function SettingsSheet({
   alertsNotice = null,
   floating = null,
   screenReader = false,
-  onFrameProbe,
   analytics = null,
 }: Props) {
   const t = useT();
@@ -199,19 +181,13 @@ export function SettingsSheet({
   // ─── Tema / Idioma: anunciar el valor nuevo ─────────────────────────────
   // Después del cambio (y no al tocar): el idioma nuevo ya está aplicado y
   // «Idioma: English» se dice en inglés.
-  const spokenAfterChange = useRef<'theme' | 'language' | 'material' | null>(null);
+  const spokenAfterChange = useRef<'theme' | 'language' | null>(null);
   useEffect(() => {
     const what = spokenAfterChange.current;
     if (!what) return;
     spokenAfterChange.current = null;
-    announce(
-      what === 'theme'
-        ? themeSpoken(t, settings.theme)
-        : what === 'language'
-          ? languageSpoken(t, settings.language)
-          : t.settingValue(t.material, materialLabel(t, settings.contentId)),
-    );
-  }, [t, settings.theme, settings.language, settings.contentId]);
+    announce(what === 'theme' ? themeSpoken(t, settings.theme) : languageSpoken(t, settings.language));
+  }, [t, settings.theme, settings.language]);
 
   // ─── Atrás de Android ───────────────────────────────────────────────────
   useEffect(() => {
@@ -311,16 +287,13 @@ export function SettingsSheet({
           {/* Título con el resumen debajo; a la derecha, el «?» de los gestos. */}
           <View style={styles.headRow}>
             <View style={styles.headText}>
-              <Pressable
-                onLongPress={() => onFrameProbe?.(toggleFrameProbe())}
-                delayLongPress={700}
+              <Animated.Text
+                style={[styles.title, { fontFamily: fonts.medium }, s.ink]}
                 accessibilityRole="header"
                 testID="titulo-ajustes"
               >
-                <Animated.Text style={[styles.title, { fontFamily: fonts.light }, s.ink]}>
-                  {t.settings}
-                </Animated.Text>
-              </Pressable>
+                {t.settings}
+              </Animated.Text>
               <Animated.Text
                 style={[styles.summary, { fontFamily: fonts.regular }, s.inkSoft]}
                 numberOfLines={1}
@@ -480,90 +453,74 @@ export function SettingsSheet({
               </Section>
             )}
 
-            {/* Material: una sola fila. No abre otra sección. */}
-            <View style={styles.materialRow}>
-              <Segmented
-                {...base}
-                options={materialOptions(t)}
-                value={settings.contentId}
-                onChange={(contentId) => {
-                  spokenAfterChange.current = 'material';
-                  update({ contentId });
-                }}
-                accessibilityLabel={t.material}
-                testID="material"
-              />
-            </View>
             {/* Ajustes rápidos: una fila de botones redondos. */}
             <Animated.View style={[styles.hline, s.lineBg]} />
-            <Animated.View style={[styles.glassTray, s.glassBg, s.glassBorder]}>
-              <View style={styles.quickRow} onLayout={(e) => setQuickRowWidth(e.nativeEvent.layout.width)}>
+            <View style={styles.quickRow} onLayout={(e) => setQuickRowWidth(e.nativeEvent.layout.width)}>
+              <RoundButton
+                {...round}
+                icon={themeIcon(settings.theme)}
+                onPress={() => {
+                  spokenAfterChange.current = 'theme';
+                  update({ theme: nextInCycle(THEME_CYCLE, settings.theme) });
+                }}
+                accessibilityLabel={themeSpoken(t, settings.theme)}
+                accessibilityHint={t.tapToChange}
+                tooltip={t.theme}
+                testID="rotar-tema"
+              />
+              <RoundButton
+                {...round}
+                glyph={languageShort(t, settings.language)}
+                onPress={() => {
+                  spokenAfterChange.current = 'language';
+                  update({ language: nextInCycle(LANGUAGE_CYCLE, settings.language) });
+                }}
+                accessibilityLabel={languageSpoken(t, settings.language)}
+                accessibilityHint={t.tapToChange}
+                tooltip={t.language}
+                testID="rotar-idioma"
+              />
+              <Animated.View style={[styles.quickDivider, s.lineBg]} />
+              <RoundButton
+                {...round}
+                icon={settings.sound ? 'soundOn' : 'soundOff'}
+                value={settings.sound}
+                onPress={() => update({ sound: !settings.sound })}
+                accessibilityLabel={t.sound}
+                tooltip={t.sound}
+                testID="interruptor-sonido"
+              />
+              <RoundButton
+                {...round}
+                icon="vibration"
+                value={settings.haptics}
+                onPress={() => update({ haptics: !settings.haptics })}
+                accessibilityLabel={t.vibration}
+                tooltip={t.vibration}
+                testID="interruptor-vibracion"
+              />
+              {/* Ventana flotante (Android): el reloj encima de otras apps al salir. */}
+              {floating ? (
                 <RoundButton
                   {...round}
-                  icon={themeIcon(settings.theme)}
-                  onPress={() => {
-                    spokenAfterChange.current = 'theme';
-                    update({ theme: nextInCycle(THEME_CYCLE, settings.theme) });
-                  }}
-                  accessibilityLabel={themeSpoken(t, settings.theme)}
-                  accessibilityHint={t.tapToChange}
-                  tooltip={t.theme}
-                  testID="rotar-tema"
+                  icon="floating"
+                  value={floating.value}
+                  onPress={() => floating.onChange(!floating.value)}
+                  accessibilityLabel={t.floatingWindow}
+                  tooltip={t.floatingWindow}
+                  testID="interruptor-flotante"
                 />
-                <RoundButton
-                  {...round}
-                  glyph={languageShort(t, settings.language)}
-                  onPress={() => {
-                    spokenAfterChange.current = 'language';
-                    update({ language: nextInCycle(LANGUAGE_CYCLE, settings.language) });
-                  }}
-                  accessibilityLabel={languageSpoken(t, settings.language)}
-                  accessibilityHint={t.tapToChange}
-                  tooltip={t.language}
-                  testID="rotar-idioma"
-                />
-                <Animated.View style={[styles.quickDivider, s.lineBg]} />
-                <RoundButton
-                  {...round}
-                  icon={settings.sound ? 'soundOn' : 'soundOff'}
-                  value={settings.sound}
-                  onPress={() => update({ sound: !settings.sound })}
-                  accessibilityLabel={t.sound}
-                  tooltip={t.sound}
-                  testID="interruptor-sonido"
-                />
-                <RoundButton
-                  {...round}
-                  icon="vibration"
-                  value={settings.haptics}
-                  onPress={() => update({ haptics: !settings.haptics })}
-                  accessibilityLabel={t.vibration}
-                  tooltip={t.vibration}
-                  testID="interruptor-vibracion"
-                />
-                {/* Ventana flotante (Android): el reloj encima de otras apps al salir. */}
-                {floating ? (
-                  <RoundButton
-                    {...round}
-                    icon="floating"
-                    value={floating.value}
-                    onPress={() => floating.onChange(!floating.value)}
-                    accessibilityLabel={t.floatingWindow}
-                    tooltip={t.floatingWindow}
-                    testID="interruptor-flotante"
-                  />
-                ) : null}
-                {/* Al final: se dibuja encima de los botones y de lo de arriba. */}
-                <QuickTooltip
-                  state={tipState}
-                  rowWidth={quickRowWidth}
-                  styles={s}
-                  fonts={fonts}
-                  progress={themeProgress}
-                  shadow={theme.ui.pillShadow}
-                />
-              </View>
-            </Animated.View>
+              ) : null}
+              {/* Al final: se dibuja encima de los botones y de lo de arriba. */}
+              <QuickTooltip
+                state={tipState}
+                rowWidth={quickRowWidth}
+                styles={s}
+                fonts={fonts}
+                progress={themeProgress}
+                shadow={theme.ui.pillShadow}
+              />
+            </View>
             {/* Solo si falta un permiso: una línea discreta que lo arregla. */}
             {[alertsNotice, floating?.notice ?? null].map((notice, i) =>
               notice ? (
@@ -639,12 +596,12 @@ function Section({
   return (
     <View style={styles.section}>
       <Animated.Text
-        style={[styles.label, { fontFamily: fonts.medium }, s.label]}
+        style={[styles.label, { fontFamily: fonts.semibold }, s.label]}
         accessibilityRole="header"
       >
         {label.toUpperCase()}
       </Animated.Text>
-      <Animated.View style={[styles.tile, s.tileBg]}>{children}</Animated.View>
+      {children}
     </View>
   );
 }
@@ -677,8 +634,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headText: { flexShrink: 1 },
-  title: { fontSize: 22, letterSpacing: -0.3 },
-  tile: { borderRadius: 18, padding: 8 },
+  title: { fontSize: 19, letterSpacing: 0.2 },
   summary: { fontSize: 12, marginTop: 3, letterSpacing: 0.2 },
   // «?» discreto: anillo fino de 28 px con 44 px de área táctil.
   helpTouch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -8 },
@@ -714,17 +670,8 @@ const styles = StyleSheet.create({
   },
   vline: { width: StyleSheet.hairlineWidth, marginVertical: 14 },
   cycleSummary: { fontSize: 12, textAlign: 'center', marginTop: 9, letterSpacing: 0.2 },
-  materialRow: { marginTop: 4, marginBottom: 12 },
   hline: { height: StyleSheet.hairlineWidth },
-  glassTray: {
-    marginTop: 12,
-    borderRadius: 32,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    boxShadow: '0px 8px 24px rgba(84, 64, 44, 0.08)',
-  },
-  quickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  quickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14 },
   quickDivider: { width: StyleSheet.hairlineWidth, height: 28 },
   notice: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
   noticeText: { fontSize: 12, textAlign: 'center', letterSpacing: 0.2, textDecorationLine: 'underline' },
@@ -733,12 +680,6 @@ const styles = StyleSheet.create({
   legalMain: { flex: 1, paddingTop: 2 },
   legalStatus: { fontSize: 12, letterSpacing: 0.2 },
   legalPrivacy: { fontSize: 10, letterSpacing: 0.15, marginTop: 2, textDecorationLine: 'underline' },
-  legalChange: {
-    minHeight: 44,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingLeft: 8,
-  },
+  legalChange: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end', paddingLeft: 8 },
   legalChangeText: { fontSize: 12, letterSpacing: 0.2, textDecorationLine: 'underline' },
 });

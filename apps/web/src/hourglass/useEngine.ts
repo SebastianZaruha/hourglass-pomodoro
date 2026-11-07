@@ -14,8 +14,6 @@ import {
   StreamParticles,
   SandSimulation,
   flowBudget,
-  flowPose,
-  getContent,
   sandLevelForDuration,
   syncSandToTarget,
   targetSourceGrains,
@@ -66,8 +64,6 @@ export interface HourglassParams {
   introAngle: number;
   introScale: number;
   introShadow: number;
-  /** arena | lluvia | miel. La arena usa la simulación; el resto, el porcentaje. */
-  contentId: string;
 }
 
 export interface HourglassHandle {
@@ -146,7 +142,6 @@ export function useHourglass(
       flipFrom: 0,
       flipDir: 1,
       flipHold: false,
-      phase: 0,
     };
 
     const paintSand = () => {
@@ -279,26 +274,8 @@ export function useHourglass(
       }
       loop.mode = snap.status;
 
-      const material = getContent(p.contentId);
-      const shapeMat = material.kind === 'shape' ? material : null;
-      let shapeDraw:
-        { material: typeof shapeMat & object; pose: ReturnType<typeof flowPose>; phase: number } | undefined;
-      if (shapeMat) {
-        const pose = flowPose({
-          remainingMs: snap.remainingMs,
-          durationMs: snap.durationMs,
-          gravityX: 0,
-          gravityY: 1,
-          running: snap.status === 'running' && !turning,
-        });
-        if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
-        shapeDraw = { material: shapeMat, pose, phase: loop.phase };
-      }
-
       let moved = false;
-      if (shapeMat) {
-        // El nivel sale del porcentaje. La rejilla de arena no se mueve.
-      } else if (turning) {
+      if (turning) {
         // Durante el giro la arena va pegada al vidrio.
       } else if (loop.populated && snap.status !== 'idle') {
         const target = targetSourceGrains(loop.runInitial, snap.remainingMs, snap.durationMs);
@@ -312,16 +289,14 @@ export function useHourglass(
         for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
       }
 
-      if (!shapeMat) {
-        const streaming =
-          !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
-        input.dt = frameDt;
-        input.emitting = streaming;
-        input.intensity = streamIntensity(snap.durationMs);
-        input.calm = p.reduceMotion;
-        input.gravity = GRAVITY_DOWN;
-        particles.update(sim, input);
-      }
+      const streaming =
+        !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
+      input.dt = frameDt;
+      input.emitting = streaming;
+      input.intensity = streamIntensity(snap.durationMs);
+      input.calm = p.reduceMotion;
+      input.gravity = GRAVITY_DOWN;
+      particles.update(sim, input);
 
       if (moved || loop.flipStart !== null) loop.paint = true;
       if (loop.paint) {
@@ -344,12 +319,11 @@ export function useHourglass(
         rotation,
         poseScale,
         shadow: p.introActive ? p.introShadow : 1,
-        shape: shapeDraw,
       });
 
       const keep =
         snap.status === 'running' ||
-        (shapeMat ? false : !sim.isSettled) ||
+        !sim.isSettled ||
         particles.active ||
         turning ||
         p.flipBusy ||

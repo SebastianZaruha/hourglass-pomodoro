@@ -12,7 +12,7 @@ android {
   namespace 'com.sebastianzaruha.relojdearena.consent'
   defaultConfig {
     versionCode 1
-    versionName '1.8.16'
+    versionName '1.8.14'
   }
 }
 

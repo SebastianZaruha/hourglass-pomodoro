@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reloj de Arena",
     "slug": "reloj-de-arena",
-    "version": "1.8.16",
+    "version": "1.8.15",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -12,7 +12,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "versionCode": 10816,
+      "versionCode": 10815,
       "adaptiveIcon": {
         "backgroundColor": "#E6DED4",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -32,7 +32,6 @@
       "expo-font",
       "expo-audio",
       "./modules/background-timer/app.plugin.js",
-      "./plugins/highRefreshRate.js",
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics"
     ],
