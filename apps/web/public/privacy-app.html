@@ -5,126 +5,25 @@
     <title>Privacy Policy — Hourglass (Android app)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Privacy policy for the Hourglass Android app." />
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #efe8de;
-        --card: #f8f4ee;
-        --fg: #3b352f;
-        --muted: #7a6f63;
-        --line: #ddd2c4;
-        --link: #8a5a2b;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #25211d;
-          --card: #2e2924;
-          --fg: #ece4d8;
-          --muted: #b3a796;
-          --line: #443c34;
-          --link: #e0b47f;
-        }
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--fg);
-        font:
-          17px/1.65 system-ui,
-          -apple-system,
-          'Segoe UI',
-          Roboto,
-          'Helvetica Neue',
-          Arial,
-          sans-serif;
-      }
-      main {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 1.1rem 1.25rem 3rem;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: 2rem 1.75rem;
-      }
-      h1 {
-        font-weight: 300;
-        font-size: 2rem;
-        line-height: 1.2;
-        margin: 0 0 0.25rem;
-      }
-      h2 {
-        font-weight: 500;
-        font-size: 1.15rem;
-        margin: 2rem 0 0.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--line);
-      }
-      h3 {
-        font-weight: 500;
-        font-size: 1.02rem;
-        margin: 1.25rem 0 0.35rem;
-      }
-      .meta,
-      .lang {
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-      .lang {
-        text-align: left;
-        display: flex;
-        align-items: center;
-        min-height: 2.5rem;
-        margin: 0 7rem 1rem 0;
-      }
-      a {
-        color: var(--link);
-      }
-      ul {
-        padding-left: 1.3rem;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.95rem;
-        margin: 0.5rem 0 0.25rem;
-      }
-      th,
-      td {
-        text-align: left;
-        vertical-align: top;
-        border-top: 1px solid var(--line);
-        padding: 0.55rem 0.7rem 0.55rem 0;
-      }
-      th {
-        font-weight: 500;
-      }
-      footer.links {
-        text-align: center;
-        color: var(--muted);
-        font-size: 0.95rem;
-        margin-top: 1.5rem;
-      }
-      .leave {
-        position: fixed;
-        z-index: 5;
-        top: 1.1rem;
-        right: 1.25rem;
-        border: 1px solid var(--line);
-        background: var(--card);
-        color: var(--fg);
-        border-radius: 999px;
-        padding: 8px 16px;
-        font: inherit;
-        font-size: 0.95rem;
-        cursor: pointer;
-      }
-    </style>
+        <link rel="stylesheet" href="/legal.css" />
+    <script>
+      (function () {
+        var q = new URLSearchParams(location.search);
+        var root = document.documentElement;
+        if (q.get('embed') === '1' || window.parent !== window) root.dataset.embedded = '1';
+        var scene = q.get('scene') === 'arena' ? 'arena' : q.get('scene') === 'claro' ? 'claro' : 'lluvia';
+        root.dataset.scene = scene;
+        var themes = {
+          lluvia: ['#d5dbd8', '#8ea894', 'rgba(168, 180, 174, 0.34)'],
+          arena: ['#eadcc8', '#c9a36a', 'rgba(196, 168, 122, 0.32)'],
+          claro: ['#4f443b', '#8f8272', 'rgba(92, 78, 64, 0.22)']
+        };
+        var t = themes[scene];
+        root.style.setProperty('--menu-text', t[0]);
+        root.style.setProperty('--accent', t[1]);
+        root.style.setProperty('--menu-line', t[2]);
+      })();
+    </script>
   </head>
   <body>
     <button type="button" class="leave" id="leave-page">Close</button>
@@ -154,7 +53,7 @@
         <p>The app does <strong>not</strong> create user accounts and does <strong>not</strong> ask for your name, email or password to use it.</p>
         <p>Depending on your choice:</p>
         <h3>3.1 Without analytics / stability consent</h3>
-        <p>Only local technical data needed for the timer (preferences, timers) that stay on your device.</p>
+        <p>Only local technical data needed for the timer (preferences — theme, language, sound, vibration, duration and the hourglass material: sand, rain, honey or snow — and timers) that stay on your device. The material is not included in analytics events.</p>
         <h3>3.2 With consent (Firebase Analytics and Crashlytics)</h3>
         <p>A single consent covers both analytics and crash reports.</p>
         <p>Through Google Firebase we may process:</p>

@@ -5,7 +5,7 @@
  * corrige datos corruptos o de versiones antiguas. Nunca confíes en lo que
  * lees de almacenamiento: puede venir de otra versión de la app.
  */
-import { DEFAULT_CONTENT_ID, getContent } from '../catalog/contents';
+import { DEFAULT_CONTENT_ID, getContent, type MaterialId } from '../catalog/contents';
 import { DEFAULT_MODEL_ID, getHourglassModel } from '../catalog/hourglassModels';
 import {
   CYCLE_PRESET_IDS,
@@ -35,8 +35,13 @@ export interface Settings {
   readonly version: number;
   /** Última duración usada (ms). */
   readonly lastDurationMs: number;
-  /** Contenido elegido (arena; agua en el futuro). */
-  readonly contentId: string;
+  /**
+   * Material de dentro del reloj (1.8.16): arena, lluvia o miel.
+   * Los ajustes de la 1.8.15 ya guardaban `contentId: 'arena'` (o no lo
+   * traían). No cambia el número de versión: lo que falta o no se conoce
+   * vuelve a arena en `sanitizeSettings`.
+   */
+  readonly contentId: MaterialId;
   /** Modelo de reloj elegido. */
   readonly hourglassModelId: string;
   /** Tema visual: claro, oscuro o automático (sigue al sistema). */

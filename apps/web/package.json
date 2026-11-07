@@ -1,6 +1,6 @@
 {
   "name": "@reloj/web",
-  "version": "1.8.12",
+  "version": "1.8.16",
   "private": true,
   "description": "Hourglass Pomodoro en el navegador (Vite, React). No cambia la app móvil.",
   "license": "PolyForm-Noncommercial-1.0.0",

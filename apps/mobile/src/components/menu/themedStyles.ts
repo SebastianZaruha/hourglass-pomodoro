@@ -48,6 +48,16 @@ export function useMenuStyles(progress: SharedValue<number>) {
     trackBg: useThemedBackground(progress, 'track'),
     pillBg: useThemedBackground(progress, 'pill'),
     accentBg: useThemedBackground(progress, 'accent'),
+    glassBg: useThemedBackground(progress, 'glass'),
+    glassBorder: useThemedBorder(progress, 'glassEdge'),
+    onAccent: useThemedText(progress, 'onAccent'),
+    tileBg: useAnimatedStyle(() => ({
+      backgroundColor: interpolateColor(
+        progress.value,
+        [0, 1],
+        ['rgba(70, 58, 46, 0.12)', 'rgba(0, 0, 0, 0.28)'],
+      ),
+    })),
     lineBg: useThemedBackground(progress, 'line'),
     inkSoftBg: useThemedBackground(progress, 'inkSoft'),
     lineBorder: useThemedBorder(progress, 'inkSoft'),

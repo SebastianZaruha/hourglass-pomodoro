@@ -14,6 +14,8 @@ import {
   StreamParticles,
   SandSimulation,
   flowBudget,
+  flowPose,
+  getContent,
   sandLevelForDuration,
   syncSandToTarget,
   targetSourceGrains,
@@ -22,7 +24,16 @@ import {
 } from '@reloj/core';
 import { useEffect, type RefObject } from 'react';
 
-import { buildPaletteLut, drawHourglass, layoutFor, makeGrainNoise, paintCells, type Scheme } from './draw';
+import {
+  buildPaletteLut,
+  drawHourglass,
+  layoutFor,
+  makeGrainNoise,
+  paintCells,
+  type GlassLayout,
+  type Scheme,
+} from './draw';
+import { cloudShadeMoving, drawPhotoreal, jarLayersReady, onPhotoAssets, placedPhotoJar, preloadJar, warmCloud, waterSloshMoving } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -47,6 +58,20 @@ function introPoseScale(
   return (base * room) / span;
 }
 
+/** Caja del frasco fotográfico, para que el arrastre acierte el vidrio que se ve. */
+export function photoVesselLayout(viewW: number, viewH: number, contentId: string): GlassLayout | null {
+  const photo = document.querySelector<HTMLImageElement>('.scene-photo');
+  if (!photo || photo.naturalWidth <= 0 || viewW <= 0 || viewH <= 0) return null;
+  const id = contentId === 'lluvia' || contentId === 'miel' || contentId === 'nieve' ? contentId : 'arena';
+  const placed = placedPhotoJar(viewW, viewH, photo.naturalWidth, photo.naturalHeight, id);
+  return {
+    cx: placed.jar.x + placed.jar.w / 2,
+    cy: placed.jar.y + placed.jar.h / 2,
+    halfW: Math.max(8, placed.jar.w / 2),
+    halfH: Math.max(8, placed.jar.h / 2),
+  };
+}
+
 export interface HourglassParams {
   getSnapshot: () => SessionSnapshot;
   scheme: Scheme;
@@ -64,6 +89,8 @@ export interface HourglassParams {
   introAngle: number;
   introScale: number;
   introShadow: number;
+  /** arena | lluvia | miel. La arena usa la simulación; el resto, el porcentaje. */
+  contentId: string;
 }
 
 export interface HourglassHandle {
@@ -142,6 +169,10 @@ export function useHourglass(
       flipFrom: 0,
       flipDir: 1,
       flipHold: false,
+      phase: 0,
+      cloudTime: 0,
+      streamTime: 0,
+      shownTop: undefined as number | undefined,
     };
 
     const paintSand = () => {
@@ -274,8 +305,33 @@ export function useHourglass(
       }
       loop.mode = snap.status;
 
+      const material = getContent(p.contentId);
+      const shapeMat = material.kind === 'shape' ? material : null;
+      let shapeDraw:
+        | {
+            material: typeof shapeMat & object;
+            pose: ReturnType<typeof flowPose>;
+            phase: number;
+          }
+        | undefined;
+      if (shapeMat) {
+        const pose = flowPose({
+          remainingMs: snap.remainingMs,
+          durationMs: snap.durationMs,
+          gravityX: 0,
+          gravityY: 1,
+          running: snap.status === 'running' && !turning,
+        });
+        if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
+        const breathe = shapeMat.cloud && !p.reduceMotion;
+        if (breathe && snap.status === 'running') loop.cloudTime += frameDt;
+        shapeDraw = { material: shapeMat, pose, phase: loop.phase };
+      }
+
       let moved = false;
-      if (turning) {
+      if (shapeMat) {
+        // El nivel sale del porcentaje. La rejilla de arena no se mueve.
+      } else if (turning) {
         // Durante el giro la arena va pegada al vidrio.
       } else if (loop.populated && snap.status !== 'idle') {
         const target = targetSourceGrains(loop.runInitial, snap.remainingMs, snap.durationMs);
@@ -289,14 +345,16 @@ export function useHourglass(
         for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
       }
 
-      const streaming =
-        !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
-      input.dt = frameDt;
-      input.emitting = streaming;
-      input.intensity = streamIntensity(snap.durationMs);
-      input.calm = p.reduceMotion;
-      input.gravity = GRAVITY_DOWN;
-      particles.update(sim, input);
+      if (!shapeMat) {
+        const streaming =
+          !turning && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
+        input.dt = frameDt;
+        input.emitting = streaming;
+        input.intensity = streamIntensity(snap.durationMs);
+        input.calm = p.reduceMotion;
+        input.gravity = GRAVITY_DOWN;
+        particles.update(sim, input);
+      }
 
       if (moved || loop.flipStart !== null) loop.paint = true;
       if (loop.paint) {
@@ -304,32 +362,100 @@ export function useHourglass(
         loop.paint = false;
       }
 
+      const playing = snap.status === 'running' && !p.reduceMotion;
+      if (playing) loop.streamTime += frameDt;
       const spinAngle = loop.flipStart !== null ? flipAngle : loop.spin + p.gestureAngle;
       const rotation = spinAngle + (p.introActive ? p.introAngle : 0);
       const poseScale = p.introActive ? introPoseScale(p.introScale, layout, p.introAngle, cssW, cssH) : 1;
-      drawHourglass(ctx, {
-        profile,
-        layout,
-        scheme,
-        sand: sandCanvas,
-        noise,
-        sim,
-        particles,
-        lut,
-        rotation,
-        poseScale,
-        shadow: p.introActive ? p.introShadow : 1,
+      const ratio = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 1;
+      const targetTop = sandLevelForDuration(snap.durationMs) * ratio;
+      if (loop.shownTop === undefined) loop.shownTop = targetTop;
+      const ease = 1 - Math.exp(-Math.min(0.08, frameDt) * 7);
+      loop.shownTop += (targetTop - loop.shownTop) * ease;
+      const top = loop.shownTop;
+      const photoId = p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena';
+      const photoLayout = photoVesselLayout(cssW, cssH, photoId);
+      if (photoLayout) loop.layout = photoLayout;
+      let drew = false;
+      try {
+      drew = drawPhotoreal(ctx, {
+        id: photoId,
+        top,
+        bottom: 1 - top,
+        phase: loop.phase,
+        streamTime: loop.streamTime,
+        cloudTime: loop.cloudTime,
+        running: snap.status === 'running',
+        paused: snap.status === 'paused',
+        reduceMotion: p.reduceMotion,
+        viewW: cssW,
+        viewH: cssH,
+        rotation: spinAngle,
+        plain: p.contentId === 'claro',
+        dark: p.scheme === 'dark',
+        grains:
+          photoId === 'arena'
+            ? {
+                image: sandCanvas,
+                cols: sim.cols,
+                rows: sim.rows,
+                x: particles.x,
+                y: particles.y,
+                size: particles.size,
+                tone: particles.tone,
+                count: particles.count,
+                lut,
+                noise,
+              }
+            : undefined,
       });
+      } catch (error) {
+        drew = false;
+        (window as unknown as { __jarError?: string }).__jarError = error instanceof Error ? error.message : String(error);
+      }
+      const photoScene =
+        p.contentId === 'lluvia' ||
+        p.contentId === 'arena' ||
+        p.contentId === 'claro' ||
+        p.contentId === 'miel' ||
+        p.contentId === 'nieve';
+      if (drew) canvas.closest('.app')?.classList.add('jar-ready');
+      if (!drew && !photoScene) {
+        drawHourglass(ctx, {
+          profile,
+          layout,
+          scheme,
+          sand: sandCanvas,
+          noise,
+          sim,
+          particles,
+          lut,
+          rotation,
+          poseScale,
+          shadow: p.introActive ? p.introShadow : 1,
+          shape: shapeDraw,
+        });
+      } else if (!drew && canvas.dataset.shown !== '1') {
+        ctx.clearRect(0, 0, cssW, cssH);
+      } else if (drew) {
+        canvas.dataset.shown = '1';
+      } else {
+        preloadJar(p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena');
+      }
 
       const keep =
         snap.status === 'running' ||
-        !sim.isSettled ||
+        (shapeMat ? false : !sim.isSettled) ||
         particles.active ||
         turning ||
         p.flipBusy ||
         p.gestureActive ||
         p.introActive ||
-        Math.abs(p.gestureAngle) > 0.0008;
+        Math.abs(p.gestureAngle) > 0.0008 ||
+        (jarLayersReady() && p.contentId === 'lluvia' && !p.reduceMotion) ||
+        waterSloshMoving() ||
+        cloudShadeMoving() ||
+        (photoScene && !drew);
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };
@@ -339,12 +465,17 @@ export function useHourglass(
       loop.last = 0;
       loop.raf = requestAnimationFrame(frame);
     };
+    warmCloud();
+    const stopAssets = onPhotoAssets(wake);
+    window.addEventListener('pointerdown', wake);
     handleRef.current = { wake, layoutCss: () => loop.layout };
     const observer = new ResizeObserver(() => wake());
     observer.observe(canvas);
     wake();
     return () => {
       loop.alive = false;
+      stopAssets();
+      window.removeEventListener('pointerdown', wake);
       observer.disconnect();
       if (loop.raf) cancelAnimationFrame(loop.raf);
       handleRef.current = null;

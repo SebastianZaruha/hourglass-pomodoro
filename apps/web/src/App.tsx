@@ -1,6 +1,6 @@
-import { Analytics } from '@vercel/analytics/react';
 import {
   activeCycleConfig,
+  getContent,
   messagesFor,
   nearestStepIndex,
   resolveLanguage,
@@ -9,24 +9,26 @@ import {
   sessionSnapshot,
   stepMinutes,
   stepToDuration,
-  type Settings,
   type ThemePreference,
 } from '@reloj/core';
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 
 import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
-import { disableGoogleAnalytics, enableGoogleAnalytics, gaMeasurementId } from './analytics';
 import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
+import { ScenePlate } from './components/ScenePlate';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
@@ -36,11 +38,12 @@ import { HourglassView } from './hourglass/HourglassView';
 import type { HourglassHandle, HourglassParams } from './hourglass/useEngine';
 import { usePageIntro } from './intro';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
-import { playCue, primeAudio } from './sound';
 import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
-import { useSettings, type SettingsPatch } from './useSettings';
+import { useSettings, type SettingsPatch, type WebSettings } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
+
+const Analytics = lazy(() => import('@vercel/analytics/react').then((mod) => ({ default: mod.Analytics })));
 
 function allowAnalyticsEvent<E>(event: E): E {
   return event;
@@ -75,22 +78,25 @@ function useReducedMotion() {
   return reduce;
 }
 
-function isWideLayout(): boolean {
+function layoutFlags(): { wide: boolean; compact: boolean } {
   const w = window.innerWidth;
   const h = window.innerHeight;
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  return w >= rem * 46 && w > h * 1.05;
+  const landscape = w > h * 1.05;
+  const desk = landscape && w >= rem * 46;
+  const compact = landscape && !desk && w >= rem * 28;
+  return { wide: desk || compact, compact };
 }
 
-function useWideLayout() {
-  const [wide, setWide] = useState(isWideLayout);
+function useLayoutFlags() {
+  const [flags, setFlags] = useState(layoutFlags);
   useEffect(() => {
-    const apply = () => setWide(isWideLayout());
+    const apply = () => setFlags(layoutFlags());
     apply();
     window.addEventListener('resize', apply);
     return () => window.removeEventListener('resize', apply);
   }, []);
-  return wide;
+  return flags;
 }
 
 export function App() {
@@ -102,15 +108,15 @@ function Timer({
   settings,
   update,
 }: {
-  settings: Settings;
-  update: (patch: SettingsPatch | ((current: Settings) => SettingsPatch)) => void;
+  settings: WebSettings;
+  update: (patch: SettingsPatch | ((current: WebSettings) => SettingsPatch)) => void;
 }) {
   const systemDark = useSystemDark();
   const reduceMotion = useReducedMotion();
-  const wide = useWideLayout();
+  const { wide, compact } = useLayoutFlags();
   const scheme = resolveScheme(settings.theme, systemDark);
-  const lang = resolveLanguage(settings.language, navigator.language);
-  const t = messagesFor(settings.language, navigator.language);
+  const lang = resolveLanguage(settings.language, 'es');
+  const t = messagesFor(settings.language, 'es');
 
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, tick, view, state } = session;
@@ -120,6 +126,30 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [chromeOn, setChromeOn] = useState(false);
+  useEffect(() => {
+    let timer = 0;
+    const show = () => {
+      setChromeOn(true);
+      window.clearTimeout(timer);
+      if (!menu) timer = window.setTimeout(() => setChromeOn(false), 3200);
+    };
+    const hide = () => {
+      window.clearTimeout(timer);
+      setChromeOn(false);
+    };
+    document.addEventListener('mousemove', show);
+    document.addEventListener('mouseenter', show);
+    document.addEventListener('mouseleave', hide);
+    document.addEventListener('pointerdown', show);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('mousemove', show);
+      document.removeEventListener('mouseenter', show);
+      document.removeEventListener('mouseleave', hide);
+      document.removeEventListener('pointerdown', show);
+    };
+  }, [menu]);
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const legalRef = useRef<{ href: string; title: string } | null>(null);
@@ -155,12 +185,15 @@ function Timer({
   }, [lang, scheme]);
 
   useEffect(() => {
-    const id = gaMeasurementId();
-    if (consentChoice === 'accepted') enableGoogleAnalytics(id);
-    else if (consentChoice === 'rejected') {
-      disableGoogleAnalytics(id);
-      stopVercelWebAnalytics();
-    }
+    if (!consentChoice) return;
+    void import('./analytics').then((mod) => {
+      const id = mod.gaMeasurementId();
+      if (consentChoice === 'accepted') mod.enableGoogleAnalytics(id);
+      else {
+        mod.disableGoogleAnalytics(id);
+        stopVercelWebAnalytics();
+      }
+    });
   }, [consentChoice]);
 
   const chooseCookies = (choice: ConsentChoice) => {
@@ -187,23 +220,25 @@ function Timer({
     introAngle: 0,
     introScale: 1,
     introShadow: 1,
+    contentId: settings.contentId,
   });
   paramsRef.current.getSnapshot = getSnapshot;
   paramsRef.current.scheme = scheme;
   paramsRef.current.reduceMotion = reduceMotion;
+  paramsRef.current.contentId = settings.contentId;
   const handleRef = useRef<HourglassHandle | null>(null);
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
     handleRef.current?.wake();
-  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion]);
+  }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion, settings.contentId]);
 
   const prevCue = useRef(view);
   useEffect(() => {
     const cue = sessionCue(prevCue.current, view);
     prevCue.current = view;
     if (!cue) return;
-    if (settings.sound) playCue(cue);
+    if (settings.sound) void import('./sound').then((mod) => mod.playCue(cue));
     showPhaseNotification(t, cue, view, lang);
   }, [view, settings.sound, t, lang]);
 
@@ -215,7 +250,7 @@ function Timer({
   }, [state, tick]);
 
   const doToggle = useCallback(() => {
-    primeAudio();
+    void import('./sound').then((mod) => mod.primeAudio());
     const status = state.timer.status;
     if (status === 'idle' || status === 'finished') void ensureNotificationPermission();
     toggle();
@@ -255,12 +290,17 @@ function Timer({
     if (!app || !side) return;
     const apply = () => {
       const sideRect = side.getBoundingClientRect();
+      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
+      const sheetW = Math.min(Math.max(0, sideRect.width - rem * 2), 26 * rem);
+      const sheetLeft = sideRect.left + (sideRect.width - sheetW) / 2;
       app.style.setProperty('--side-left', `${Math.round(sideRect.left)}px`);
       app.style.setProperty('--side-width', `${Math.round(sideRect.width)}px`);
       app.style.setProperty('--side-bottom', `${Math.round(window.innerHeight - sideRect.bottom)}px`);
+      app.style.setProperty('--side-height', `${Math.round(sideRect.height)}px`);
+      app.style.setProperty('--sheet-left', `${Math.round(sheetLeft)}px`);
+      app.style.setProperty('--sheet-width', `${Math.round(sheetW)}px`);
       const sheet = app.querySelector('.sheet');
       const readout = side.querySelector('.readout');
-      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
       if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
         app.style.setProperty('--clock-lift', '0px');
         app.style.removeProperty('--menu-pad');
@@ -269,20 +309,26 @@ function Timer({
       const sheetH = sheet.getBoundingClientRect().height;
       const gap = rem * 1.15;
       if (!wide) {
+        const underSheet = parseFloat(getComputedStyle(sheet).bottom) || 0;
         app.style.setProperty('--clock-lift', '0px');
-        app.style.setProperty('--menu-pad', `${Math.round(sheetH + gap)}px`);
+        app.style.setProperty('--menu-pad', `${Math.round(sheetH + underSheet + gap)}px`);
         return;
       }
       app.style.removeProperty('--menu-pad');
-      const readH = readout.getBoundingClientRect().height;
+      const readRect = readout.getBoundingClientRect();
+      const sheetRect = sheet.getBoundingClientRect();
+      const readH = readRect.height;
       const sideH = sideRect.height;
       const sheetInset = rem * 0.75;
       const clockBottom = (sideH + readH) / 2;
       const sheetTop = sideH - sheetInset - sheetH;
       const centeringLift = (sheetH + sheetInset) / 2;
       const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
+      const currentLift = parseFloat(app.style.getPropertyValue('--clock-lift')) || 0;
+      const unliftedBottom = readRect.bottom + currentLift;
+      const clearLift = Math.max(0, unliftedBottom + gap - sheetRect.top);
       const maxLift = Math.max(0, (sideH - readH) / 2 - rem * 0.5);
-      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift));
+      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift, clearLift));
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
     apply();
@@ -427,11 +473,26 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${chromeOn || menu ? ' chrome' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
+      data-material={settings.contentId}
       data-layout={wide ? 'wide' : 'narrow'}
+      data-compact={compact ? 'yes' : 'no'}
+      data-roomy="no"
+      style={
+        settings.contentId === 'claro'
+          ? undefined
+          : pageTint(scheme, getContent(settings.contentId).atmosphere)
+      }
     >
-      {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      {consentChoice === 'accepted' ? (
+        <Suspense fallback={null}>
+          <Analytics beforeSend={allowAnalyticsEvent} />
+        </Suspense>
+      ) : null}
+      {settings.contentId === 'claro' ? null : (
+        <ScenePlate id={getContent(settings.contentId).id} layoutRef={handleRef} />
+      )}
       <div className="scene">
         <div
           ref={stageRef}
@@ -527,10 +588,32 @@ function Timer({
       </div>
       {paused ? (
         <div className="pause-screen">
-          <span className="pause-word">{t.paused}</span>
+          <span className="pause-word">{lang === 'es' ? 'En pausa' : t.paused}</span>
           {hint ? <span className="pause-hint">{hint}</span> : null}
         </div>
       ) : null}
     </div>
   );
+}
+
+/** Mismos colores que `--bg-top` / `--bg-bottom`. El menú no usa estas variables. */
+function pageTint(
+  scheme: string,
+  atmosphere: { readonly light: readonly [number, number, number]; readonly dark: readonly [number, number, number] },
+): CSSProperties {
+  const dark = scheme === 'dark';
+  const shift = dark ? atmosphere.dark : atmosphere.light;
+  return {
+    '--bg-top': shiftHex(dark ? '#2A241F' : '#F6F1EA', shift),
+    '--bg-bottom': shiftHex(dark ? '#16130F' : '#E3D9CC', shift),
+  } as CSSProperties;
+}
+
+function shiftHex(hexColor: string, shift: readonly number[]): string {
+  const n = parseInt(hexColor.slice(1), 16);
+  const ch = (v: number, i: number) =>
+    Math.min(255, Math.max(0, v + Math.round(shift[i] ?? 0)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${ch((n >> 16) & 255, 0)}${ch((n >> 8) & 255, 1)}${ch(n & 255, 2)}`;
 }

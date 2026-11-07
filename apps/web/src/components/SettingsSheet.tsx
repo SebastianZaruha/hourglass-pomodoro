@@ -17,23 +17,30 @@ import {
   THEME_CYCLE,
   type CyclePresetId,
   type Messages,
-  type Settings,
 } from '@reloj/core';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { ESCENAS_ACTIVAS, type EscenaActiva } from '../scenes';
+import type { SettingsPatch, WebSettings } from '../useSettings';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
+const menuBlurNative =
+  typeof CSS !== 'undefined' &&
+  (CSS.supports('backdrop-filter', 'blur(2px)') || CSS.supports('-webkit-backdrop-filter', 'blur(2px)'));
+
+function sceneName(t: Messages, id: EscenaActiva): string {
+  if (id === 'claro') return t.materialSand === 'Sand' ? 'Simple' : 'Claro';
+  if (id === 'lluvia') return t.materialRain;
+  return t.materialSand;
+}
+
 interface Props {
   readonly open: boolean;
-  readonly settings: Settings;
+  readonly settings: WebSettings;
   readonly t: Messages;
-  readonly onChange: (
-    patch:
-      | Partial<Omit<Settings, 'version' | 'updatedAt'>>
-      | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
-  ) => void;
+  readonly onChange: (patch: SettingsPatch | ((current: WebSettings) => SettingsPatch)) => void;
   readonly onClose: () => void;
 }
 
@@ -44,6 +51,74 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
   const [singleCustom, setSingleCustom] = useState(() => !onPreset);
   const customOn = singleCustom || !onPreset;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLImageElement>(null);
+  const bladesRef = useRef<HTMLImageElement>(null);
+  const glassRef = useRef<HTMLImageElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open || menuBlurNative) return;
+    let alive = true;
+    const place = (
+      live: Element | null,
+      copy: HTMLImageElement | null,
+      sheet: DOMRect,
+    ) => {
+      if (!copy) return;
+      if (!(live instanceof HTMLElement)) {
+        copy.hidden = true;
+        return;
+      }
+      const box = live.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) {
+        copy.hidden = true;
+        return;
+      }
+      copy.hidden = false;
+      copy.style.left = `${box.left - sheet.left}px`;
+      copy.style.top = `${box.top - sheet.top}px`;
+      copy.style.width = `${box.width}px`;
+      copy.style.height = `${box.height}px`;
+      copy.style.transform = getComputedStyle(live).transform;
+    };
+    const sync = () => {
+      if (!alive) return;
+      const sheetEl = sheetRef.current;
+      if (!sheetEl) return;
+      const sheet = sheetEl.getBoundingClientRect();
+      const photo = document.querySelector<HTMLImageElement>('.scene-photo');
+      const blades = document.querySelector<HTMLImageElement>('.blades');
+      if (photoRef.current && photo) {
+        photoRef.current.src = photo.currentSrc || photo.src;
+        place(photo, photoRef.current, sheet);
+      }
+      if (bladesRef.current && blades) {
+        bladesRef.current.src = blades.currentSrc || blades.src;
+        place(blades, bladesRef.current, sheet);
+      }
+      const canvas = document.querySelector('canvas.glass-canvas');
+      const glass = glassRef.current;
+      if (glass && canvas instanceof HTMLCanvasElement && canvas.width > 2) {
+        try {
+          glass.src = canvas.toDataURL('image/png');
+          place(canvas, glass, sheet);
+        } catch {
+          glass.hidden = true;
+        }
+      }
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    if (sheetRef.current) observer.observe(sheetRef.current);
+    window.addEventListener('resize', sync);
+    const timers = [80, 420, 760].map((ms) => window.setTimeout(sync, ms));
+    return () => {
+      alive = false;
+      observer.disconnect();
+      window.removeEventListener('resize', sync);
+      for (const timer of timers) window.clearTimeout(timer);
+    };
+  }, [open, settings.contentId]);
 
   useEffect(() => {
     if (!onPreset) setSingleCustom(true);
@@ -56,6 +131,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
 
   return (
     <div
+      ref={sheetRef}
       className={open ? 'sheet open' : 'sheet'}
       role="dialog"
       aria-modal="true"
@@ -69,11 +145,36 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         window.getSelection()?.removeAllRanges();
       }}
     >
+      <div className="sheet-glass" aria-hidden="true" />
+      {menuBlurNative ? null : (
+      <div className="sheet-blur" aria-hidden="true">
+        <img ref={photoRef} className="sheet-blur-photo" alt="" />
+        <img ref={bladesRef} className="sheet-blur-blades" alt="" />
+        <img ref={glassRef} className="sheet-blur-glass" alt="" />
+      </div>
+      )}
+      {menuBlurNative ? null : <div className="sheet-veil" aria-hidden="true" />}
+      <div className="sheet-body">
       <div className="sheet-head">
         <h2>{t.settings}</h2>
         <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
           ×
         </button>
+      </div>
+
+      <div className="chip-row scene-row" role="radiogroup" aria-label={t.settings}>
+        {ESCENAS_ACTIVAS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={settings.contentId === id}
+            className={settings.contentId === id ? 'chip chip-on' : 'chip'}
+            onClick={() => onChange({ contentId: id })}
+          >
+            {sceneName(t, id)}
+          </button>
+        ))}
       </div>
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
@@ -247,7 +348,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       <div className="pref-row">
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="pill pref"
           aria-label={themeSpoken(t, settings.theme)}
           title={t.tapToChange}
           onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
@@ -257,7 +358,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         </button>
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="pill pref"
           aria-label={languageSpoken(t, settings.language)}
           title={t.tapToChange}
           onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
@@ -276,6 +377,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           <SpeakerIcon off={!settings.sound} />
           <span>{t.sound}</span>
         </button>
+      </div>
       </div>
     </div>
   );
@@ -311,7 +413,7 @@ function Stepper({
   const scrub = onScrubIndex != null && scrubIndex != null && scrubMax != null;
   const drag = useRef<{
     pointerId: number;
-    startX: number;
+    startY: number;
     startIndex: number;
     moved: boolean;
     sent: number;
@@ -322,7 +424,7 @@ function Stepper({
     if (!scrub || scrubIndex == null || event.button !== 0) return;
     drag.current = {
       pointerId: event.pointerId,
-      startX: event.clientX,
+      startY: event.clientY,
       startIndex: scrubIndex,
       moved: false,
       sent: scrubIndex,
@@ -340,13 +442,13 @@ function Stepper({
     ) {
       return;
     }
-    const dx = event.clientX - gesture.startX;
-    if (!gesture.moved && Math.abs(dx) < 5) return;
+    const dy = gesture.startY - event.clientY;
+    if (!gesture.moved && Math.abs(dy) < 5) return;
     if (!gesture.moved && !event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     gesture.moved = true;
-    const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dx / SCRUB_PX)));
+    const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dy / SCRUB_PX)));
     if (index === gesture.sent) return;
     gesture.sent = index;
     onScrubIndex(index);
@@ -400,6 +502,43 @@ function Stepper({
           +
         </button>
       </div>
+      {scrub && scrubMax != null && scrubIndex != null ? (
+        <span
+          className="glass-cap"
+          role="slider"
+          aria-valuemin={0}
+          aria-valuemax={scrubMax}
+          aria-valuenow={scrubIndex}
+          aria-label={label}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            const track = event.currentTarget;
+            const apply = (clientX: number) => {
+              const rect = track.getBoundingClientRect();
+              const span = rect.width || 1;
+              const t = Math.min(1, Math.max(0, (clientX - rect.left) / span));
+              onScrubIndex?.(Math.round(t * scrubMax));
+            };
+            apply(event.clientX);
+            const move = (ev: PointerEvent) => apply(ev.clientX);
+            const up = () => {
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', up);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', up);
+          }}
+        >
+          <span
+            className="glass-cap-fill"
+            style={{ width: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
+          />
+          <span
+            className="glass-cap-line"
+            style={{ left: `${Math.round((scrubIndex / Math.max(1, scrubMax)) * 100)}%` }}
+          />
+        </span>
+      ) : null}
       <span className="stepper-label">
         <span className="sr-only">{spoken}. </span>
         {label}

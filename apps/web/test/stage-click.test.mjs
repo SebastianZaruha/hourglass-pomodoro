@@ -83,7 +83,7 @@ test('un clic en pausa sigue programando el reanudado', async () => {
   }
 });
 
-test('en marcha el doble clic sigue reiniciando', async () => {
+test('el doble clic no reinicia: el segundo toque no cancela la pausa', async () => {
   const { mod, cleanup } = await bundle();
   try {
     const first = mod.decideStageClick({
@@ -99,10 +99,10 @@ test('en marcha el doble clic sigue reiniciando', async () => {
       pendingToggle: true,
       resumeArmed: false,
     });
-    assert.deepEqual(second, { kind: 'cancel-pending' });
-    assert.equal(mod.decideStageDoubleClick('running', false), 'restart');
-    assert.equal(mod.decideStageDoubleClick('idle', false), 'restart');
-    assert.equal(mod.decideStageDoubleClick('finished', false), 'restart');
+    assert.deepEqual(second, { kind: 'ignore-extra' });
+    assert.equal(mod.decideStageDoubleClick('running', false), 'ignore');
+    assert.equal(mod.decideStageDoubleClick('idle', false), 'ignore');
+    assert.equal(mod.decideStageDoubleClick('finished', false), 'ignore');
   } finally {
     cleanup();
   }

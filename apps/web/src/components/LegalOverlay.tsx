@@ -45,6 +45,9 @@ export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
     return () => frame.removeEventListener('load', onLoad);
   }, [src]);
 
+  const scene = document.querySelector('.app')?.getAttribute('data-material') || 'lluvia';
+  const framed = `${src}${src.includes('?') ? '&' : '?'}embed=1&scene=${encodeURIComponent(scene)}`;
+
   return (
     <div
       className="legal-overlay"
@@ -53,7 +56,7 @@ export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
       }}
     >
       <div className="legal-dialog" role="dialog" aria-modal="true" aria-label={title}>
-        <iframe ref={frameRef} src={src} title={title} />
+        <iframe ref={frameRef} src={framed} title={title} />
       </div>
     </div>
   );
@@ -77,6 +80,15 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   }
   if (doc.documentElement.dataset.legalBound === '1') return;
   doc.documentElement.dataset.legalBound = '1';
+  doc.documentElement.dataset.embedded = '1';
+  const app = document.querySelector('.app');
+  if (app) {
+    const cs = getComputedStyle(app);
+    for (const name of ['--menu-text', '--accent', '--accent-ink', '--menu-line', '--digit', '--footer-ink']) {
+      const value = cs.getPropertyValue(name).trim();
+      if (value) doc.documentElement.style.setProperty(name, value);
+    }
+  }
 
   doc.addEventListener(
     'click',
