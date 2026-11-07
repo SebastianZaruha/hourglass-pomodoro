@@ -261,11 +261,21 @@ a {
 }
 
 .time {
+  display: inline-block;
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   line-height: 0.92;
-  color: var(--time);
+  color: #3e342c;
+  padding: 0.06em 0.32em 0.1em;
+  border-radius: 1.4rem;
+  background: rgba(255, 252, 247, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 10px 28px rgba(20, 16, 12, 0.16);
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
 }
 
 .app[data-layout='wide'] .time {
@@ -459,10 +469,10 @@ a {
 }
 
 .app[data-layout='wide'] .sheet {
-  left: calc(var(--side-left, 52%) + clamp(0.75rem, 1.6vw, 1.5rem));
-  width: min(calc(var(--side-width, 42vw) - clamp(1.5rem, 3vw, 3rem)), 46vw);
+  left: auto;
+  right: max(1rem, 2vw);
+  width: min(26rem, 32vw);
   max-width: calc(100vw - 2rem);
-  right: auto;
   top: auto;
   bottom: calc(var(--side-bottom, 1rem) + 0.75rem);
   max-height: none;

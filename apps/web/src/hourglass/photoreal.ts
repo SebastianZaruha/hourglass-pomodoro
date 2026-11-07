@@ -222,17 +222,17 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const footX = place.footX;
   const footY = place.footY;
   ctx.save();
-  ctx.fillStyle = 'rgba(16, 12, 8, 0.55)';
+  ctx.fillStyle = 'rgba(12, 8, 4, 0.72)';
   ctx.beginPath();
-  ctx.ellipse(footX, footY + jar.h * 0.004, jar.w * 0.16, Math.max(3, jar.w * 0.018), 0, 0, Math.PI * 2);
+  ctx.ellipse(footX, footY + 2, jar.w * 0.22, Math.max(4, jar.w * 0.028), 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(20, 16, 12, 0.28)';
+  ctx.fillStyle = 'rgba(20, 14, 8, 0.38)';
   ctx.beginPath();
   ctx.ellipse(
     footX + grade.dx * jar.w,
-    footY + jar.h * 0.012,
-    jar.w * 0.42,
-    Math.max(6, jar.w * 0.045),
+    footY + jar.h * 0.02,
+    jar.w * 0.55,
+    Math.max(8, jar.w * 0.07),
     0,
     0,
     Math.PI * 2,
@@ -367,7 +367,7 @@ function drawStream(
     video.pause();
     if (frame.reduceMotion) video.currentTime = 0;
   }
-  const width = kind === 'honey' ? 34 : kind === 'sand' ? 28 : kind === 'snow' ? 64 : 26;
+  const width = kind === 'honey' ? 54 : kind === 'sand' ? 46 : kind === 'snow' ? 72 : 42;
   const x = center - width / 2;
   const useVideo = !frame.reduceMotion && video.readyState >= 2 && video.videoWidth > 0;
   ctx.save();
@@ -379,9 +379,10 @@ function drawStream(
   }
   if (ready(splashes[kind])) {
     const index = streamFrame(frame.streamTime, frame.reduceMotion || !flowing);
-    const sw = kind === 'honey' ? 78 : 56;
-    const sh = sw * (SPLASH_H / SPLASH_W);
-    ctx.drawImage(splashes[kind], index * SPLASH_W, 0, SPLASH_W, SPLASH_H, center - sw / 2, to - sh * 0.42, sw, sh);
+    const srcH = kind === 'honey' ? 70 : SPLASH_H;
+    const sw = kind === 'honey' ? 42 : 48;
+    const sh = kind === 'honey' ? 26 : 22;
+    ctx.drawImage(splashes[kind], index * SPLASH_W, 0, SPLASH_W, srcH, center - sw / 2, to - sh * 0.7, sw, sh);
   }
   ctx.restore();
 }

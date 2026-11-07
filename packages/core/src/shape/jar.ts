@@ -7,7 +7,7 @@
  */
 import type { MaterialId } from '../catalog/contents';
 import table from './jarTable.json';
-import { groundContact, groundJarHeight, type Frame } from './plate';
+import { coverFrame, groundContact, groundJarHeight, type Frame } from './plate';
 
 type Row = readonly [number, number];
 
@@ -88,26 +88,21 @@ export function dioramaPlacement(
   const contact = groundContact(id, imageWide);
   const iw = imageW > 0 ? imageW : 1;
   const ih = imageH > 0 ? imageH : 1;
-  const scale = Math.max(viewW / iw, viewH / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
   const wide = viewW >= viewH;
-  const preferX = wide ? viewW * 0.33 : viewW * 0.5;
-  const preferY = viewH * (wide ? 0.8 : 0.76);
-  let x = preferX - contact.x * dw;
-  let y = preferY - contact.y * dh;
-  const minX = Math.min(0, viewW - dw);
-  const minY = Math.min(0, viewH - dh);
-  x = Math.min(0, Math.max(minX, x));
-  y = Math.min(0, Math.max(minY, y));
-  const footX = x + contact.x * dw;
-  const footY = y + contact.y * dh;
-  let jh = groundJarHeight(id, imageWide) * dh;
-  const maxH = viewH * 0.9;
+  // El apoyo va abajo y, en horizontal, a la izquierda, para que el panel
+  // de ajustes quepa a la derecha sin tapar el vidrio. Si hace falta, la
+  // foto se acerca: miel y nieve no pueden quedarse flotando.
+  const preferX = wide ? viewW * 0.28 : viewW * 0.5;
+  const preferY = viewH * (wide ? 0.86 : 0.8);
+  const scene = coverFrame(viewW, viewH, iw, ih, preferX, preferY, contact.x, contact.y);
+  const footX = preferX;
+  const footY = preferY;
+  let jh = groundJarHeight(id, imageWide) * scene.h;
+  const maxH = viewH * 0.68;
   if (jh > maxH) jh = maxH;
   const jw = jh * JAR_ASPECT;
   return {
-    scene: { x, y, w: dw, h: dh },
+    scene,
     jar: { x: footX - JAR_FOOT_X * jw, y: footY - JAR_FOOT_Y * jh, w: jw, h: jh },
     footX,
     footY,
