@@ -125,7 +125,10 @@ import { useDeviceTilt } from '../motion/useDeviceTilt';
 import { saveSessionAndReload } from '../recovery/sessionRecovery';
 import { useCueSound } from '../sound/useCueSound';
 import { frameReport } from '../hourglass/frameProbe';
+import { useCachedSceneBlur } from '../hourglass/sceneBlur';
 import { themeWithAtmosphere } from '../theme/theme';
+import { coverFrame, groundContact } from '@reloj/core';
+import { computeLayout } from '../hourglass/layout';
 import { useAppTheme } from '../theme/useAppTheme';
 
 /** Píxeles de arrastre para avanzar un escalón de duración. */
@@ -561,6 +564,30 @@ export function TimerScreen({ settings, fonts }: Props) {
   // mismo fotograma que la hoja.
   //
   // 1.8.9: el vidrio es un panel sin desenfoque (ver FrostedPanel).
+  const frost = useCachedSceneBlur(content.id);
+  // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
+  const insets = useMemo(
+    () => (pip ? PIP_INSETS : { top: safe.top + 12, bottom: safe.bottom + BOTTOM_AREA }),
+    [pip, safe.top, safe.bottom],
+  );
+  const frostFrame = useMemo(() => {
+    if (!frost) return null;
+    const layout = computeLayout(width, height, model, insets);
+    const contact = groundContact(content.id, false);
+    const frame = coverFrame(
+      width,
+      height,
+      frost.width(),
+      frost.height(),
+      layout.cx,
+      layout.cy + layout.halfH,
+      contact.x,
+      contact.y,
+    );
+    layout.outerPath.dispose();
+    layout.innerPath.dispose();
+    return frame;
+  }, [frost, width, height, model, insets, content.id]);
   const frosted = useMemo(
     () => (
       <FrostedPanel
@@ -569,14 +596,11 @@ export function TimerScreen({ settings, fonts }: Props) {
         top={sheet.top}
         openness={sheet.openness}
         themeProgress={themeProgress}
+        frost={frost}
+        frostFrame={frostFrame}
       />
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress],
-  );
-  // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
-  const insets = useMemo(
-    () => (pip ? PIP_INSETS : { top: safe.top + 12, bottom: safe.bottom + BOTTOM_AREA }),
-    [pip, safe.top, safe.bottom],
+    [sheet.top, sheet.openness, width, height, themeProgress, frost, frostFrame],
   );
   const displayMs = view.status === 'idle' ? view.durationMs : view.remainingMs;
   const hint = blurred ? null : hintFor(view, interacted, tr);
@@ -589,7 +613,7 @@ export function TimerScreen({ settings, fonts }: Props) {
     <View style={[styles.root, { backgroundColor: theme.solid }]}>
       {/* Volteado, la barra de estado quedaría abajo y del revés: la ocultamos. */}
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} hidden={tilt.flipped} />
-      {frameProbe ? <FrameProbeBanner /> : null}
+      {frameProbe ? <FrameProbeBanner material={content.name} /> : null}
       <GestureDetector gesture={gesture}>
         <View
           style={StyleSheet.absoluteFill}
@@ -816,18 +840,18 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
   }
 }
 
-function FrameProbeBanner() {
-  const [text, setText] = useState('midiendo…');
+function FrameProbeBanner({ material }: { material: string }) {
+  const [text, setText] = useState(`${material} · midiendo…`);
   useEffect(() => {
     const id = setInterval(() => {
       const report = frameReport();
       if (!report) return;
       setText(
-        `${report.fps.toFixed(0)} fps · js ${report.jsP50.toFixed(1)}/${report.jsP95.toFixed(1)} ms · sim ${report.simP50.toFixed(1)} · ${report.level}`,
+        `${material} · ${report.level} · ${report.fps.toFixed(0)} fps · js ${report.jsP50.toFixed(1)}/${report.jsP95.toFixed(1)} ms · sim ${report.simP50.toFixed(1)}`,
       );
     }, 500);
     return () => clearInterval(id);
-  }, []);
+  }, [material]);
   return (
     <View style={styles.probe} pointerEvents="none">
       <Text style={styles.probeText}>{text}</Text>

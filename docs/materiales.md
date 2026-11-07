@@ -22,7 +22,7 @@ El volteo reinicia la fase (el temporizador ya lo hacía). De lado, la gravedad 
 
 ## Fondos
 
-Hasta que lleguen los archivos de `docs/assets-needed.md`, el fondo es el degradado de siempre, con un tinte fijo por material (lluvia un grado más gris, miel un grado más ámbar). En el móvil entra en el tema del lienzo; en la web, en `--bg-top` y `--bg-bottom`. El menú no usa ese tinte: sus colores siguen en la hoja.
+El fondo es la foto de la escena (césped, con piedras alrededor). El pie del frasco cae en el punto de `anchors-ground.json`. Las briznas van delante, con el mismo recorte. Si la foto no carga, queda el degradado con un tinte por material. El menú no usa ese tinte.
 
 Cuando existan las imágenes, serán cuatro capas estáticas: escena desenfocada, piedra anclada al pie del frasco, el frasco en Skia, y briznas transparentes por delante que no tapan el nivel ni reciben toques. No hay vídeo.
 
@@ -57,7 +57,7 @@ A 120 Hz caben 8,3 ms. Un paso caro de arena cabe, pero el shader de microgranos
 
 En Chrome headless de esta misma máquina, con la lluvia en marcha, 179 fotogramas seguidos salieron a 16,7 ms (60 fps: el tope del compositor, no un techo de la app). No es el Galaxy A55.
 
-Para medir el móvil de verdad: mantener pulsado el título «Ajustes» enseña fps y milisegundos (apagado no hace nada).
+Para medir el móvil de verdad: mantener pulsado el título «Ajustes». El letrero dice el material, el nivel de calidad (alta, media o baja) y los fps. Apagado no hace nada.
 
 No se generó un APK en esta máquina: no hay SDK de Android en el entorno. El `versionCode` queda en 10816.
 

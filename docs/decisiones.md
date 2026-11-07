@@ -6,9 +6,9 @@ Cada punto: a favor, en contra, qué se descartó y qué quedó. No es un estudi
 
 A favor de reutilizar el autómata de arena para el agua y la nieve: un solo camino, inclinación y pausa ya resueltas. En contra: grano a grano es caro al volcar el móvil, y nadie cuenta los granos. Sebastián pidió porcentaje.
 
-Descartado: metaballs, Lottie, shader de fluido completo, nieve como tercer material de esta versión (estacional; el registro la puede añadir después).
+Descartado: metaballs, Lottie, shader de fluido completo.
 
-Quedó: arena como está. Lluvia (nube, rayas, agua) y miel (cúpula, gotas, ámbar), las dos por `flowPose`.
+Quedó: arena como está. Lluvia (nube, rayas, agua), miel (cúpula, gotas, ámbar) y nieve (manto arriba, capa abajo, copos con tope fijo). Las tres por `flowPose`.
 
 ## Chorro
 
@@ -16,7 +16,7 @@ A favor de las partículas actuales: ya existen y salpican. En contra: su cantid
 
 Descartado: simular cada gota.
 
-Quedó: un patrón reciclado (`writeRibbons`) a ciclos por segundo fijos. La arena conserva sus partículas.
+Quedó: un patrón reciclado (`writeRibbons`, y `writeFlakes` para la nieve) a ciclos por segundo fijos. La arena conserva sus partículas. El tope de copos es 16.
 
 ## Nube
 
@@ -24,7 +24,7 @@ A favor de un óvalo o de un shader por píxel: poco código. En contra: se ve p
 
 Descartado: desenfoque en cada fotograma, vídeo de nubes.
 
-Quedó: varios copos de un círculo suave creado una vez, solapados, que encogen con el porcentaje. Cuando llegue `cloud-puff.png`, se sustituye el círculo.
+Quedó: `cloud-puff.png` y `cloud-shade.png`, dibujados unas pocas veces por fotograma. Si la textura no está, un degradado. No hay desenfoque por fotograma.
 
 ## Fondo
 
@@ -34,7 +34,7 @@ A favor de un degradado solo: barato y ya está. En contra: no es la foto de pro
 
 Descartado: vídeo, diorama 3D de rocas y esferas, hierba calculada.
 
-Quedó: cuatro capas estáticas cuando existan los archivos (escena desenfocada, piedra anclada al pie, frasco en Skia, briznas transparentes que no tapan el nivel ni los gestos). Hasta entonces, el degradado con un tinte por material. La miel no lleva césped nítido: el ámbar ya es el detalle. La nieve está descrita en `docs/assets-needed.md` y no se empaqueta todavía.
+Quedó: el frasco se apoya en la hierba. Las piedras están en la foto, no debajo. El punto de contacto y el tamaño de la sombra se leen de `packages/core/src/shape/anchors-ground.json`. Cambiar las fotos o ese JSON no pide tocar el código. Escena y briznas usan el mismo recorte. Los `stone-*.webp` no se dibujan.
 
 ## Botones (móvil)
 
@@ -42,7 +42,7 @@ A favor de imitar el vidrio esmerilado con `BackdropBlur`: es lo de la referenci
 
 Descartado: blur en vivo.
 
-Quedó: bandeja semitransparente, borde claro de 1 px, sombra suave, oliva `#6B7344` al activar (contraste del icono claro sobre el oliva, por encima de 4:1). Al pulsar, el botón encoge con un muelle y vuelve. El orden de la fila no cambia.
+Quedó: la hoja es un vidrio ahumado de 36 px de radio, con filo de luz. El desenfoque es una foto de la escena calculada una vez y recortada; no hay `BackdropBlur` por fotograma. La opción elegida es el oliva `#6B7344`. La fila rápida no cambia de orden. En la web el mismo aspecto usa `backdrop-filter`, con fondo opaco si falta.
 
 ## Barra web
 

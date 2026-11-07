@@ -51,6 +51,13 @@
   --footer: #8a7d72;
   --menu: #796c60;
   --line: rgba(255, 236, 214, 0.08);
+  background-image:
+    linear-gradient(rgba(12, 10, 8, 0.42), rgba(12, 10, 8, 0.42)),
+    var(--scene-image, none),
+    radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  background-size: auto, var(--scene-size, auto), auto, auto;
+  background-position: center, var(--scene-pos, center), center, center;
 }
 
 * {
@@ -79,10 +86,21 @@ a {
 .app {
   height: 100%;
   color: var(--ink);
-  background:
+  background-image:
+    var(--scene-image, none),
     radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: var(--scene-size, auto), auto, auto;
+  background-position: var(--scene-pos, center), center, center;
   position: relative;
+}
+
+.blades {
+  position: fixed;
+  z-index: 4;
+  pointer-events: none;
+  user-select: none;
 }
 
 .app[data-layout='narrow'] {
@@ -327,11 +345,15 @@ a {
   z-index: 34;
   overflow: auto;
   padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 2vw, 1.45rem);
-  border-radius: clamp(1.15rem, 2vw, 1.7rem);
-  border: 1px solid var(--sheet-edge);
-  background: var(--sheet);
+  border-radius: 36px;
+  border: 1px solid rgba(255, 252, 246, 0.85);
+  background: rgba(255, 252, 247, 0.34);
   color: var(--ink);
-  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 246, 0.9),
+    0 24px 60px rgba(40, 28, 16, 0.18);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -341,6 +363,20 @@ a {
     transform 680ms cubic-bezier(0.16, 0.84, 0.28, 1),
     opacity 520ms ease,
     filter 560ms ease;
+}
+
+.app[data-scheme='dark'] .sheet {
+  background: rgba(28, 24, 20, 0.52);
+  border-color: rgba(255, 238, 214, 0.28);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sheet {
+    background: rgba(247, 242, 235, 0.96);
+  }
+  .app[data-scheme='dark'] .sheet {
+    background: rgba(36, 30, 26, 0.96);
+  }
 }
 
 .app[data-layout='narrow'] .sheet {
@@ -362,6 +398,10 @@ a {
   max-height: min(46vh, calc(100vh - 16rem));
   height: auto;
   transform: translateY(calc(100% + 3rem));
+}
+
+.app[data-roomy='yes'][data-layout='wide'] .sheet {
+  bottom: 5.6rem;
 }
 
 .app[data-layout='narrow'] .sheet.open,
@@ -484,10 +524,11 @@ a {
   box-shadow: inset 0 0 0 1.5px var(--mode-rim);
 }
 
-.mode-row .pill.pill-fill {
-  background: var(--mode-on);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1.5px var(--mode-rim-strong);
+.mode-row .pill.pill-fill,
+.chip.chip-on {
+  background: #6b7344;
+  color: #fffcf7;
+  box-shadow: 0 0 16px rgba(107, 115, 68, 0.4);
 }
 
 .pill-fill {
@@ -507,9 +548,9 @@ a {
 }
 
 .chip.chip-on {
-  background: var(--chip-on);
-  color: var(--pill-ink);
-  box-shadow: none;
+  background: #6b7344;
+  color: #fffcf7;
+  box-shadow: 0 0 16px rgba(107, 115, 68, 0.4);
 }
 
 .stepper-row {

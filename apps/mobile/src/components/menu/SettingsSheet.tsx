@@ -87,7 +87,13 @@ const modeOptions = (t: Messages): readonly SegmentOption<SessionMode>[] => [
 ];
 
 const materialLabel = (t: Messages, id: MaterialId): string =>
-  id === 'lluvia' ? t.materialRain : id === 'miel' ? t.materialHoney : t.materialSand;
+  id === 'lluvia'
+    ? t.materialRain
+    : id === 'miel'
+      ? t.materialHoney
+      : id === 'nieve'
+        ? t.materialSnow
+        : t.materialSand;
 
 const materialOptions = (t: Messages): readonly SegmentOption<MaterialId>[] =>
   MATERIAL_IDS.map((id) => ({ value: id, label: materialLabel(t, id) }));
@@ -311,7 +317,7 @@ export function SettingsSheet({
                 accessibilityRole="header"
                 testID="titulo-ajustes"
               >
-                <Animated.Text style={[styles.title, { fontFamily: fonts.medium }, s.ink]}>
+                <Animated.Text style={[styles.title, { fontFamily: fonts.light }, s.ink]}>
                   {t.settings}
                 </Animated.Text>
               </Pressable>
@@ -633,12 +639,12 @@ function Section({
   return (
     <View style={styles.section}>
       <Animated.Text
-        style={[styles.label, { fontFamily: fonts.semibold }, s.label]}
+        style={[styles.label, { fontFamily: fonts.medium }, s.label]}
         accessibilityRole="header"
       >
         {label.toUpperCase()}
       </Animated.Text>
-      {children}
+      <Animated.View style={[styles.tile, s.tileBg]}>{children}</Animated.View>
     </View>
   );
 }
@@ -671,7 +677,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headText: { flexShrink: 1 },
-  title: { fontSize: 19, letterSpacing: 0.2 },
+  title: { fontSize: 22, letterSpacing: -0.3 },
+  tile: { borderRadius: 18, padding: 8 },
   summary: { fontSize: 12, marginTop: 3, letterSpacing: 0.2 },
   // «?» discreto: anillo fino de 28 px con 44 px de área táctil.
   helpTouch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -8 },

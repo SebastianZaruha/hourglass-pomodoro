@@ -64,7 +64,6 @@ export function Segmented<T extends string>({
   testID = 'opcion',
   styles: s,
   fonts,
-  pillShadow,
 }: SegmentedProps<T>) {
   return (
     <Animated.View
@@ -85,12 +84,18 @@ export function Segmented<T extends string>({
             accessibilityLabel={o.label}
             testID={`${testID}-${o.value}`}
           >
-            <Animated.View style={[st.segPill, on ? s.pillBg : s.clearBg, on && { boxShadow: pillShadow }]}>
+            <Animated.View
+              style={[
+                st.segPill,
+                on ? s.accentBg : s.clearBg,
+                on && { boxShadow: '0px 0px 14px rgba(107, 115, 68, 0.45)' },
+              ]}
+            >
               <Animated.Text
                 style={[
                   st.segText,
                   { fontFamily: on ? fonts.semibold : fonts.medium },
-                  on ? s.ink : s.inkSoft,
+                  on ? s.onAccent : s.inkSoft,
                 ]}
                 numberOfLines={1}
               >
@@ -126,7 +131,6 @@ export function Chip({
   style,
   styles: s,
   fonts,
-  pillShadow,
   testID,
 }: ChipProps) {
   return (
@@ -142,15 +146,15 @@ export function Chip({
         style={[
           StyleSheet.absoluteFill,
           round ? st.chipRoundBg : st.chipBg,
-          selected ? s.pillBg : s.trackBg,
-          selected && { boxShadow: pillShadow },
+          selected ? s.accentBg : s.tileBg,
+          selected && { boxShadow: '0px 0px 12px rgba(107, 115, 68, 0.4)' },
         ]}
       />
       <Animated.Text
         style={[
           round ? st.chipRoundText : st.chipText,
           { fontFamily: selected ? fonts.semibold : fonts.regular },
-          selected ? s.ink : s.inkSoft,
+          selected ? s.onAccent : s.inkSoft,
         ]}
         numberOfLines={1}
       >
@@ -356,7 +360,7 @@ export function DurationSlider({
   };
 
   return (
-    <Animated.View style={[st.slider, s.trackBg]} testID={testID}>
+    <Animated.View style={[st.slider, s.tileBg, s.glassBorder]} testID={testID}>
       <GestureDetector gesture={pan}>
         <View
           style={st.sliderHit}
@@ -396,6 +400,15 @@ export function DurationSlider({
               styles={s}
               fonts={fonts}
               testID={testID && `${testID}-mas`}
+            />
+          </View>
+          <View style={st.sliderTrack}>
+            <Animated.View
+              style={[
+                st.sliderFill,
+                s.accentBg,
+                { width: `${Math.round((index / Math.max(1, DURATION_STEPS_MIN.length - 1)) * 100)}%` },
+              ]}
             />
           </View>
           <Animated.Text style={[st.sliderLabel, { fontFamily: fonts.medium }, s.inkSoft]}>
@@ -440,9 +453,9 @@ function StepButton({
 }
 
 const st = StyleSheet.create({
-  segTrack: { flexDirection: 'row', borderRadius: 14, padding: 3 },
-  segItem: { flex: 1, height: 42 },
-  segPill: { flex: 1, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  segTrack: { flexDirection: 'row', borderRadius: 999, padding: 3 },
+  segItem: { flex: 1, height: 40 },
+  segPill: { flex: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   segText: { fontSize: 14, letterSpacing: 0.1 },
 
   chip: {
@@ -476,11 +489,21 @@ const st = StyleSheet.create({
   // Barra a todo el ancho: − pegado a la izquierda, + a la derecha.
   slider: {
     marginTop: 10,
-    borderRadius: 16,
+    borderRadius: 22,
+    borderWidth: 1,
     paddingTop: 6,
     paddingBottom: 8,
     paddingHorizontal: 8,
   },
+  sliderTrack: {
+    height: 3,
+    borderRadius: 2,
+    marginTop: 4,
+    marginHorizontal: 18,
+    backgroundColor: 'rgba(255, 252, 246, 0.35)',
+    overflow: 'hidden',
+  },
+  sliderFill: { height: 3, borderRadius: 2 },
   sliderHit: { minHeight: 44 },
   sliderRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center' },
   sliderValue: {

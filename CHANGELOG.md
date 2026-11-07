@@ -11,9 +11,12 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
 ## 1.8.16 — Lluvia y miel (Android)
 
-- Dentro del reloj, además de la arena: lluvia (nube que encoge y agua abajo)
-  y miel. El nivel sigue el porcentaje de tiempo, sin simular gota a gota.
-  El chorro es un dibujo continuo, igual de vivo en 5 minutos que en 60.
+- Dentro del reloj, además de la arena: lluvia (nube que encoge y agua abajo),
+  miel y nieve (manto que crece abajo y copos con un tope fijo). El nivel sigue
+  el porcentaje de tiempo. El chorro es un dibujo continuo, igual de vivo en 5
+  minutos que en 60.
+- El frasco se apoya en la hierba de la foto. No hay piedra debajo.
+- La hoja de ajustes es vidrio ahumado. En el móvil el desenfoque se calcula una vez.
 - La arena no cambia: sigue siendo la simulación de granos.
 - El fondo toma un tinte muy leve según el material. El menú conserva sus colores.
 - Ajustes: una fila Arena / Lluvia / Miel. Lo guardado en la 1.8.15 sigue en arena.
