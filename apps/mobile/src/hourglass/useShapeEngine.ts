@@ -7,6 +7,7 @@
  * que se publica en cada refresco. En reposo el bucle se para.
  */
 import {
+  cloudIdle,
   flowPose,
   freshDetail,
   shapeBudget,
@@ -86,6 +87,7 @@ export function useShapeEngine(params: ShapeEngineParams): {
     glassPending: false,
     lastTime: 0,
     phase: 0,
+    cloudTime: 0,
     detail: freshDetail(),
   });
 
@@ -155,6 +157,9 @@ export function useShapeEngine(params: ShapeEngineParams): {
         running,
       });
       if (pose.flowing && !p.reduceMotion) state.phase += frameDt;
+      const breathe = !!p.material?.cloud && !p.reduceMotion;
+      if (breathe && snap.status !== 'paused') state.cloudTime += frameDt;
+      const idle = cloudIdle(state.cloudTime, breathe);
       const budget = shapeBudget(state.detail.level);
 
       const tilt = m.tilt;
@@ -175,12 +180,14 @@ export function useShapeEngine(params: ShapeEngineParams): {
       }
 
       // Mientras corre, el nivel y el chorro cambian cada fotograma.
-      if (changed || running || pose.flowing) {
+      const cloudMoves = breathe && snap.status !== 'paused';
+      if (changed || running || pose.flowing || cloudMoves) {
         slots.sand.publish(
           painter.paint({
             pose,
             phase: state.phase,
-            drift: pose.flowing && !p.reduceMotion ? Math.sin(state.phase * 1.3) * 0.04 : 0,
+            drift: 0,
+            idle,
             reduceMotion: p.reduceMotion,
             ribbons: budget.ribbons,
             puffs: budget.puffs,
@@ -195,7 +202,8 @@ export function useShapeEngine(params: ShapeEngineParams): {
         noteFrame({ jsMs, simMs: 0, gapMs: hadClock ? frameDt * 1000 : 0, level: state.detail.level });
       }
 
-      const keep = snap.status === 'running' || turning || state.dirty || state.glassPending || changed;
+      const keep =
+        snap.status === 'running' || turning || state.dirty || state.glassPending || changed || cloudMoves;
       if (keep) {
         state.scheduled = true;
         pacer.request(frame);

@@ -89,6 +89,8 @@ a {
 .blades {
   position: fixed;
   z-index: 1;
+  max-width: none;
+  max-height: none;
   pointer-events: none;
   user-select: none;
 }
@@ -216,6 +218,8 @@ a {
 }
 
 .side {
+  position: relative;
+  z-index: 6;
   min-width: 0;
   min-height: 0;
 }
@@ -350,14 +354,16 @@ a {
   overflow: auto;
   padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 2vw, 1.45rem);
   border-radius: 36px;
-  border: 1px solid rgba(255, 252, 246, 0.85);
-  background: rgba(255, 252, 247, 0.34);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.16), rgba(255, 252, 247, 0.06)) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.02) 70%, rgba(255, 255, 255, 0.28)) border-box;
   color: var(--ink);
   box-shadow:
-    inset 0 1px 0 rgba(255, 252, 246, 0.9),
-    0 24px 60px rgba(40, 28, 16, 0.18);
-  backdrop-filter: blur(22px) saturate(1.25);
-  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 24px 64px rgba(20, 16, 12, 0.22);
+  backdrop-filter: blur(28px) saturate(1.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -370,27 +376,19 @@ a {
 }
 
 .app[data-scheme='dark'] .sheet {
-  background: rgba(28, 24, 20, 0.62);
-  border-color: rgba(255, 238, 214, 0.28);
+  background:
+    linear-gradient(180deg, rgba(18, 16, 14, 0.28), rgba(18, 16, 14, 0.14)) padding-box,
+    linear-gradient(180deg, rgba(255, 244, 230, 0.45), rgba(255, 244, 230, 0.05) 46%, rgba(255, 244, 230, 0.16)) border-box;
+  color: #f3eee6;
 }
 
-.app[data-material='arena'] .sheet {
-  background: rgba(255, 244, 228, 0.7);
-}
-.app[data-material='lluvia'] .sheet {
-  background: rgba(244, 246, 244, 0.84);
-}
-.app[data-material='miel'] .sheet {
-  background: rgba(255, 250, 242, 0.8);
-}
+.app[data-material='arena'] .sheet,
+.app[data-material='lluvia'] .sheet,
+.app[data-material='miel'] .sheet,
 .app[data-material='nieve'] .sheet {
-  background: rgba(246, 248, 250, 0.88);
-}
-.app[data-scheme='dark'][data-material='nieve'] .sheet {
-  background: rgba(16, 22, 30, 0.78);
-}
-.app[data-scheme='dark'][data-material='lluvia'] .sheet {
-  background: rgba(22, 24, 26, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.18), rgba(255, 252, 247, 0.07)) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.06) 42%, rgba(255, 255, 255, 0.22)) border-box;
 }
 
 .glass-cap {
@@ -558,14 +556,26 @@ a {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 14px;
   font-size: 0.9rem;
   min-width: 0;
+  background: rgba(16, 18, 20, 0.42);
+  color: #f4f1ea;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.pref-row .pill.pref.pill-fill {
+  background: #6b7344;
+  color: #fffcf7;
+  border-color: transparent;
+  box-shadow: 0 0 16px rgba(107, 115, 68, 0.5);
 }
 
 .pref-row .pill:not(.pill-fill) {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--mode-rim);
+  background: rgba(16, 18, 20, 0.42);
+  color: #f4f1ea;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 .pill.pref span {
@@ -1056,24 +1066,29 @@ a {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   max-width: calc(100vw - 1.5rem);
   padding: 6px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 252, 246, 0.95);
-  background: rgba(255, 252, 247, 0.62);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(22, 24, 26, 0.22), rgba(22, 24, 26, 0.1)) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.06) 55%, rgba(255, 255, 255, 0.2)) border-box;
   box-shadow:
-    inset 0 1px 0 rgba(255, 252, 246, 0.9),
-    0 12px 32px rgba(84, 64, 44, 0.12);
-  backdrop-filter: blur(16px) saturate(1.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 36px rgba(12, 10, 8, 0.22);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
 }
 
 .app[data-scheme='dark'] .dock {
-  border-color: rgba(255, 238, 214, 0.28);
-  background: rgba(44, 37, 31, 0.72);
+  background:
+    linear-gradient(180deg, rgba(12, 12, 14, 0.34), rgba(12, 12, 14, 0.16)) padding-box,
+    linear-gradient(180deg, rgba(255, 244, 230, 0.4), rgba(255, 244, 230, 0.05) 50%, rgba(255, 244, 230, 0.16)) border-box;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -1111,13 +1126,13 @@ a {
 }
 
 .dock-btn {
-  min-width: 44px;
-  height: 44px;
+  min-width: 42px;
+  height: 42px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 252, 246, 0.9);
-  background: rgba(255, 252, 247, 0.72);
-  color: #4f443b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(16, 18, 20, 0.42);
+  color: #f4f1ea;
   font: inherit;
   font-size: 13px;
   letter-spacing: 0.02em;
@@ -1134,12 +1149,13 @@ a {
   background: #6b7344;
   color: #fffcf7;
   border-color: transparent;
+  box-shadow: 0 0 16px rgba(107, 115, 68, 0.55);
 }
 
 .app[data-scheme='dark'] .dock-btn {
-  background: rgba(255, 238, 214, 0.08);
-  color: #e8dccb;
-  border-color: rgba(255, 238, 214, 0.2);
+  background: rgba(8, 10, 12, 0.45);
+  color: #f4f1ea;
+  border-color: rgba(255, 244, 230, 0.14);
 }
 
 .app[data-scheme='dark'] .dock-btn.on,

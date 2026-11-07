@@ -80,13 +80,16 @@ function Icon({
   size,
   progress,
   colorKey,
+  forceLight = false,
 }: {
   name: IconName;
   size: number;
   progress: SharedValue<number>;
   colorKey: keyof UiPalette;
+  forceLight?: boolean;
 }) {
-  const color = useThemedColor(progress, colorKey);
+  const themed = useThemedColor(progress, colorKey);
+  const color = useDerivedValue(() => (forceLight ? '#F4F1EA' : themed.value));
   const transform = [{ scale: size / 32 }];
   const fill = FILLS[name];
   return (
@@ -203,8 +206,10 @@ export function RoundButton({
           st.round,
           st.glassEdge,
           s.glassBorder,
-          on ? s.accentBg : isSwitch ? s.trackBg : s.pillBg,
-          !isSwitch && { boxShadow: pillShadow },
+          on ? s.accentBg : { backgroundColor: 'rgba(16, 18, 20, 0.46)' },
+          on
+            ? { boxShadow: '0px 0px 14px rgba(107, 115, 68, 0.55)' }
+            : { boxShadow: pillShadow },
         ]}
       >
         {icon ? (
@@ -212,10 +217,11 @@ export function RoundButton({
             name={icon}
             size={ICON_SIZE}
             progress={progress}
-            colorKey={on ? 'onAccent' : isSwitch ? 'inkSoft' : 'ink'}
+            colorKey={on ? 'onAccent' : 'onAccent'}
+            forceLight={!on}
           />
         ) : (
-          <Animated.Text style={[st.glyph, { fontFamily: fonts.semibold }, s.ink]} numberOfLines={1}>
+          <Animated.Text style={[st.glyph, { fontFamily: fonts.semibold, color: '#F4F1EA' }]} numberOfLines={1}>
             {glyph}
           </Animated.Text>
         )}

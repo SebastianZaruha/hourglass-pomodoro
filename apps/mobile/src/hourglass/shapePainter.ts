@@ -56,6 +56,8 @@ export interface ShapeFrame {
   readonly phase: number;
   /** Temblor de la nube, 0 en reposo. */
   readonly drift: number;
+  /** Respiración de toda la nube. Identidad si no viene. */
+  readonly idle?: { readonly x: number; readonly y: number; readonly scale: number };
   readonly reduceMotion: boolean;
   readonly ribbons: number;
   readonly puffs: number;
@@ -76,6 +78,7 @@ export class ShapePainter {
   private readonly cloudRgb: Rgb3;
   private readonly cloudHiRgb: Rgb3;
   private readonly puffPaint: SkPaint;
+  private readonly sprite: SkPaint;
   private readonly puff: SkImage | null;
   private readonly ownsPuff: boolean;
   private readonly shade: SkImage | null;
@@ -138,6 +141,10 @@ export class ShapePainter {
     this.cloudHi = fillPaint(this.cloudHiRgb, 1);
     this.puffPaint = Skia.Paint();
     this.puffPaint.setAntiAlias(true);
+    this.sprite = Skia.Paint();
+    this.sprite.setAntiAlias(true);
+    // Blanco opaco: el color de la foto se conserva y solo baja el alfa.
+    this.sprite.setColor(new Float32Array([1, 1, 1, 1]));
     // La imagen no se compone en Skia web. Ahí el copo es un degradado.
     this.ownsPuff = !sprites?.puff;
     this.puff = sprites?.puff ?? (material.cloud && Platform.OS !== 'web' ? makePuff(size) : null);
@@ -182,6 +189,7 @@ export class ShapePainter {
     safeDispose(this.cloud);
     safeDispose(this.cloudHi);
     safeDispose(this.puffPaint);
+    safeDispose(this.sprite);
     if (this.ownsPuff) safeDispose(this.puff);
     safeDispose(this.recorder);
   }
@@ -333,11 +341,41 @@ export class ShapePainter {
   }
 
   private drawCloud(canvas: SkCanvas, fill: number, slope: number, frame: ShapeFrame): void {
+    const { layout } = this;
+    const idle = frame.idle ?? { x: 0, y: 0, scale: 1 };
+    const anchorX = layout.cx;
+    const anchorY = layout.cy - layout.halfH * 0.5;
+    canvas.save();
+    canvas.translate(anchorX + idle.x * 3.2, anchorY + idle.y * 2.6);
+    canvas.scale(idle.scale, idle.scale);
+    canvas.translate(-anchorX, -anchorY);
+    if (this.puff && fill > 0.03) {
+      const span = (0.62 + 0.38 * Math.min(1, fill)) * layout.halfW * 1.55;
+      const a = 0.42 + 0.55 * Math.min(1, fill);
+      const src = Skia.XYWHRect(0, 0, this.puff.width(), this.puff.height());
+      if (this.shade) {
+        this.sprite.setAlphaf(a * 0.5);
+        const lag = 5 + idle.x * 1.4;
+        canvas.drawImageRect(
+          this.shade,
+          Skia.XYWHRect(0, 0, this.shade.width(), this.shade.height()),
+          Skia.XYWHRect(anchorX - span * 1.08 + lag, anchorY - span * 0.72 + 6, span * 2.16, span * 1.7),
+          this.sprite,
+        );
+      }
+      this.sprite.setAlphaf(a);
+      canvas.drawImageRect(
+        this.puff,
+        src,
+        Skia.XYWHRect(anchorX - span, anchorY - span * 0.82, span * 2, span * 1.55),
+        this.sprite,
+      );
+      canvas.restore();
+      return;
+    }
     const image = this.puff;
     const drift = frame.reduceMotion ? 0 : frame.drift;
     const n = Math.round(writeCloud(fill, slope, drift, this.puffs) * frame.puffs);
-    const { layout } = this;
-    const anchorY = layout.cy - layout.halfH * 0.52;
     for (let i = 0; i < n; i++) {
       const puff = this.puffs[i]!;
       const r = puff.r * layout.halfW * 1.15;
@@ -371,6 +409,7 @@ export class ShapePainter {
         safeDispose(shader);
       }
     }
+    canvas.restore();
   }
 
   private toPx(x: number, y: number): { x: number; y: number } {

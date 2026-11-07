@@ -1,9 +1,10 @@
 /**
- * Césped detrás del frasco y briznas delante, solo en la columna del reloj.
+ * Escena y briznas a pantalla completa.
  *
- * El recorte es el del lienzo, no el de toda la ventana: si no, un apoyo
- * descentrado (la lluvia horizontal) agranda la foto hasta sacar el suelo.
- * Las dos capas usan el mismo recorte. Las briznas no reciben el ratón.
+ * La foto cubre todo el viewport (cualquier ancho y proporción). El punto
+ * de apoyo de la imagen queda en el pie del frasco, así que el suelo no
+ * se desplaza aunque el reloj esté en la columna izquierda. Las briznas
+ * usan el mismo recorte y no reciben el ratón.
  */
 import { coverFrame, groundContact, type MaterialId } from '@reloj/core';
 import { useEffect, type RefObject } from 'react';
@@ -43,19 +44,23 @@ export function ScenePlate({ id, layoutRef }: Props) {
       const box = layoutRef.current?.layoutCss();
       if (!canvas || !photo || !blades || !box) return;
       const rect = canvas.getBoundingClientRect();
+      const viewW = document.documentElement.clientWidth;
+      const viewH = document.documentElement.clientHeight;
+      // Los archivos de la web son las escenas horizontales. El contacto
+      // tiene que ser el de esa foto, no el de la proporción de la ventana.
       const contact = groundContact(id, true);
       const frame = coverFrame(
-        rect.width,
-        rect.height,
+        viewW,
+        viewH,
         scene.naturalWidth,
         scene.naturalHeight,
-        box.cx,
-        box.cy + box.halfH,
+        rect.left + box.cx,
+        rect.top + box.cy + box.halfH,
         contact.x,
         contact.y,
       );
-      const left = `${rect.left + frame.x}px`;
-      const top = `${rect.top + frame.y}px`;
+      const left = `${frame.x}px`;
+      const top = `${frame.y}px`;
       const width = `${frame.w}px`;
       const height = `${frame.h}px`;
       for (const img of [photo, blades]) {
@@ -71,7 +76,9 @@ export function ScenePlate({ id, layoutRef }: Props) {
     const canvas = document.querySelector('.glass-canvas');
     const observer = new ResizeObserver(place);
     if (canvas) observer.observe(canvas);
+    observer.observe(document.documentElement);
     window.addEventListener('resize', place);
+    window.visualViewport?.addEventListener('resize', place);
     let tries = 0;
     const kick = window.setInterval(() => {
       place();
@@ -82,6 +89,7 @@ export function ScenePlate({ id, layoutRef }: Props) {
       alive = false;
       observer.disconnect();
       window.removeEventListener('resize', place);
+      window.visualViewport?.removeEventListener('resize', place);
       window.clearInterval(kick);
     };
   }, [id, layoutRef]);

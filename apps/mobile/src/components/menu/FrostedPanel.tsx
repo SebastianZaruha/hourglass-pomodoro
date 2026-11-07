@@ -52,20 +52,20 @@ export const SHEET_RADIUS = 36;
  */
 const VEIL: Record<MaterialId, { light: readonly [string, string]; dark: readonly [string, string] }> = {
   arena: {
-    light: ['rgba(255, 244, 228, 0.66)', 'rgba(236, 214, 184, 0.78)'],
-    dark: ['rgba(42, 32, 24, 0.58)', 'rgba(22, 16, 12, 0.74)'],
+    light: ['rgba(255, 248, 240, 0.22)', 'rgba(236, 220, 196, 0.34)'],
+    dark: ['rgba(28, 22, 16, 0.2)', 'rgba(16, 12, 8, 0.34)'],
   },
   lluvia: {
-    light: ['rgba(244, 246, 244, 0.8)', 'rgba(226, 230, 228, 0.9)'],
-    dark: ['rgba(28, 30, 32, 0.66)', 'rgba(14, 16, 18, 0.8)'],
+    light: ['rgba(244, 246, 244, 0.2)', 'rgba(220, 226, 224, 0.32)'],
+    dark: ['rgba(18, 20, 22, 0.22)', 'rgba(10, 12, 14, 0.36)'],
   },
   miel: {
-    light: ['rgba(255, 250, 242, 0.76)', 'rgba(244, 230, 210, 0.88)'],
-    dark: ['rgba(40, 30, 22, 0.64)', 'rgba(20, 14, 10, 0.8)'],
+    light: ['rgba(255, 248, 238, 0.24)', 'rgba(244, 226, 200, 0.36)'],
+    dark: ['rgba(32, 22, 14, 0.22)', 'rgba(16, 10, 6, 0.36)'],
   },
   nieve: {
-    light: ['rgba(246, 248, 250, 0.84)', 'rgba(228, 234, 238, 0.92)'],
-    dark: ['rgba(16, 22, 30, 0.74)', 'rgba(8, 12, 18, 0.88)'],
+    light: ['rgba(246, 248, 250, 0.28)', 'rgba(220, 228, 234, 0.4)'],
+    dark: ['rgba(12, 16, 22, 0.28)', 'rgba(6, 8, 12, 0.42)'],
   },
 };
 /** Alto de la sombra sobre el canto. */
@@ -113,9 +113,6 @@ export function FrostedPanel({
 
   // Intensidad del vidrio (0..1), según la hoja.
   const fade = useDerivedValue(() => glassFade(openness.value));
-  const edge = useDerivedValue(() =>
-    interpolateColor(themeProgress.value, [0, 1], [L.panelEdge, D.panelEdge]),
-  );
   const scrim = useDerivedValue(() => interpolateColor(themeProgress.value, [0, 1], [L.scrim, D.scrim]));
   const panelStart = useDerivedValue(() => vec(0, top.value));
   const panelEnd = useDerivedValue(() => vec(0, height));
@@ -151,9 +148,15 @@ export function FrostedPanel({
           <LinearGradient start={panelStart} end={panelEnd} colors={panelColors} />
         </Fill>
       </Group>
-      <Rect rect={highlight} color="rgba(255, 252, 246, 0.9)" opacity={fade} />
+      <Rect rect={highlight} opacity={fade}>
+        <LinearGradient
+          start={vec(22, 0)}
+          end={vec(Math.max(23, width - 22), 0)}
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.55)', 'rgba(255,255,255,0)']}
+        />
+      </Rect>
       <Group clip={edgeBand}>
-        <RoundedRect rect={shape} style="stroke" strokeWidth={1} color={edge} opacity={fade} />
+        <RoundedRect rect={shape} style="stroke" strokeWidth={1} color="rgba(255, 252, 246, 0.42)" opacity={fade} />
       </Group>
     </Group>
   );

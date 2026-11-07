@@ -16,7 +16,7 @@ function blurScene(source: SkImage): SkImage | null {
   const h = Math.max(1, Math.round(source.height() / 4));
   const surface = Skia.Surface.MakeOffscreen(w, h);
   if (!surface) return null;
-  const filter = Skia.ImageFilter.MakeBlur(10, 10, TileMode.Clamp, null);
+  const filter = Skia.ImageFilter.MakeBlur(18, 18, TileMode.Clamp, null);
   const paint = Skia.Paint();
   paint.setImageFilter(filter);
   surface

@@ -231,6 +231,32 @@ export function writeCloud(fill: number, tilt: number, drift: number, into: Clou
   return n;
 }
 
+/** Un ciclo de la respiración de la nube. Lento, para que no se note el corte. */
+export const CLOUD_IDLE_PERIOD_S = 8;
+
+export interface CloudIdle {
+  /** −1..1. El dibujo lo pasa a unos pocos píxeles. */
+  readonly x: number;
+  readonly y: number;
+  /** 1 en reposo. En marcha, ±2,5 %. */
+  readonly scale: number;
+}
+
+/**
+ * Deriva y respiración de toda la nube. Es un seno: en los extremos la
+ * velocidad es cero, así que el bucle entra y sale suave. `enabled` en
+ * falso (pausa o reducir movimiento) deja la identidad.
+ */
+export function cloudIdle(seconds: number, enabled: boolean): CloudIdle {
+  if (!enabled || !Number.isFinite(seconds)) return { x: 0, y: 0, scale: 1 };
+  const ang = (2 * Math.PI * seconds) / CLOUD_IDLE_PERIOD_S;
+  return {
+    x: Math.sin(ang),
+    y: Math.cos(ang) * 0.65,
+    scale: 1 + 0.025 * Math.sin(ang),
+  };
+}
+
 export interface FlakeMark {
   /** −1..1, a lo ancho del cuello. */
   x: number;

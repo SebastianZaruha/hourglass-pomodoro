@@ -12,6 +12,8 @@ import {
   progressOf,
   surfaceU,
   writeCloud,
+  cloudIdle,
+  CLOUD_IDLE_PERIOD_S,
   writeLiquidSurface,
   writeFlakes,
   writeRibbons,
@@ -178,6 +180,17 @@ describe('chorro continuo y nube', () => {
     expect(SAND.kind).toBe('granular');
   });
 
+  it('la nube respira poco y se queda quieta si no toca', () => {
+    expect(cloudIdle(0, false)).toEqual({ x: 0, y: 0, scale: 1 });
+    const a = cloudIdle(0, true);
+    const mid = cloudIdle(CLOUD_IDLE_PERIOD_S / 4, true);
+    expect(a.scale).toBeCloseTo(1);
+    expect(Math.abs(mid.x)).toBeGreaterThan(0.9);
+    expect(mid.scale).toBeGreaterThan(1.02);
+    expect(mid.scale).toBeLessThan(1.03);
+    expect(cloudIdle(CLOUD_IDLE_PERIOD_S, true).x).toBeCloseTo(a.x);
+  });
+
   it('los copos tienen un tope fijo y un ciclo los repite', () => {
     const into = Array.from({ length: 24 }, () => ({ x: 0, t: 0, r: 0, alpha: 0 }));
     expect(writeFlakes(0.2, 40, into)).toBe(FLAKE_CAP);
@@ -208,5 +221,30 @@ describe('el frasco se apoya en la hierba', () => {
     expect(frame.y).toBeLessThanOrEqual(0.01);
     expect(frame.x + frame.w).toBeGreaterThanOrEqual(390 - 0.01);
     expect(frame.y + frame.h).toBeGreaterThanOrEqual(844 - 0.01);
+  });
+
+  it('cubre el viewport entero y deja el apoyo en el pie, en cualquier proporción', () => {
+    const contact = groundContact('lluvia', true);
+    const views: ReadonlyArray<readonly [number, number]> = [
+      [1280, 800],
+      [1440, 900],
+      [1920, 1080],
+      [2560, 1440],
+      [3440, 1440],
+      [390, 844],
+      [844, 390],
+    ];
+    for (const [w, h] of views) {
+      const footX = w >= h ? w * 0.27 : w * 0.5;
+      const footY = h * 0.72;
+      const frame = coverFrame(w, h, 1920, 1080, footX, footY, contact.x, contact.y);
+      const scale = frame.w / 1920;
+      expect(frame.x).toBeLessThanOrEqual(0.5);
+      expect(frame.y).toBeLessThanOrEqual(0.5);
+      expect(frame.x + frame.w).toBeGreaterThanOrEqual(w - 0.5);
+      expect(frame.y + frame.h).toBeGreaterThanOrEqual(h - 0.5);
+      expect(frame.x + contact.x * 1920 * scale).toBeCloseTo(footX, 4);
+      expect(frame.y + contact.y * 1080 * scale).toBeCloseTo(footY, 4);
+    }
   });
 });

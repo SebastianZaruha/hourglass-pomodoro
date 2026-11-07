@@ -247,7 +247,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       <div className="pref-row">
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="pill pref"
           aria-label={themeSpoken(t, settings.theme)}
           title={t.tapToChange}
           onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
@@ -257,7 +257,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         </button>
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="pill pref"
           aria-label={languageSpoken(t, settings.language)}
           title={t.tapToChange}
           onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}

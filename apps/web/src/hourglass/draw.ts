@@ -172,6 +172,7 @@ export interface DrawScene {
     readonly material: ShapeMaterial;
     readonly pose: FlowPose;
     readonly phase: number;
+    readonly idle?: { readonly x: number; readonly y: number; readonly scale: number };
   };
 }
 
@@ -467,7 +468,38 @@ function drawShapeFill(
   if (!material.cloud) return;
   const tones = (_dark ? material.palette.dark : material.palette.light).grainTones;
   const tone = tones[1] ?? [160, 176, 184];
-  const count = writeCloud(pose.top * material.fullFraction, pose.slope, 0, PUFFS);
+  const idle = shape.idle ?? { x: 0, y: 0, scale: 1 };
+  const anchorX = layout.cx;
+  const anchorY = layout.cy - layout.halfH * 0.5;
+  const fill = pose.top * material.fullFraction;
+  ctx.save();
+  ctx.translate(anchorX + idle.x * 3.2, anchorY + idle.y * 2.6);
+  ctx.scale(idle.scale, idle.scale);
+  ctx.translate(-anchorX, -anchorY);
+  if (fill > 0.03 && puffTex.complete && puffTex.naturalWidth) {
+    const span = (0.62 + 0.38 * Math.min(1, fill)) * layout.halfW * 1.55;
+    const a = 0.42 + 0.55 * Math.min(1, fill);
+    if (shadeTex.complete && shadeTex.naturalWidth) {
+      ctx.save();
+      ctx.globalAlpha = a * 0.5;
+      const lag = 5 + idle.x * 1.4;
+      ctx.drawImage(
+        shadeTex,
+        anchorX - span * 1.08 + lag,
+        anchorY - span * 0.72 + 6,
+        span * 2.16,
+        span * 1.7,
+      );
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.drawImage(puffTex, anchorX - span, anchorY - span * 0.82, span * 2, span * 1.55);
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+  const count = writeCloud(fill, pose.slope, 0, PUFFS);
   for (let i = 0; i < count; i++) {
     const puff = PUFFS[i]!;
     const r = puff.r * layout.halfW * 1.15;
@@ -493,4 +525,5 @@ function drawShapeFill(
     ctx.arc(x, y, Math.max(1, r), 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
 }

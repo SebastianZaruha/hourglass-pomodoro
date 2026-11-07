@@ -14,6 +14,7 @@ import {
   StreamParticles,
   SandSimulation,
   flowBudget,
+  cloudIdle,
   flowPose,
   getContent,
   sandLevelForDuration,
@@ -147,6 +148,7 @@ export function useHourglass(
       flipDir: 1,
       flipHold: false,
       phase: 0,
+      cloudTime: 0,
     };
 
     const paintSand = () => {
@@ -292,7 +294,9 @@ export function useHourglass(
           running: snap.status === 'running' && !turning,
         });
         if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
-        shapeDraw = { material: shapeMat, pose, phase: loop.phase };
+        const breathe = !!shapeMat.cloud && !p.reduceMotion;
+        if (breathe && snap.status !== 'paused') loop.cloudTime += frameDt;
+        shapeDraw = { material: shapeMat, pose, phase: loop.phase, idle: cloudIdle(loop.cloudTime, breathe) };
       }
 
       let moved = false;
@@ -355,7 +359,8 @@ export function useHourglass(
         p.flipBusy ||
         p.gestureActive ||
         p.introActive ||
-        Math.abs(p.gestureAngle) > 0.0008;
+        Math.abs(p.gestureAngle) > 0.0008 ||
+        (!!shapeMat?.cloud && !p.reduceMotion && snap.status !== 'paused');
       if (keep) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };
