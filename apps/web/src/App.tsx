@@ -1,6 +1,5 @@
 import {
   activeCycleConfig,
-  dockIsRoomy,
   getContent,
   messagesFor,
   nearestStepIndex,
@@ -10,7 +9,6 @@ import {
   sessionSnapshot,
   stepMinutes,
   stepToDuration,
-  type MaterialId,
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
@@ -31,7 +29,6 @@ import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed
 import { AndroidPromo } from './components/AndroidPromo';
 import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
-import { GlassDock } from './components/GlassDock';
 import { ScenePlate } from './components/ScenePlate';
 import { SettingsSheet } from './components/SettingsSheet';
 import { SiteFooter } from './components/SiteFooter';
@@ -127,6 +124,30 @@ function Timer({
   }, [settings, replaceIfChanged]);
 
   const [menu, setMenu] = useState(false);
+  const [chromeOn, setChromeOn] = useState(false);
+  useEffect(() => {
+    let timer = 0;
+    const show = () => {
+      setChromeOn(true);
+      window.clearTimeout(timer);
+      if (!menu) timer = window.setTimeout(() => setChromeOn(false), 3200);
+    };
+    const hide = () => {
+      window.clearTimeout(timer);
+      setChromeOn(false);
+    };
+    document.addEventListener('mousemove', show);
+    document.addEventListener('mouseenter', show);
+    document.addEventListener('mouseleave', hide);
+    document.addEventListener('pointerdown', show);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('mousemove', show);
+      document.removeEventListener('mouseenter', show);
+      document.removeEventListener('mouseleave', hide);
+      document.removeEventListener('pointerdown', show);
+    };
+  }, [menu]);
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const legalRef = useRef<{ href: string; title: string } | null>(null);
@@ -439,11 +460,11 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${chromeOn || menu ? ' chrome' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-material={getContent(settings.contentId).id}
       data-layout={wide ? 'wide' : 'narrow'}
-      data-roomy={dockIsRoomy(window.innerWidth, window.innerHeight) ? 'yes' : 'no'}
+      data-roomy="no"
       style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
       {consentChoice === 'accepted' ? (
@@ -523,22 +544,6 @@ function Timer({
           t={t}
           onChange={update}
           onClose={() => setMenu(false)}
-        />
-        <GlassDock
-          t={t}
-          running={view.status === 'running'}
-          contentId={getContent(settings.contentId).id}
-          onToggle={doToggle}
-          onRestart={doRestart}
-          onMinutes={(min) => {
-            update({ sessionMode: 'single', lastDurationMs: min * 60_000 });
-            handleRef.current?.wake();
-          }}
-          onMaterial={(id: MaterialId) => {
-            update({ contentId: id });
-            handleRef.current?.wake();
-          }}
-          onMenu={() => setMenu(true)}
         />
         <SiteFooter
           lang={lang}

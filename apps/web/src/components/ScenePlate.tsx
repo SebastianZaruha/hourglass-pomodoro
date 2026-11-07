@@ -41,7 +41,7 @@ export function ScenePlate({ id }: Props) {
       if (!photo || !blades) return;
       const viewW = document.documentElement.clientWidth;
       const viewH = document.documentElement.clientHeight;
-      const frame = dioramaPlacement(viewW, viewH, scene.naturalWidth, scene.naturalHeight, id, true).scene;
+      const frame = dioramaPlacement(viewW, viewH, scene.naturalWidth, scene.naturalHeight, id, true, id === 'lluvia').scene;
       const left = `${frame.x}px`;
       const top = `${frame.y}px`;
       const width = `${frame.w}px`;

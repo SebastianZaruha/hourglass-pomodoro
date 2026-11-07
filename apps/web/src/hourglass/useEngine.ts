@@ -301,7 +301,7 @@ export function useHourglass(
         });
         if (pose.flowing && !p.reduceMotion) loop.phase += frameDt;
         const breathe = shapeMat.cloud && !p.reduceMotion;
-        if (breathe && snap.status !== 'paused') loop.cloudTime += frameDt;
+        if (breathe && snap.status === 'running') loop.cloudTime += frameDt;
         shapeDraw = { material: shapeMat, pose, phase: loop.phase };
       }
 

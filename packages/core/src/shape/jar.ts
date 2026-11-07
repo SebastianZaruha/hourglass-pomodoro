@@ -72,10 +72,18 @@ export interface Diorama {
   readonly footY: number;
 }
 
+/** Punto de la foto que debe quedar a la vista (object-position). */
+export const SCENE_FOCUS: Record<MaterialId, { readonly x: number; readonly y: number }> = {
+  arena: { x: 0.62, y: 0.46 },
+  lluvia: { x: 0.7, y: 0.68 },
+  miel: { x: 0.5, y: 0.5 },
+  nieve: { x: 0.46, y: 0.4 },
+};
+
 /**
- * Cover mínimo del viewport. El contacto queda lo más cerca posible del
- * sitio preferido (a la izquierda si la ventana es ancha) sin dejar huecos.
- * El frasco usa la misma escala de escena: alto = jarHeight × alto de foto.
+ * Cover mínimo. El foco de la escena cae cerca del centro y, en horizontal,
+ * el pie queda a la izquierda para dejar el reloj digital a la derecha.
+ * `mirror` voltea la foto en X (lluvia): el contacto se lee al revés.
  */
 export function dioramaPlacement(
   viewW: number,
@@ -84,27 +92,35 @@ export function dioramaPlacement(
   imageH: number,
   id: MaterialId,
   imageWide: boolean,
+  mirror = false,
 ): Diorama {
   const contact = groundContact(id, imageWide);
+  const focus = SCENE_FOCUS[id];
   const iw = imageW > 0 ? imageW : 1;
   const ih = imageH > 0 ? imageH : 1;
   const wide = viewW >= viewH;
-  // Cover mínimo: se ve el diorama entero. El contacto se acerca al suelo
-  // solo hasta donde la foto sigue cubriendo, sin acercar de más.
+  const cu = mirror ? 1 - contact.x : contact.x;
+  const fu = mirror ? 1 - focus.x : focus.x;
   const scale = Math.max(viewW / iw, viewH / ih);
   const dw = iw * scale;
   const dh = ih * scale;
-  const preferX = wide ? viewW * 0.3 : viewW * 0.5;
-  const preferY = viewH * 0.84;
-  let x = preferX - contact.x * dw;
-  let y = preferY - contact.y * dh;
-  x = Math.min(0, Math.max(Math.min(0, viewW - dw), x));
-  y = Math.min(0, Math.max(Math.min(0, viewH - dh), y));
+  const clamp = (value: number, size: number, view: number) =>
+    Math.min(0, Math.max(Math.min(0, view - size), value));
+  let x = clamp(viewW * 0.5 - fu * dw, dw, viewW);
+  let y = clamp(viewH * (wide ? 0.46 : 0.4) - focus.y * dh, dh, viewH);
+  const footTargetX = wide ? viewW * 0.3 : viewW * 0.5;
+  const footNow = x + cu * dw;
+  if (wide ? footNow > viewW * 0.46 : Math.abs(footNow - footTargetX) > viewW * 0.08) {
+    x = clamp(x - (footNow - footTargetX), dw, viewW);
+  }
+  const footYTarget = viewH * (wide ? 0.8 : 0.66);
+  const footYNow = y + contact.y * dh;
+  if (footYNow > viewH * 0.9 || footYNow < viewH * 0.55) y = clamp(y - (footYNow - footYTarget), dh, viewH);
   const scene = { x, y, w: dw, h: dh };
-  const footX = x + contact.x * dw;
+  const footX = x + cu * dw;
   const footY = y + contact.y * dh;
   let jh = groundJarHeight(id, imageWide) * scene.h;
-  const maxH = viewH * 0.68;
+  const maxH = viewH * (wide ? 0.62 : 0.5);
   if (jh > maxH) jh = maxH;
   const jw = jh * JAR_ASPECT;
   return {

@@ -11,7 +11,6 @@ import {
   JAR_NECK_Y,
   JAR_TOP_BOX,
   SCENE_LIGHT,
-  cloudIdle,
   type SceneLight,
   dioramaPlacement,
   jarSurface,
@@ -35,6 +34,10 @@ function ambientFor(id: MaterialId): AmbientMod | null {
   return ambientMod;
 }
 
+const CLOUD_W = 480;
+const CLOUD_H = 228;
+const CLOUD_FRAMES = 24;
+const CLOUD_FPS = 5;
 const FRAME_W = 96;
 const FRAME_H = 512;
 const SPLASH_W = 128;
@@ -61,7 +64,27 @@ const back = load(`${glassDir}jar-back.webp`);
 const front = load(`${glassDir}jar-front-highlights.webp`);
 const mask = load(`${glassDir}jar-interior-mask.webp`);
 const shadow = load(`${glassDir}jar-shadow.webp`);
-const cloud = load('/glass/cloud-real.webp');
+const cloudSheet = load('/streams/cloud-atlas.webp');
+let cloudClip: HTMLVideoElement | null = null;
+
+function cloudVideo(): HTMLVideoElement {
+  if (cloudClip) return cloudClip;
+  const video = document.createElement('video');
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.src = '/streams/cloud.webm';
+  cloudClip = video;
+  return video;
+}
+
+function cloudIndex(seconds: number, reduceMotion: boolean): number {
+  if (reduceMotion || !Number.isFinite(seconds)) return 0;
+  const loop = CLOUD_FRAMES / CLOUD_FPS;
+  const t = ((seconds % loop) + loop) % loop;
+  return Math.floor(t * CLOUD_FPS) % CLOUD_FRAMES;
+}
 const surfaceTex = load('/glass/tex-water-surface.webp');
 const textures: Record<Kind, HTMLImageElement> = {
   sand: load('/glass/tex-sand.webp'),
@@ -297,15 +320,46 @@ function gradeGlass(
   ctx.restore();
 }
 
+/** Tapa baja y ancha: solo el borde de arriba del bulbo, el agua queda debajo. */
+function drawCloud(
+  ctx: CanvasRenderingContext2D,
+  jar: { x: number; y: number; w: number; h: number },
+  frame: PhotoFrame,
+): void {
+  const width = jar.w * 1.72;
+  const height = width * (CLOUD_H / CLOUD_W) * 0.72;
+  const bottom = jar.y + jar.h * 0.15;
+  const x = jar.x + jar.w / 2 - width / 2;
+  const y = bottom - height;
+  const video = cloudVideo();
+  const loop = CLOUD_FRAMES / CLOUD_FPS;
+  const t = frame.reduceMotion ? 0 : ((frame.cloudTime % loop) + loop) % loop;
+  if (video.readyState >= 2) {
+    if (Math.abs(video.currentTime - t) > 0.12) {
+      try {
+        video.currentTime = t;
+      } catch {
+        /* el vídeo aún no admite seek */
+      }
+    }
+    ctx.drawImage(video, x, y, width, height);
+    return;
+  }
+  if (!ready(cloudSheet)) return;
+  const index = cloudIndex(frame.cloudTime, frame.reduceMotion);
+  ctx.drawImage(cloudSheet, index * CLOUD_W, 0, CLOUD_W, CLOUD_H, x, y, width, height);
+}
+
 export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame): boolean {
   if (!jarLayersReady()) return false;
   const photo = document.querySelector<HTMLImageElement>('.scene-photo');
   const imageW = photo?.naturalWidth || 1920;
   const imageH = photo?.naturalHeight || 1080;
-  const place = dioramaPlacement(frame.viewW, frame.viewH, imageW, imageH, frame.id, true);
+  const place = dioramaPlacement(frame.viewW, frame.viewH, imageW, imageH, frame.id, true, frame.id === 'lluvia');
   const sink = place.jar.h * 0.016;
   const jar = { ...place.jar, y: place.jar.y + sink };
-  const grade = SCENE_LIGHT[frame.id];
+  const light = SCENE_LIGHT[frame.id];
+  const grade = frame.id === 'lluvia' ? { ...light, dx: -light.dx, key: 1 - light.key } : light;
   const kind = KIND[frame.id];
   const liquid = kind === 'water' || kind === 'honey';
   const heap = kind === 'sand' ? 0.045 : kind === 'snow' ? 0.032 : 0;
@@ -415,19 +469,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
 
   gradeGlass(ctx, jar, grade);
 
-  if (frame.id === 'lluvia' && frame.top > 0.04 && ready(cloud)) {
-    const idle = cloudIdle(frame.cloudTime, !frame.reduceMotion);
-    const width = jar.w * (1.35 + 0.45 * frame.top);
-    const height = width * (cloud.naturalHeight / cloud.naturalWidth);
-    const cx = jar.x + jar.w / 2;
-    const cy = jar.y + jar.h * 0.2;
-    ctx.save();
-    ctx.translate(cx + idle.x * 3.2, cy + idle.y * 2.4);
-    ctx.scale(idle.scale, idle.scale);
-    ctx.globalAlpha = 0.62 + 0.38 * frame.top;
-    ctx.drawImage(cloud, -width / 2, -height * 0.58, width, height);
-    ctx.restore();
-  }
+  if (frame.id === 'lluvia' && frame.top > 0.04) drawCloud(ctx, jar, frame);
 
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'front');
   return true;
@@ -554,6 +596,7 @@ export function preloadJar(id: MaterialId): void {
   window.setTimeout(() => {
     ensureSheets();
     streamVideo(kind);
+    if (id === 'lluvia') cloudVideo();
     ambientFor(id);
   }, 1600);
 }

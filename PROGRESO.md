@@ -4,6 +4,14 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+- La nube de lluvia es un bucle de 4,8 s (24 fotogramas, WebM con alfa y `cloud-atlas.webp`) hecho con la foto densa. Se pausa con el reloj y queda quieta si se reduce el movimiento. Es una tapa baja y ancha: tapa el borde de arriba y deja ver el agua del bulbo.
+- La hora va sobre una tarjeta de cristal ahumado, el mismo blur y el borde fino del menú.
+- No hay barra inferior ni botones de empezar o reiniciar. Un clic empieza o pausa; el doble clic no reinicia. La rueda cambia el tiempo y arrastrar el frasco lo voltea, como en main. Espacio y Enter hacen lo mismo. El botón de Ajustes solo aparece con el ratón dentro de la ventana y se esconde a los pocos segundos; en táctil, al tocar.
+- La foto cubre siempre el viewport desde un foco por escena. En horizontal el frasco queda a la izquierda y el reloj a la derecha; en vertical el reloj va debajo. Lluvia se espeja para que el cielo vacío quede bajo el reloj, y la luz y la sombra se invierten con el espejo.
+- Comprobado a `00:36`: `b-arena-1440.png`, `b-lluvia-1440.png`, `b-miel-1440.png`, `b-nieve-1440.png`, `b-lluvia-390.png`, `b-lluvia-480.png`. Sin caja, vidrio vacío transparente, nube sin tapar el agua, sin barra.
+
+## Hecho antes
+
 - La hora es texto blanco fino, sin pastilla. En horizontal queda en el cielo de la derecha; en 390 queda arriba, sobre el cielo.
 - El encuadre vuelve al cover mínimo (toda la isla de lluvia: orbes, charca y rocas). El contacto se acerca al suelo solo hasta donde la foto sigue cubriendo, sin zoom extra.
 - El cristal vacío no lleva velo de color. La refracción del fondo va al 22 %. En arena el bulbo de arriba deja ver el atardecer. Si detrás hay roca oscura, el vidrio se ve oscuro porque la roca lo es.

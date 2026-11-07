@@ -24,15 +24,12 @@ export type StageClickDecision =
  * en camino se deja correr.
  */
 export function decideStageClick(input: StageClickInput): StageClickDecision {
-  if (input.detail > 1 && (input.status === 'paused' || input.resumeArmed)) {
-    return { kind: 'ignore-extra' };
-  }
+  if (input.detail > 1) return { kind: 'ignore-extra' };
   if (input.pendingToggle) return { kind: 'cancel-pending' };
   return { kind: 'schedule', armResume: input.status === 'paused' };
 }
 
-/** El doble clic reinicia, salvo si la pareja empezó en pausa. */
-export function decideStageDoubleClick(status: TimerStatus, resumeArmed: boolean): 'restart' | 'ignore' {
-  if (status === 'paused' || resumeArmed) return 'ignore';
-  return 'restart';
+/** El doble clic no reinicia: un clic empieza o pausa, el segundo no voltea. */
+export function decideStageDoubleClick(_status: TimerStatus, _resumeArmed: boolean): 'restart' | 'ignore' {
+  return 'ignore';
 }
