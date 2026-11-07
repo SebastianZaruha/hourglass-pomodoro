@@ -4,6 +4,14 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+- El frasco lleva capuchones y cuatro postes finos: madera clara en arena y miel, metal oscuro cepillado en lluvia y nieve. En lluvia la nube se sienta sobre el capuchón de arriba.
+- El bulbo de arriba deja aire (el volumen se dibuja al 84 %). Arena y nieve hacen montículo, la miel un menisco y el agua una superficie suave. La nieve se rotó y se desenfocó para quitar el tramado diagonal.
+- La sombra de nieve es un óvalo grande y muy difuso. El pie se hunde un poco y hay nieve delante de la base.
+- Los enlaces del pie van en una pastilla clara (`#3a322c` sobre `rgba(255,250,244,0.84)`), por encima de 4,5:1 aunque el fondo sea blanco o negro.
+- Visto en `frame-arena-1440.png`, `frame-lluvia-1440.png`, `frame-miel-1440.png` y `frame-nieve-1440.png`.
+
+## Hecho antes
+
 - La nube de lluvia es un bucle de 4,8 s (24 fotogramas, WebM con alfa y `cloud-atlas.webp`) hecho con la foto densa. Se pausa con el reloj y queda quieta si se reduce el movimiento. Es una tapa baja y ancha: tapa el borde de arriba y deja ver el agua del bulbo.
 - La hora va sobre una tarjeta de cristal ahumado, el mismo blur y el borde fino del menú.
 - No hay barra inferior ni botones de empezar o reiniciar. Un clic empieza o pausa; el doble clic no reinicia. La rueda cambia el tiempo y arrastrar el frasco lo voltea, como en main. Espacio y Enter hacen lo mismo. El botón de Ajustes solo aparece con el ratón dentro de la ventana y se esconde a los pocos segundos; en táctil, al tocar.

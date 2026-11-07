@@ -805,7 +805,16 @@ a {
   gap: 0.35rem 0.85rem;
   padding: 0.5rem max(4.5rem, 6vw) calc(0.5rem + env(safe-area-inset-bottom));
   font-size: 0.75rem;
-  color: var(--footer);
+  color: #3a322c;
+  background: rgba(255, 250, 244, 0.84);
+  width: max-content;
+  max-width: calc(100% - 1.5rem);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .site-footer a,
