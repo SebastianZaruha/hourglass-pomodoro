@@ -22,7 +22,7 @@ El volteo reinicia la fase (el temporizador ya lo hacía). De lado, la gravedad 
 
 ## Fondos
 
-Hasta que lleguen los archivos de `docs/assets-needed.md`, el fondo es el degradado de siempre, con un tinte fijo por material (lluvia un grado más gris, miel un grado más ámbar). El menú no usa ese tinte: sus colores siguen en la hoja.
+Hasta que lleguen los archivos de `docs/assets-needed.md`, el fondo es el degradado de siempre, con un tinte fijo por material (lluvia un grado más gris, miel un grado más ámbar). En el móvil entra en el tema del lienzo; en la web, en `--bg-top` y `--bg-bottom`. El menú no usa ese tinte: sus colores siguen en la hoja.
 
 Cuando existan las imágenes, serán cuatro capas estáticas: escena desenfocada, piedra anclada al pie del frasco, el frasco en Skia, y briznas transparentes por delante que no tapan el nivel ni reciben toques. No hay vídeo.
 

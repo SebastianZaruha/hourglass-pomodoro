@@ -22,6 +22,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 
@@ -437,6 +438,7 @@ function Timer({
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
       data-roomy={dockIsRoomy(window.innerWidth, window.innerHeight) ? 'yes' : 'no'}
+      style={pageTint(scheme, getContent(settings.contentId).atmosphere)}
     >
       {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
@@ -556,4 +558,26 @@ function Timer({
       ) : null}
     </div>
   );
+}
+
+/** Mismos colores que `--bg-top` / `--bg-bottom`. El menú no usa estas variables. */
+function pageTint(
+  scheme: string,
+  atmosphere: { readonly light: readonly [number, number, number]; readonly dark: readonly [number, number, number] },
+): CSSProperties {
+  const dark = scheme === 'dark';
+  const shift = dark ? atmosphere.dark : atmosphere.light;
+  return {
+    '--bg-top': shiftHex(dark ? '#2A241F' : '#F6F1EA', shift),
+    '--bg-bottom': shiftHex(dark ? '#16130F' : '#E3D9CC', shift),
+  } as CSSProperties;
+}
+
+function shiftHex(hexColor: string, shift: readonly number[]): string {
+  const n = parseInt(hexColor.slice(1), 16);
+  const ch = (v: number, i: number) =>
+    Math.min(255, Math.max(0, v + Math.round(shift[i] ?? 0)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${ch((n >> 16) & 255, 0)}${ch((n >> 8) & 255, 1)}${ch(n & 255, 2)}`;
 }
