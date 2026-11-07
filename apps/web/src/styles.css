@@ -172,10 +172,22 @@ a {
 
 .app[data-layout='narrow'] .stage {
   grid-template-rows: minmax(0, 1fr) auto;
-  justify-items: center;
-  align-items: end;
-  padding: clamp(0.4rem, 1.4vh, 0.8rem) clamp(0.6rem, 3vw, 1rem) var(--menu-pad, calc(0.45rem + env(safe-area-inset-bottom)));
+  justify-items: stretch;
+  align-items: stretch;
+  padding: clamp(0.4rem, 1.4vh, 0.8rem) clamp(0.6rem, 3vw, 1rem) var(--menu-pad, 2.8rem);
   transition: padding-bottom 620ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.app[data-layout='narrow'] .glass-frame {
+  min-height: 0;
+  height: 100%;
+}
+
+.app[data-layout='narrow'] .glass-canvas {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
 }
 
 /* La tira de la app ocupa el hueco bajo la hora; la hora sube para no taparse. */
@@ -248,7 +260,7 @@ a {
 
 .side {
   position: relative;
-  z-index: 6;
+  z-index: 8;
   min-width: 0;
   min-height: 0;
 }
@@ -512,9 +524,9 @@ a {
 .app[data-layout='narrow'] .sheet {
   left: clamp(0.75rem, 3.5vw, 1.25rem);
   right: clamp(0.75rem, 3.5vw, 1.25rem);
-  bottom: max(4.6rem, env(safe-area-inset-bottom));
+  bottom: max(0.65rem, env(safe-area-inset-bottom));
   width: auto;
-  max-height: min(42vh, calc(100dvh - var(--side-height, 5.5rem) - 8rem));
+  max-height: min(40vh, calc(100dvh - var(--side-height, 5.5rem) - 9rem));
   transform: translateY(calc(100% + 3rem));
 }
 
@@ -815,25 +827,30 @@ a {
 .site-footer {
   position: fixed;
   z-index: 22;
-  left: 0;
-  right: 0;
   bottom: 0;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.35rem 0.85rem;
-  padding: 0.5rem max(4.5rem, 6vw) calc(0.5rem + env(safe-area-inset-bottom));
-  font-size: 0.75rem;
-  color: #3a322c;
-  background: rgba(255, 250, 244, 0.84);
+  padding: 0.35rem 0.7rem calc(0.4rem + env(safe-area-inset-bottom));
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #f7f4ee;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  background: rgba(14, 12, 10, 0.62);
   width: max-content;
   max-width: calc(100% - 1.5rem);
   left: 50%;
   right: auto;
   transform: translateX(-50%);
-  border-radius: 999px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.app[data-layout='narrow'].menu-open .site-footer {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .site-footer a,

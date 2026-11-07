@@ -4,6 +4,10 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+En vertical el frasco vive en la celda de arriba y el reloj debajo, sin pisarse. Al abrir el menú el frasco encoge y el reloj queda justo encima del panel (390 cerrado y abierto, 768 abierto). El pie es cristal oscuro al 62 % con texto `#f7f4ee` (4,7:1 sobre blanco) y se esconde con el menú abierto en estrecho. La nube no gira: al arrastrar se aclara y sube, y el reloj queda por encima. Capturas: `verify-390-closed.png`, `verify-390-open.png`, `verify-768-open.png`, `verify-1440-closed.png`, `verify-1440-flip.png`.
+
+## Hecho antes
+
 La especificación está en `docs/DISENO-WEB.md`, con las correcciones de Sebastián: el reloj sube al abrir (como en main), el botón sigue abajo a la derecha, la primera visita es lluvia y se guarda, y el cristal no lleva franja blanca.
 
 - La escena es el primer control de Ajustes. Sin nada guardado, o con un valor que no vale, o si el almacenamiento falla, entra lluvia. Arena, miel y nieve se restauran en la visita siguiente (`hourglass-web/ajustes`).

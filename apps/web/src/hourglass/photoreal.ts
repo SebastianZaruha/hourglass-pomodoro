@@ -360,6 +360,39 @@ function drawSnowLip(
   ctx.restore();
 }
 
+/** Frasco en el lienzo. En vertical el pie baja hasta rozar el reloj, que va debajo. */
+export function placedPhotoJar(
+  viewW: number,
+  viewH: number,
+  imageW: number,
+  imageH: number,
+  id: MaterialId,
+): {
+  jar: { x: number; y: number; w: number; h: number };
+  footX: number;
+  footY: number;
+  scene: { x: number; y: number; w: number; h: number };
+} {
+  const place = dioramaPlacement(viewW, viewH, imageW, imageH, id, true, id === 'lluvia');
+  const sink = place.jar.h * 0.016;
+  let jarY = place.jar.y + sink;
+  let footY = place.footY;
+  let sceneY = place.scene.y;
+  if (viewH > viewW) {
+    const dy = viewH * 0.97 - (footY + sink);
+    const shift = jarY + dy < 4 ? 4 - jarY : dy;
+    jarY += shift;
+    footY += shift;
+    sceneY += shift;
+  }
+  return {
+    jar: { x: place.jar.x, y: jarY, w: place.jar.w, h: place.jar.h },
+    footX: place.footX,
+    footY,
+    scene: { ...place.scene, y: sceneY },
+  };
+}
+
 /** Tapa baja y ancha: se apoya en el capuchón, el agua queda debajo. */
 function drawCloud(
   ctx: CanvasRenderingContext2D,
@@ -395,9 +428,8 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const photo = document.querySelector<HTMLImageElement>('.scene-photo');
   const imageW = photo?.naturalWidth || 1920;
   const imageH = photo?.naturalHeight || 1080;
-  const place = dioramaPlacement(frame.viewW, frame.viewH, imageW, imageH, frame.id, true, frame.id === 'lluvia');
-  const sink = place.jar.h * 0.016;
-  const jar = { ...place.jar, y: place.jar.y + sink };
+  const place = placedPhotoJar(frame.viewW, frame.viewH, imageW, imageH, frame.id);
+  const jar = place.jar;
   const light = SCENE_LIGHT[frame.id];
   const grade = frame.id === 'lluvia' ? { ...light, dx: -light.dx, key: 1 - light.key } : light;
   const kind = KIND[frame.id];
@@ -535,10 +567,17 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   gradeGlass(ctx, jar, grade);
   if (frame.id === 'nieve') drawSnowLip(ctx, footX, footY + bury, jar.w);
 
-  if (frame.id === 'lluvia' && frame.top > 0.04) drawCloud(ctx, jar, frame);
-
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'front');
   ctx.restore();
+
+  if (frame.id === 'lluvia' && frame.top > 0.04) {
+    const away = Math.min(1, Math.abs(frame.rotation) / (Math.PI * 0.5));
+    ctx.save();
+    ctx.globalAlpha = 1 - away * 0.78;
+    ctx.translate(0, -jar.h * 0.3 * away);
+    drawCloud(ctx, jar, frame);
+    ctx.restore();
+  }
   return true;
 }
 

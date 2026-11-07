@@ -61,7 +61,7 @@ Una sola regla de composición, un solo material de cristal, un solo sitio para 
 
 Ancha. El frasco ocupa la mitad izquierda y se apoya en el suelo de la foto. El reloj ocupa la mitad derecha, centrado en vertical. Al abrir Ajustes el reloj sube, igual que en la web publicada, y el panel aparece debajo, centrado en el mismo eje horizontal que el reloj. El botón de menú sigue abajo a la derecha.
 
-Estrecha. El frasco arriba y el reloj debajo. El panel queda bajo el reloj y no lo tapa. Su borde inferior queda por encima del pie, para que la pastilla de enlaces no se vea a través del slider. El slider cabe dentro de la hoja.
+Estrecha. El frasco ocupa la celda de arriba y el reloj la de abajo, sin pisar el vidrio. Al abrir Ajustes el hueco de abajo crece, el frasco encoge y el reloj queda justo encima del panel. El pie de enlaces se esconde mientras el panel está abierto. El slider cabe dentro de la hoja.
 
 El corte ancho es el de main. Ancho de al menos 46 rem y ancho mayor que alto × 1,05. Una ventana apaisada más corta, desde 28 rem (480×360 entra), no usa la hoja de teléfono. El reloj sigue a la derecha, sube al abrir, y el panel es una hoja con scroll de alto como máximo la mitad de la ventana. Por debajo de eso se apila y el panel hace scroll sin tapar el reloj.
 
@@ -107,7 +107,7 @@ El botón sigue abajo a la derecha. Sin puntero dentro de la ventana solo se ven
 | Clic en el escenario | Empieza o pausa, tras 260 ms por si llega otro clic. |
 | Doble clic | No reinicia. |
 | Rueda, reloj parado, menú cerrado | Cambia la duración. |
-| Arrastre sobre el frasco fotográfico | Gira ese frasco. Al soltar, si el ángulo pasa de 0,45π, voltea y reinicia, como en main. |
+| Arrastre sobre el frasco fotográfico | Gira ese frasco. La nube no gira: se aclara y sube, y al terminar el volteo vuelve encima del bulbo de arriba. Al soltar, si el ángulo pasa de 0,45π, voltea y reinicia, como en main. |
 | Espacio o Enter | Igual que el clic. |
 | Escape | Cierra el menú o el texto legal. |
 | Reducir movimiento | Sin giro de entrada, nube en el fotograma 0, superficies quietas. |

@@ -13,7 +13,6 @@ import {
   SAND,
   StreamParticles,
   SandSimulation,
-  dioramaPlacement,
   flowBudget,
   flowPose,
   getContent,
@@ -34,7 +33,7 @@ import {
   type GlassLayout,
   type Scheme,
 } from './draw';
-import { drawPhotoreal, jarLayersReady, preloadJar } from './photoreal';
+import { drawPhotoreal, jarLayersReady, placedPhotoJar, preloadJar } from './photoreal';
 
 const TURN_MS = 950;
 const FLIP_MS = 1000;
@@ -64,19 +63,10 @@ export function photoVesselLayout(viewW: number, viewH: number, contentId: strin
   const photo = document.querySelector<HTMLImageElement>('.scene-photo');
   if (!photo || photo.naturalWidth <= 0 || viewW <= 0 || viewH <= 0) return null;
   const id = contentId === 'lluvia' || contentId === 'miel' || contentId === 'nieve' ? contentId : 'arena';
-  const placed = dioramaPlacement(
-    viewW,
-    viewH,
-    photo.naturalWidth,
-    photo.naturalHeight,
-    id,
-    true,
-    id === 'lluvia',
-  );
-  const sink = placed.jar.h * 0.016;
+  const placed = placedPhotoJar(viewW, viewH, photo.naturalWidth, photo.naturalHeight, id);
   return {
     cx: placed.jar.x + placed.jar.w / 2,
-    cy: placed.jar.y + sink + placed.jar.h / 2,
+    cy: placed.jar.y + placed.jar.h / 2,
     halfW: Math.max(8, placed.jar.w / 2),
     halfH: Math.max(8, placed.jar.h / 2),
   };
