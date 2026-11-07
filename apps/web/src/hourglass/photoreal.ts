@@ -191,6 +191,17 @@ export function cloudShadeMoving(): boolean {
   return Math.abs(cloudShade - 1) > 0.012 && Math.abs(cloudShade - 0.78) > 0.012;
 }
 
+function tintCloud(g: CanvasRenderingContext2D, w: number, h: number, brightness: number): void {
+  const mix = Math.min(1, Math.max(0, (1 - brightness) / 0.22));
+  if (mix < 0.02) return;
+  g.save();
+  g.globalCompositeOperation = 'source-atop';
+  g.globalAlpha = 0.48 * mix;
+  g.fillStyle = 'rgb(132, 140, 144)';
+  g.fillRect(0, 0, w, h);
+  g.restore();
+}
+
 function cloudShadeNow(dark: boolean): { brightness: number; saturate: number } {
   const now = performance.now();
   const dt = Math.min(0.05, cloudShadeAt ? (now - cloudShadeAt) / 1000 : 0.016);
@@ -681,9 +692,6 @@ function drawCloud(
     const mask = cloudMask(which);
     ctx.save();
     ctx.globalAlpha = alpha;
-    if (shade.brightness < 0.995) {
-      ctx.filter = `brightness(${shade.brightness.toFixed(3)}) saturate(${shade.saturate.toFixed(3)})`;
-    }
     if (mirror) {
       ctx.translate(dx + dw / 2, dy + dh / 2);
       ctx.scale(-1, 1);
@@ -707,11 +715,24 @@ function drawCloud(
           const md = matte.data;
           for (let i = 0; i < cd.length; i += 4) cd[i + 3] = md[i] ?? 0;
           g.putImageData(color, 0, 0);
+          tintCloud(g, plate.width, plate.height, shade.brightness);
           ctx.drawImage(plate, dx, dy, dw, dh);
         }
-      } else ctx.drawImage(video, dx, dy, dw, dh);
+      } else {
+        const g = scratch(dw, dh);
+        if (g && plate && shade.brightness < 0.995) {
+          g.drawImage(video, 0, 0, plate.width, plate.height);
+          tintCloud(g, plate.width, plate.height, shade.brightness);
+          ctx.drawImage(plate, dx, dy, dw, dh);
+        } else ctx.drawImage(video, dx, dy, dw, dh);
+      }
     } else if (ready(cloudPoster)) {
-      ctx.drawImage(cloudPoster, dx, dy, dw, dh);
+      const g = scratch(dw, dh);
+      if (g && plate && shade.brightness < 0.995) {
+        g.drawImage(cloudPoster, 0, 0, plate.width, plate.height);
+        tintCloud(g, plate.width, plate.height, shade.brightness);
+        ctx.drawImage(plate, dx, dy, dw, dh);
+      } else ctx.drawImage(cloudPoster, dx, dy, dw, dh);
     }
     ctx.restore();
   };

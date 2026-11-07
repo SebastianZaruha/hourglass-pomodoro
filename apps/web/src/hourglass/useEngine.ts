@@ -376,7 +376,9 @@ export function useHourglass(
       const photoId = p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena';
       const photoLayout = photoVesselLayout(cssW, cssH, photoId);
       if (photoLayout) loop.layout = photoLayout;
-      const drew = drawPhotoreal(ctx, {
+      let drew = false;
+      try {
+      drew = drawPhotoreal(ctx, {
         id: photoId,
         top,
         bottom: 1 - top,
@@ -407,13 +409,17 @@ export function useHourglass(
               }
             : undefined,
       });
+      } catch (error) {
+        drew = false;
+        (window as unknown as { __jarError?: string }).__jarError = error instanceof Error ? error.message : String(error);
+      }
       const photoScene =
         p.contentId === 'lluvia' ||
         p.contentId === 'arena' ||
         p.contentId === 'claro' ||
         p.contentId === 'miel' ||
         p.contentId === 'nieve';
-      canvas.closest('.app')?.classList.toggle('jar-ready', drew);
+      if (drew) canvas.closest('.app')?.classList.add('jar-ready');
       if (!drew && !photoScene) {
         drawHourglass(ctx, {
           profile,
@@ -429,8 +435,10 @@ export function useHourglass(
           shadow: p.introActive ? p.introShadow : 1,
           shape: shapeDraw,
         });
-      } else if (!drew) {
+      } else if (!drew && canvas.dataset.shown !== '1') {
         ctx.clearRect(0, 0, cssW, cssH);
+      } else if (drew) {
+        canvas.dataset.shown = '1';
       } else {
         preloadJar(p.contentId === 'lluvia' || p.contentId === 'miel' || p.contentId === 'nieve' ? p.contentId : 'arena');
       }
