@@ -383,6 +383,21 @@ export function useHourglass(
         viewW: cssW,
         viewH: cssH,
         rotation: spinAngle,
+        grains:
+          photoId === 'arena'
+            ? {
+                image: sandCanvas,
+                cols: sim.cols,
+                rows: sim.rows,
+                x: particles.x,
+                y: particles.y,
+                size: particles.size,
+                tone: particles.tone,
+                count: particles.count,
+                lut,
+                noise,
+              }
+            : undefined,
       });
       if (!drew) {
         drawHourglass(ctx, {

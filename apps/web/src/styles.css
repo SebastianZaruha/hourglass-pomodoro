@@ -81,6 +81,8 @@ a {
   color: var(--ink);
   --accent: #d7b07a;
   --accent-ink: #2c2418;
+  --glass-fill: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(44px) saturate(1.7);
   background:
     radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
@@ -203,8 +205,9 @@ a {
   height: 100%;
 }
 
-.app.is-paused .scene {
-  filter: blur(18px);
+.app.is-paused .scene-photo,
+.app.is-paused .blades {
+  filter: blur(22px);
 }
 
 .pause-screen {
@@ -289,14 +292,12 @@ a {
   padding: 0.38em 0.55em 0.44em;
   border-radius: 0.26em;
   border: 0;
-  background: rgba(22, 20, 18, 0.46);
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    inset 0 -12px 24px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(32px) saturate(1.35);
-  -webkit-backdrop-filter: blur(32px) saturate(1.35);
+  background: var(--glass-fill);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.28);
 }
 
 .app[data-layout='wide'] .readout {
@@ -318,17 +319,23 @@ a {
   color: #fff;
 }
 
+.app[data-material='arena'] {
+  --glass-fill: rgba(255, 236, 214, 0.12);
+}
 .app[data-material='lluvia'] {
   --accent: #c4a36a;
   --accent-ink: #2a2216;
+  --glass-fill: rgba(255, 255, 255, 0.1);
 }
 .app[data-material='miel'] {
   --accent: #e2b15a;
   --accent-ink: #2c2010;
+  --glass-fill: rgba(255, 228, 196, 0.13);
 }
 .app[data-material='nieve'] {
   --accent: #b7c7d4;
   --accent-ink: #1c2830;
+  --glass-fill: rgba(255, 255, 255, 0.14);
 }
 
 .readout .hint {
@@ -367,18 +374,22 @@ a {
   z-index: 24;
   right: clamp(0.65rem, 1.6vw, 1.25rem);
   bottom: calc(clamp(1.6rem, 4.2vh, 2.5rem) + env(safe-area-inset-bottom));
-  width: 3rem;
-  height: 2.75rem;
+  width: 3.6rem;
+  height: 3.25rem;
   border: 0;
+  border-radius: 999px;
   padding: 0;
-  background: transparent;
-  color: var(--menu);
+  background: var(--glass-fill);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   opacity: 0;
   cursor: pointer;
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .menu-btn {
@@ -411,18 +422,19 @@ a {
 
 .bar {
   display: block;
-  height: 1.5px;
+  height: 2px;
   border-radius: 2px;
-  background: currentColor;
+  background: #fff;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55));
 }
 
 .bar.long {
-  width: 18px;
+  width: 22px;
 }
 
 .bar.short {
-  width: 12px;
-  margin-right: 6px;
+  width: 15px;
+  margin-right: 7px;
 }
 
 .backdrop {
@@ -442,14 +454,12 @@ a {
   padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 2vw, 1.45rem);
   border-radius: 36px;
   border: 0;
-  background: rgba(22, 20, 18, 0.5);
-  color: #f6f1ea;
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.32),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    inset 0 -16px 28px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(32px) saturate(1.45);
-  -webkit-backdrop-filter: blur(32px) saturate(1.45);
+  background: var(--glass-fill);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.16);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -462,8 +472,8 @@ a {
 }
 
 .app[data-scheme='dark'] .sheet {
-  background: rgba(16, 14, 12, 0.55);
-  color: #f3eee6;
+  background: var(--glass-fill);
+  color: #fff;
 }
 
 .glass-cap {
@@ -516,8 +526,9 @@ a {
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .sheet,
-  .readout {
-    background: rgba(28, 26, 24, 0.88);
+  .readout,
+  .banner {
+    background: rgba(255, 255, 255, 0.28);
   }
 }
 
@@ -585,8 +596,9 @@ a {
   margin-top: 2px;
   border: 0;
   border-radius: 999px;
-  background: var(--track);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
@@ -835,17 +847,19 @@ a {
   padding: 0.35rem 0.7rem calc(0.4rem + env(safe-area-inset-bottom));
   font-size: 0.72rem;
   line-height: 1.35;
-  color: #f7f4ee;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
-  background: rgba(14, 12, 10, 0.62);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 0, 0, 0.4);
+  background: none;
+  border: 0;
+  box-shadow: none;
   width: max-content;
   max-width: calc(100% - 1.5rem);
   left: 50%;
   right: auto;
   transform: translateX(-50%);
-  border-radius: 8px;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-radius: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .app[data-layout='narrow'].menu-open .site-footer {
@@ -883,10 +897,14 @@ a {
 .legal-dialog {
   width: min(44rem, 100%);
   height: min(86vh, 52rem);
-  border-radius: 18px;
+  border-radius: 22px;
   overflow: hidden;
-  background: #efe8de;
-  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
+  border: 0;
+  background: var(--glass-fill);
+  color: #fff;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.16);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .legal-dialog iframe {
@@ -913,10 +931,13 @@ a {
   width: min(28rem, calc(100% - 5.4rem));
   padding: 0.45rem 0.35rem 0.45rem 0.75rem;
   border-radius: 16px;
-  border: 1px solid var(--sheet-edge);
-  background: var(--sheet);
-  color: var(--ink);
-  box-shadow: var(--shadow);
+  border: 0;
+  background: var(--glass-fill);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   animation: app-promo-in 420ms ease both;
 }
 
@@ -939,13 +960,13 @@ a {
 .app-promo-pitch {
   font-size: 0.72rem;
   line-height: 1.35;
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .app-promo-install {
   font-size: 0.68rem;
   line-height: 1.35;
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.82);
   margin-top: 0.12rem;
 }
 
@@ -957,8 +978,9 @@ a {
   min-height: 2rem;
   padding: 0 0.7rem;
   border-radius: 999px;
-  background: var(--pill);
-  color: var(--pill-ink);
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
@@ -972,8 +994,8 @@ a {
   border: 0;
   border-radius: 999px;
   padding: 0;
-  background: transparent;
-  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
   font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
@@ -1009,10 +1031,14 @@ a {
   transform: translateX(-50%);
   width: min(40rem, calc(100% - 1.25rem));
   padding: 16px 16px 14px;
-  border-radius: 18px;
-  background: var(--sheet);
-  color: var(--ink);
-  box-shadow: var(--shadow);
+  border-radius: 22px;
+  border: 0;
+  background: var(--glass-fill);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .banner p {
@@ -1035,13 +1061,21 @@ a {
   min-height: 42px;
   padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   font-size: 0.92rem;
   font-weight: 500;
   text-decoration: none;
   text-align: center;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+.banner-actions .choice:first-child {
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 @media (max-width: 35rem) {
@@ -1175,7 +1209,8 @@ a {
     filter: none;
   }
 
-  .app.is-paused .scene {
+  .app.is-paused .scene-photo,
+  .app.is-paused .blades {
     filter: none;
   }
 }
@@ -1284,9 +1319,10 @@ a {
 .sheet .stepper button,
 .sheet .sheet-close {
   border: 0;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f6f1ea;
-  box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.16);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
 }
 
 .sheet .stepper-controls,

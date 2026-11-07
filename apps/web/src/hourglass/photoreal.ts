@@ -14,7 +14,6 @@ import {
   type SceneLight,
   dioramaPlacement,
   jarSurface,
-  streamFrame,
   type MaterialId,
 } from '@reloj/core';
 
@@ -38,9 +37,6 @@ const CLOUD_W = 480;
 const CLOUD_H = 228;
 const CLOUD_FRAMES = 24;
 const CLOUD_FPS = 5;
-const FRAME_W = 96;
-const FRAME_H = 512;
-const SPLASH_W = 128;
 
 type Kind = 'sand' | 'water' | 'honey' | 'snow';
 
@@ -92,48 +88,6 @@ const textures: Record<Kind, HTMLImageElement> = {
   honey: load('/glass/tex-honey.webp'),
   snow: load('/glass/tex-snow.webp'),
 };
-let atlases: Record<Kind, HTMLImageElement> | null = null;
-let splashes: Record<Kind, HTMLImageElement> | null = null;
-
-function ensureSheets(): void {
-  if (atlases && splashes) return;
-  atlases = {
-    sand: load('/streams/sand-atlas.webp'),
-    water: load('/streams/water-atlas.webp'),
-    honey: load('/streams/honey-atlas.webp'),
-    snow: load('/streams/snow-atlas.webp'),
-  };
-  splashes = {
-    sand: load('/streams/sand-splash.webp'),
-    water: load('/streams/water-splash.webp'),
-    honey: load('/streams/honey-splash.webp'),
-    snow: load('/streams/snow-splash.webp'),
-  };
-}
-
-const videos = new Map<Kind, HTMLVideoElement>();
-
-function streamVideo(kind: Kind): HTMLVideoElement {
-  const existing = videos.get(kind);
-  if (existing) return existing;
-  const video = document.createElement('video');
-  video.muted = true;
-  video.loop = true;
-  video.playsInline = true;
-  video.preload = 'auto';
-  const webm = document.createElement('source');
-  webm.src = `/streams/${kind}.webm`;
-  webm.type = 'video/webm';
-  video.appendChild(webm);
-  const mp4 = document.createElement('source');
-  mp4.src = `/streams/${kind}.mp4`;
-  mp4.type = 'video/mp4; codecs="hvc1"';
-  video.appendChild(mp4);
-  video.load();
-  videos.set(kind, video);
-  return video;
-}
-
 function ready(image: HTMLImageElement): boolean {
   return image.complete && image.naturalWidth > 0;
 }
@@ -248,6 +202,24 @@ export interface PhotoFrame {
   readonly viewW: number;
   readonly viewH: number;
   readonly rotation: number;
+  /** Arena: granos y caída de la simulación de main, recortados a la máscara. */
+  readonly grains?: {
+    readonly image: CanvasImageSource;
+    readonly cols: number;
+    readonly rows: number;
+    readonly x: ArrayLike<number>;
+    readonly y: ArrayLike<number>;
+    readonly size: ArrayLike<number>;
+    readonly tone: ArrayLike<number>;
+    readonly count: number;
+    readonly lut: Uint8ClampedArray;
+    readonly noise: CanvasImageSource;
+  };
+}
+
+function groundShadowAmount(rotation: number): number {
+  const upright = Math.min(1, Math.abs(Math.cos(rotation)));
+  return upright * upright * (3 - 2 * upright);
 }
 
 /** Brillos, sombra de forma y rebote, recortados al vidrio. El negro del frente sigue siendo identidad en SCREEN. */
@@ -433,26 +405,19 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   const light = SCENE_LIGHT[frame.id];
   const grade = frame.id === 'lluvia' ? { ...light, dx: -light.dx, key: 1 - light.key } : light;
   const kind = KIND[frame.id];
-  const liquid = kind === 'water' || kind === 'honey';
   const heap = kind === 'sand' ? 0.074 : kind === 'snow' ? 0.06 : 0;
   const meniscus = kind === 'honey' ? 0.022 : kind === 'water' ? 0.008 : 0;
 
   ctx.clearRect(0, 0, frame.viewW, frame.viewH);
   ambientFor(frame.id)?.drawAmbient(ctx, frame, jar, 'behind');
-  const pivotX = jar.x + jar.w / 2;
-  const pivotY = jar.y + jar.h / 2;
-  ctx.save();
-  if (frame.rotation) {
-    ctx.translate(pivotX, pivotY);
-    ctx.rotate(frame.rotation);
-    ctx.translate(-pivotX, -pivotY);
-  }
-
   const footX = place.footX;
   const footY = place.footY;
   const bury = frame.id === 'nieve' ? jar.w * 0.028 : 0;
-  ctx.save();
-  if (frame.id === 'nieve') {
+  const shadowAmt = groundShadowAmount(frame.rotation);
+  if (shadowAmt > 0.004) {
+    ctx.save();
+    ctx.globalAlpha = shadowAmt;
+    if (frame.id === 'nieve') {
     ctx.filter = 'blur(34px)';
     ctx.fillStyle = 'rgba(58, 78, 104, 0.34)';
     ctx.beginPath();
@@ -487,7 +452,17 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   ctx.beginPath();
   ctx.ellipse(footX - grade.dx * jar.w * 0.35, footY + jar.h * 0.006, jar.w * 0.24, Math.max(4, jar.w * 0.02), 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.restore();
+    ctx.restore();
+  }
+
+  const pivotX = jar.x + jar.w / 2;
+  const pivotY = jar.y + jar.h / 2;
+  ctx.save();
+  if (frame.rotation) {
+    ctx.translate(pivotX, pivotY);
+    ctx.rotate(frame.rotation);
+    ctx.translate(-pivotX, -pivotY);
+  }
 
   ctx.save();
   ctx.filter = grade.filter;
@@ -525,31 +500,67 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
       }
     }
 
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
     g.clearRect(0, 0, plate.width, plate.height);
+    const grains = kind === 'sand' ? frame.grains : undefined;
+    if (grains) {
+      g.imageSmoothingEnabled = false;
+      g.drawImage(grains.image, 0, 0, plate.width, plate.height);
+      g.save();
+      g.globalCompositeOperation = 'source-atop';
+      g.globalAlpha = 0.18;
+      const pattern = g.createPattern(grains.noise, 'repeat');
+      if (pattern) {
+        g.fillStyle = pattern;
+        g.fillRect(0, 0, plate.width, plate.height);
+      }
+      g.restore();
+      g.imageSmoothingEnabled = true;
+      const cellW = plate.width / grains.cols;
+      const cellH = plate.height / grains.rows;
+      for (let i = 0; i < grains.count; i++) {
+        const px = grains.x[i] ?? 0;
+        const py = grains.y[i] ?? 0;
+        const size = grains.size[i] ?? 0.3;
+        const tone = grains.tone[i] ?? 1;
+        const x = (px / grains.cols) * plate.width;
+        const y = (py / grains.rows) * plate.height;
+        const radius = Math.max(0.8, size * cellW * 1.15);
+        const l = tone * 3;
+        g.fillStyle = `rgb(${grains.lut[l] ?? 200}, ${grains.lut[l + 1] ?? 170}, ${grains.lut[l + 2] ?? 130})`;
+        g.beginPath();
+        g.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
+        g.fill();
+      }
+    } else {
     const tex = textures[kind];
     const topY = jarSurface('top', frame.top * 0.84);
     const botY = jarSurface('bot', frame.bottom);
-    const waveAmp = kind === 'honey' ? 0.004 : 0.006;
-    const wave = liquid && !frame.reduceMotion ? Math.sin(frame.phase * 2.2) * waveAmp : 0;
-    const drift = liquid && !frame.reduceMotion ? Math.sin(frame.phase * 0.45) * plate.width * 0.04 : 0;
+    const wave = kind === 'honey' && !frame.reduceMotion ? Math.sin(frame.phase * 2.2) * 0.004 : 0;
     const paintBulb = (surface: number, box: readonly [number, number, number, number]) => {
       g.save();
       if (!clipFill(g, plate!.width, plate!.height, surface, box, heap, wave * plate!.height, meniscus)) {
         g.restore();
         return;
       }
-      if (ready(tex)) {
-        g.drawImage(tex, drift, 0, plate!.width, plate!.height);
-        if (drift > 2) g.drawImage(tex, drift - plate!.width, 0, plate!.width, plate!.height);
-      }
-      if (liquid && ready(surfaceTex)) {
+      if (ready(tex)) g.drawImage(tex, 0, 0, plate!.width, plate!.height);
+      if (kind === 'honey' && ready(surfaceTex)) {
         const y = surface * plate!.height;
         g.drawImage(surfaceTex, 0, y - 10, plate!.width, 22);
+      }
+      if (kind === 'water' && ready(surfaceTex)) {
+        g.save();
+        g.globalAlpha = frame.reduceMotion ? 0.35 : 0.32 + 0.1 * Math.sin(frame.phase * 1.4);
+        const y = surface * plate!.height;
+        g.drawImage(surfaceTex, 0, y - 6, plate!.width, 14);
+        g.restore();
       }
       g.restore();
     };
     paintBulb(topY, JAR_TOP_BOX);
     paintBulb(botY, JAR_BOT_BOX);
+    }
     const cut = lumenMask();
     g.globalCompositeOperation = 'destination-in';
     if (cut) g.drawImage(cut, 0, 0, plate.width, plate.height);
@@ -562,7 +573,7 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
 
   const from = jar.y + JAR_NECK_Y * jar.h;
   const to = jar.y + jarSurface('bot', Math.max(frame.bottom, 0.015)) * jar.h;
-  drawStream(ctx, kind, jar.x + jar.w / 2, from, Math.max(from + 12, to), frame);
+  if (kind !== 'sand') drawStream(ctx, kind, jar.x + jar.w / 2, from, Math.max(from + 12, to), frame);
 
   gradeGlass(ctx, jar, grade);
   if (frame.id === 'nieve') drawSnowLip(ctx, footX, footY + bury, jar.w);
@@ -581,6 +592,59 @@ export function drawPhotoreal(ctx: CanvasRenderingContext2D, frame: PhotoFrame):
   return true;
 }
 
+function drawRain(
+  ctx: CanvasRenderingContext2D,
+  center: number,
+  from: number,
+  to: number,
+  frame: PhotoFrame,
+): void {
+  const span = to - from;
+  const count = frame.reduceMotion ? 5 : 20;
+  const t = frame.reduceMotion ? 0 : frame.streamTime;
+  for (let i = 0; i < count; i++) {
+    const seed = i * 9.73 + 0.4;
+    const speed = 0.48 + ((i * 13) % 8) * 0.08;
+    const travel = frame.reduceMotion ? 0.12 + (i % 5) * 0.17 : ((t * speed + seed) % 1 + 1) % 1;
+    const y = from + span * Math.min(travel, 0.97);
+    const x = center + Math.sin(seed * 1.6) * 8 + (frame.reduceMotion ? 0 : Math.sin(seed + travel * 5) * 2.2);
+    const len = 8 + (i % 4) * 1.8;
+    const wide = 2.2 + (i % 3) * 0.4;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.62;
+    ctx.fillStyle = 'rgba(176, 210, 220, 0.55)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, wide, len, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.beginPath();
+    ctx.ellipse(-wide * 0.28, -len * 0.38, wide * 0.32, len * 0.16, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    if (!frame.reduceMotion && travel > 0.9) {
+      const k = (travel - 0.9) / 0.1;
+      ctx.save();
+      ctx.globalAlpha = (1 - k) * 0.5;
+      ctx.strokeStyle = 'rgba(214, 232, 236, 0.95)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(x, to, 2.5 + k * 11, 1.1 + k * 2.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+const STREAM_SPEED: Record<Kind, number> = { water: 140, honey: 36, sand: 110, snow: 70 };
+const STREAM_WIDTH: Record<Kind, number> = { water: 10, honey: 26, sand: 14, snow: 20 };
+
+/** Columna de textura que baja cada fotograma. La pausa deja el tiempo quieto. */
 function drawStream(
   ctx: CanvasRenderingContext2D,
   kind: Kind,
@@ -590,96 +654,83 @@ function drawStream(
   frame: PhotoFrame,
 ): void {
   const span = to - from;
-  if (!(span > 6) || frame.top < 0.02 || !frame.running) return;
-  const flowing = frame.running && !frame.paused;
-  const video = streamVideo(kind);
-  if (flowing && !frame.reduceMotion) {
-    if (video.paused) void video.play().catch(() => undefined);
-  } else {
-    video.pause();
-    if (frame.reduceMotion) video.currentTime = 0;
-  }
-  const width = kind === 'honey' ? 62 : kind === 'sand' ? 44 : kind === 'snow' ? 78 : 40;
-  const x = center - width / 2;
-  const useVideo = !frame.reduceMotion && video.readyState >= 2 && video.videoWidth > 0;
-  ensureSheets();
-  const sheet = atlases?.[kind];
-  const splash = splashes?.[kind];
-  const tint = SCENE_LIGHT[frame.id].highlight;
-  ctx.save();
-  if (useVideo) {
-    drawTinted(ctx, video, 0, 0, video.videoWidth, video.videoHeight, x, from, width, span, tint);
-  } else if (sheet && ready(sheet)) {
-    const index = streamFrame(frame.streamTime, frame.reduceMotion);
-    drawTinted(ctx, sheet, index * FRAME_W, 0, FRAME_W, FRAME_H, x, from, width, span, tint);
-  }
-  if (splash && ready(splash)) {
-    const index = streamFrame(frame.streamTime, frame.reduceMotion || !flowing);
-    const box =
-      kind === 'honey'
-        ? { srcH: 56, sw: 46, sh: 30 }
-        : kind === 'sand'
-          ? { srcH: 48, sw: 44, sh: 16 }
-          : kind === 'snow'
-            ? { srcH: 52, sw: 60, sh: 20 }
-            : { srcH: 40, sw: 40, sh: 14 };
-    drawTinted(
-      ctx,
-      splash,
-      index * SPLASH_W,
-      0,
-      SPLASH_W,
-      box.srcH,
-      center - box.sw / 2,
-      to - box.sh * 0.65,
-      box.sw,
-      box.sh,
-      tint,
-    );
-  }
-  ctx.restore();
-}
-
-let tintCanvas: HTMLCanvasElement | null = null;
-let tintCtx: CanvasRenderingContext2D | null = null;
-
-/** Tiñe el bucle con la luz de la escena sin pintar los píxeles transparentes. */
-function drawTinted(
-  ctx: CanvasRenderingContext2D,
-  source: CanvasImageSource,
-  sx: number,
-  sy: number,
-  sw: number,
-  sh: number,
-  dx: number,
-  dy: number,
-  dw: number,
-  dh: number,
-  color: string,
-): void {
-  const w = Math.max(2, Math.round(dw));
-  const h = Math.max(2, Math.round(dh));
-  if (!tintCanvas || tintCanvas.width !== w || tintCanvas.height !== h) {
-    tintCanvas = document.createElement('canvas');
-    tintCanvas.width = w;
-    tintCanvas.height = h;
-    tintCtx = tintCanvas.getContext('2d');
-  }
-  const g = tintCtx;
-  if (!g || !tintCanvas) {
-    ctx.drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh);
+  if (!(span > 6) || frame.top < 0.02) return;
+  if (!frame.running && !frame.paused) return;
+  if (kind === 'water') {
+    drawRain(ctx, center, from, to, frame);
     return;
   }
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.globalAlpha = 1;
-  g.globalCompositeOperation = 'source-over';
-  g.clearRect(0, 0, w, h);
-  g.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
-  g.globalCompositeOperation = 'source-atop';
-  g.globalAlpha = 0.18;
-  g.fillStyle = color;
-  g.fillRect(0, 0, w, h);
-  ctx.drawImage(tintCanvas, dx, dy);
+  const t = frame.reduceMotion ? 0 : frame.streamTime;
+  const live = !frame.reduceMotion;
+  const base = STREAM_WIDTH[kind];
+  const tex = textures[kind];
+  ctx.save();
+  ctx.beginPath();
+  const steps = 28;
+  const edge = (i: number, side: number) => {
+    const u = i / steps;
+    const y = from + span * u;
+    const wave = live ? Math.sin(u * 8.5 + t * 2.6) * 0.16 + Math.sin(u * 2.4 - t * 1.3) * 0.07 : 0;
+    const w = base * (frame.reduceMotion ? 0.7 : 1 + wave);
+    const x = center + (live ? Math.sin(u * 5.5 + t * 1.8) * base * 0.18 : 0);
+    return { x: x + side * w * 0.5, y };
+  };
+  for (let i = 0; i <= steps; i++) {
+    const p = edge(i, -1);
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  }
+  for (let i = steps; i >= 0; i--) {
+    const p = edge(i, 1);
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.closePath();
+  ctx.clip();
+  if (ready(tex)) {
+    const tile = Math.max(24, base * 3.2);
+    const offset = live ? (t * STREAM_SPEED[kind]) % tile : 0;
+    ctx.globalAlpha = kind === 'honey' ? 0.92 : 0.88;
+    for (let y = from - tile + offset; y < to; y += tile) {
+      ctx.drawImage(tex, center - base * 1.4, y, base * 2.8, tile + 1);
+    }
+  }
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  const gleam = live ? Math.sin(t * 3.1) * base * 0.15 : 0;
+  ctx.fillRect(center - 1.2 + gleam, from, kind === 'honey' ? 3.5 : 2, span);
+  ctx.restore();
+
+  const ripple = live ? 0.55 + 0.45 * Math.sin(t * 5.5) : 0.7;
+  ctx.save();
+  ctx.globalAlpha = 0.28 + ripple * 0.22;
+  ctx.fillStyle = kind === 'honey' ? 'rgba(226, 160, 60, 0.85)' : kind === 'snow' ? 'rgba(230, 236, 242, 0.9)' : kind === 'sand' ? 'rgba(196, 154, 90, 0.8)' : 'rgba(190, 214, 220, 0.75)';
+  ctx.beginPath();
+  ctx.ellipse(center, to, base * (1.3 + ripple * 0.55), Math.max(3, base * 0.28), 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  if ((kind === 'sand' || kind === 'snow') && !frame.reduceMotion) {
+    const count = kind === 'sand' ? 26 : 16;
+    ctx.save();
+    ctx.fillStyle = kind === 'sand' ? 'rgba(214, 176, 112, 0.9)' : 'rgba(236, 242, 246, 0.92)';
+    for (let i = 0; i < count; i++) {
+      const seed = i * 12.9898;
+      const speed = 0.42 + (i % 6) * 0.07;
+      const travel = ((t * speed + seed) % 1 + 1) % 1;
+      const along = from + span * travel;
+      const sway = Math.sin(seed * 2.1 + travel * 7.5) * base * 0.85;
+      const landed = travel > 0.9;
+      const spread = landed ? ((travel - 0.9) / 0.1) * (kind === 'snow' ? 18 : 12) : 0;
+      const x = center + sway * (1 - (landed ? (travel - 0.9) * 4 : 0)) + Math.sin(seed) * spread;
+      const y = landed ? to - (1 - (travel - 0.9) / 0.1) * 8 : along;
+      const radius = (kind === 'sand' ? 1.15 : 1.7) + (i % 3) * 0.35;
+      ctx.globalAlpha = landed ? 0.35 + (1 - (travel - 0.9) / 0.1) * 0.4 : 0.4 + 0.45 * (1 - travel);
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
 }
 
 /** Precarga la capa grande del frasco y el chorro del material visible. Una vez por escena. */
@@ -704,8 +755,6 @@ export function preloadJar(id: MaterialId): void {
     document.head.appendChild(link);
   }
   window.setTimeout(() => {
-    ensureSheets();
-    streamVideo(kind);
     if (id === 'lluvia') cloudVideo();
     ambientFor(id);
   }, 1600);

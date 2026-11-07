@@ -4,6 +4,12 @@ No está mergeado. El móvil sigue con su renderer anterior. `apps/mobile/assets
 
 ## Hecho en este paso
 
+La pausa solo desenfoca la foto de fondo (`blur(22px)`); el frasco, el material, la nube y el reloj siguen nítidos. El cristal de la interfaz es un velo claro (`rgba(255,255,255,0.08–0.14)` según la escena) con blur fuerte, texto blanco y sombra suave. El pie son letras blancas pequeñas, sin pastilla. El botón de menú es ese mismo cristal, un poco mayor, con icono blanco. La sombra del suelo no gira: se apaga con el ángulo y vuelve de pie. La arena usa los granos de main dentro de la máscara del frasco. La lluvia cae en gotas, no en una columna, y el agua de dentro no se desplaza de lado. Avisos de cookies en el mismo cristal, en español.
+
+Capturas: `verify-arena-run-1440.png`, `verify-lluvia-run-1440.png`, `verify-lluvia-pause-1440.png`, `verify-cookie-1440.png`, `verify-cookie-390.png`.
+
+## Hecho antes
+
 En vertical el frasco vive en la celda de arriba y el reloj debajo, sin pisarse. Al abrir el menú el frasco encoge y el reloj queda justo encima del panel (390 cerrado y abierto, 768 abierto). El pie es cristal oscuro al 62 % con texto `#f7f4ee` (4,7:1 sobre blanco) y se esconde con el menú abierto en estrecho. La nube no gira: al arrastrar se aclara y sube, y el reloj queda por encima. Capturas: `verify-390-closed.png`, `verify-390-open.png`, `verify-768-open.png`, `verify-1440-closed.png`, `verify-1440-flip.png`.
 
 ## Hecho antes
