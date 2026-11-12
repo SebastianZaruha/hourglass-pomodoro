@@ -16,6 +16,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: ffmpeg para el contraste de los dígitos
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npx playwright install --with-deps chromium
         working-directory: apps/web
       - run: npm run check --workspace @reloj/web
