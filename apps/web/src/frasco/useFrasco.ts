@@ -16,11 +16,10 @@ import type { Luz } from '../temas/tipos';
 import { activarNube } from '../medios/assetLoader';
 import { cargarActivos, cargarArena, type Activos } from './activos';
 import { dibujar } from './dibujo';
-import { anguloNivel, cuelloMojado } from './fisica/agua';
+import { cuelloMojado } from './fisica/agua';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarGranos } from './granos';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
-import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
 
 export interface ModeloFrasco {
@@ -78,7 +77,6 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let paleta: ModeloFrasco['granos'] = 'clara';
     let firmaLuz = '';
     let estado: EstadoFrasco = estadoInicial();
-    let agua: Muelle = muelleQuieto();
     let orden: OrdenFrasco = { tipo: 'quieto', dt: 1 / 60, reducir: false };
     let raf = 0;
     let ultimo = 0;
@@ -112,23 +110,16 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const m = vivo.current;
       const dt = ultimo > 0 ? Math.min(0.05, (now - ultimo) / 1000) : 1 / 60;
       ultimo = now;
-      const antes = estado.angulo;
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
       estado = paso.estado;
       orden = { tipo: 'quieto', dt, reducir: m.reducir };
-      if (paso.volteoCompletado) {
-        m.onVolteo();
-        agua = muelleQuieto();
-      } else {
-        // El agua hereda el giro y el muelle la devuelve a nivel. En reposo, velocidad 0.
-        agua = pasoMuelle({ valor: agua.valor + (estado.angulo - antes), velocidad: agua.velocidad }, 0, dt);
-      }
+      if (paso.volteoCompletado) m.onVolteo();
 
       const snap = m.getSnapshot();
       const arriba = nivelDesdeTiempo(snap.durationMs, snap.remainingMs);
       const objetivo = granosObjetivo(sim.totalGrains, snap.durationMs, snap.remainingMs);
       const girando = estado.fase === 'volteando';
-      let movio = forzar || girando || Math.abs(agua.velocidad) > 0 || Math.abs(estado.velocidad) > 0;
+      let movio = forzar || girando || Math.abs(estado.velocidad) > 0;
       forzar = false;
       const firma = `${m.granos}|${m.luz.tinte}|${m.luz.fuerzaTinte}|${m.luz.brillo}|${m.luz.direccion}`;
       if (firma !== firmaLuz) {
@@ -141,7 +132,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       }
       if (m.tipo === 'arena') {
         cargarArena(activos, despertar);
-        if (paso.volteoCompletado || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle')) {
+        const gravedad = Math.abs(estado.angulo) < 0.05 ? GRAVITY_DOWN : gravedadDelAngulo(estado.angulo);
+        // Inclinado, la arena se asienta ya en el lado bajo del mundo.
+        if (Math.abs(estado.angulo) >= 0.05) {
+          sim.arrange(sim.topCount, sim.bottomCount, gravedad, { crater: 0, mound: 0 });
+          movio = true;
+        } else if (
+          paso.volteoCompletado ||
+          (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle')
+        ) {
           if (sim.topCount !== objetivo) {
             sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
             movio = true;
@@ -149,16 +148,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         } else if (!girando && snap.status !== 'idle') {
           const inicial = granosObjetivo(sim.totalGrains, snap.durationMs, snap.durationMs);
           const budget = flowBudget(inicial, snap.durationMs, sim.totalGrains);
-          const gravedad = estado.angulo === 0 ? GRAVITY_DOWN : gravedadDelAngulo(estado.angulo);
           if (syncSandToTarget(sim, objetivo, gravedad, { ...budget, crater: 0.16 }) !== 'idle') movio = true;
           if (sim.step(gravedad) > 0) movio = true;
         } else if (estado.fase === 'arrastrando' || Math.abs(estado.angulo) > 0.01) {
-          if (sim.step(gravedadDelAngulo(estado.angulo)) > 0) movio = true;
+          if (sim.step(gravedad) > 0) movio = true;
         }
         input.dt = dt;
         input.emitting =
-          !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
-        input.gravity = GRAVITY_DOWN;
+          !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(gravedad);
+        input.gravity = gravedad;
         input.calm = m.reducir;
         particles.update(sim, input);
         if (movio || particles.active) pintarArena();
@@ -180,15 +178,12 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
           luz: m.luz,
           tipo: m.tipo,
           angulo: estado.angulo,
-          anguloAgua: anguloNivel(estado.angulo, agua.valor),
+          anguloAgua: estado.angulo,
           volumenArriba: arriba,
           volumenAbajo: nivelAbajo(snap.durationMs, snap.remainingMs),
           mostrarNube: m.mostrarNube,
           reducir: m.reducir,
-          llueve:
-            m.tipo === 'agua' &&
-            snap.status === 'running' &&
-            cuelloMojado(arriba, anguloNivel(estado.angulo, agua.valor)),
+          llueve: m.tipo === 'agua' && snap.status === 'running' && cuelloMojado(arriba, estado.angulo),
           sim,
           chorro: particles,
           lut,

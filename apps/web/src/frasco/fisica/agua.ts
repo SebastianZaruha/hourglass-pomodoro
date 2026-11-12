@@ -162,12 +162,43 @@ function aFoto(bulbo: 'arriba' | 'abajo', punto: Punto): Punto {
 }
 
 /**
- * Ángulo que hay que pasar al polígono, ya dentro del frasco girado,
- * para que la superficie quede horizontal en el mundo.
- * `residuo` es el retraso del muelle: en reposo es 0.
+ * Ángulo de la gravedad dentro del frasco ya girado en el lienzo.
+ * El polígono se pinta dentro de `rotate(anguloFrasco)`, así que hay que
+ * pasar ese mismo ángulo: restarlo deja el agua pegada al vidrio.
+ * `residuo` es un vaivén chico alrededor del nivel; en reposo es 0.
  */
 export function anguloNivel(anguloFrasco: number, residuo: number): number {
   return anguloFrasco - residuo;
+}
+
+/** Centro de masas de un polígono simple. */
+export function centroide(puntos: readonly Punto[]): Punto {
+  let area = 0;
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < puntos.length; i++) {
+    const a = puntos[i];
+    const b = puntos[(i + 1) % puntos.length];
+    if (!a || !b) continue;
+    const cruz = a.x * b.y - b.x * a.y;
+    area += cruz;
+    x += (a.x + b.x) * cruz;
+    y += (a.y + b.y) * cruz;
+  }
+  if (Math.abs(area) < 1e-8) return { x: 0, y: 0 };
+  return { x: x / (3 * area), y: y / (3 * area) };
+}
+
+/**
+ * La superficie, en la foto del frasco. Son los vértices del recorte que
+ * caen sobre el corte: una recta perpendicular a la gravedad.
+ */
+export function lineaDeCorte(bulbo: 'arriba' | 'abajo', volumen: number, angulo: number): Punto[] {
+  const superficie = superficieAgua(bulbo, volumen, angulo);
+  const local = recortar(CONTORNOS[bulbo], superficie.gravedad, superficie.corte);
+  return local
+    .filter((punto) => Math.abs(producto(superficie.gravedad, punto) - superficie.corte) < 1e-3)
+    .map((punto) => aFoto(bulbo, punto));
 }
 
 /** El cuello está bajo el agua. Si no, el chorro no puede salir. */
