@@ -138,8 +138,210 @@ a {
   height: 100%;
 }
 
-.app.is-paused .scene {
+.app.is-paused .mundo {
   filter: blur(18px);
+}
+
+.mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.fondo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fondo img,
+.fondo video {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.fondo.degradado {
+  background:
+    radial-gradient(46% 42% at 28% 42%, var(--glow), transparent 70%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+}
+
+.app[data-layout='narrow'] .degradado {
+  background:
+    radial-gradient(70% 48% at 50% 32%, var(--glow), transparent 72%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+}
+
+.fondo video {
+  transition: opacity 480ms ease;
+}
+
+.escenario {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app.menu-open .escenario {
+  cursor: default;
+}
+
+.lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.reloj {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.halo {
+  position: absolute;
+  inset: -0.55em -0.7em;
+  z-index: -1;
+  pointer-events: none;
+  border: 0;
+  background: var(--halo);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  mask-image: radial-gradient(closest-side, #000 22%, transparent 72%);
+  opacity: var(--halo-fuerza, 0.5);
+}
+
+.sheet {
+  background: var(--sheet);
+  backdrop-filter: blur(28px) saturate(1.15);
+  -webkit-backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.sheet button[aria-label] {
+  position: relative;
+}
+
+button[aria-label]::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--sheet-solid);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 8;
+  transition: opacity 120ms ease;
+}
+
+button[aria-label]:hover::after,
+button[aria-label]:focus-visible::after {
+  opacity: 1;
+}
+
+.menu-btn::after,
+.backdrop::after,
+.sheet-close::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.app.menu-open[data-layout='narrow'] .site-footer {
+  visibility: hidden;
+}
+
+.pausa {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+}
+
+.pausa-palabra {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 300;
+  font-size: clamp(3.4rem, 8vw, 6rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--pause);
+  text-shadow:
+    0 0 22px var(--pause-veil),
+    0 0 42px var(--bg-bottom);
+}
+
+.pausa-pista {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4.2rem);
+  transform: translateX(-50%);
+  max-width: 32rem;
+  padding: 0 1.2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--hint);
+}
+
+.legal-dialog {
+  background: color-mix(in srgb, var(--sheet-solid) 92%, transparent);
+}
+
+.app.entra .fondo,
+.app.entra .degradado {
+  filter: blur(16px);
+}
+
+.app.entra .lienzo {
+  opacity: 0;
+  transform: scale(0.94);
+  transform-origin: center;
+}
+
+.app.entra:not(.entra-espera) .fondo,
+.app.entra:not(.entra-espera) .degradado {
+  filter: blur(0);
+  transition: filter 900ms ease;
+}
+
+.app.entra:not(.entra-espera) .lienzo {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 700ms ease,
+    transform 900ms ease;
+}
+
+.app.entra-corta .fondo,
+.app.entra-corta .lienzo,
+.app.entra-corta .degradado {
+  transition-duration: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app.is-paused .mundo {
+    filter: none;
+  }
 }
 
 .pause-screen {
@@ -273,6 +475,7 @@ a {
   gap: 5px;
 }
 
+.menu-btn.is-on,
 .app:hover .menu-btn,
 .menu-btn:focus-visible {
   opacity: 1;

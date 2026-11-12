@@ -67,6 +67,18 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   if (!doc || !win || win.location.href === 'about:blank') return;
+  const app = document.querySelector('.app');
+  if (app) {
+    const estilos = getComputedStyle(app);
+    for (const nombre of ['--ink', '--ink-soft', '--sheet-solid', '--line', '--footer', '--link']) {
+      const valor = estilos.getPropertyValue(nombre).trim();
+      if (valor) doc.documentElement.style.setProperty(nombre, valor);
+    }
+    doc.documentElement.style.setProperty(
+      '--fondo',
+      estilos.getPropertyValue('--sheet-solid').trim() || '#f4f7f6',
+    );
+  }
   const path = win.location.pathname;
   if (path === '/' || path === '') {
     const params = new URLSearchParams(win.location.search);

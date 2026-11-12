@@ -7,6 +7,7 @@ import {
   createSession,
   replacePlan,
   restartSession,
+  flipSession,
   samePlan,
   sessionSnapshot,
   tickSession,
@@ -55,6 +56,7 @@ export function useSession(initialPlan: SessionPlan) {
 
   const toggle = useCallback(() => apply((s) => toggleSession(s, Date.now())), [apply]);
   const restart = useCallback(() => apply((s) => restartSession(s)), [apply]);
+  const flip = useCallback(() => apply((s) => flipSession(s, Date.now())), [apply]);
   const replaceIfChanged = useCallback(
     (plan: SessionPlan) => apply((s) => (samePlan(s.plan, plan) ? s : replacePlan(s, plan))),
     [apply],
@@ -67,6 +69,7 @@ export function useSession(initialPlan: SessionPlan) {
     tick,
     toggle,
     restart,
+    flip,
     replaceIfChanged,
   };
 }

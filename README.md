@@ -378,13 +378,12 @@ móvil. La app de navegador (`apps/web`) tampoco tiene cuentas. Solo si la perso
 Aceptar carga Vercel Web Analytics (sin cookies) y, si hay un id real en
 `VITE_GA_MEASUREMENT_ID`, Google Analytics.
 
-- Política de privacidad (español): [docs/privacidad.html](docs/privacidad.html)
-- Privacy policy (English): [docs/privacy.html](docs/privacy.html)
-- Cookies: [docs/cookies.html](docs/cookies.html) · [docs/cookies-en.html](docs/cookies-en.html)
-- Aviso legal: [docs/aviso-legal.html](docs/aviso-legal.html) · [docs/legal-notice.html](docs/legal-notice.html)
+- Política de privacidad (español): [hourglass.sebastianzaruha.com/privacidad.html](https://hourglass.sebastianzaruha.com/privacidad.html)
+- Privacy policy (English): [hourglass.sebastianzaruha.com/privacy.html](https://hourglass.sebastianzaruha.com/privacy.html)
+- Cookies: [hourglass.sebastianzaruha.com/cookies.html](https://hourglass.sebastianzaruha.com/cookies.html) · [hourglass.sebastianzaruha.com/cookies-en.html](https://hourglass.sebastianzaruha.com/cookies-en.html)
+- Aviso legal: [hourglass.sebastianzaruha.com/aviso-legal.html](https://hourglass.sebastianzaruha.com/aviso-legal.html) · [hourglass.sebastianzaruha.com/legal-notice.html](https://hourglass.sebastianzaruha.com/legal-notice.html)
 
-Son páginas HTML: con GitHub Pages (o un visor de HTML) se ven ya formateadas; en el repositorio
-se muestra el código fuente. La app de navegador las sirve desde `apps/web/public`.
+La app de navegador las sirve desde `apps/web/public`, generadas con `apps/web/legal/generar.mjs` a partir de un texto por idioma y un solo CSS.
 
 ## Autor
 

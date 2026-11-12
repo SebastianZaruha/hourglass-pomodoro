@@ -36,3 +36,16 @@ export function decideStageDoubleClick(status: TimerStatus, resumeArmed: boolean
   if (status === 'paused' || resumeArmed) return 'ignore';
   return 'restart';
 }
+
+/** Por debajo de esto, un gesto sigue siendo un clic. */
+export const UMBRAL_ARRASTRE = 0.03;
+
+/** Si el frasco ya giró, el clic que suelta el dedo no debe pausar. */
+export function arrastreSuprimeClic(deltaAngulo: number): boolean {
+  return Math.abs(deltaAngulo) > UMBRAL_ARRASTRE;
+}
+
+/** La rueda cambia la duración solo con el reloj parado y el menú cerrado. */
+export function ruedaAjustaTiempo(status: TimerStatus, menuAbierto: boolean): boolean {
+  return status === 'idle' && !menuAbierto;
+}

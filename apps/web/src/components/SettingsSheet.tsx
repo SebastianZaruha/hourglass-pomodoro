@@ -19,6 +19,9 @@ import {
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { SpeakerIcon, SunIcon } from './Icons';
+import type { SettingsPatch } from '../useSettings';
+import { TEMAS, type IdTema } from '../temas';
+import type { Caja } from '../layout/calcularLayout';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -26,15 +29,14 @@ interface Props {
   readonly open: boolean;
   readonly settings: Settings;
   readonly t: Messages;
-  readonly onChange: (
-    patch:
-      | Partial<Omit<Settings, 'version' | 'updatedAt'>>
-      | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
-  ) => void;
+  readonly temaId: IdTema;
+  readonly onTema: (id: IdTema) => void;
+  readonly onChange: (patch: SettingsPatch | ((current: Settings) => SettingsPatch)) => void;
   readonly onClose: () => void;
+  readonly caja: Caja;
 }
 
-export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
+export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onClose, caja }: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
@@ -54,6 +56,15 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
   return (
     <div
       className={open ? 'sheet open' : 'sheet'}
+      style={{
+        left: caja.x,
+        top: caja.y,
+        width: caja.w,
+        height: 'auto',
+        right: 'auto',
+        bottom: 'auto',
+        maxHeight: caja.h,
+      }}
       role="dialog"
       aria-modal="true"
       aria-hidden={!open}
@@ -73,11 +84,28 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         </button>
       </div>
 
+      <div className="chip-row" role="radiogroup" aria-label="Escena">
+        {TEMAS.map((tema) => (
+          <button
+            key={tema.id}
+            type="button"
+            role="radio"
+            aria-checked={temaId === tema.id}
+            aria-label={`Escena ${tema.nombre}`}
+            className={temaId === tema.id ? 'chip chip-on' : 'chip'}
+            onClick={() => onTema(tema.id)}
+          >
+            {tema.nombre}
+          </button>
+        ))}
+      </div>
+
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
         <button
           type="button"
           role="radio"
           aria-checked={!cycles}
+          aria-label={t.single}
           className={!cycles ? 'pill pill-fill' : 'pill'}
           onClick={() => onChange({ sessionMode: 'single' })}
         >
@@ -87,6 +115,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           type="button"
           role="radio"
           aria-checked={cycles}
+          aria-label={t.cycles}
           className={cycles ? 'pill pill-fill' : 'pill'}
           onClick={() => onChange({ sessionMode: 'cycles' })}
         >
@@ -246,7 +275,6 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           type="button"
           className="pill pill-fill pref"
           aria-label={themeSpoken(t, settings.theme)}
-          title={t.tapToChange}
           onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
         >
           <SunIcon />
@@ -257,7 +285,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           className={settings.sound ? 'pill pill-fill pref' : 'pill pref'}
           role="switch"
           aria-checked={settings.sound}
-          aria-label={t.sound}
+          aria-label={`${t.sound}. ${settings.sound ? 'Activado' : 'Silencio'}`}
           onClick={() => onChange((current) => ({ sound: !current.sound }))}
         >
           <SpeakerIcon off={!settings.sound} />
