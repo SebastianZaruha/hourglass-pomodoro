@@ -32,3 +32,6 @@ Normas para cualquier agente que toque este repo. La especificación completa es
 
 ## Si algo no está claro
 Para y pregunta. No inventes una decisión de diseño. Las decisiones de Sebastián están en la especificación.
+
+## No pierdas el tiempo
+Norma permanente, también para las fases siguientes. Si te topas con algo que te hace perder tiempo (un test inestable, CI lento o roto, una herramienta que falla, varios intentos sin avanzar, una duda de alcance), no insistas a ciegas. Para, explícalo en dos líneas en el informe y termina el turno. Sebastián decide cómo seguir.
