@@ -73,7 +73,12 @@ export const arena: Tema = {
   nube: false,
   anclaSuelo: { x: 0.3, y: 0.84 },
   claro: modo(
-    { tipo: 'foto', src: '/fondos/arena-claro.webp', avif: '/fondos/arena-claro.avif' },
+    {
+      tipo: 'foto',
+      src: '/fondos/arena-claro.webp',
+      avif: '/fondos/arena-claro.avif',
+      estrecho: { webp: '/fondos/arena-claro-estrecho.webp', avif: '/fondos/arena-claro-estrecho.avif' },
+    },
     claro,
     'clara',
     false,

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { encuadreFondo } from './encuadre';
-import type { ModoTema } from '../temas/tipos';
+import { colorDeFondo } from '../medios/assetLoader';
+import type { FondoTema, ModoTema } from '../temas/tipos';
 
 interface Props {
   readonly modo: ModoTema;
@@ -11,19 +12,18 @@ interface Props {
   readonly pie: { readonly x: number; readonly y: number };
   readonly reducir: boolean;
   readonly ahorro: boolean;
+  readonly estrecho: boolean;
 }
 
 /**
- * Foto (AVIF, WebP y JPG de reserva), vídeo con póster, o un degradado.
- * El vídeo se pausa con la pestaña oculta y no arranca si piden
- * menos movimiento o ahorro de datos.
+ * El color del tema se ve al instante. La foto o el vídeo del modo activo
+ * llegan después; el resto lo pide `assetLoader` cuando el navegador está libre.
  */
-export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro }: Props) {
+export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho }: Props) {
   const fondo = modo.fondo;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [fallo, setFallo] = useState(false);
   const [listo, setListo] = useState(false);
-
   const clave = fondo.tipo === 'degradado' ? 'degradado' : fondo.tipo === 'foto' ? fondo.src : fondo.webm;
 
   useEffect(() => {
@@ -42,27 +42,25 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro }: Props)
     return () => document.removeEventListener('visibilitychange', alVer);
   }, [clave]);
 
-  if (fondo.tipo === 'degradado') return <div className="fondo degradado" />;
+  const base = { background: colorDeFondo(fondo) };
 
-  const marco =
-    fondo.tipo === 'foto'
-      ? encuadreFondo(ancho, alto, fondo.ancho ?? 1792, fondo.alto ?? 1008, ancla, pie)
-      : encuadreFondo(ancho, alto, 1920, 1080, ancla, pie);
+  if (fondo.tipo === 'degradado') return <div className="fondo degradado" style={base} />;
+
+  const marco = encuadreFondo(
+    ancho,
+    alto,
+    fondo.tipo === 'foto' ? (fondo.ancho ?? 1792) : 1920,
+    fondo.tipo === 'foto' ? (fondo.alto ?? 1008) : 1080,
+    ancla,
+    pie,
+  );
   const estilo = { left: marco.x, top: marco.y, width: marco.w, height: marco.h };
 
-  if (fondo.tipo === 'foto') {
-    return (
-      <picture className="fondo">
-        {fondo.avif ? <source srcSet={fondo.avif} type="image/avif" /> : null}
-        {fondo.jpg ? <source srcSet={fondo.src} type="image/webp" /> : null}
-        <img src={fondo.jpg ?? fondo.src} alt="" style={estilo} />
-      </picture>
-    );
-  }
+  if (fondo.tipo === 'foto') return <Foto fondo={fondo} estilo={estilo} base={base} estrecho={estrecho} />;
 
   const video = !reducir && !ahorro && !fallo;
   return (
-    <div className="fondo">
+    <div className="fondo" style={base}>
       <img src={fondo.poster} alt="" style={estilo} />
       {video ? (
         <video
@@ -72,6 +70,7 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro }: Props)
           loop
           playsInline
           autoPlay
+          preload="metadata"
           poster={fondo.poster}
           onPlaying={() => setListo(true)}
           onError={() => setFallo(true)}
@@ -81,5 +80,28 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro }: Props)
         </video>
       ) : null}
     </div>
+  );
+}
+
+function Foto({
+  fondo,
+  estilo,
+  base,
+  estrecho,
+}: {
+  readonly fondo: Extract<FondoTema, { tipo: 'foto' }>;
+  readonly estilo: { left: number; top: number; width: number; height: number };
+  readonly base: { background: string };
+  readonly estrecho: boolean;
+}) {
+  const chica = estrecho ? fondo.estrecho : undefined;
+  return (
+    <picture className="fondo" style={base}>
+      {chica?.avif ? <source media="(max-width: 700px)" srcSet={chica.avif} type="image/avif" /> : null}
+      {chica ? <source media="(max-width: 700px)" srcSet={chica.webp} type="image/webp" /> : null}
+      {fondo.avif ? <source srcSet={fondo.avif} type="image/avif" /> : null}
+      {fondo.jpg ? <source srcSet={fondo.src} type="image/webp" /> : null}
+      <img src={fondo.jpg ?? fondo.src} alt="" style={estilo} />
+    </picture>
   );
 }

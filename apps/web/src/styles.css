@@ -29,7 +29,7 @@
   --vidrio-brillo: 1.06;
   --vidrio-saturacion: 1.08;
   --vidrio-pastilla: rgba(255, 255, 255, 0.14);
-  --vidrio-pastilla-on: rgba(255, 255, 255, 0.28);
+  --vidrio-pastilla-on: rgba(255, 255, 255, 0.94);
   --vidrio-fallback: rgba(244, 244, 243, 0.94);
   font-family: Manrope, 'Segoe UI', sans-serif;
   font-synthesis: none;
@@ -61,7 +61,7 @@
   --vidrio-velo: rgba(0, 0, 0, 0.22);
   --vidrio-borde: rgba(255, 255, 255, 0.28);
   --vidrio-pastilla: rgba(255, 255, 255, 0.08);
-  --vidrio-pastilla-on: rgba(255, 255, 255, 0.16);
+  --vidrio-pastilla-on: rgba(236, 232, 224, 0.92);
   --vidrio-fallback: rgba(12, 12, 14, 0.92);
   --menu: #796c60;
   --line: rgba(255, 236, 214, 0.08);
@@ -242,7 +242,8 @@ a {
   border: 1px solid var(--vidrio-borde);
   border-radius: var(--vidrio-radio);
   box-shadow: none;
-  backdrop-filter: blur(var(--vidrio-blur)) brightness(var(--vidrio-brillo)) saturate(var(--vidrio-saturacion));
+  backdrop-filter: blur(var(--vidrio-blur)) brightness(var(--vidrio-brillo))
+    saturate(var(--vidrio-saturacion));
   -webkit-backdrop-filter: blur(var(--vidrio-blur)) brightness(var(--vidrio-brillo))
     saturate(var(--vidrio-saturacion));
 }
@@ -256,7 +257,9 @@ a {
 .vidrio .pill,
 .vidrio .chip,
 .vidrio .choice,
-.vidrio .stepper-row {
+.vidrio .mode-row .pill,
+.vidrio .stepper-row,
+.vidrio .stepper button {
   background: var(--vidrio-pastilla);
   color: var(--ink);
   box-shadow: none;

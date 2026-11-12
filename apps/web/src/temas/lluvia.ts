@@ -55,7 +55,12 @@ export const lluvia: Tema = {
   nube: true,
   anclaSuelo: { x: 0.28, y: 0.8 },
   claro: modo(
-    { tipo: 'foto', src: '/fondos/lluvia-claro.webp', avif: '/fondos/lluvia-claro.avif' },
+    {
+      tipo: 'foto',
+      src: '/fondos/lluvia-claro.webp',
+      avif: '/fondos/lluvia-claro.avif',
+      estrecho: { webp: '/fondos/lluvia-claro-estrecho.webp', avif: '/fondos/lluvia-claro-estrecho.avif' },
+    },
     luz({
       direccion: -102,
       tinte: '#ffe0b0',

@@ -59,32 +59,23 @@ function mascaraDesde(img: HTMLImageElement): HTMLCanvasElement {
   });
 }
 
-function videoNube(usarVideo: boolean): HTMLVideoElement | null {
-  if (!usarVideo) return null;
+function videoNube(): HTMLVideoElement {
   const video = document.createElement('video');
   video.muted = true;
   video.loop = true;
   video.playsInline = true;
-  video.autoplay = true;
-  video.preload = 'auto';
+  video.preload = 'none';
   video.setAttribute('playsinline', '');
-  const webm = '/nube/nube.webm';
-  video.src = webm;
-  video.addEventListener('error', () => {
-    if (video.src.endsWith('nube.mp4')) return;
-    video.src = '/nube/nube.mp4';
-  });
-  void video.play().catch(() => undefined);
   return video;
 }
 
 /** Una sola carga. Si falta una capa, el dibujo usa el póster o el vidrio de reserva. */
-export function cargarActivos(usarNube: boolean, alListo: () => void): Activos {
+export function cargarActivos(alListo: () => void): Activos {
   const activos = vacio();
   const destino = activos as {
     -readonly [K in keyof Activos]: Activos[K];
   };
-  destino.nubeVideo = videoNube(usarNube);
+  destino.nubeVideo = videoNube();
 
   void imagen('/frasco/jar-back.webp')
     .then((img) => {
@@ -104,30 +95,6 @@ export function cargarActivos(usarNube: boolean, alListo: () => void): Activos {
       alListo();
     })
     .catch(() => undefined);
-  void imagen('/frasco/jar-shadow.webp')
-    .then((img) => {
-      destino.sombra = img;
-      alListo();
-    })
-    .catch(() => undefined);
-  void imagen('/frasco/tex-sand.webp')
-    .then((img) => {
-      destino.arena = img;
-      alListo();
-    })
-    .catch(() => undefined);
-  void imagen('/frasco/tex-water.webp')
-    .then((img) => {
-      destino.agua = img;
-      alListo();
-    })
-    .catch(() => undefined);
-  void imagen('/frasco/tex-agua.webp')
-    .then((img) => {
-      destino.superficie = img;
-      alListo();
-    })
-    .catch(() => undefined);
   void imagen('/nube/nube.webp')
     .then((img) => {
       destino.nubePoster = aLienzo(img, alphaFromBlack);
@@ -135,4 +102,19 @@ export function cargarActivos(usarNube: boolean, alListo: () => void): Activos {
     })
     .catch(() => undefined);
   return activos;
+}
+
+const arenaPedida = new WeakSet<Activos>();
+
+/** La textura de arena solo hace falta en Arena y Clásico. */
+export function cargarArena(activos: Activos, alListo: () => void): void {
+  if (activos.arena || arenaPedida.has(activos)) return;
+  arenaPedida.add(activos);
+  const destino = activos as { -readonly [K in keyof Activos]: Activos[K] };
+  void imagen('/frasco/tex-sand.webp')
+    .then((img) => {
+      destino.arena = img;
+      alListo();
+    })
+    .catch(() => undefined);
 }

@@ -39,6 +39,11 @@ export interface UiTema {
   readonly barra: string;
 }
 
+export interface FotoEstrecha {
+  readonly webp: string;
+  readonly avif?: string;
+}
+
 export type FondoTema =
   | { readonly tipo: 'degradado' }
   | {
@@ -49,8 +54,16 @@ export type FondoTema =
       readonly jpg?: string;
       readonly ancho?: number;
       readonly alto?: number;
+      /** Versión más chica para pantallas estrechas. */
+      readonly estrecho?: FotoEstrecha;
     }
-  | { readonly tipo: 'video'; readonly webm: string; readonly mp4: string; readonly poster: string };
+  | {
+      readonly tipo: 'video';
+      readonly webm: string;
+      readonly mp4: string;
+      readonly poster: string;
+      readonly estrecho?: FotoEstrecha;
+    };
 
 export interface ModoTema {
   readonly fondo: FondoTema;

@@ -24,6 +24,7 @@ import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
 import { hintFor } from './copy';
 import { Fondo } from './fondo/Fondo';
+import { conexionAhorro, prefetchEnReposo, urlsPrefetch } from './medios/assetLoader';
 import { Lienzo } from './frasco/Lienzo';
 import { useBotonMenu } from './hooks/useBotonMenu';
 import { useClockLift } from './hooks/useClockLift';
@@ -34,7 +35,7 @@ import { useEntrada } from './intro';
 import { calcularLayout } from './layout/calcularLayout';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
-import { guardarEscena, leerEscena, modoDe, temaPorId, type IdTema } from './temas';
+import { guardarEscena, leerEscena, modoDe, temaPorId, TEMAS, type IdTema } from './temas';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
 
@@ -82,6 +83,12 @@ function Reloj({
   useEffect(() => {
     replaceIfChanged(sessionPlanFor(settings));
   }, [settings, replaceIfChanged]);
+
+  useEffect(() => {
+    const red = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
+      .connection;
+    prefetchEnReposo(urlsPrefetch(TEMAS, tema.id, scheme, medios.ahorro || conexionAhorro(red)));
+  }, [tema.id, scheme, medios.ahorro]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -199,6 +206,7 @@ function Reloj({
           pie={pie}
           reducir={medios.reducir}
           ahorro={medios.ahorro}
+          estrecho={!layout.ancha}
         />
         <div
           ref={stageRef}
@@ -220,6 +228,7 @@ function Reloj({
             granos={modo.granos}
             mostrarNube={tema.nube}
             reducir={medios.reducir}
+            ahorro={medios.ahorro}
             layout={layout}
             onVolteo={flip}
             onSuprimirClic={() => {

@@ -13,7 +13,8 @@ import { useEffect, useRef, type RefObject } from 'react';
 
 import type { Layout } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
-import { cargarActivos, type Activos } from './activos';
+import { activarNube } from '../medios/assetLoader';
+import { cargarActivos, cargarArena, type Activos } from './activos';
 import { dibujar } from './dibujo';
 import { anguloNivel, cuelloMojado } from './fisica/agua';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
@@ -29,6 +30,7 @@ export interface ModeloFrasco {
   readonly granos: 'clara' | 'oscura';
   readonly mostrarNube: boolean;
   readonly reducir: boolean;
+  readonly ahorro: boolean;
   readonly layout: Layout;
   readonly onVolteo: () => void;
   readonly onSuprimirClic: () => void;
@@ -82,6 +84,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let ultimo = 0;
     let activo = true;
     let forzar = false;
+    let nubeLista = false;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -89,7 +92,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       gravity: GRAVITY_DOWN,
       calm: false,
     };
-    const activos: Activos = cargarActivos(true, () => despertar());
+    const activos: Activos = cargarActivos(() => despertar());
     let arrastre: { id: number; inicio: number; base: number; movio: boolean } | null = null;
 
     const pintarArena = () => {
@@ -137,6 +140,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         movio = true;
       }
       if (m.tipo === 'arena') {
+        cargarArena(activos, despertar);
         if (paso.volteoCompletado || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle')) {
           if (sim.topCount !== objetivo) {
             sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
@@ -194,11 +198,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       );
 
       const video = activos.nubeVideo;
-      if (video) {
-        const parar = document.hidden || !m.mostrarNube || m.reducir;
-        if (parar) video.pause();
-        else if (video.paused) void video.play().catch(() => undefined);
-      }
+      if (video && nubeLista) activarNube(video, m.mostrarNube && !document.hidden && !m.reducir, m.ahorro);
       const nubeViva = m.mostrarNube && !m.reducir && !!video && !video.paused && video.readyState >= 2;
       const seguir =
         movio ||
@@ -218,6 +218,12 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       raf = requestAnimationFrame(frame);
     };
     pedir.current = despertar;
+    const ocioso =
+      window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 500) as unknown as number);
+    ocioso(() => {
+      nubeLista = true;
+      despertar();
+    });
 
     const local = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
