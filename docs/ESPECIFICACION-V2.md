@@ -152,22 +152,9 @@ Lo que **no** cambia entre temas vive una sola vez en `estilo/tokens.ts` (y de a
 
 **Paleta: discreta, «que se vea pero que no destaque»**
 
-Criterio: tonos neutros (≤ 3 % de saturación) y **apagados**, más oscuros que la paleta anterior en todos los modos. En los modos claros (y en Lluvia claro, que es gris medio) un gris carbón suave; en los oscuros, un gris medio-claro tenue, claramente más oscuro que los casi blancos de antes. El color se ajusta midiendo el fondo real detrás del reloj **sin halo**, para que quede dentro de esta banda:
+Criterio: tonos neutros (≤ 3 % de saturación) y **apagados**, más oscuros que la paleta anterior en todos los modos. En los modos claros (y en Lluvia claro, que es gris medio) un gris carbón suave; en los oscuros, un gris medio-claro tenue, claramente más oscuro que los casi blancos de antes. El color lo elige Sebastián: son dos valores por tema (`reloj.digitos`, `reloj.pista`) que se cambian editando una línea, sin tests de contraste. Valores de partida: Lluvia claro `#2E302F` · Lluvia oscuro `#8F8B86` · Arena claro `#4A4541` · Arena oscuro `#7E7A75` · Clásico claro `#5A5550` · Clásico oscuro `#86817B`.
 
-- Dígitos: contraste entre **2,5:1 y 4:1** (peor 5 % de píxeles del fondo en la zona del reloj), en todas las anchuras del plan de tests. Por debajo no se ve; por encima destaca demasiado.
-- Pista: mismo tono un punto más marcado, contraste **≥ 3:1** y ≤ 5:1.
-Valores de partida, los que hay ahora en el código (`reloj.digitos` y `reloj.pista`, el mismo gris). Sebastián los cambia editando esa línea. No hay medida de contraste en esta entrega.
-
-| Tema · modo | Dígitos y pista |
-|---|---|
-| Lluvia claro | `#2E302F` |
-| Lluvia oscuro | `#8F8B86` |
-| Arena claro | `#4A4541` |
-| Arena oscuro | `#7E7A75` |
-| Clásico claro | `#5A5550` |
-| Clásico oscuro | `#86817B` |
-
-**Por qué así:** Sebastián quiere un reloj presente pero sereno, que forme parte de la escena en vez de imponerse; el halo se veía como mancha. El color final lo elige él.
+**Por qué así:** Sebastián quiere un reloj presente pero sereno, que forme parte de la escena en vez de imponerse; el halo se veía como mancha. El único test del reloj comprueba que no tiene halo, sombra ni fondo.
 
 **Comportamiento:**
 - **Siempre visible.** No comparte la lógica de autoocultado del botón del menú.
@@ -447,7 +434,7 @@ Cada uno es comprobable; los marcados **(auto)** los comprueba un test y los mar
 9. **(auto)** El pie y todos los controles cumplen `scrollWidth ≤ clientWidth` (nada cortado ni con «…») desde 360 px.
 
 **Reloj y textos**
-10. **(auto)** El reloj no tiene halo, `text-shadow`, `backdrop-filter` ni fondo. La banda de contraste no se comprueba: el color lo elige Sebastián.
+10. **(auto)** Contraste medido en la captura de producción, en la zona del reloj: (eliminado: el color del reloj lo elige Sebastián). Solo se comprueba que el reloj no tiene halo, `text-shadow`, `backdrop-filter` ni fondo.
 11. **(auto)** Texto de controles (elegidos y no elegidos), del pie y del panel legal ≥ 4,5:1 medido en la captura.
 12. **(auto)** El texto hablado del tiempo coincide con lo visible según la regla de 3.2 (con reloj congelado en 04:30, dice «5 minutos»; en pausa a 04:30 dice «4 minutos 30 segundos»).
 13. **(auto)** En pausa, el botón del menú existe, es visible al mover el puntero y abre el menú.
