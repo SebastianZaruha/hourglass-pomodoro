@@ -64,6 +64,7 @@ export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onC
         top: caja.y,
         width: caja.w,
         height: 'auto',
+        maxHeight: caja.h,
         right: 'auto',
         bottom: 'auto',
       }}

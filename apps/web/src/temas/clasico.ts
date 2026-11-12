@@ -4,8 +4,8 @@ import type { FondoTema, Luz, ModoTema, Tema, UiTema } from './tipos';
 const claro: UiTema = {
   tinta: '#4f443b',
   tintaSuave: '#6b5e53',
-  hora: '#74685e',
-  pista: '#5c5046',
+  hora: '#4a4038',
+  pista: '#241f1b',
   pausa: '#7d6e60',
   menu: 'rgba(255, 255, 255, 0.86)',
   menuSolido: '#f4f4f3',
@@ -13,7 +13,7 @@ const claro: UiTema = {
   pastilla: '#fffcf8',
   pastillaTinta: '#3e342c',
   pie: '#b3a698',
-  halo: 'rgba(255, 252, 246, 0.45)',
+  halo: 'rgba(255, 252, 246, 0.7)',
   barra: '#ebe5dd',
 };
 
@@ -21,8 +21,8 @@ const claro: UiTema = {
 const oscuro: UiTema = {
   tinta: '#f3ece3',
   tintaSuave: '#cbbba8',
-  hora: '#9c9086',
-  pista: '#7d7268',
+  hora: '#f3ece4',
+  pista: '#fffaf4',
   pausa: '#d9cbbc',
   menu: 'rgba(8, 8, 10, 0.84)',
   menuSolido: '#141416',
@@ -30,7 +30,7 @@ const oscuro: UiTema = {
   pastilla: '#d8c3a6',
   pastillaTinta: '#3a312a',
   pie: '#8a7d72',
-  halo: 'rgba(0, 0, 0, 0.28)',
+  halo: 'rgba(12, 10, 8, 0.7)',
   barra: '#241c18',
 };
 

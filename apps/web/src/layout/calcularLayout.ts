@@ -78,16 +78,17 @@ function amplio(ancho: number, alto: number, menuAbierto: boolean, botonMenu: Ca
 }
 
 function estrecho(ancho: number, alto: number, menuAbierto: boolean): Layout {
-  const banda = 40;
-  const menuAlto = Math.min(320, Math.max(210, alto * 0.34));
-  const reserva = menuAbierto ? menuAlto + 18 : banda;
-  const relojAlto = Math.min(156, Math.max(124, alto * 0.18));
-  const reloj = caja(12, alto - reserva - relojAlto, ancho - 24, relojAlto);
-  const botonMenu = caja(ancho - 10 - 36, alto - banda + 6, 36, 28);
-  const techo = 8;
-  const hueco = Math.max(72, reloj.y - techo);
-  const frasco = frascoEn(ancho * 0.5, techo + hueco * 0.9, hueco * 0.72, ancho * 0.56);
-  const menu = caja(10, menuAbierto ? alto - menuAlto - 8 : alto + 24, ancho - 20, menuAlto);
+  const borde = 22;
+  const menuAlto = Math.min(364, Math.max(328, Math.round(alto * 0.42)));
+  const pie = 48;
+  const reserva = menuAbierto ? menuAlto + borde : pie;
+  const relojAlto = Math.min(128, Math.max(108, Math.round(alto * 0.15)));
+  const reloj = caja(16, alto - reserva - relojAlto, ancho - 32, relojAlto);
+  const botonMenu = caja(ancho - 14 - 36, alto - 40, 36, 28);
+  const techo = 12;
+  const hueco = Math.max(64, reloj.y - techo);
+  const frasco = frascoEn(ancho * 0.5, techo + hueco * 0.84, hueco * 0.54, ancho * 0.4);
+  const menu = caja(10, menuAbierto ? alto - menuAlto - borde : alto + 24, ancho - 20, menuAlto);
   return { ancha: false, frasco, nube: cajaNube(frasco), reloj, menu, botonMenu };
 }
 

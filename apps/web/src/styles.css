@@ -3,8 +3,8 @@
   --bg-top: #f6f1ea;
   --bg-bottom: #e3d9cc;
   --glow: rgba(255, 252, 246, 0.95);
-  --time: #74685e;
-  --hint: #5c5046;
+  --time: #4a4038;
+  --hint: #241f1b;
   --pause: #7d6e60;
   --pause-veil: rgba(250, 246, 240, 0.42);
   --ink: #4f443b;
@@ -41,8 +41,8 @@
   --bg-top: #2a241f;
   --bg-bottom: #16130f;
   --glow: rgba(90, 70, 52, 0.45);
-  --time: #9c9086;
-  --hint: #7d7268;
+  --time: #f3ece4;
+  --hint: #fffaf4;
   --pause: #d9cbbc;
   --pause-veil: rgba(20, 16, 12, 0.38);
   --ink: #f3ece3;
@@ -270,7 +270,7 @@ a {
 .vidrio .chip-on,
 .vidrio .mode-row .pill.pill-fill {
   background: var(--vidrio-pastilla-on);
-  color: var(--ink);
+  color: var(--pill-ink);
 }
 
 .sheet button[aria-label] {
@@ -887,13 +887,17 @@ button[aria-label]:focus-visible::after {
 }
 
 .app[data-layout='narrow'] .hint {
-  margin-top: 0.15rem;
-  font-size: 0.7rem;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
   line-height: 1.25;
 }
 
 .app[data-layout='narrow'] .time {
-  font-size: clamp(2.45rem, min(12vw, 9vh), 5rem);
+  font-size: clamp(3.15rem, min(16vw, 11vh), 5.4rem);
+}
+
+.app[data-layout='narrow'] .sheet {
+  padding-bottom: max(1.05rem, env(safe-area-inset-bottom));
 }
 
 .site-footer a,

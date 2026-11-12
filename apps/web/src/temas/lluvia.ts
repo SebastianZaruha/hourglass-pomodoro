@@ -14,8 +14,8 @@ function luz(parcial: Omit<Luz, 'nube'> & { nube?: Luz['nube'] }): Luz {
 const claro: UiTema = {
   tinta: '#1c2a26',
   tintaSuave: '#3d524c',
-  hora: '#3e524c',
-  pista: '#5d726b',
+  hora: '#4a4038',
+  pista: '#241f1b',
   pausa: '#1c2a26',
   menu: 'rgba(255, 255, 255, 0.86)',
   menuSolido: '#f4f4f3',
@@ -23,15 +23,15 @@ const claro: UiTema = {
   pastilla: '#f7faf8',
   pastillaTinta: '#1c2a26',
   pie: '#6d8078',
-  halo: 'rgba(255, 255, 255, 0.28)',
+  halo: 'rgba(255, 252, 246, 0.7)',
   barra: '#c5d0cb',
 };
 
 const oscuro: UiTema = {
   tinta: '#e7efeb',
   tintaSuave: '#b7c4be',
-  hora: '#d5ded9',
-  pista: '#9aaba3',
+  hora: '#f3ece4',
+  pista: '#fffaf4',
   pausa: '#e7efeb',
   menu: 'rgba(8, 8, 10, 0.84)',
   menuSolido: '#141416',
@@ -39,7 +39,7 @@ const oscuro: UiTema = {
   pastilla: '#d5e0da',
   pastillaTinta: '#1c2a26',
   pie: '#8ea099',
-  halo: 'rgba(0, 0, 0, 0.35)',
+  halo: 'rgba(12, 10, 8, 0.7)',
   barra: '#1a2422',
 };
 
