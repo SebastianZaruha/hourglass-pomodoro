@@ -9,10 +9,9 @@ interface Props {
   readonly label: string | null;
   readonly hint: string | null;
   readonly describe: (remainingMs: number) => string;
-  readonly ancha: boolean;
 }
 
-export function TimeReadout({ getSnapshot, running, label, hint, describe, ancha }: Props) {
+export function TimeReadout({ getSnapshot, running, label, hint, describe }: Props) {
   const [text, setText] = useState(() => formatDuration(getSnapshot().remainingMs));
   const [live, setLive] = useState(() => describe(getSnapshot().remainingMs));
 
@@ -36,12 +35,12 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe, ancha
   }, [describe, getSnapshot, running]);
 
   return (
-    <div className={ancha ? 'readout readout-ancha' : 'readout'}>
+    <div className="readout">
       <p className="sr-only" aria-live="polite">
         {label ? `${label}. ` : ''}
         {live}
       </p>
-      <div className={ancha ? 'time hora-ancha' : 'time hora-estrecha'} aria-hidden="true">
+      <div className="time" aria-hidden="true">
         {text}
       </div>
       {label ? (
@@ -50,7 +49,7 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe, ancha
         </div>
       ) : null}
       {hint ? (
-        <p className={ancha ? 'hint' : 'hint pista-estrecha'} aria-hidden="true">
+        <p className="hint" aria-hidden="true">
           {hint}
         </p>
       ) : null}

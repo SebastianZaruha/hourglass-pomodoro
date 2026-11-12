@@ -1,10 +1,8 @@
 .menu-btn {
   position: fixed;
   z-index: 24;
-  right: clamp(0.65rem, 1.6vw, 1.25rem);
-  bottom: calc(clamp(1.6rem, 4.2vh, 2.5rem) + env(safe-area-inset-bottom));
-  width: 3rem;
-  height: 2.75rem;
+  width: 44px;
+  height: 44px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -68,10 +66,8 @@
 .sheet {
   position: fixed;
   z-index: 34;
-  overflow: hidden;
-  max-height: min(640px, calc(100dvh - 5.5rem));
-  scrollbar-width: none;
-  padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 2vw, 1.45rem);
+  overflow: visible;
+  padding: var(--espacio-4) var(--espacio-4) var(--espacio-3);
   color: var(--tinta);
   opacity: 0;
   pointer-events: none;
@@ -80,9 +76,14 @@
   user-select: none;
   transform: translateY(calc(100% + 3rem));
   transition:
-    transform 680ms var(--curva),
-    opacity 520ms ease,
-    filter 560ms ease;
+    transform var(--duracion-normal) var(--curva),
+    opacity var(--duracion-normal) var(--curva),
+    filter var(--duracion-normal) var(--curva);
+}
+
+.menu-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
 .sheet.open {

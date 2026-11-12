@@ -19,7 +19,7 @@ import {
   type Messages,
   type Settings,
 } from '@reloj/core';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 import { Tooltip } from './Tooltip';
@@ -40,9 +40,23 @@ interface Props {
   readonly onClose: () => void;
   readonly caja: Caja;
   readonly estrecho: boolean;
+  readonly scroll: boolean;
+  readonly hojaRef: RefObject<HTMLDivElement | null>;
 }
 
-export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onClose, caja, estrecho }: Props) {
+export function SettingsSheet({
+  open,
+  settings,
+  t,
+  temaId,
+  onTema,
+  onChange,
+  onClose,
+  caja,
+  estrecho,
+  scroll,
+  hojaRef,
+}: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
@@ -61,13 +75,15 @@ export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onC
 
   return (
     <div
-      className={['sheet', 'vidrio', open ? 'open' : '', estrecho ? 'sheet-estrecha' : ''].filter(Boolean).join(' ')}
+      ref={hojaRef}
+      className={['sheet', 'vidrio', open ? 'open' : '', estrecho ? 'sheet-estrecha' : '', scroll ? 'menu-scroll' : '']
+        .filter(Boolean)
+        .join(' ')}
       style={{
         left: caja.x,
         top: caja.y,
         width: caja.w,
-        height: 'auto',
-        maxHeight: caja.h,
+        maxHeight: scroll ? caja.h : undefined,
         right: 'auto',
         bottom: 'auto',
       }}

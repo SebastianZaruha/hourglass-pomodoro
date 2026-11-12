@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import type { MouseEvent, RefObject } from 'react';
 
 import type { Language } from '@reloj/core';
 
@@ -9,14 +9,14 @@ import './pie.css';
 interface Props {
   readonly lang: Language;
   readonly visible: boolean;
-  readonly estrecho: boolean;
   readonly oculto: boolean;
-  readonly pausado: boolean;
   readonly onCookies: () => void;
   readonly onOpenLegal: (href: string, title: string) => void;
+  readonly pieRef: RefObject<HTMLElement | null>;
+  readonly top: number;
 }
 
-export function SiteFooter({ lang, visible, estrecho, oculto, pausado, onCookies, onOpenLegal }: Props) {
+export function SiteFooter({ lang, visible, oculto, onCookies, onOpenLegal, pieRef, top }: Props) {
   const labels = footerCopy(lang);
   const hrefs = PAGINAS[lang];
   const open = (href: string, title: string) => (event: MouseEvent<HTMLAnchorElement>) => {
@@ -28,17 +28,11 @@ export function SiteFooter({ lang, visible, estrecho, oculto, pausado, onCookies
       <span className="corto">{corto}</span>
     </a>
   );
-  const clases = [
-    'site-footer',
-    visible ? 'is-on' : '',
-    estrecho ? 'pie-estrecho' : '',
-    oculto ? 'pie-oculto' : '',
-    pausado ? 'pie-pausa' : '',
-  ]
+  const clases = ['site-footer', visible ? 'is-on' : '', oculto ? 'pie-oculto' : '']
     .filter(Boolean)
     .join(' ');
   return (
-    <footer className={clases}>
+    <footer ref={pieRef} className={clases} style={{ top, bottom: 'auto' }}>
       {pieza(hrefs.legal, labels.legal, labels.legalCorto)}
       {pieza(hrefs.privacy, labels.privacy, labels.privacyCorto)}
       {pieza(hrefs.cookies, labels.cookies, labels.cookiesCorto)}

@@ -12,7 +12,7 @@ import {
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
 import { AndroidPromo } from './components/AndroidPromo';
@@ -28,9 +28,9 @@ import { hintFor } from './copy';
 import { Fondo } from './fondo/Fondo';
 import { conexionAhorro, prefetchEnReposo, urlsPrefetch } from './medios/assetLoader';
 import { Lienzo } from './frasco/Lienzo';
-import { useBotonMenu } from './hooks/useBotonMenu';
-import { useClockLift } from './hooks/useClockLift';
+import { useAutoocultar } from './hooks/useAutoocultar';
 import { useConsent } from './hooks/useConsent';
+import { useMedidas } from './hooks/useMedidas';
 import { useMedios } from './hooks/useMediaQuery';
 import { useStageInput } from './hooks/useStageInput';
 import { useEntrada } from './intro';
@@ -74,14 +74,29 @@ function Reloj({
   const intro = useEntrada();
   const appRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const avisoRef = useRef<HTMLDivElement>(null);
+  const pieRef = useRef<HTMLElement>(null);
+  const sondaRef = useRef<HTMLDivElement>(null);
   const suprimirClic = useRef(false);
   const [menu, setMenu] = useState(false);
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const pausado = view.status === 'paused';
-  const layout = calcularLayout(medios.ancho, medios.alto, menu);
-  const alzado = useClockLift(appRef, menu, layout.ancha);
-  const boton = useBotonMenu(menu, pausado);
+  const medidas = useMedidas({ menu: menuRef, aviso: avisoRef, pie: pieRef, sonda: sondaRef });
+  const medidasDe = (menuAbierto: boolean) => ({
+    ancho: medidas.ancho,
+    alto: medidas.alto,
+    menuAbierto,
+    altoMenu: medidas.altoMenu,
+    altoAviso: menuAbierto ? 0 : medidas.altoAviso,
+    altoPie: medidas.altoPie,
+    margenSeguro: medidas.margenSeguro,
+    digitos: medidas.digitos,
+  });
+  const layout = calcularLayout(medidasDe(menu));
+  const menuLayout = menu ? layout : calcularLayout(medidasDe(true));
+  const chrome = useAutoocultar(menu);
 
   useEffect(() => {
     replaceIfChanged(sessionPlanFor(settings));
@@ -194,15 +209,15 @@ function Reloj({
   });
   const pie = { x: layout.frasco.x + layout.frasco.w / 2, y: layout.frasco.y + layout.frasco.h * 0.979 };
   if (pruebasActivas()) {
-    const menuMedido = calcularLayout(medios.ancho, medios.alto, true).menu;
     publicarCajas({
       frasco: layout.frasco,
-      reloj: { ...layout.reloj, y: layout.reloj.y - alzado },
-      menu: menuMedido,
+      reloj: layout.reloj,
+      menu: layout.menu,
       botonMenu: layout.botonMenu,
       nube: layout.nube,
     });
   }
+  const horaPx = { '--hora-px': `${layout.horaPx}px` } as CSSProperties;
 
   return (
     <div
@@ -211,7 +226,9 @@ function Reloj({
       data-scheme={scheme}
       data-tema={tema.id}
       data-layout={layout.ancha ? 'wide' : 'narrow'}
+      style={horaPx}
     >
+      <div ref={sondaRef} className="sonda-segura" aria-hidden="true" />
       {consentimiento.choice === 'accepted' ? <Analytics /> : null}
       <div className={`mundo${tema.nube ? ' con-nube' : ''}${pausado ? ' pausado' : ''}`}>
         <Fondo
@@ -246,16 +263,17 @@ function Reloj({
             reducir={medios.reducir}
             ahorro={medios.ahorro}
             layout={layout}
+            oculto={!layout.frascoVisible}
             onVolteo={flip}
             onSuprimirClic={() => {
               suprimirClic.current = true;
             }}
           />
           <div
-            className="reloj"
+            className={layout.relojVisible ? 'reloj' : 'reloj reloj-oculto'}
             style={{
               left: layout.reloj.x,
-              top: layout.reloj.y - alzado,
+              top: layout.reloj.y,
               width: layout.reloj.w,
               height: layout.reloj.h,
             }}
@@ -266,23 +284,15 @@ function Reloj({
               label={label}
               hint={pausado ? null : hint}
               describe={describe}
-              ancha={layout.ancha}
             />
           </div>
         </div>
-        <SiteFooter
-          lang={lang}
-          visible={boton || menu}
-          estrecho={!layout.ancha}
-          oculto={menu && !layout.ancha}
-          pausado={pausado}
-          onCookies={() => consentimiento.setBannerOpen(true)}
-          onOpenLegal={(href, title) => setLegal({ href, title })}
-        />
         {showAndroidPromo ? (
           <AndroidPromo
             lang={lang}
             pausado={pausado}
+            caja={layout.aviso}
+            nodoRef={avisoRef}
             onDismiss={() => {
               writeAndroidPromoDismissed();
               setPromoDismissed(true);
@@ -290,15 +300,31 @@ function Reloj({
           />
         ) : null}
       </div>
+      <SiteFooter
+        lang={lang}
+        visible={chrome}
+        oculto={menu && !layout.ancha}
+        pieRef={pieRef}
+        top={layout.pie.y}
+        onCookies={() => consentimiento.setBannerOpen(true)}
+        onOpenLegal={(href, title) => setLegal({ href, title })}
+      />
 
       <button
         type="button"
         id="menu-button"
-        className={boton ? 'menu-btn ayuda is-on' : 'menu-btn ayuda'}
+        className={chrome ? 'menu-btn ayuda is-on' : 'menu-btn ayuda'}
         aria-label={t.openSettings}
         aria-expanded={menu}
-        hidden={menu || pausado}
-        style={{ left: layout.botonMenu.x, top: layout.botonMenu.y, right: 'auto', bottom: 'auto' }}
+        hidden={menu}
+        style={{
+          left: layout.botonMenu.x,
+          top: layout.botonMenu.y,
+          width: layout.botonMenu.w,
+          height: layout.botonMenu.h,
+          right: 'auto',
+          bottom: 'auto',
+        }}
         onClick={(event) => {
           event.stopPropagation();
           setMenu(true);
@@ -330,13 +356,17 @@ function Reloj({
         }}
         onChange={update}
         onClose={() => setMenu(false)}
-        caja={calcularLayout(medios.ancho, medios.alto, true).menu}
+        caja={menuLayout.menu}
         estrecho={!layout.ancha}
+        scroll={menuLayout.menuConScroll}
+        hojaRef={menuRef}
       />
       {pausado ? <Pausa pista={hint} /> : null}
       <CookieBanner
         open={consentimiento.bannerOpen}
         lang={lang}
+        caja={layout.aviso}
+        nodoRef={avisoRef}
         onChoose={consentimiento.choose}
         onOpenLegal={(href, title) => setLegal({ href, title })}
       />

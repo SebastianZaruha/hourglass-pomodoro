@@ -19,6 +19,11 @@
   height: 100%;
   display: block;
   touch-action: none;
+  transition: opacity var(--duracion-lenta) var(--curva);
+}
+
+.lienzo-oculto {
+  opacity: 0;
 }
 
 .entra .lienzo {
@@ -37,4 +42,10 @@
 
 .entra-corta .lienzo {
   transition-duration: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lienzo {
+    transition: none;
+  }
 }

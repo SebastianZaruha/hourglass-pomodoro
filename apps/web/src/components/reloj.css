@@ -5,6 +5,16 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  transition:
+    left var(--duracion-lenta) var(--curva),
+    top var(--duracion-lenta) var(--curva),
+    width var(--duracion-lenta) var(--curva),
+    height var(--duracion-lenta) var(--curva),
+    opacity var(--duracion-lenta) var(--curva);
+}
+
+.reloj-oculto {
+  opacity: 0;
 }
 
 .readout {
@@ -15,25 +25,13 @@
   user-select: none;
 }
 
-.readout-ancha {
-  transform: translateY(calc(-1 * var(--clock-lift, 0px)));
-  transition: transform var(--duracion-lenta) var(--curva);
-}
-
 .time {
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   line-height: 0.92;
+  font-size: var(--hora-px);
   color: var(--hora);
-}
-
-.hora-ancha {
-  font-size: clamp(2.7rem, min(6.8vw, 14vh), 7.25rem);
-}
-
-.hora-estrecha {
-  font-size: clamp(3.15rem, min(16vw, 11vh), 5.4rem);
 }
 
 .status {
@@ -51,14 +49,8 @@
   color: var(--pista);
 }
 
-.pista-estrecha {
-  margin-top: 0.2rem;
-  font-size: 0.82rem;
-  line-height: 1.25;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .readout {
+  .reloj {
     transition: none;
   }
 }

@@ -1,22 +1,33 @@
+import type { CSSProperties, RefObject } from 'react';
+
 import type { Language } from '@reloj/core';
 
 import { ANDROID_APP } from '../androidApp';
 import { androidPromoCopy } from '../copy';
+import type { Caja } from '../layout/cajas';
 import { Tooltip } from './Tooltip';
 import './promo.css';
 
 interface Props {
   readonly lang: Language;
   readonly pausado: boolean;
+  readonly caja: Caja;
+  readonly nodoRef: RefObject<HTMLDivElement | null>;
   readonly onDismiss: () => void;
 }
 
 /** Tira discreta, debajo del reloj. No es el banner de cookies. */
-export function AndroidPromo({ lang, pausado, onDismiss }: Props) {
+function estiloDe(caja: Caja): CSSProperties {
+  return { left: caja.x, top: caja.y, width: caja.w, right: 'auto', bottom: 'auto' };
+}
+
+export function AndroidPromo({ lang, pausado, caja, nodoRef, onDismiss }: Props) {
   const copy = androidPromoCopy(ANDROID_APP.distribution, lang);
   return (
     <div
+      ref={nodoRef}
       className={pausado ? 'app-promo vidrio promo-pausa' : 'app-promo vidrio'}
+      style={estiloDe(caja)}
       onClick={(event) => event.stopPropagation()}
     >
       <p className="app-promo-text">

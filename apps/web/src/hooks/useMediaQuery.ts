@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { esAncha } from '../layout/calcularLayout';
+import { entradaDe } from '../layout/medidas';
 
 function useConsulta(query: string): boolean {
   const [coincide, setCoincide] = useState(() => window.matchMedia(query).matches);
@@ -49,6 +50,6 @@ export function useMedios() {
     ahorro,
     ancho: tamano.ancho,
     alto: tamano.alto,
-    ancha: esAncha(tamano.ancho, tamano.alto),
+    ancha: esAncha(entradaDe(tamano.ancho, tamano.alto, false)),
   };
 }
