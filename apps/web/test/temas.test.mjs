@@ -57,6 +57,27 @@ test('clásico apoya el frasco en el suelo del estudio y lo ilumina desde arriba
   }
 });
 
+test('la hora y la pista se leen sobre el muro claro', async () => {
+  const { mod, cleanup } = await bundle(
+    `export { clasico } from './src/temas/clasico.ts';
+     export { arena } from './src/temas/arena.ts';
+     export { contraste } from './src/temas/contraste.ts';\n`,
+  );
+  try {
+    // El muro más claro detrás del reloj, con el halo ya mezclado.
+    const casos = [
+      [mod.clasico.claro, '#e7dfd3'],
+      [mod.arena.claro, '#dcc19f'],
+    ];
+    for (const [modo, muro] of casos) {
+      assert.ok(mod.contraste(modo.ui.hora, muro) >= 3, modo.ui.hora);
+      assert.ok(mod.contraste(modo.ui.pista, muro) >= 4.5, modo.ui.pista);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
 test('un claro guardado pasa a clásico y lo desconocido a lluvia', async () => {
   const { mod, cleanup } = await bundle("export { escenaGuardada } from './src/temas/index.ts';\n");
   try {

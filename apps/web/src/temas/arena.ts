@@ -4,7 +4,7 @@ const claro: UiTema = {
   tinta: '#3c3228',
   tintaSuave: '#6a5848',
   hora: '#5c4632',
-  pista: '#8a7360',
+  pista: '#4e4136',
   pausa: '#3c3228',
   menu: 'rgba(255, 255, 255, 0.86)',
   menuSolido: '#f4f4f3',

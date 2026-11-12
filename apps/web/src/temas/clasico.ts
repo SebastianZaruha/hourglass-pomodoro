@@ -4,8 +4,8 @@ import type { FondoTema, Luz, ModoTema, Tema, UiTema } from './tipos';
 const claro: UiTema = {
   tinta: '#4f443b',
   tintaSuave: '#6b5e53',
-  hora: '#b3a698',
-  pista: '#c4b8ab',
+  hora: '#74685e',
+  pista: '#5c5046',
   pausa: '#7d6e60',
   menu: 'rgba(255, 255, 255, 0.86)',
   menuSolido: '#f4f4f3',
