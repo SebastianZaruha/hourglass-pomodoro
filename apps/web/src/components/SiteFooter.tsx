@@ -1,16 +1,20 @@
 import type { MouseEvent } from 'react';
 
-import { PAGINAS, PIE } from '../copy';
+import type { Language } from '@reloj/core';
+
+import { footerCopy, PAGINAS } from '../copy';
 import { keepAppOnLegalClick } from './LegalOverlay';
 
 interface Props {
+  readonly lang: Language;
+  readonly visible: boolean;
   readonly onCookies: () => void;
   readonly onOpenLegal: (href: string, title: string) => void;
 }
 
-export function SiteFooter({ onCookies, onOpenLegal }: Props) {
-  const labels = PIE;
-  const hrefs = PAGINAS.es;
+export function SiteFooter({ lang, visible, onCookies, onOpenLegal }: Props) {
+  const labels = footerCopy(lang);
+  const hrefs = PAGINAS[lang];
   const open = (href: string, title: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (keepAppOnLegalClick(event)) onOpenLegal(href, title);
   };
@@ -21,14 +25,14 @@ export function SiteFooter({ onCookies, onOpenLegal }: Props) {
     </a>
   );
   return (
-    <footer className="site-footer">
-      {pieza(hrefs.legal, labels.legal, 'Legal')}
-      {pieza(hrefs.privacy, labels.privacy, 'Privacidad')}
-      {pieza(hrefs.cookies, labels.cookies, 'Cookies')}
-      {pieza(hrefs.app, labels.app, 'App')}
+    <footer className={visible ? 'site-footer is-on' : 'site-footer'}>
+      {pieza(hrefs.legal, labels.legal, labels.legalCorto)}
+      {pieza(hrefs.privacy, labels.privacy, labels.privacyCorto)}
+      {pieza(hrefs.cookies, labels.cookies, labels.cookiesCorto)}
+      {pieza(hrefs.app, labels.app, labels.appCorto)}
       <button type="button" id="configure-cookies" onClick={onCookies}>
         <span className="largo">{labels.settings}</span>
-        <span className="corto">Ajustes</span>
+        <span className="corto">{labels.settingsCorto}</span>
       </button>
     </footer>
   );

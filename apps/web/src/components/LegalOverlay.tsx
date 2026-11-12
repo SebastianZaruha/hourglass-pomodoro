@@ -52,7 +52,7 @@ export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="legal-dialog" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="legal-dialog vidrio" role="dialog" aria-modal="true" aria-label={title}>
         <iframe ref={frameRef} src={src} title={title} />
       </div>
     </div>
@@ -74,10 +74,9 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
       const valor = estilos.getPropertyValue(nombre).trim();
       if (valor) doc.documentElement.style.setProperty(nombre, valor);
     }
-    doc.documentElement.style.setProperty(
-      '--fondo',
-      estilos.getPropertyValue('--sheet-solid').trim() || '#f4f7f6',
-    );
+    doc.documentElement.style.setProperty('--fondo', 'transparent');
+    doc.documentElement.style.setProperty('--sheet-solid', 'transparent');
+    doc.documentElement.style.setProperty('--line', 'rgba(255, 255, 255, 0.28)');
   }
   const path = win.location.pathname;
   if (path === '/' || path === '') {

@@ -15,6 +15,7 @@ import type { Layout } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import { cargarActivos, type Activos } from './activos';
 import { dibujar } from './dibujo';
+import { anguloNivel, cuelloMojado } from './fisica/agua';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarGranos } from './granos';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
@@ -46,7 +47,14 @@ function dentro(frasco: Layout['frasco'], x: number, y: number): boolean {
 /** Bucle único. Se duerme cuando el frasco, el agua y el reloj están quietos. */
 export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo: ModeloFrasco): void {
   const vivo = useRef(modelo);
+  const pedir = useRef<() => void>(() => undefined);
   vivo.current = modelo;
+
+  // El bucle se duerme en reposo. Un cambio de tema tiene que pintarse
+  // en el acto, sin esperar al siguiente clic o al siguiente tick.
+  useEffect(() => {
+    pedir.current();
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -73,6 +81,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let raf = 0;
     let ultimo = 0;
     let activo = true;
+    let forzar = false;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -116,7 +125,8 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const arriba = nivelDesdeTiempo(snap.durationMs, snap.remainingMs);
       const objetivo = granosObjetivo(sim.totalGrains, snap.durationMs, snap.remainingMs);
       const girando = estado.fase === 'volteando';
-      let movio = girando || Math.abs(agua.velocidad) > 0 || Math.abs(estado.velocidad) > 0;
+      let movio = forzar || girando || Math.abs(agua.velocidad) > 0 || Math.abs(estado.velocidad) > 0;
+      forzar = false;
       const firma = `${m.granos}|${m.luz.tinte}|${m.luz.fuerzaTinte}|${m.luz.brillo}|${m.luz.direccion}`;
       if (firma !== firmaLuz) {
         firmaLuz = firma;
@@ -166,13 +176,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
           luz: m.luz,
           tipo: m.tipo,
           angulo: estado.angulo,
-          anguloAgua: agua.valor - estado.angulo,
+          anguloAgua: anguloNivel(estado.angulo, agua.valor),
           volumenArriba: arriba,
           volumenAbajo: nivelAbajo(snap.durationMs, snap.remainingMs),
           mostrarNube: m.mostrarNube,
           reducir: m.reducir,
           llueve:
-            m.tipo === 'agua' && snap.status === 'running' && arriba > 0.01 && Math.abs(estado.angulo) < 0.6,
+            m.tipo === 'agua' &&
+            snap.status === 'running' &&
+            cuelloMojado(arriba, anguloNivel(estado.angulo, agua.valor)),
           sim,
           chorro: particles,
           lut,
@@ -200,10 +212,12 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     };
 
     const despertar = () => {
+      forzar = true;
       if (!activo || raf !== 0) return;
       ultimo = 0;
       raf = requestAnimationFrame(frame);
     };
+    pedir.current = despertar;
 
     const local = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();

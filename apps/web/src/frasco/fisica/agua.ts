@@ -161,6 +161,22 @@ function aFoto(bulbo: 'arriba' | 'abajo', punto: Punto): Punto {
   return { x: centro + punto.x * medioAncho, y: box[1] + punto.y * alto };
 }
 
+/**
+ * Ángulo que hay que pasar al polígono, ya dentro del frasco girado,
+ * para que la superficie quede horizontal en el mundo.
+ * `residuo` es el retraso del muelle: en reposo es 0.
+ */
+export function anguloNivel(anguloFrasco: number, residuo: number): number {
+  return anguloFrasco - residuo;
+}
+
+/** El cuello está bajo el agua. Si no, el chorro no puede salir. */
+export function cuelloMojado(volumen: number, angulo: number): boolean {
+  if (volumen <= 0.02) return false;
+  const superficie = superficieAgua('arriba', volumen, angulo);
+  return producto(superficie.gravedad, { x: 0, y: 1 }) >= superficie.corte - 1e-6;
+}
+
 /** Polígono del líquido en coordenadas de la foto (0..1), listo para pintar. */
 export function poligonoLiquido(bulbo: 'arriba' | 'abajo', volumen: number, angulo: number): Punto[] {
   const superficie = superficieAgua(bulbo, volumen, angulo);

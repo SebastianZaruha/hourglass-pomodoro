@@ -17,6 +17,22 @@ export function SunIcon({ size = 18 }: IconProps) {
   );
 }
 
+export function GlobeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <ellipse cx="12" cy="12" rx="3.4" ry="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M4.2 12h15.6M6 8h12M6 16h12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function SpeakerIcon({ size = 18, off = false }: IconProps & { readonly off?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">

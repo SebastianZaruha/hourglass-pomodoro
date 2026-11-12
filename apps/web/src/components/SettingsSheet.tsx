@@ -9,6 +9,9 @@ import {
   stepMinutes,
   stepRounds,
   stepToDuration,
+  languageName,
+  languageSpoken,
+  LANGUAGE_CYCLE,
   themeName,
   themeSpoken,
   THEME_CYCLE,
@@ -18,7 +21,7 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { SpeakerIcon, SunIcon } from './Icons';
+import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 import type { SettingsPatch } from '../useSettings';
 import { TEMAS, type IdTema } from '../temas';
 import type { Caja } from '../layout/calcularLayout';
@@ -55,7 +58,7 @@ export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onC
 
   return (
     <div
-      className={open ? 'sheet open' : 'sheet'}
+      className={open ? 'sheet vidrio open' : 'sheet vidrio'}
       style={{
         left: caja.x,
         top: caja.y,
@@ -278,6 +281,15 @@ export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onC
         >
           <SunIcon />
           <span>{themeName(t, settings.theme)}</span>
+        </button>
+        <button
+          type="button"
+          className="pill pill-fill pref"
+          aria-label={languageSpoken(t, settings.language)}
+          onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
+        >
+          <GlobeIcon />
+          <span>{languageName(t, settings.language)}</span>
         </button>
         <button
           type="button"

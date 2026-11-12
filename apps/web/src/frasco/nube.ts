@@ -5,8 +5,8 @@ import { alphaFromBlack, presenciaVertical } from './alpha';
 let clave: HTMLCanvasElement | null = null;
 let claveCtx: CanvasRenderingContext2D | null = null;
 let ultimoTiempo = -1;
-/** Dónde acaba el cuerpo de la nube (0 arriba, 1 abajo del fotograma). */
-let asiento = 1;
+/** Se mide una sola vez. Si cambia cada fotograma, la nube vibra. */
+let asiento: number | null = null;
 
 function lienzo(): CanvasRenderingContext2D | null {
   if (!clave) {
@@ -27,7 +27,7 @@ export function actualizarNube(
   if (!ctx || !clave) return poster;
   const listo = video && video.readyState >= 2 && video.videoWidth > 0;
   if (!listo) {
-    if (poster && asiento === 1) medirLienzo(poster);
+    if (poster && asiento === null) medirLienzo(poster);
     return clave.width > 0 && ultimoTiempo >= 0 ? clave : poster;
   }
   if (Math.abs(video.currentTime - ultimoTiempo) < 0.03 && ultimoTiempo >= 0) return clave;
@@ -36,7 +36,7 @@ export function actualizarNube(
   const datos = ctx.getImageData(0, 0, clave.width, clave.height);
   alphaFromBlack(datos.data);
   ctx.putImageData(datos, 0, 0);
-  asiento = medirAsiento(datos.data, clave.width, clave.height);
+  if (asiento === null) asiento = medirAsiento(datos.data, clave.width, clave.height);
   return clave;
 }
 
@@ -70,9 +70,8 @@ export function dibujarNube(
   if (!fuente) return;
   const alpha = presenciaVertical(angulo);
   if (alpha < 0.02) return;
-  // El fotograma trae aire transparente debajo: se baja hasta apoyar el cuerpo en el cristal.
-  // Un pelo de más para que el cuerpo apoye el cristal y no flote encima.
-  const bajar = caja.h * (1 - asiento) + caja.h * 0.11;
+  // El asiento es fijo: la caja ya viene del layout y no se recalcula aquí.
+  const bajar = Math.round(caja.h * (1 - (asiento ?? 0.86)) + caja.h * 0.11);
   const atras = {
     x: caja.x + caja.w * 0.08,
     y: caja.y + caja.h * 0.12 + bajar,

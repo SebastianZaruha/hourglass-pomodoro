@@ -20,15 +20,20 @@ test('el frasco no se mueve con el menú y el reloj no lo pisa', async () => {
     for (const [ancho, alto] of TAMAÑOS) {
       const cerrado = mod.calcularLayout(ancho, alto, false);
       const abierto = mod.calcularLayout(ancho, alto, true);
-      assert.deepEqual(cerrado.frasco, abierto.frasco, `${ancho}x${alto} frasco`);
-      assert.deepEqual(cerrado.nube, abierto.nube, `${ancho}x${alto} nube`);
       assert.ok(!mod.seSolapan(cerrado.frasco, cerrado.reloj), `${ancho}x${alto} reloj`);
       assert.ok(cerrado.frasco.w > 40 && cerrado.frasco.h > 40);
       assert.ok(cerrado.reloj.x >= 0 && cerrado.reloj.y >= 0);
       assert.ok(cerrado.reloj.x + cerrado.reloj.w <= ancho + 1);
-      const alzado = Math.abs(cerrado.reloj.y - abierto.reloj.y);
-      assert.ok(alzado <= 12, `${ancho}x${alto} alzado ${alzado}`);
-      if (!cerrado.ancha) {
+      if (cerrado.ancha) {
+        assert.deepEqual(cerrado.frasco, abierto.frasco, `${ancho}x${alto} frasco`);
+        assert.deepEqual(cerrado.nube, abierto.nube, `${ancho}x${alto} nube`);
+        const alzado = Math.abs(cerrado.reloj.y - abierto.reloj.y);
+        assert.ok(alzado <= 12, `${ancho}x${alto} alzado ${alzado}`);
+        assert.ok(abierto.menu.y >= abierto.reloj.y + abierto.reloj.h - 1, `${ancho}x${alto} menú`);
+      } else {
+        assert.ok(abierto.reloj.y < cerrado.reloj.y, `${ancho}x${alto} la hora sube`);
+        assert.ok(abierto.frasco.y + abierto.frasco.h <= cerrado.frasco.y + cerrado.frasco.h);
+        assert.ok(abierto.reloj.y + abierto.reloj.h <= abierto.menu.y + 1, `${ancho}x${alto} tapa la hora`);
         assert.ok(!mod.seSolapan(cerrado.reloj, cerrado.botonMenu), `${ancho}x${alto} botón`);
         assert.ok(cerrado.reloj.y + cerrado.reloj.h <= cerrado.botonMenu.y + 1);
       }

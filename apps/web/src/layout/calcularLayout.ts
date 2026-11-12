@@ -52,8 +52,9 @@ function relajar(reloj: Caja, menu: Caja, ancha: boolean): Caja {
 }
 
 /**
- * Colocación única. No conoce el tema: cambiar de escena no mueve nada.
- * En estrecho el menú se superpone; el frasco no cambia de tamaño ni de sitio.
+ * Colocación única. No conoce el tema.
+ * En ancho el frasco no se mueve: el menú queda debajo de la hora.
+ * En estrecho, abrir el menú sube el frasco y la hora para no taparlos.
  */
 export function calcularLayout(ancho: number, alto: number, menuAbierto: boolean, rem = 16): Layout {
   const ancha = esAncha(ancho, alto, rem);
@@ -66,35 +67,27 @@ export function calcularLayout(ancho: number, alto: number, menuAbierto: boolean
 
 function amplio(ancho: number, alto: number, menuAbierto: boolean, botonMenu: Caja): Layout {
   const frasco = frascoEn(ancho * 0.3, alto * 0.8, alto * 0.7, ancho * 0.34);
-  const relojBase = caja(
-    ancho * 0.56,
-    frasco.y + frasco.h * 0.05,
-    ancho * 0.36,
-    Math.max(78, frasco.h * 0.2),
-  );
-  const menuAlto = Math.min(alto * 0.52, 540);
-  const menu = caja(
-    relojBase.x,
-    menuAbierto ? relojBase.y + relojBase.h + 20 : alto + 24,
-    relojBase.w,
-    menuAlto,
-  );
+  // La caja incluye la hora y la pista, para que el menú empiece debajo.
+  const relojAlto = Math.max(168, frasco.h * 0.34);
+  const relojBase = caja(ancho * 0.56, frasco.y + frasco.h * 0.02, ancho * 0.36, relojAlto);
+  const debajo = relojBase.y + relojBase.h + 18;
+  const menuAlto = Math.min(alto * 0.42, Math.max(200, alto - debajo - 20));
+  const menu = caja(relojBase.x, menuAbierto ? debajo : alto + 24, relojBase.w, menuAlto);
   const reloj = relajar(relojBase, menu, menuAbierto);
   return { ancha: true, frasco, nube: cajaNube(frasco), reloj, menu, botonMenu };
 }
 
 function estrecho(ancho: number, alto: number, menuAbierto: boolean): Layout {
-  // Franja de abajo: el pie en una sola línea y el botón del menú a su derecha.
-  const banda = 36;
-  const relojAlto = Math.min(112, Math.max(92, alto * 0.14));
-  const reloj = caja(10, alto - banda - relojAlto - 2, ancho - 20, relojAlto);
-  const botonMenu = caja(ancho - 8 - 36, alto - banda + 4, 36, 28);
+  const banda = 40;
+  const menuAlto = Math.min(320, Math.max(210, alto * 0.34));
+  const reserva = menuAbierto ? menuAlto + 18 : banda;
+  const relojAlto = Math.min(156, Math.max(124, alto * 0.18));
+  const reloj = caja(12, alto - reserva - relojAlto, ancho - 24, relojAlto);
+  const botonMenu = caja(ancho - 10 - 36, alto - banda + 6, 36, 28);
   const techo = 8;
-  const hueco = Math.max(80, reloj.y - techo - 6);
-  const frasco = frascoEn(ancho * 0.5, techo + hueco * 0.96, hueco * 0.9, ancho * 0.72);
-  const tope = reloj.y - 6;
-  const menuAlto = Math.min(alto * 0.42, 360, Math.max(140, tope - 40));
-  const menu = caja(10, menuAbierto ? tope - menuAlto : alto + 24, ancho - 20, menuAlto);
+  const hueco = Math.max(72, reloj.y - techo);
+  const frasco = frascoEn(ancho * 0.5, techo + hueco * 0.9, hueco * 0.72, ancho * 0.56);
+  const menu = caja(10, menuAbierto ? alto - menuAlto - 8 : alto + 24, ancho - 20, menuAlto);
   return { ancha: false, frasco, nube: cajaNube(frasco), reloj, menu, botonMenu };
 }
 

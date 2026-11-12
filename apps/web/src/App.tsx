@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/react';
 import {
   activeCycleConfig,
   messagesFor,
+  resolveLanguage,
   nearestStepIndex,
   sessionCue,
   sessionPlanFor,
@@ -61,7 +62,8 @@ function Reloj({
   const [temaId, setTemaId] = useState<IdTema>(() => leerEscena());
   const tema = temaPorId(temaId);
   const modo = modoDe(tema, scheme);
-  const t = messagesFor('es', 'es');
+  const lang = resolveLanguage(settings.language, navigator.language);
+  const t = messagesFor(settings.language, navigator.language);
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, flip, tick, view, state } = session;
   const consentimiento = useConsent();
@@ -82,10 +84,10 @@ function Reloj({
   }, [settings, replaceIfChanged]);
 
   useEffect(() => {
-    document.documentElement.lang = 'es';
+    document.documentElement.lang = lang;
     document.documentElement.style.colorScheme = scheme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', modo.ui.barra);
-  }, [scheme, modo.ui.barra]);
+  }, [scheme, modo.ui.barra, lang]);
 
   const prevCue = useRef(view);
   useEffect(() => {
@@ -93,8 +95,8 @@ function Reloj({
     prevCue.current = view;
     if (!cue) return;
     if (settings.sound) playCue(cue);
-    showPhaseNotification(t, cue, view, 'es');
-  }, [view, settings.sound, t]);
+    showPhaseNotification(t, cue, view, lang);
+  }, [view, settings.sound, t, lang]);
 
   useEffect(() => {
     if (state.timer.status !== 'running') return;
@@ -154,7 +156,7 @@ function Reloj({
     if (view.isCycle) return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
   }, [t, view]);
-  const hint = hintFor(view.status, view.isCycle && view.status === 'finished');
+  const hint = hintFor(view.status, view.isCycle && view.status === 'finished', lang);
   const describe = useCallback(
     (remainingMs: number) => {
       const duration = t.duration(remainingMs);
@@ -243,11 +245,14 @@ function Reloj({
           </div>
         </div>
         <SiteFooter
+          lang={lang}
+          visible={boton || menu}
           onCookies={() => consentimiento.setBannerOpen(true)}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />
         {showAndroidPromo ? (
           <AndroidPromo
+            lang={lang}
             onDismiss={() => {
               writeAndroidPromoDismissed();
               setPromoDismissed(true);
@@ -297,6 +302,7 @@ function Reloj({
       {pausado ? <Pausa pista={hint} /> : null}
       <CookieBanner
         open={consentimiento.bannerOpen}
+        lang={lang}
         onChoose={consentimiento.choose}
         onOpenLegal={(href, title) => setLegal({ href, title })}
       />
