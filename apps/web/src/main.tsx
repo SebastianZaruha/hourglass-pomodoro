@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
+import { instalarPruebas } from './pruebas';
 import '@fontsource/manrope/200.css';
 import '@fontsource/manrope/300.css';
 import '@fontsource/manrope/400.css';
@@ -11,6 +12,8 @@ import './styles.css';
 import './temas/lluvia.css';
 import './temas/arena.css';
 import './temas/clasico.css';
+
+instalarPruebas();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

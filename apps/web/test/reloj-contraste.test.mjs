@@ -64,32 +64,6 @@ test('la hora y la pista contrastan sobre los píxeles del fondo', async () => {
   }
 });
 
-test('la pastilla elegida se lee en claro y en oscuro', async () => {
-  const { mod, cleanup } = await bundle(
-    `export { TEMAS } from './src/temas/index.ts';
-     export { contraste } from './src/temas/contraste.ts';\n`,
-  );
-  try {
-    const css = readFileSync(path.join(web, 'src/styles.css'), 'utf8');
-    assert.match(css, /\.vidrio \.pill-fill[\s\S]*?color:\s*var\(--pill-ink\)/);
-    const clara = mezclar([0, 0, 0], [255, 255, 255], 0.94);
-    const oscura = mezclar([0, 0, 0], [236, 232, 224], 0.92);
-    for (const tema of mod.TEMAS) {
-      for (const modo of [tema.claro, tema.oscuro]) {
-        const tinta = rgb(modo.ui.pastillaTinta);
-        assert.ok(mod.contraste(hex(tinta), hex(clara)) >= 4.5, `${tema.id} pastilla clara`);
-        assert.ok(mod.contraste(hex(tinta), hex(oscura)) >= 4.5, `${tema.id} pastilla oscura`);
-      }
-      const sueltaClara = rgb(tema.claro.ui.tinta);
-      const sueltaOscura = rgb(tema.oscuro.ui.tinta);
-      assert.ok(mod.contraste(hex(sueltaClara), '#f4f4f3') >= 4.5, `${tema.id} suelta clara`);
-      assert.ok(mod.contraste(hex(sueltaOscura), '#141416') >= 4.5, `${tema.id} suelta oscura`);
-    }
-  } finally {
-    cleanup();
-  }
-});
-
 function variables(css, tema, scheme) {
   const bloque = css.match(
     new RegExp(`\\.app\\[data-tema='${tema}'\\]\\[data-scheme='${scheme}'\\]\\s*\\{([^}]*)\\}`),

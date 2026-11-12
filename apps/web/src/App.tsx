@@ -35,6 +35,7 @@ import { useEntrada } from './intro';
 import { calcularLayout } from './layout/calcularLayout';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
+import { pruebasActivas, publicarCajas } from './pruebas';
 import { guardarEscena, leerEscena, modoDe, temaPorId, TEMAS, type IdTema } from './temas';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
@@ -187,6 +188,16 @@ function Reloj({
     legalOpen: legal !== null,
   });
   const pie = { x: layout.frasco.x + layout.frasco.w / 2, y: layout.frasco.y + layout.frasco.h * 0.979 };
+  if (pruebasActivas()) {
+    const menuMedido = calcularLayout(medios.ancho, medios.alto, true).menu;
+    publicarCajas({
+      frasco: layout.frasco,
+      reloj: { ...layout.reloj, y: layout.reloj.y - alzado },
+      menu: menuMedido,
+      botonMenu: layout.botonMenu,
+      nube: layout.nube,
+    });
+  }
 
   return (
     <div

@@ -12,8 +12,9 @@ import {
 import { useEffect, useRef, type RefObject } from 'react';
 
 import type { Layout } from '../layout/calcularLayout';
-import type { Luz } from '../temas/tipos';
 import { activarNube } from '../medios/assetLoader';
+import { alFijarAngulo } from '../pruebas';
+import type { Luz } from '../temas/tipos';
 import { cargarActivos, cargarArena, type Activos } from './activos';
 import { dibujar } from './dibujo';
 import { cuelloMojado } from './fisica/agua';
@@ -83,6 +84,9 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let activo = true;
     let forzar = false;
     let nubeLista = false;
+    // Solo lo escribe el gancho de Playwright. En uso normal se queda en null
+    // y el fotograma sigue el gesto, igual que antes.
+    let anguloFijo: number | null = null;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -111,9 +115,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const dt = ultimo > 0 ? Math.min(0.05, (now - ultimo) / 1000) : 1 / 60;
       ultimo = now;
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
-      estado = paso.estado;
-      orden = { tipo: 'quieto', dt, reducir: m.reducir };
-      if (paso.volteoCompletado) m.onVolteo();
+      if (anguloFijo === null) {
+        estado = paso.estado;
+        orden = { tipo: 'quieto', dt, reducir: m.reducir };
+        if (paso.volteoCompletado) m.onVolteo();
+      } else {
+        // Ángulo de prueba: se pinta ese valor y no se suelta al muelle.
+        estado = { fase: 'reposo', angulo: anguloFijo, velocidad: 0, objetivo: anguloFijo };
+        orden = { tipo: 'quieto', dt, reducir: m.reducir };
+      }
 
       const snap = m.getSnapshot();
       const arriba = nivelDesdeTiempo(snap.durationMs, snap.remainingMs);
@@ -213,6 +223,10 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       raf = requestAnimationFrame(frame);
     };
     pedir.current = despertar;
+    const quitarAngulo = alFijarAngulo((radianes) => {
+      anguloFijo = radianes;
+      despertar();
+    });
     const ocioso =
       window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 500) as unknown as number);
     ocioso(() => {
@@ -269,6 +283,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     despertar();
     return () => {
       activo = false;
+      quitarAngulo();
       observer.disconnect();
       if (raf) cancelAnimationFrame(raf);
       canvas.removeEventListener('pointerdown', down);

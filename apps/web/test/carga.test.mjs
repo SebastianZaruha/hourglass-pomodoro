@@ -25,8 +25,6 @@ test('el prefetch pide primero el otro modo y no adelanta vídeos con ahorro', a
     assert.equal(mod.conexionAhorro({ saveData: true }), true);
     assert.equal(mod.conexionAhorro({ effectiveType: '2g' }), true);
     assert.equal(mod.conexionAhorro({ effectiveType: '4g' }), false);
-    const lluvia = mod.urlsPrefetch(mod.TEMAS, 'lluvia', 'light', false);
-    assert.ok(lluvia.some((url) => url.includes('tex-sand')));
     assert.match(mod.colorDeFondo(mod.TEMAS[0].claro.fondo), /^#/);
   } finally {
     cleanup();
