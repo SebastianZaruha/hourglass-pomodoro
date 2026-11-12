@@ -9,8 +9,8 @@ export const CONSENT_KEY = 'hourglass-web/cookies';
 /** ~12 meses. Pasado este plazo se vuelve a preguntar. */
 export const CONSENT_MAX_AGE_MS = Math.round(365.25 * 24 * 60 * 60 * 1000);
 
-/** Huella estable del texto del banner (es y en). Si cambia, se vuelve a preguntar. */
-export const BANNER_VERSION = fnv1a(`${bannerCopy('es').body}\n${bannerCopy('en').body}`);
+/** Huella del texto del banner. Si cambia, se vuelve a preguntar. */
+export const BANNER_VERSION = fnv1a(bannerCopy().body);
 
 export type ConsentChoice = 'accepted' | 'rejected';
 

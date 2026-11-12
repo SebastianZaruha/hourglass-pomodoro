@@ -3,7 +3,6 @@ import {
   activeCycleConfig,
   messagesFor,
   nearestStepIndex,
-  resolveLanguage,
   sessionCue,
   sessionPlanFor,
   sessionSnapshot,
@@ -41,10 +40,6 @@ import { decideStageClick, decideStageDoubleClick } from './stageClick';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
 import { stopVercelWebAnalytics } from './vercelAnalytics';
-
-function allowAnalyticsEvent<E>(event: E): E {
-  return event;
-}
 
 type Scheme = 'light' | 'dark';
 
@@ -109,8 +104,8 @@ function Timer({
   const reduceMotion = useReducedMotion();
   const wide = useWideLayout();
   const scheme = resolveScheme(settings.theme, systemDark);
-  const lang = resolveLanguage(settings.language, navigator.language);
-  const t = messagesFor(settings.language, navigator.language);
+  const lang = 'es' as const;
+  const t = messagesFor('es', 'es');
 
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, tick, view, state } = session;
@@ -398,7 +393,7 @@ function Timer({
     if (view.isCycle) return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
   }, [t, view]);
-  const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished');
+  const hint = hintFor(view.status, view.isCycle && view.status === 'finished');
 
   const describe = useCallback(
     (remainingMs: number) => {
@@ -431,7 +426,7 @@ function Timer({
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
-      {consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      {consentChoice === 'accepted' ? <Analytics /> : null}
       <div className="scene">
         <div
           ref={stageRef}
@@ -505,14 +500,12 @@ function Timer({
           onClose={() => setMenu(false)}
         />
         <SiteFooter
-          lang={lang}
           onCookies={() => setBannerOpen(true)}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />
-        {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={dismissAndroidPromo} /> : null}
+        {showAndroidPromo ? <AndroidPromo onDismiss={dismissAndroidPromo} /> : null}
         <CookieBanner
           open={bannerOpen}
-          lang={lang}
           onChoose={chooseCookies}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />

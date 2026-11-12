@@ -1,20 +1,17 @@
-import type { Language } from '@reloj/core';
-
-import { bannerCopy, legalHrefs } from '../copy';
+import { bannerCopy, PAGINAS } from '../copy';
 import type { ConsentChoice } from '../cookies';
 import { keepAppOnLegalClick } from './LegalOverlay';
 
 interface Props {
   readonly open: boolean;
-  readonly lang: Language;
   readonly onChoose: (choice: ConsentChoice) => void;
   readonly onOpenLegal: (href: string, title: string) => void;
 }
 
-export function CookieBanner({ open, lang, onChoose, onOpenLegal }: Props) {
+export function CookieBanner({ open, onChoose, onOpenLegal }: Props) {
   if (!open) return null;
-  const copy = bannerCopy(lang);
-  const hrefs = legalHrefs(lang);
+  const copy = bannerCopy();
+  const hrefs = PAGINAS.es;
   return (
     <div className="banner" role="region" aria-label={copy.label}>
       <p>{copy.body}</p>

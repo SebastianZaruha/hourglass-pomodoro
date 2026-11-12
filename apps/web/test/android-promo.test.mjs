@@ -67,13 +67,12 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
 test('el pie abre una página con la misma URL y una foto de la arena inclinada', async () => {
   const { mod, cleanup } = await bundle(
     `export { ANDROID_APP } from './src/androidApp.ts';
-     export { footerCopy, legalHrefs } from './src/copy.ts';\n`,
+     export { PIE, PAGINAS } from './src/copy.ts';\n`,
   );
   try {
-    assert.equal(mod.footerCopy('es').app, 'App móvil');
-    assert.equal(mod.footerCopy('en').app, 'Mobile app');
-    assert.equal(mod.legalHrefs('es').app, '/app-movil.html');
-    assert.equal(mod.legalHrefs('en').app, '/mobile-app.html');
+    assert.equal(mod.PIE.app, 'App móvil');
+    assert.equal(mod.PAGINAS.es.app, '/app-movil.html');
+    assert.equal(mod.PAGINAS.en.app, '/mobile-app.html');
 
     const es = readFileSync(path.join(webRoot, 'public/app-movil.html'), 'utf8');
     const en = readFileSync(path.join(webRoot, 'public/mobile-app.html'), 'utf8');
@@ -162,10 +161,10 @@ test('la tira espera a la intro y no tapa cookies, menú ni legales', async () =
   }
 });
 
-test('el texto habla de la mano y de inclinar, en español y en inglés', async () => {
+test('el texto habla de la mano y de inclinar, en español', async () => {
   const { mod, cleanup } = await bundle("export { androidPromoCopy } from './src/copy.ts';\n");
   try {
-    const es = mod.androidPromoCopy('es', 'github-release');
+    const es = mod.androidPromoCopy('github-release');
     assert.equal(es.title, 'App Android');
     assert.match(es.pitch, /mano/);
     assert.match(es.pitch, /inclinar/);
@@ -173,17 +172,9 @@ test('el texto habla de la mano y de inclinar, en español y en inglés', async 
     assert.match(es.actionHint, /GitHub Releases/);
     assert.match(es.installNote, /Play Protect/);
 
-    const en = mod.androidPromoCopy('en', 'github-release');
-    assert.equal(en.title, 'Android app');
-    assert.match(en.pitch, /hand/);
-    assert.match(en.pitch, /tilt/i);
-    assert.equal(en.action, 'Download');
-    assert.match(en.installNote, /unknown sources/i);
-
-    const play = mod.androidPromoCopy('es', 'play-store');
+    const play = mod.androidPromoCopy('play-store');
     assert.equal(play.action, 'Play Store');
     assert.equal(play.pitch, es.pitch);
-    assert.equal(mod.androidPromoCopy('en', 'play-store').action, 'Google Play');
   } finally {
     cleanup();
   }

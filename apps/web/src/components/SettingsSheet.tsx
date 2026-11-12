@@ -4,8 +4,6 @@ import {
   DURATION_STEPS_MIN,
   MINUTE_MS,
   activeCycleConfig,
-  languageName,
-  languageSpoken,
   nearestStepIndex,
   nextInCycle,
   stepMinutes,
@@ -13,7 +11,6 @@ import {
   stepToDuration,
   themeName,
   themeSpoken,
-  LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
   type Messages,
@@ -21,7 +18,7 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -254,16 +251,6 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         >
           <SunIcon />
           <span>{themeName(t, settings.theme)}</span>
-        </button>
-        <button
-          type="button"
-          className="pill pill-fill pref"
-          aria-label={languageSpoken(t, settings.language)}
-          title={t.tapToChange}
-          onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
-        >
-          <GlobeIcon />
-          <span>{languageName(t, settings.language)}</span>
         </button>
         <button
           type="button"

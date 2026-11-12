@@ -1,18 +1,16 @@
-import type { Language } from '@reloj/core';
 import type { MouseEvent } from 'react';
 
-import { footerCopy, legalHrefs } from '../copy';
+import { PAGINAS, PIE } from '../copy';
 import { keepAppOnLegalClick } from './LegalOverlay';
 
 interface Props {
-  readonly lang: Language;
   readonly onCookies: () => void;
   readonly onOpenLegal: (href: string, title: string) => void;
 }
 
-export function SiteFooter({ lang, onCookies, onOpenLegal }: Props) {
-  const labels = footerCopy(lang);
-  const hrefs = legalHrefs(lang);
+export function SiteFooter({ onCookies, onOpenLegal }: Props) {
+  const labels = PIE;
+  const hrefs = PAGINAS.es;
   const open = (href: string, title: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (keepAppOnLegalClick(event)) onOpenLegal(href, title);
   };
