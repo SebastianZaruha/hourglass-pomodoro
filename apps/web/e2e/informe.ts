@@ -25,7 +25,7 @@ export default class Informe implements Reporter {
   onEnd(result: FullResult): void {
     mkdirSync(salida, { recursive: true });
     mkdirSync(carpeta, { recursive: true });
-    const archivo = path.join(salida, 'fallos-esperados.log');
+    const archivo = path.join(salida, 'fallos-esperados.txt');
     writeFileSync(archivo, this.lineas.join('\n'), 'utf8');
     const fotos = listar(carpeta).filter((nombre) => nombre.endsWith('.png'));
     const indice = [
