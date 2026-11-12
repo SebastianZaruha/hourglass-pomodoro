@@ -145,9 +145,9 @@ test('la superficie del agua queda a menos de 1°', async ({ page }) => {
   const medidas: { pedido: number; grados: number; columnas: number; texto: string }[] = [];
   for (const grados of [0, 30, 45, 60]) {
     await fijarAngulo(page, grados);
-    // El borde azul salta ±2° entre fotogramas. La mediana es el nivel quieto
-    // (en CI, a 0°, era 0,1°). Una sola lectura a veces pasa de 1° y tumba
-    // el test antes de la marca del agua inclinada.
+    // El borde azul salta ±2° entre fotogramas. La cresta pasa de 1° y, si
+    // cae en la mediana, tumba el 0° antes de la marca del agua inclinada.
+    // El valle es el nivel quieto. A 30° todas las lecturas siguen en −40°.
     const lecturas: { grados: number; columnas: number; texto: string }[] = [];
     for (let i = 0; i < 5; i += 1) {
       await page.clock.runFor(180);
@@ -177,13 +177,13 @@ test('la superficie del agua queda a menos de 1°', async ({ page }) => {
       });
     }
     const orden = [...lecturas].sort((a, b) => Math.abs(a.grados) - Math.abs(b.grados));
-    const media = orden[Math.floor(orden.length / 2)];
-    if (!media) throw new Error(`sin lectura a ${grados}°`);
+    const quieta = orden[0];
+    if (!quieta) throw new Error(`sin lectura a ${grados}°`);
     medidas.push({
       pedido: grados,
-      grados: media.grados,
-      columnas: media.columnas,
-      texto: `${media.texto} · lecturas ${lecturas.map((l) => l.grados.toFixed(1)).join(', ')}`,
+      grados: quieta.grados,
+      columnas: quieta.columnas,
+      texto: `${quieta.texto} · lecturas ${lecturas.map((l) => l.grados.toFixed(1)).join(', ')}`,
     });
   }
   const detalle = medidas.map((m) => m.texto).join('\n');
