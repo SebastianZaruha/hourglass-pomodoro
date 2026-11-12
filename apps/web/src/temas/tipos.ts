@@ -41,7 +41,15 @@ export interface UiTema {
 
 export type FondoTema =
   | { readonly tipo: 'degradado' }
-  | { readonly tipo: 'foto'; readonly src: string; readonly avif?: string }
+  | {
+      readonly tipo: 'foto';
+      /** WebP. Si hay `jpg`, el `<img>` usa ese y el WebP va en un `<source>`. */
+      readonly src: string;
+      readonly avif?: string;
+      readonly jpg?: string;
+      readonly ancho?: number;
+      readonly alto?: number;
+    }
   | { readonly tipo: 'video'; readonly webm: string; readonly mp4: string; readonly poster: string };
 
 export interface ModoTema {

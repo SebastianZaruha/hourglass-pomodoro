@@ -437,10 +437,6 @@ button[aria-label]:focus-visible::after {
   font-size: clamp(2.7rem, min(6.8vw, 14vh), 7.25rem);
 }
 
-.app[data-layout='narrow'] .time {
-  font-size: clamp(2.45rem, min(12vw, 9vh), 5rem);
-}
-
 .status {
   margin-top: 0.55rem;
   font-weight: 400;
@@ -528,13 +524,16 @@ button[aria-label]:focus-visible::after {
 .sheet {
   position: fixed;
   z-index: 34;
-  overflow: auto;
+  overflow-x: clip;
+  overflow-y: auto;
+  max-height: min(640px, calc(100dvh - 5.5rem));
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 35%, transparent) transparent;
   padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 2vw, 1.45rem);
   border-radius: clamp(1.15rem, 2vw, 1.7rem);
-  border: 1px solid var(--sheet-edge);
-  background: var(--sheet);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   color: var(--ink);
-  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
+  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.28);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -546,24 +545,54 @@ button[aria-label]:focus-visible::after {
     filter 560ms ease;
 }
 
-.app[data-layout='narrow'] .sheet {
-  left: clamp(0.75rem, 3.5vw, 1.25rem);
-  right: clamp(0.75rem, 3.5vw, 1.25rem);
-  bottom: max(0.85rem, env(safe-area-inset-bottom));
-  width: auto;
-  max-height: min(40vh, calc(100vh - 18rem));
-  transform: translateY(calc(100% + 3rem));
+.app[data-scheme='light'] .sheet {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.7) 0%,
+      rgba(255, 255, 255, 0.14) 24%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    rgba(255, 255, 255, 0.86);
+  border-color: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -18px 28px rgba(255, 255, 255, 0.2),
+    0 24px 60px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(32px) saturate(1.45);
+  -webkit-backdrop-filter: blur(32px) saturate(1.45);
 }
 
+.app[data-scheme='dark'] .sheet {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.04) 20%,
+      rgba(255, 255, 255, 0) 38%
+    ),
+    rgba(8, 8, 10, 0.84);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -20px 32px rgba(255, 255, 255, 0.05),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+}
+
+.sheet::-webkit-scrollbar {
+  width: 8px;
+  height: 0;
+}
+
+.sheet::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 99px;
+}
+
+.app[data-layout='narrow'] .sheet,
 .app[data-layout='wide'] .sheet {
-  left: calc(var(--side-left, 52%) + clamp(0.75rem, 1.6vw, 1.5rem));
-  width: min(calc(var(--side-width, 42vw) - clamp(1.5rem, 3vw, 3rem)), 46vw);
-  max-width: calc(100vw - 2rem);
-  right: auto;
-  top: auto;
-  bottom: calc(var(--side-bottom, 1rem) + 0.75rem);
-  max-height: min(46vh, calc(100vh - 16rem));
-  height: auto;
   transform: translateY(calc(100% + 3rem));
 }
 
@@ -571,7 +600,7 @@ button[aria-label]:focus-visible::after {
 .app[data-layout='wide'] .sheet.open {
   opacity: 1;
   transform: translateY(0);
-  filter: blur(0);
+  filter: none;
   pointer-events: auto;
 }
 
@@ -824,6 +853,38 @@ button[aria-label]:focus-visible::after {
   padding: 0.5rem max(4.5rem, 6vw) calc(0.5rem + env(safe-area-inset-bottom));
   font-size: 0.75rem;
   color: var(--footer);
+}
+
+.site-footer .corto {
+  display: none;
+}
+
+.app[data-layout='narrow'] .site-footer {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 2.7rem 0.45rem 0.6rem;
+  font-size: 0.64rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.app[data-layout='narrow'] .site-footer .largo {
+  display: none;
+}
+
+.app[data-layout='narrow'] .site-footer .corto {
+  display: inline;
+}
+
+.app[data-layout='narrow'] .hint {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.app[data-layout='narrow'] .time {
+  font-size: clamp(1.9rem, 10vw, 2.7rem);
 }
 
 .site-footer a,

@@ -1,5 +1,15 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
+import { vectorLuz } from './alpha';
+
+/** Lo que la luz de la escena le hace al color de la arena. */
+export interface LuzGrano {
+  readonly tinte: string;
+  readonly fuerzaTinte: number;
+  readonly brillo: number;
+  readonly direccion: number;
+}
+
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
   const tones = palette.grainTones;
@@ -38,6 +48,80 @@ export function paintCells(sim: SandSimulation, lut: Uint8ClampedArray, image: I
   }
 }
 
+const tinteCache = { hex: '', rgb: [255, 255, 255] as [number, number, number] };
+
+function rgbDe(hex: string): [number, number, number] {
+  if (tinteCache.hex === hex) return tinteCache.rgb;
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
+  const n = Number.parseInt(full, 16);
+  tinteCache.hex = hex;
+  tinteCache.rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return tinteCache.rgb;
+}
+
+/**
+ * Mezcla el grano con el tinte de la escena y lo aclara del lado de la luz.
+ * `nx` y `ny` van de −0.5 a 0.5 dentro del frasco.
+ */
+export function teñirGrano(
+  r: number,
+  g: number,
+  b: number,
+  nx: number,
+  ny: number,
+  luz: LuzGrano,
+): readonly [number, number, number] {
+  const tinte = rgbDe(luz.tinte);
+  const dir = vectorLuz(luz.direccion);
+  const cara = nx * dir.x + ny * dir.y;
+  const mezcla = Math.min(0.5, Math.max(0, luz.fuerzaTinte) * 0.48);
+  const cuerpo = 0.58 + 0.42 * Math.min(1.08, Math.max(0, luz.brillo));
+  const sol = cuerpo * (1 + cara * 0.5);
+  const canal = (base: number, destino: number) =>
+    Math.max(0, Math.min(255, Math.round((base * (1 - mezcla) + destino * mezcla) * sol)));
+  return [canal(r, tinte[0]), canal(g, tinte[1]), canal(b, tinte[2])];
+}
+
+/**
+ * Cada grano es un punto del tamaño de su celda en el frasco ya medido,
+ * no un píxel de la rejilla estirado.
+ */
+export function pintarGranos(
+  ctx: CanvasRenderingContext2D,
+  sim: SandSimulation,
+  lut: Uint8ClampedArray,
+  w: number,
+  h: number,
+  luz?: LuzGrano,
+): void {
+  ctx.clearRect(0, 0, w, h);
+  const cw = w / sim.cols;
+  const ch = h / sim.rows;
+  const base = Math.max(0.8, Math.min(cw, ch) * 0.7);
+  const cells = sim.cells;
+  for (let i = 0; i < cells.length; i++) {
+    const tone = cells[i] ?? 0;
+    if (tone === 0) continue;
+    const col = i % sim.cols;
+    const row = (i / sim.cols) | 0;
+    const l = tone * 3;
+    const nx = col / sim.cols - 0.5;
+    const ny = row / sim.rows - 0.5;
+    const rgb = luz
+      ? teñirGrano(lut[l] ?? 0, lut[l + 1] ?? 0, lut[l + 2] ?? 0, nx, ny, luz)
+      : [lut[l] ?? 0, lut[l + 1] ?? 0, lut[l + 2] ?? 0];
+    // Un poco de desorden: si no, la rejilla se lee como una tela.
+    const jx = ((tone * 13 + col * 3) % 9) / 8 - 0.5;
+    const jy = ((tone * 7 + row * 5) % 9) / 8 - 0.5;
+    const radio = base * (0.75 + ((tone % 5) / 5) * 0.45);
+    ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+    ctx.beginPath();
+    ctx.arc((col + 0.5 + jx * 0.55) * cw, (row + 0.5 + jy * 0.45) * ch, radio, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 export function dibujarChorro(
   ctx: CanvasRenderingContext2D,
   sim: SandSimulation,
@@ -45,6 +129,7 @@ export function dibujarChorro(
   lut: Uint8ClampedArray,
   w: number,
   h: number,
+  luz?: LuzGrano,
 ): void {
   const cellW = w / sim.cols;
   const count = particles.count;
@@ -54,7 +139,17 @@ export function dibujarChorro(
     const size = particles.size[i] ?? 0.3;
     const tone = particles.tone[i] ?? 1;
     const l = tone * 3;
-    ctx.fillStyle = `rgb(${lut[l] ?? 200}, ${lut[l + 1] ?? 170}, ${lut[l + 2] ?? 130})`;
+    const rgb = luz
+      ? teñirGrano(
+          lut[l] ?? 200,
+          lut[l + 1] ?? 170,
+          lut[l + 2] ?? 130,
+          px / sim.cols - 0.5,
+          py / sim.rows - 0.5,
+          luz,
+        )
+      : [lut[l] ?? 200, lut[l + 1] ?? 170, lut[l + 2] ?? 130];
+    ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
     ctx.beginPath();
     ctx.arc((px / sim.cols) * w, (py / sim.rows) * h, Math.max(0.6, size * cellW), 0, Math.PI * 2);
     ctx.fill();

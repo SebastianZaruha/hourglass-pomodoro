@@ -14,22 +14,21 @@ export function SiteFooter({ onCookies, onOpenLegal }: Props) {
   const open = (href: string, title: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (keepAppOnLegalClick(event)) onOpenLegal(href, title);
   };
+  const pieza = (href: string, largo: string, corto: string) => (
+    <a href={href} onClick={open(href, largo)}>
+      <span className="largo">{largo}</span>
+      <span className="corto">{corto}</span>
+    </a>
+  );
   return (
     <footer className="site-footer">
-      <a href={hrefs.legal} onClick={open(hrefs.legal, labels.legal)}>
-        {labels.legal}
-      </a>
-      <a href={hrefs.privacy} onClick={open(hrefs.privacy, labels.privacy)}>
-        {labels.privacy}
-      </a>
-      <a href={hrefs.cookies} onClick={open(hrefs.cookies, labels.cookies)}>
-        {labels.cookies}
-      </a>
-      <a href={hrefs.app} onClick={open(hrefs.app, labels.app)}>
-        {labels.app}
-      </a>
+      {pieza(hrefs.legal, labels.legal, 'Legal')}
+      {pieza(hrefs.privacy, labels.privacy, 'Privacidad')}
+      {pieza(hrefs.cookies, labels.cookies, 'Cookies')}
+      {pieza(hrefs.app, labels.app, 'App')}
       <button type="button" id="configure-cookies" onClick={onCookies}>
-        {labels.settings}
+        <span className="largo">{labels.settings}</span>
+        <span className="corto">Ajustes</span>
       </button>
     </footer>
   );

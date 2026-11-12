@@ -16,7 +16,7 @@ import type { Luz } from '../temas/tipos';
 import { cargarActivos, type Activos } from './activos';
 import { dibujar } from './dibujo';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
-import { buildPaletteLut, paintCells } from './granos';
+import { buildPaletteLut, pintarGranos } from './granos';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
 import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
@@ -63,12 +63,10 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     });
     const particles = new StreamParticles({ capacity: 220, seed: 5 });
     const arena = document.createElement('canvas');
-    arena.width = sim.cols;
-    arena.height = sim.rows;
-    const arenaCtx = arena.getContext('2d', { willReadFrequently: true });
-    const image = arenaCtx?.createImageData(sim.cols, sim.rows) ?? null;
+    const arenaCtx = arena.getContext('2d');
     let lut = buildPaletteLut(SAND.palette.light);
     let paleta: ModeloFrasco['granos'] = 'clara';
+    let firmaLuz = '';
     let estado: EstadoFrasco = estadoInicial();
     let agua: Muelle = muelleQuieto();
     let orden: OrdenFrasco = { tipo: 'quieto', dt: 1 / 60, reducir: false };
@@ -86,9 +84,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let arrastre: { id: number; inicio: number; base: number; movio: boolean } | null = null;
 
     const pintarArena = () => {
-      if (!arenaCtx || !image) return;
-      paintCells(sim, lut, image);
-      arenaCtx.putImageData(image, 0, 0);
+      if (!arenaCtx) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(2, Math.round(vivo.current.layout.frasco.w * dpr));
+      const h = Math.max(2, Math.round(vivo.current.layout.frasco.h * dpr));
+      if (arena.width !== w || arena.height !== h) {
+        arena.width = w;
+        arena.height = h;
+      }
+      pintarGranos(arenaCtx, sim, lut, w, h, vivo.current.luz);
     };
 
     const frame = (now: number) => {
@@ -96,10 +100,6 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const m = vivo.current;
       const dt = ultimo > 0 ? Math.min(0.05, (now - ultimo) / 1000) : 1 / 60;
       ultimo = now;
-      if (m.granos !== paleta) {
-        paleta = m.granos;
-        lut = buildPaletteLut(paleta === 'oscura' ? SAND.palette.dark : SAND.palette.light);
-      }
       const antes = estado.angulo;
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
       estado = paso.estado;
@@ -117,6 +117,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const objetivo = granosObjetivo(sim.totalGrains, snap.durationMs, snap.remainingMs);
       const girando = estado.fase === 'volteando';
       let movio = girando || Math.abs(agua.velocidad) > 0 || Math.abs(estado.velocidad) > 0;
+      const firma = `${m.granos}|${m.luz.tinte}|${m.luz.fuerzaTinte}|${m.luz.brillo}|${m.luz.direccion}`;
+      if (firma !== firmaLuz) {
+        firmaLuz = firma;
+        if (m.granos !== paleta) {
+          paleta = m.granos;
+          lut = buildPaletteLut(paleta === 'oscura' ? SAND.palette.dark : SAND.palette.light);
+        }
+        movio = true;
+      }
       if (m.tipo === 'arena') {
         if (paso.volteoCompletado || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle')) {
           if (sim.topCount !== objetivo) {

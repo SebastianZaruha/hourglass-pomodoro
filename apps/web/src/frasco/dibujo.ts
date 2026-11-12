@@ -31,7 +31,7 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   const viewW = ctx.canvas.clientWidth;
   const viewH = ctx.canvas.clientHeight;
   ctx.clearRect(0, 0, viewW, viewH);
-  dibujarSombra(ctx, orden.frasco, orden.luz, orden.angulo, activos.sombra);
+  dibujarSombra(ctx, orden.frasco, orden.luz, orden.angulo);
 
   const { x, y, w, h } = orden.frasco;
   const cx = x + w / 2;
@@ -51,12 +51,15 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
     volumenAbajo: orden.volumenAbajo,
     anguloAgua: orden.anguloAgua,
     arena: orden.arena,
-    texturaAgua: activos.agua,
     mascara: activos.mascara,
     sim: orden.sim,
     chorro: orden.chorro,
     lut: orden.lut,
     llueve: orden.llueve,
+    tinte: orden.luz.tinte,
+    direccion: orden.luz.direccion,
+    brillo: orden.luz.brillo,
+    fuerzaTinte: orden.luz.fuerzaTinte,
   });
 
   aplicarLuz(ctx, orden.frasco, orden.luz, activos.frente, activos.dorso);

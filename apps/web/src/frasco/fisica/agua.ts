@@ -153,16 +153,48 @@ export function volumenDibujado(bulbo: 'arriba' | 'abajo', volumen: number, angu
   return fraccion(bulbo, superficie.gravedad, superficie.corte);
 }
 
-/** Polígono del líquido en coordenadas de la foto (0..1), listo para pintar. */
-export function poligonoLiquido(bulbo: 'arriba' | 'abajo', volumen: number, angulo: number): Punto[] {
-  const superficie = superficieAgua(bulbo, volumen, angulo);
-  const local = recortar(CONTORNOS[bulbo], superficie.gravedad, superficie.corte);
+function aFoto(bulbo: 'arriba' | 'abajo', punto: Punto): Punto {
   const box = cajaBulbo(bulbo);
   const centro = (box[0] + box[2]) / 2;
   const medioAncho = (box[2] - box[0]) / 2;
   const alto = box[3] - box[1];
-  return local.map((punto) => ({
-    x: centro + punto.x * medioAncho,
-    y: box[1] + punto.y * alto,
-  }));
+  return { x: centro + punto.x * medioAncho, y: box[1] + punto.y * alto };
+}
+
+/** Polígono del líquido en coordenadas de la foto (0..1), listo para pintar. */
+export function poligonoLiquido(bulbo: 'arriba' | 'abajo', volumen: number, angulo: number): Punto[] {
+  const superficie = superficieAgua(bulbo, volumen, angulo);
+  const local = recortar(CONTORNOS[bulbo], superficie.gravedad, superficie.corte);
+  return local.map((punto) => aFoto(bulbo, punto));
+}
+
+/** La línea de la superficie, ya en la foto, para el menisco. */
+export function lineaMenisco(bulbo: 'arriba' | 'abajo', volumen: number, angulo: number): Punto[] {
+  if (volumen <= 0.02 || volumen >= 0.98) return [];
+  const superficie = superficieAgua(bulbo, volumen, angulo);
+  const gy =
+    Math.abs(superficie.gravedad.y) < 0.08
+      ? Math.sign(superficie.gravedad.y || 1) * 0.08
+      : superficie.gravedad.y;
+  const derecha = CONTORNOS[bulbo].slice(0, MUESTRAS);
+  const radioEn = (y: number) => {
+    let mejor = derecha[0];
+    let dist = Infinity;
+    for (const punto of derecha) {
+      const d = Math.abs(punto.y - y);
+      if (d < dist) {
+        dist = d;
+        mejor = punto;
+      }
+    }
+    return mejor?.x ?? 0;
+  };
+  const linea: Punto[] = [];
+  for (let i = 0; i <= 28; i++) {
+    const x = -1 + (2 * i) / 28;
+    const y = (superficie.corte - superficie.gravedad.x * x) / gy;
+    if (y < -0.02 || y > 1.02 || Math.abs(x) > radioEn(y) + 0.02) continue;
+    linea.push(aFoto(bulbo, { x, y }));
+  }
+  return linea;
 }

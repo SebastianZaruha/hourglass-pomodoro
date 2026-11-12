@@ -63,7 +63,6 @@ export function SettingsSheet({ open, settings, t, temaId, onTema, onChange, onC
         height: 'auto',
         right: 'auto',
         bottom: 'auto',
-        maxHeight: caja.h,
       }}
       role="dialog"
       aria-modal="true"

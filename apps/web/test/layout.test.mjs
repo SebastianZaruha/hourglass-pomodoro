@@ -8,6 +8,7 @@ const TAMAÑOS = [
   [1024, 768],
   [768, 1024],
   [390, 844],
+  [360, 740],
   [480, 360],
 ];
 
@@ -27,6 +28,10 @@ test('el frasco no se mueve con el menú y el reloj no lo pisa', async () => {
       assert.ok(cerrado.reloj.x + cerrado.reloj.w <= ancho + 1);
       const alzado = Math.abs(cerrado.reloj.y - abierto.reloj.y);
       assert.ok(alzado <= 12, `${ancho}x${alto} alzado ${alzado}`);
+      if (!cerrado.ancha) {
+        assert.ok(!mod.seSolapan(cerrado.reloj, cerrado.botonMenu), `${ancho}x${alto} botón`);
+        assert.ok(cerrado.reloj.y + cerrado.reloj.h <= cerrado.botonMenu.y + 1);
+      }
     }
     const a = mod.calcularLayout(1440, 900, false);
     const b = mod.calcularLayout(1440, 900, false);

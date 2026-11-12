@@ -17,10 +17,18 @@ Rama `feature/web-escenas`, salida de `main`. No se fusiona ni se publica: la vi
 - Fondos: foto o vídeo con póster (reducir movimiento, ahorro de datos o fallo). Nube recortada del vídeo sobre claro.
 - Menú opaco, tooltips con `aria-label`, pausa a pantalla completa y páginas legales generadas desde un texto por idioma.
 
+## Ronda de revisión
+
+- El agua es casi transparente: se ve el fondo, se oscurece hacia abajo y lleva menisco. Sin textura de cáusticas.
+- Brillo, reflejo, tinte y sombra salen de la luz de cada tema y modo. Esa misma luz tiñe la arena.
+- El menú es vidrio esmerilado: blanco neutro en claro, casi negro en oscuro, el mismo en los tres temas.
+- Clásico usa el estudio (WebP, AVIF y JPG). El frasco no cambia de sitio. El reloj sigue arriba a la derecha en todos los temas.
+- En estrecho el pie cabe en una línea y no pisa el reloj. La nube se sienta en el cristal. Los granos se dibujan al tamaño del frasco.
+
 ## Tests
 
-`npm run test --workspace @reloj/web`: 20 pruebas (nivel, agua, volteo, layout, clic, temas, consentimiento).
+`npm run test --workspace @reloj/web`: 21 pruebas (nivel, agua, volteo, layout, clic, temas, consentimiento).
 
 ## Capturas
 
-`/opt/cursor/artifacts/capturas/` — tema × modo a 1440 y 390, más menú, pausa, legal y volteo.
+`/opt/cursor/artifacts/capturas/` — tema × modo a 1440, 390 y 360, más menú, pausa, legal y volteo.
