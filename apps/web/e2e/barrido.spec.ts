@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { falloEsperado } from './soporte/fallo';
 import { ALTOS_BARRIDO, abrir, abrirMenu, enLimpio } from './soporte/escena';
 
 /**
@@ -55,7 +54,6 @@ test('barrido sin solapes', async ({ browser }) => {
   const salida = path.resolve(import.meta.dirname, 'salida');
   mkdirSync(salida, { recursive: true });
   writeFileSync(path.join(salida, 'barrido.txt'), fallos.join('\n') + '\n', 'utf8');
-  falloEsperado(7, 'en anchos intermedios el reloj pisa el frasco y, en estrecho, el aviso Android');
   expect(fallos.length, `${fallos.length} solapes. Los primeros:\n${fallos.slice(0, 24).join('\n')}`).toBe(0);
 });
 

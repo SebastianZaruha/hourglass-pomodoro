@@ -119,8 +119,25 @@ test('el menú no recorta contenido', async ({ page }) => {
       cortes.push(`${tam.nombre}: scroll ${medida.scroll} > cliente ${medida.cliente}`);
     }
   }
-  falloEsperado(7, 'el alto del menú está fijo y overflow:hidden corta la última fila');
   expect(cortes, cortes.join('\n')).toEqual([]);
+  await page.getByRole('radio', { name: 'Ciclos' }).click();
+  await page.getByRole('radio', { name: 'Personalizado' }).click();
+  await page.clock.runFor(80);
+  const ciclos: string[] = [];
+  for (const tam of ANCHOS) {
+    if (tam.alto < 600) continue;
+    await asentarTamano(page, tam.ancho, tam.alto);
+    const medida = await page.evaluate(() => {
+      const hoja = document.querySelector('.sheet.open');
+      if (!(hoja instanceof HTMLElement)) return null;
+      return { scroll: hoja.scrollHeight, cliente: hoja.clientHeight };
+    });
+    if (!medida) throw new Error(`${tam.nombre}: el menú de ciclos no está abierto`);
+    if (medida.scroll > medida.cliente + 1) {
+      ciclos.push(`${tam.nombre}: scroll ${medida.scroll} > cliente ${medida.cliente}`);
+    }
+  }
+  expect(ciclos, ciclos.join('\n')).toEqual([]);
 });
 
 test('el vídeo sigue al tema', async ({ page }) => {
@@ -296,7 +313,6 @@ test('el botón del menú sigue en pausa', async ({ page }) => {
   await page.keyboard.press('Space');
   await mantener(page);
   await page.hover('.app');
-  falloEsperado(7, 'en pausa el botón lleva hidden y la clase is-paused lo oculta');
   await expect(page.locator('#menu-button')).toBeVisible();
   await page.locator('#menu-button').click();
   await expect(page.locator('.sheet.open')).toBeVisible();
@@ -311,6 +327,9 @@ test('el pie y los controles no se cortan desde 360 px', async ({ page }) => {
       if (!(nodo instanceof HTMLElement)) return;
       const estilo = getComputedStyle(nodo);
       if (estilo.display === 'none' || estilo.visibility === 'hidden') return;
+      // El envoltorio del tooltip es más ancho que el botón a propósito:
+      // el texto completo vive en el popup, y el botón se mide aparte.
+      if (nodo.classList.contains('ayuda')) return;
       if (nodo.scrollWidth > nodo.clientWidth + 1) {
         mal.push(
           `${nodo.tagName}.${nodo.className}: ${nodo.scrollWidth}>${nodo.clientWidth} «${nodo.textContent?.trim().slice(0, 40)}»`,
@@ -324,7 +343,6 @@ test('el pie y los controles no se cortan desde 360 px', async ({ page }) => {
       .forEach(mira);
     return mal;
   });
-  falloEsperado(7, 'el pie estrecho no cabe y «Automático» se corta con puntos suspensivos');
   expect(cortes, cortes.join('\n')).toEqual([]);
 });
 
