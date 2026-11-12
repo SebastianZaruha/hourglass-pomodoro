@@ -8,6 +8,9 @@ import '@fontsource/manrope/400.css';
 import '@fontsource/manrope/500.css';
 import '@fontsource/manrope/600.css';
 import './styles.css';
+import './temas/lluvia.css';
+import './temas/arena.css';
+import './temas/clasico.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');

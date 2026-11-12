@@ -1,10 +1,4 @@
-import {
-  formatDuration,
-  type Language,
-  type Messages,
-  type SessionCue,
-  type SessionSnapshot,
-} from '@reloj/core';
+import { type Language, type Messages, type SessionCue, type SessionSnapshot } from '@reloj/core';
 
 export function notificationSupported(): boolean {
   return typeof Notification !== 'undefined';
@@ -60,9 +54,4 @@ export function showPhaseNotification(
   } catch {
     // Algunos navegadores solo permiten notificaciones desde un service worker.
   }
-}
-
-export function documentTitle(snap: SessionSnapshot): string {
-  const time = formatDuration(snap.remainingMs);
-  return `${time} · Hourglass Pomodoro`;
 }

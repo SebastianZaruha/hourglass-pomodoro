@@ -10,9 +10,9 @@ interface Props {
 
 /** Tira discreta, debajo del reloj. No es el banner de cookies. */
 export function AndroidPromo({ lang, onDismiss }: Props) {
-  const copy = androidPromoCopy(lang, ANDROID_APP.distribution);
+  const copy = androidPromoCopy(ANDROID_APP.distribution, lang);
   return (
-    <div className="app-promo" onClick={(event) => event.stopPropagation()}>
+    <div className="app-promo vidrio" onClick={(event) => event.stopPropagation()}>
       <p className="app-promo-text">
         <span className="app-promo-title">{copy.title}</span>
         <span className="app-promo-pitch">{copy.pitch}</span>

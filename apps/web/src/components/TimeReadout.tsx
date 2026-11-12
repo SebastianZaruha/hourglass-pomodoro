@@ -34,6 +34,7 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe }: Pro
 
   return (
     <div className="readout">
+      <div className="halo" aria-hidden="true" />
       <p className="sr-only" aria-live="polite">
         {label ? `${label}. ` : ''}
         {live}
