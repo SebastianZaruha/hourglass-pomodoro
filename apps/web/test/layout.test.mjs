@@ -50,6 +50,16 @@ test('la tabla 3.11 elige la disposición y no hay solapes', async () => {
           assert.equal(layout.ancha, ancha, `${ancho}×${alto}`);
           const mal = solapaAlguno(mod, layout, ancho, alto, menu);
           assert.deepEqual(mal, [], `${ancho}×${alto} menú ${menu} aviso ${aviso}: ${mal.join(', ')}`);
+          if (!menu && aviso > 0) {
+            const minimo = ancho >= 300 ? 300 : ancho * 0.9;
+            assert.ok(layout.aviso.w + 1 >= minimo, `${ancho}×${alto} aviso ${layout.aviso.w}`);
+            if (ancha) {
+              assert.ok(layout.aviso.x + 1 >= ancho * 0.52, `${ancho}×${alto} aviso fuera de la columna`);
+            } else {
+              const centro = layout.aviso.x + layout.aviso.w / 2;
+              assert.ok(Math.abs(centro - ancho / 2) < 1, `${ancho}×${alto} aviso descentrado`);
+            }
+          }
         }
       }
     }
@@ -96,6 +106,10 @@ test('el barrido de 360 a 1920 no solapa las cajas', async () => {
           const entrada = mod.entradaDe(ancho, alto, menu, { altoAviso: menu ? 0 : 72, altoMenu: 300, altoPie: 48 });
           const layout = mod.calcularLayout(entrada);
           const mal = solapaAlguno(mod, layout, ancho, alto, menu);
+          if (!menu && layout.aviso.h > 1) {
+            const minimo = ancho >= 300 ? 300 : ancho * 0.9;
+            if (layout.aviso.w + 1 < minimo) mal.push(`aviso ${Math.round(layout.aviso.w)} < ${minimo}`);
+          }
           if (mal.length) fallos.push(`${ancho}×${alto} ${menu ? 'menú' : 'cerrado'}: ${mal.join(', ')}`);
         }
       }

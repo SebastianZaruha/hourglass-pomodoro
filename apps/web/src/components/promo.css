@@ -1,12 +1,9 @@
 .app-promo {
   position: fixed;
   z-index: 23;
-  left: clamp(0.7rem, 2.4vw, 1.15rem);
-  bottom: calc(2.65rem + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  width: min(28rem, calc(100% - 5.4rem));
   padding: 0.45rem 0.35rem 0.45rem 0.75rem;
   color: var(--tinta);
   animation: app-promo-in var(--duracion-normal) ease both;
@@ -64,12 +61,6 @@
   border-radius: var(--radio-boton);
   font-size: 1.15rem;
   line-height: 1;
-}
-
-@media (max-width: 40rem) {
-  .app-promo {
-    bottom: calc(4.15rem + env(safe-area-inset-bottom));
-  }
 }
 
 @keyframes app-promo-in {

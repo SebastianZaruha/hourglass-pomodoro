@@ -65,13 +65,14 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
       await page.clock.runFor(40);
       const choques = await page.evaluate(
         ({ ancho: w, alto: h, estado: nombre }) => {
-          const caja = (nodo: Element | null) => {
+          const caja = (nodo: Element | null, forzar = false) => {
             if (!(nodo instanceof HTMLElement)) return null;
             const estilo = getComputedStyle(nodo);
             if (
-              estilo.display === 'none' ||
-              estilo.visibility === 'hidden' ||
-              Number(estilo.opacity) < 0.05
+              !forzar &&
+              (estilo.display === 'none' ||
+                estilo.visibility === 'hidden' ||
+                Number(estilo.opacity) < 0.05)
             ) {
               return null;
             }
@@ -88,9 +89,16 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
           if (menu) piezas.push({ nombre: 'menú', caja: menu });
           const aviso = caja(document.querySelector('.app-promo'));
           if (aviso) piezas.push({ nombre: 'aviso', caja: aviso });
-          const pie = caja(document.querySelector('.site-footer'));
+          const pieNodo = document.querySelector('.site-footer');
+          const pie = caja(pieNodo) ?? (nombre === 'aviso' ? caja(pieNodo, true) : null);
           if (pie) piezas.push({ nombre: 'pie', caja: pie });
           const textos: string[] = [];
+          if (nombre === 'aviso' && aviso) {
+            const minimo = w >= 300 ? 300 : w * 0.9;
+            if (aviso.w + 0.5 < minimo) {
+              textos.push(`${nombre} ${w}×${h}: aviso estrecho ${Math.round(aviso.w)} < ${Math.round(minimo)}`);
+            }
+          }
           const solapan = (
             a: { x: number; y: number; w: number; h: number },
             b: { x: number; y: number; w: number; h: number },

@@ -16,7 +16,7 @@ interface Props {
   readonly onDismiss: () => void;
 }
 
-/** Tira discreta, debajo del reloj. No es el banner de cookies. */
+/** Aviso en la caja medida. No es el banner de cookies. */
 function estiloDe(caja: Caja): CSSProperties {
   return { left: caja.x, top: caja.y, width: caja.w, right: 'auto', bottom: 'auto' };
 }

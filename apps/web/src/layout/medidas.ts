@@ -56,8 +56,10 @@ export const MENU_FRACCION = 0.52;
 export const MENU_TOPE = 440;
 export const MENU_ANCHO_ESTRECHA = 520;
 export const MENU_MARGEN_X = 24;
-export const AVISO_ANCHO = 420;
-export const AVISO_MIN_TIRA = 160;
+/** Ancho cómodo del aviso. Si la columna es más estrecha, usa la columna. */
+export const AVISO_MIN = 320;
+export const AVISO_MAX = 440;
+export const AVISO_HUECO = 12;
 
 export const NUBE_ANCHO = 1.72;
 export const NUBE_RELACION = 438 / 1100;

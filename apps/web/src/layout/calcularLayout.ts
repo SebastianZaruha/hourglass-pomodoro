@@ -1,4 +1,4 @@
-import { caja, cajaNube, frascoDesdeArriba, frascoEn, seSolapan, type Caja } from './cajas';
+import { caja, cajaNube, frascoDesdeArriba, frascoEn, type Caja } from './cajas';
 import {
   AIRE,
   ALTO_CORTO,
@@ -6,8 +6,9 @@ import {
   ALTO_SIN_SCROLL,
   ANCHO_ANCHA,
   ANCHO_ANCHA_CORTA,
-  AVISO_ANCHO,
-  AVISO_MIN_TIRA,
+  AVISO_HUECO,
+  AVISO_MAX,
+  AVISO_MIN,
   BORDE_PIE,
   BOTON,
   COLUMNA_X,
@@ -111,62 +112,39 @@ function cajaPie(e: EntradaLayout, margen: number): Caja {
   return caja((e.ancho - w) / 2, y, w, e.altoPie);
 }
 
-function avisoLibre(
-  e: EntradaLayout,
-  c: Caja,
-  frasco: Caja,
-  reloj: Caja,
-  boton: Caja,
-  pie: Caja,
-  relojVisible: boolean,
-): boolean {
-  return (
-    c.w > 1 &&
-    c.h > 1 &&
-    c.x >= -1 &&
-    c.y >= -1 &&
-    c.x + c.w <= e.ancho + 1 &&
-    c.y + c.h <= e.alto + 1 &&
-    !seSolapan(c, frasco) &&
-    !seSolapan(c, boton) &&
-    !seSolapan(c, pie) &&
-    (!relojVisible || !seSolapan(c, reloj))
-  );
+/** Entre 320 y 440 px. Si el hueco es menor, el hueco manda. */
+function anchoComodo(espacio: number): number {
+  if (espacio >= AVISO_MIN) return Math.min(AVISO_MAX, espacio);
+  return Math.max(0, espacio);
 }
 
-/** La primera caja que cabe. Si ninguna cabe, la más ancha a la derecha del frasco. */
+/**
+ * En la columna, justo bajo el reloj. Si no cabe sobre el pie, el reloj sube.
+ * Devuelve la y del reloj ya corregida.
+ */
 function colocarAvisoAncho(
   e: EntradaLayout,
-  frasco: Caja,
   reloj: Caja,
   boton: Caja,
   pie: Caja,
   relojVisible: boolean,
-): Caja {
-  if (e.altoAviso <= 0) return caja(0, e.alto + FUERA, 0, 0);
+): { yReloj: number; aviso: Caja } {
+  if (e.altoAviso <= 0) return { yReloj: reloj.y, aviso: caja(0, e.alto + FUERA, 0, 0) };
   const m = margenAncho(e.ancho);
-  const h = e.altoAviso;
-  const yPie = pie.y - h;
-  const lleno = caja(m, yPie, Math.min(AVISO_ANCHO, e.ancho - 2 * m), h);
-  const tira = frasco.x - m - AIRE / 2;
-  const estrecha = tira >= AVISO_MIN_TIRA ? caja(m, yPie, tira, h) : null;
-  const derechaX = Math.max(m, frasco.x + frasco.w + 8);
-  const derechaW = Math.min(AVISO_ANCHO, e.ancho - m - derechaX);
-  const techo = relojVisible ? reloj.y + reloj.h + 8 : frasco.y + 8;
-  const suelo = Math.min(pie.y, boton.y);
-  const yHueco = suelo - h;
-  const enHueco =
-    derechaW >= AVISO_MIN_TIRA && yHueco >= techo - 1 ? caja(derechaX, yHueco, derechaW, h) : null;
   const columnaX = e.ancho * COLUMNA_X;
-  const columnaW = Math.min(AVISO_ANCHO, e.ancho - m - columnaX);
-  const enColumna = caja(columnaX, boton.y - 8 - h, columnaW, h);
-  const libre = (c: Caja | null): c is Caja =>
-    c !== null && avisoLibre(e, c, frasco, reloj, boton, pie, relojVisible);
-  const elegido = [lleno, estrecha, enHueco, enColumna].find(libre);
-  if (elegido) return elegido;
-  const ancho = Math.max(derechaW, columnaW);
-  const x = ancho === derechaW ? derechaX : columnaX;
-  return caja(x, Math.max(0, Math.min(techo, e.alto - h)), Math.max(0, ancho), h);
+  const columnaW = Math.max(0, e.ancho - m - columnaX);
+  const w = anchoComodo(columnaW);
+  const x = columnaX + Math.max(0, columnaW - w) / 2;
+  const suelo = Math.min(pie.y, boton.y);
+  const techo = e.margenSeguro.arriba;
+  let yReloj = reloj.y;
+  if (relojVisible) {
+    const bloque = reloj.h + AVISO_HUECO + e.altoAviso;
+    if (yReloj + bloque > suelo) yReloj = Math.max(techo, suelo - bloque);
+  }
+  const bajo = (relojVisible ? yReloj + reloj.h : techo) + AVISO_HUECO;
+  const y = bajo + e.altoAviso <= suelo ? bajo : Math.max(0, suelo - e.altoAviso);
+  return { yReloj, aviso: caja(x, y, w, e.altoAviso) };
 }
 
 function amplio(e: EntradaLayout): Layout {
@@ -197,8 +175,9 @@ function amplio(e: EntradaLayout): Layout {
   }
   const menuW = Math.min(MENU_ANCHO_ANCHA, columnaW);
   const menu = caja(columnaX + (columnaW - menuW) / 2, e.menuAbierto ? menuY : e.alto + FUERA, menuW, altoMenu);
-  const reloj = { ...relojBase, y: relojY };
-  const aviso = colocarAvisoAncho(e, frasco, reloj, botonMenu, pie, relojVisible);
+  const colocado = colocarAvisoAncho(e, { ...relojBase, y: relojY }, botonMenu, pie, relojVisible);
+  const reloj = { ...relojBase, y: colocado.yReloj };
+  const aviso = colocado.aviso;
   return {
     ancha: true,
     frasco,
@@ -229,12 +208,15 @@ function horaEstrecha(e: EntradaLayout): number {
 }
 
 function pilaEstrecha(e: EntradaLayout): { pie: Caja; aviso: Caja; zonaBottom: number } {
-  const pie = cajaPie(e, MARGEN_ESTRECHO);
+  const m = MARGEN_ESTRECHO;
+  const pie = cajaPie(e, m);
   const avisoH = e.altoAviso;
-  const avisoY = avisoH > 0 ? pie.y - avisoH : pie.y;
-  const avisoW = Math.max(0, e.ancho - MARGEN_ESTRECHO * 2 - BOTON - 8);
-  const aviso = caja(MARGEN_ESTRECHO, avisoY, avisoH > 0 ? avisoW : 0, avisoH);
-  const zonaBottom = (avisoH > 0 ? avisoY : pie.y) - MARGEN_ESTRECHO;
+  const espacio = Math.max(0, e.ancho - m * 2);
+  const avisoW = avisoH > 0 ? anchoComodo(espacio) : 0;
+  const botonY = e.alto - e.margenSeguro.abajo - m - BOTON;
+  const avisoY = avisoH > 0 ? Math.min(pie.y, botonY) - avisoH : pie.y;
+  const aviso = caja((e.ancho - avisoW) / 2, avisoY, avisoW, avisoH);
+  const zonaBottom = (avisoH > 0 ? avisoY : pie.y) - m;
   return { pie, aviso, zonaBottom };
 }
 
