@@ -22,13 +22,15 @@
   --footer: #b3a698;
   --menu: #8f8272;
   --line: rgba(92, 78, 64, 0.12);
-  --vidrio-velo: rgba(255, 255, 255, 0.07);
-  --vidrio-blur: 16px;
+  --vidrio-velo: rgba(255, 255, 255, 0.06);
+  --vidrio-blur: 32px;
   --vidrio-radio: 32px;
-  --vidrio-borde: rgba(255, 255, 255, 0.72);
-  --vidrio-sombra: 0 18px 48px rgba(0, 0, 0, 0.16);
-  --vidrio-pastilla: rgba(255, 255, 255, 0.16);
-  --vidrio-pastilla-on: rgba(255, 255, 255, 0.34);
+  --vidrio-borde: rgba(255, 255, 255, 0.3);
+  --vidrio-brillo: 1.06;
+  --vidrio-saturacion: 1.08;
+  --vidrio-pastilla: rgba(255, 255, 255, 0.14);
+  --vidrio-pastilla-on: rgba(255, 255, 255, 0.28);
+  --vidrio-fallback: rgba(244, 244, 243, 0.94);
   font-family: Manrope, 'Segoe UI', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -56,6 +58,11 @@
   --mode-on: rgba(255, 236, 214, 0.07);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   --footer: #8a7d72;
+  --vidrio-velo: rgba(0, 0, 0, 0.22);
+  --vidrio-borde: rgba(255, 255, 255, 0.28);
+  --vidrio-pastilla: rgba(255, 255, 255, 0.08);
+  --vidrio-pastilla-on: rgba(255, 255, 255, 0.16);
+  --vidrio-fallback: rgba(12, 12, 14, 0.92);
   --menu: #796c60;
   --line: rgba(255, 236, 214, 0.08);
 }
@@ -231,24 +238,19 @@ a {
 }
 
 .vidrio {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.38) 0%,
-      rgba(255, 255, 255, 0.08) 22%,
-      rgba(255, 255, 255, 0.02) 48%,
-      rgba(255, 255, 255, 0.06) 100%
-    ),
-    var(--vidrio-velo);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: var(--vidrio-fallback);
+  border: 1px solid var(--vidrio-borde);
   border-radius: var(--vidrio-radio);
-  box-shadow:
-    inset 1px 1px 0 var(--vidrio-borde),
-    inset -1px -1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 0 28px rgba(255, 255, 255, 0.1),
-    var(--vidrio-sombra);
-  backdrop-filter: blur(var(--vidrio-blur)) saturate(1.2);
-  -webkit-backdrop-filter: blur(var(--vidrio-blur)) saturate(1.2);
+  box-shadow: none;
+  backdrop-filter: blur(var(--vidrio-blur)) brightness(var(--vidrio-brillo)) saturate(var(--vidrio-saturacion));
+  -webkit-backdrop-filter: blur(var(--vidrio-blur)) brightness(var(--vidrio-brillo))
+    saturate(var(--vidrio-saturacion));
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vidrio {
+    background: var(--vidrio-velo);
+  }
 }
 
 .vidrio .pill,
@@ -257,9 +259,8 @@ a {
 .vidrio .stepper-row {
   background: var(--vidrio-pastilla);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  box-shadow: none;
+  border: 1px solid var(--vidrio-borde);
 }
 
 .vidrio .pill-fill,
