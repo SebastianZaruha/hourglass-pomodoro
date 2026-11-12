@@ -12,7 +12,7 @@ import {
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { androidPromoOpen, readAndroidPromoDismissed, writeAndroidPromoDismissed } from './androidApp';
 import { AndroidPromo } from './components/AndroidPromo';
@@ -20,8 +20,10 @@ import { CookieBanner } from './components/CookieBanner';
 import { LegalOverlay } from './components/LegalOverlay';
 import { Pausa } from './components/Pausa';
 import { SettingsSheet } from './components/SettingsSheet';
+import './components/Tooltip.css';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
+import { aplicarTema } from './estilo/aplicarTema';
 import { hintFor } from './copy';
 import { Fondo } from './fondo/Fondo';
 import { conexionAhorro, prefetchEnReposo, urlsPrefetch } from './medios/assetLoader';
@@ -91,11 +93,14 @@ function Reloj({
     prefetchEnReposo(urlsPrefetch(TEMAS, tema.id, scheme, medios.ahorro || conexionAhorro(red)));
   }, [tema.id, scheme, medios.ahorro]);
 
+  useLayoutEffect(() => {
+    const nodo = appRef.current;
+    if (nodo) aplicarTema(nodo, modo, scheme);
+  }, [modo, scheme]);
+
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.documentElement.style.colorScheme = scheme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', modo.ui.barra);
-  }, [scheme, modo.ui.barra, lang]);
+  }, [lang]);
 
   const prevCue = useRef(view);
   useEffect(() => {
@@ -208,7 +213,7 @@ function Reloj({
       data-layout={layout.ancha ? 'wide' : 'narrow'}
     >
       {consentimiento.choice === 'accepted' ? <Analytics /> : null}
-      <div className={`mundo${tema.nube ? ' con-nube' : ''}`}>
+      <div className={`mundo${tema.nube ? ' con-nube' : ''}${pausado ? ' pausado' : ''}`}>
         <Fondo
           modo={modo}
           ancla={tema.anclaSuelo}
@@ -221,7 +226,7 @@ function Reloj({
         />
         <div
           ref={stageRef}
-          className="escenario"
+          className={menu ? 'escenario menu-abierto' : 'escenario'}
           role="button"
           tabIndex={0}
           aria-label={action}
@@ -261,18 +266,23 @@ function Reloj({
               label={label}
               hint={pausado ? null : hint}
               describe={describe}
+              ancha={layout.ancha}
             />
           </div>
         </div>
         <SiteFooter
           lang={lang}
           visible={boton || menu}
+          estrecho={!layout.ancha}
+          oculto={menu && !layout.ancha}
+          pausado={pausado}
           onCookies={() => consentimiento.setBannerOpen(true)}
           onOpenLegal={(href, title) => setLegal({ href, title })}
         />
         {showAndroidPromo ? (
           <AndroidPromo
             lang={lang}
+            pausado={pausado}
             onDismiss={() => {
               writeAndroidPromoDismissed();
               setPromoDismissed(true);
@@ -284,7 +294,7 @@ function Reloj({
       <button
         type="button"
         id="menu-button"
-        className={boton ? 'menu-btn is-on' : 'menu-btn'}
+        className={boton ? 'menu-btn ayuda is-on' : 'menu-btn ayuda'}
         aria-label={t.openSettings}
         aria-expanded={menu}
         hidden={menu || pausado}
@@ -296,6 +306,9 @@ function Reloj({
       >
         <span className="bar long" />
         <span className="bar short" />
+        <span className="ayuda-texto" role="tooltip">
+          {t.openSettings}
+        </span>
       </button>
 
       {menu ? (
@@ -318,6 +331,7 @@ function Reloj({
         onChange={update}
         onClose={() => setMenu(false)}
         caja={calcularLayout(medios.ancho, medios.alto, true).menu}
+        estrecho={!layout.ancha}
       />
       {pausado ? <Pausa pista={hint} /> : null}
       <CookieBanner

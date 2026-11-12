@@ -1,4 +1,5 @@
-import type { Luz, ModoTema, Tema, UiTema } from './tipos';
+import type { Luz, RelojTema, Tema } from './tipos';
+import { uiDe } from './vidrio';
 
 function sombra(color: string, opacidad: number, desenfoque: number, inclinacion: number): Luz['sombra'] {
   return { color, opacidad, desenfoque, inclinacion };
@@ -11,41 +12,20 @@ function luz(parcial: Omit<Luz, 'nube'> & { nube?: Luz['nube'] }): Luz {
   };
 }
 
-const claro: UiTema = {
-  tinta: '#1c2a26',
-  tintaSuave: '#3d524c',
-  hora: '#4a4038',
-  pista: '#241f1b',
-  pausa: '#1c2a26',
-  menu: 'rgba(255, 255, 255, 0.86)',
-  menuSolido: '#f4f4f3',
-  borde: 'rgba(28, 42, 38, 0.14)',
-  pastilla: '#f7faf8',
-  pastillaTinta: '#1c2a26',
-  pie: '#6d8078',
-  halo: 'rgba(255, 252, 246, 0.7)',
-  barra: '#c5d0cb',
+/** Blanco roto sobre el gris medio. Decisión cerrada en la sección 7. */
+const relojClaro: RelojTema = {
+  digitos: '#F5F4F0',
+  pista: '#FFFFFF',
+  halo: '#141615',
+  haloOpacidad: 0.3,
 };
 
-const oscuro: UiTema = {
-  tinta: '#e7efeb',
-  tintaSuave: '#b7c4be',
-  hora: '#f3ece4',
-  pista: '#fffaf4',
-  pausa: '#e7efeb',
-  menu: 'rgba(8, 8, 10, 0.84)',
-  menuSolido: '#141416',
-  borde: 'rgba(231, 239, 235, 0.14)',
-  pastilla: '#d5e0da',
-  pastillaTinta: '#1c2a26',
-  pie: '#8ea099',
-  halo: 'rgba(12, 10, 8, 0.7)',
-  barra: '#1a2422',
+const relojOscuro: RelojTema = {
+  digitos: '#ECEAE6',
+  pista: '#F6F5F2',
+  halo: '#0C0D0C',
+  haloOpacidad: 0.25,
 };
-
-function modo(fondo: ModoTema['fondo'], valores: Luz, ui: UiTema, granos: ModoTema['granos']): ModoTema {
-  return { fondo, luz: valores, ui, granos };
-}
 
 /** Orbes cálidos a la izquierda del césped, donde se apoya el frasco. */
 export const lluvia: Tema = {
@@ -53,15 +33,22 @@ export const lluvia: Tema = {
   nombre: 'Lluvia',
   contenido: 'agua',
   nube: true,
+  adelantarArena: true,
+  adelantarNube: false,
   anclaSuelo: { x: 0.28, y: 0.8 },
-  claro: modo(
-    {
+  claro: {
+    fondo: {
       tipo: 'foto',
       src: '/fondos/lluvia-claro.webp',
       avif: '/fondos/lluvia-claro.avif',
       estrecho: { webp: '/fondos/lluvia-claro-estrecho.webp', avif: '/fondos/lluvia-claro-estrecho.avif' },
     },
-    luz({
+    reserva: '#c5cdc8',
+    reloj: relojClaro,
+    ui: uiDe('light', '#161816', '#181C1A'),
+    barra: '#c5d0cb',
+    granos: 'clara',
+    luz: luz({
       direccion: -102,
       tinte: '#ffe0b0',
       fuerzaTinte: 0.72,
@@ -71,17 +58,20 @@ export const lluvia: Tema = {
       sombra: sombra('#14241c', 0.42, 18, 32),
       nube: { brillo: 1, saturacion: 0.92, tinte: '#f4f7f6' },
     }),
-    claro,
-    'clara',
-  ),
-  oscuro: modo(
-    {
+  },
+  oscuro: {
+    fondo: {
       tipo: 'video',
       webm: '/fondos/lluvia-oscuro.webm',
       mp4: '/fondos/lluvia-oscuro.mp4',
       poster: '/fondos/lluvia-oscuro.webp',
     },
-    luz({
+    reserva: '#2c2824',
+    reloj: relojOscuro,
+    ui: uiDe('dark', '#F4F6F5', '#D5DBD8'),
+    barra: '#1a2422',
+    granos: 'oscura',
+    luz: luz({
       direccion: -102,
       tinte: '#ff8a2a',
       fuerzaTinte: 0.9,
@@ -91,7 +81,5 @@ export const lluvia: Tema = {
       sombra: sombra('#000000', 0.74, 20, 36),
       nube: { brillo: 0.62, saturacion: 0.55, tinte: '#9aa3a6' },
     }),
-    oscuro,
-    'oscura',
-  ),
+  },
 };

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 
+import './legal.css';
+
 interface Props {
   readonly src: string;
   readonly title: string;
@@ -67,16 +69,19 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   if (!doc || !win || win.location.href === 'about:blank') return;
-  const app = document.querySelector('.app');
+    const app = document.querySelector('.app');
   if (app) {
     const estilos = getComputedStyle(app);
-    for (const nombre of ['--ink', '--ink-soft', '--sheet-solid', '--line', '--footer', '--link']) {
+    for (const nombre of ['--tinta', '--tinta-suave', '--borde']) {
       const valor = estilos.getPropertyValue(nombre).trim();
       if (valor) doc.documentElement.style.setProperty(nombre, valor);
     }
-    doc.documentElement.style.setProperty('--fondo', 'transparent');
-    doc.documentElement.style.setProperty('--sheet-solid', 'transparent');
-    doc.documentElement.style.setProperty('--line', 'rgba(255, 255, 255, 0.28)');
+    doc.documentElement.style.setProperty('--legal-fondo', 'transparent');
+    /* El mismo esquema que la página: si no, Chromium pinta el iframe de blanco opaco. */
+    const esquema = estilos.colorScheme === 'dark' ? 'dark' : 'light';
+    frame.style.colorScheme = esquema;
+    doc.documentElement.style.colorScheme = esquema;
+    doc.body.style.backgroundColor = 'transparent';
   }
   const path = win.location.pathname;
   if (path === '/' || path === '') {

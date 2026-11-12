@@ -6,6 +6,7 @@ import {
   abrir,
   abrirMenu,
   asentarTamano,
+  enLimpio,
   fijarAngulo,
   leerReloj,
   lienzoFrasco,
@@ -27,7 +28,6 @@ test('el vidrio y el halo calculados llevan desenfoque', async ({ page }) => {
     vidrio: getComputedStyle(document.querySelector('.sheet.vidrio') as Element).backdropFilter,
     halo: getComputedStyle(document.querySelector('.halo') as Element).backdropFilter,
   }));
-  falloEsperado(1, 'en producción backdropFilter sale none porque el build deja solo el prefijo -webkit-');
   expect(estilos.vidrio, `.vidrio → ${estilos.vidrio}`).toContain('blur(');
   expect(estilos.halo, `.halo → ${estilos.halo}`).toContain('blur(');
 });
@@ -42,14 +42,13 @@ test('el fondo de los controles no tiene matiz', async ({ page }) => {
       return { sel, fondo: getComputedStyle(nodo).backgroundColor };
     };
     return [
-      leer('.chip.chip-on'),
-      leer('.chip:not(.chip-on)'),
-      leer('.pill.pill-fill'),
-      leer('.sheet-close'),
+      leer('.control[aria-checked="true"]'),
+      leer('.control[aria-checked="false"]'),
+      leer('.control[aria-pressed="true"]'),
+      leer('.menu-cerrar'),
     ];
   });
   for (const item of fondos) expect(item, 'falta un control').not.toBeNull();
-  falloEsperado(5, 'las pastillas elegidas usan el color del tema (chip-on, pill)');
   for (const item of fondos) {
     const rgb = parseRgb(item?.fondo ?? '');
     expect(rgb, item?.fondo).not.toBeNull();
@@ -57,6 +56,54 @@ test('el fondo de los controles no tiene matiz', async ({ page }) => {
     expect(Math.abs(rgb.r - rgb.g), `${item?.sel} ${item?.fondo}`).toBeLessThan(3);
     expect(Math.abs(rgb.g - rgb.b), `${item?.sel} ${item?.fondo}`).toBeLessThan(3);
   }
+});
+
+test('el texto del vidrio y del pie contrasta', async ({ browser }) => {
+  test.setTimeout(360_000);
+  const temas = ['lluvia', 'arena', 'clasico'] as const;
+  const modos = ['claro', 'oscuro'] as const;
+  const fallos: string[] = [];
+  for (const tema of temas) {
+    for (const modo of modos) {
+      await enLimpio(browser, async (page) => {
+        await abrir(page, { tema, modo, ancho: 1440, alto: 900 });
+        await abrirMenu(page);
+        const medidas: Array<[string, Medida]> = [
+          ['elegido', await contrastePeor(page, '.control[aria-checked="true"]', 0.2)],
+          ['libre', await contrastePeor(page, '.control[aria-checked="false"]', 0.2)],
+          ['pie', await contrasteDe(page, '.pie-enlace')],
+        ];
+        await page.locator('.menu-cerrar').click();
+        await page.locator('.sheet.open').waitFor({ state: 'hidden' });
+        await page.hover('.app');
+        await page.locator('a[href="/aviso-legal.html"]').click();
+        await page.locator('.legal-dialog').waitFor({ state: 'visible' });
+        const marco = page.frameLocator('.legal-dialog iframe');
+        await marco.locator('p').first().waitFor();
+        await page.waitForFunction(() => {
+          const marcoHtml = document.querySelector('.legal-dialog iframe');
+          if (!(marcoHtml instanceof HTMLIFrameElement)) return false;
+          const raiz = marcoHtml.contentDocument?.documentElement;
+          return Boolean(raiz && getComputedStyle(raiz).getPropertyValue('--tinta').trim());
+        });
+        medidas.push(['legal', await contrasteEnMarco(page, '.card p')]);
+        medidas.push(['legal-suave', await contrasteEnMarco(page, '.lang')]);
+        for (const [nombre, medida] of medidas) {
+          // El velo blanco al 30 % sobre negro queda en rgb(77). Con la misma tinta
+          // que la pastilla blanca del elegido, ese punto no llega a 4,5 (sección 3.8).
+          const sueloDelVelo =
+            nombre === 'libre' && medida.fondo.r < 90 && medida.fondo.g < 90 && medida.fondo.b < 90;
+          const minimo = sueloDelVelo ? 2 : 4.5;
+          if (medida.valor < minimo) {
+            fallos.push(
+              `${tema} ${modo} ${nombre} ${medida.valor.toFixed(2)} tinta ${rgbDe(medida.tinta)} fondo ${rgbDe(medida.fondo)}`,
+            );
+          }
+        }
+      });
+    }
+  }
+  expect(fallos, fallos.join('\n')).toEqual([]);
 });
 
 test('el menú no recorta contenido', async ({ page }) => {
@@ -98,28 +145,46 @@ test('la superficie del agua queda a menos de 1°', async ({ page }) => {
   const medidas: { pedido: number; grados: number; columnas: number; texto: string }[] = [];
   for (const grados of [0, 30, 45, 60]) {
     await fijarAngulo(page, grados);
-    const { data, w, h } = await lienzoFrasco(page);
-    const mascara = await mascaraEnFrasco(page, w, h, grados);
-    const arriba = pendienteSuperficie(
-      data,
-      w,
-      h,
-      { x: w * 0.2, y: h * 0.08, w: w * 0.6, h: h * 0.38 },
-      mascara,
-      'azul',
-    );
-    const abajo = pendienteSuperficie(
-      data,
-      w,
-      h,
-      { x: w * 0.2, y: h * 0.55, w: w * 0.6, h: h * 0.35 },
-      mascara,
-      'azul',
-    );
-    // Casi todo el agua está en el bulbo de arriba (quedan 04:30 de 05:00).
-    const usada = arriba.columnas >= 8 ? arriba : abajo;
-    const texto = `${grados}° → ${usada.grados.toFixed(1)}° (arriba ${arriba.grados.toFixed(1)}°/${arriba.columnas}, abajo ${abajo.grados.toFixed(1)}°/${abajo.columnas})`;
-    medidas.push({ pedido: grados, grados: usada.grados, columnas: usada.columnas, texto });
+    // El borde azul salta ±2° entre fotogramas. La mediana es el nivel quieto
+    // (en CI, a 0°, era 0,1°). Una sola lectura a veces pasa de 1° y tumba
+    // el test antes de la marca del agua inclinada.
+    const lecturas: { grados: number; columnas: number; texto: string }[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      await page.clock.runFor(180);
+      const { data, w, h } = await lienzoFrasco(page);
+      const mascara = await mascaraEnFrasco(page, w, h, grados);
+      const arriba = pendienteSuperficie(
+        data,
+        w,
+        h,
+        { x: w * 0.2, y: h * 0.08, w: w * 0.6, h: h * 0.38 },
+        mascara,
+        'azul',
+      );
+      const abajo = pendienteSuperficie(
+        data,
+        w,
+        h,
+        { x: w * 0.2, y: h * 0.55, w: w * 0.6, h: h * 0.35 },
+        mascara,
+        'azul',
+      );
+      const usada = arriba.columnas >= 8 ? arriba : abajo;
+      lecturas.push({
+        grados: usada.grados,
+        columnas: usada.columnas,
+        texto: `${grados}° → ${usada.grados.toFixed(1)}° (arriba ${arriba.grados.toFixed(1)}°/${arriba.columnas}, abajo ${abajo.grados.toFixed(1)}°/${abajo.columnas})`,
+      });
+    }
+    const orden = [...lecturas].sort((a, b) => Math.abs(a.grados) - Math.abs(b.grados));
+    const media = orden[Math.floor(orden.length / 2)];
+    if (!media) throw new Error(`sin lectura a ${grados}°`);
+    medidas.push({
+      pedido: grados,
+      grados: media.grados,
+      columnas: media.columnas,
+      texto: `${media.texto} · lecturas ${lecturas.map((l) => l.grados.toFixed(1)).join(', ')}`,
+    });
   }
   const detalle = medidas.map((m) => m.texto).join('\n');
   const recto = medidas.find((m) => m.pedido === 0);
@@ -168,23 +233,26 @@ test('el agua no sale marrón', async ({ page }) => {
   expect(color.r, 'R ≤ B').toBeLessThanOrEqual(color.b);
 });
 
-test('el contraste del reloj en Lluvia claro', async ({ page }) => {
-  await abrir(page, { tema: 'lluvia', modo: 'claro', ancho: 1440, alto: 900 });
-  const muestra = await contrasteReloj(page);
-  const texto = `dígitos ${muestra.digitos.toFixed(2)} · pista ${muestra.pista.toFixed(2)}`;
-  falloEsperado(5, 'el mismo marrón #4a4038 sobre el gris de Lluvia claro no llega a 3:1');
-  expect(muestra.digitos, texto).toBeGreaterThanOrEqual(3);
-  expect(muestra.pista, texto).toBeGreaterThanOrEqual(4.5);
-});
-
-test('el contraste del reloj en Arena oscuro', async ({ page }) => {
-  await abrir(page, { tema: 'arena', modo: 'oscuro', ancho: 1440, alto: 900 });
-  const muestra = await contrasteReloj(page);
-  const texto = `dígitos ${muestra.digitos.toFixed(2)} · pista ${muestra.pista.toFixed(2)}`;
-  // En 25fca17 el texto de Arena oscuro ya es claro sobre negro: esta medida pasa.
-  // Lluvia claro es la que se queda en ~2:1. No se marca fallo esperado.
-  expect(muestra.digitos, texto).toBeGreaterThanOrEqual(3);
-  expect(muestra.pista, texto).toBeGreaterThanOrEqual(4.5);
+test('el contraste del reloj en cada tema y modo', async ({ browser }) => {
+  const temas = ['lluvia', 'arena', 'clasico'] as const;
+  const modos = ['claro', 'oscuro'] as const;
+  const tamanos = [
+    { ancho: 1440, alto: 900 },
+    { ancho: 390, alto: 844 },
+  ] as const;
+  for (const tema of temas) {
+    for (const modo of modos) {
+      for (const tam of tamanos) {
+        await enLimpio(browser, async (page) => {
+          await abrir(page, { tema, modo, ancho: tam.ancho, alto: tam.alto });
+          const muestra = await contrasteReloj(page);
+          const texto = `${tema} ${modo} ${tam.ancho} dígitos ${muestra.digitos.toFixed(2)} · pista ${muestra.pista.toFixed(2)}`;
+          expect(muestra.digitos, texto).toBeGreaterThanOrEqual(3);
+          expect(muestra.pista, texto).toBeGreaterThanOrEqual(4.5);
+        });
+      }
+    }
+  }
 });
 
 test('el texto hablado coincide con 04:30', async ({ page }) => {
@@ -414,6 +482,106 @@ async function mascaraEscalada(page: Page, w: number, h: number): Promise<Uint8C
   return mascaraEnFrasco(page, w, h, 0);
 }
 
+interface Medida {
+  readonly valor: number;
+  readonly tinta: Rgb;
+  readonly fondo: Rgb;
+}
+
+function rgbDe({ r, g, b }: Rgb): string {
+  return `${Math.round(r)},${Math.round(g)},${Math.round(b)}`;
+}
+
+function medidaDe(tinta: Rgb, fondos: readonly Rgb[]): Medida {
+  const pares = fondos.map((fondo) => ({ fondo, valor: contraste(tinta, fondo) }));
+  pares.sort((a, b) => a.valor - b.valor);
+  const i = Math.min(pares.length - 1, Math.floor((pares.length - 1) * 0.05));
+  const peor = pares[i];
+  if (!peor) throw new Error('sin muestras de contraste');
+  return { valor: peor.valor, tinta, fondo: peor.fondo };
+}
+
+async function contrasteEnMarco(page: Page, selector: string): Promise<Medida> {
+  const nodo = page.frameLocator('.legal-dialog iframe').locator(selector).first();
+  const caja = await nodo.boundingBox();
+  if (!caja) throw new Error(`no hay ${selector} en el panel legal`);
+  const color = await nodo.evaluate((el) => getComputedStyle(el).color);
+  const tinta = parseRgb(color);
+  if (!tinta) throw new Error(`sin color legal en ${selector}: ${color}`);
+  await nodo.evaluate((el) => {
+    el.style.color = 'transparent';
+  });
+  const png = await page.screenshot({
+    clip: { x: caja.x, y: caja.y, width: Math.max(1, caja.width), height: Math.max(1, caja.height) },
+    animations: 'disabled',
+  });
+  return medidaDe(tinta, await muestrasPng(page, png.toString('base64')));
+}
+
+async function contrastePeor(page: Page, selector: string, recorte: number): Promise<Medida> {
+  const nodos = page.locator(selector);
+  const total = await nodos.count();
+  let peor: Medida | null = null;
+  for (let i = 0; i < total; i += 1) {
+    const medida = await contrasteDe(page, nodos.nth(i), recorte);
+    if (!peor || medida.valor < peor.valor) peor = medida;
+  }
+  if (!peor) throw new Error(`no hay ${selector}`);
+  return peor;
+}
+
+async function contrasteDe(
+  page: Page,
+  nodo: ReturnType<Page['locator']> | string,
+  recorte = 0,
+): Promise<Medida> {
+  const objetivo = typeof nodo === 'string' ? page.locator(nodo).first() : nodo;
+  const caja = await objetivo.boundingBox();
+  if (!caja) throw new Error('no hay caja del control');
+  const color = await objetivo.evaluate((el) => getComputedStyle(el).color);
+  const tinta = parseRgb(color);
+  if (!tinta) throw new Error(`sin color: ${color}`);
+  await objetivo.evaluate((el) => {
+    el.style.color = 'transparent';
+  });
+  const mx = caja.width * recorte;
+  const my = caja.height * recorte;
+  const png = await page.screenshot({
+    clip: {
+      x: caja.x + mx,
+      y: caja.y + my,
+      width: Math.max(1, caja.width - mx * 2),
+      height: Math.max(1, caja.height - my * 2),
+    },
+    animations: 'disabled',
+  });
+  return medidaDe(tinta, await muestrasPng(page, png.toString('base64')));
+}
+
+async function muestrasPng(page: Page, b64: string): Promise<Rgb[]> {
+  const planos = await page.evaluate(async (datos) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${datos}`;
+    await img.decode();
+    const lienzo = document.createElement('canvas');
+    lienzo.width = img.width;
+    lienzo.height = img.height;
+    const ctx = lienzo.getContext('2d');
+    if (!ctx) return [] as number[];
+    ctx.drawImage(img, 0, 0);
+    const px = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
+    const salida: number[] = [];
+    for (let i = 0; i < px.length; i += 16) salida.push(px[i] ?? 0, px[i + 1] ?? 0, px[i + 2] ?? 0);
+    return salida;
+  }, b64);
+  const muestras: Rgb[] = [];
+  for (let i = 0; i + 2 < planos.length; i += 3) {
+    muestras.push({ r: planos[i] ?? 0, g: planos[i + 1] ?? 0, b: planos[i + 2] ?? 0 });
+  }
+  if (muestras.length < 4) throw new Error('sin píxeles de fondo');
+  return muestras;
+}
+
 async function contrasteReloj(page: Page): Promise<{ digitos: number; pista: number }> {
   const caja = await page.locator('.readout').boundingBox();
   if (!caja) throw new Error('no hay .readout');
@@ -425,7 +593,7 @@ async function contrasteReloj(page: Page): Promise<{ digitos: number; pista: num
     const pista = pistaNodo instanceof Element ? getComputedStyle(pistaNodo).color : '';
     return {
       digitos: getComputedStyle(hora).color,
-      pista: pista || getComputedStyle(app).getPropertyValue('--hint').trim(),
+      pista: pista || getComputedStyle(app).getPropertyValue('--pista').trim(),
     };
   });
   if (!colores) throw new Error('no hay color de reloj');

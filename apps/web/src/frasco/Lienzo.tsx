@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 
 import { useFrasco, type ModeloFrasco } from './useFrasco';
+import './lienzo.css';
 
 export function Lienzo(modelo: ModeloFrasco) {
   const ref = useRef<HTMLCanvasElement>(null);

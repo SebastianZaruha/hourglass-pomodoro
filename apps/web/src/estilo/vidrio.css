@@ -1,0 +1,63 @@
+/* Un solo vidrio y un solo control. El color lo ponen las variables del modo. */
+
+.vidrio {
+  background: var(--velo-opaco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  box-shadow: none;
+  color: var(--tinta);
+  backdrop-filter: blur(var(--vidrio-blur)) saturate(var(--vidrio-saturacion)) brightness(var(--velo-brillo));
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .vidrio {
+    background: var(--velo);
+  }
+}
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2);
+  min-height: 40px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid color-mix(in srgb, var(--tinta) 22%, transparent);
+  border-radius: var(--radio-control);
+  background: transparent;
+  box-shadow: none;
+  color: var(--tinta);
+  font-family: inherit;
+  font-size: var(--texto-15);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.control:hover {
+  background: var(--control-hover);
+}
+
+.control[aria-checked='true'],
+.control[aria-pressed='true'] {
+  background: var(--control-elegido);
+  font-weight: 500;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 2px;
+}
+
+.control:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@media (pointer: coarse) {
+  .control {
+    min-height: 44px;
+  }
+}

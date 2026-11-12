@@ -3,6 +3,7 @@ import type { Language } from '@reloj/core';
 import { bannerCopy, PAGINAS } from '../copy';
 import type { ConsentChoice } from '../cookies';
 import { keepAppOnLegalClick } from './LegalOverlay';
+import './cookies.css';
 
 interface Props {
   readonly open: boolean;
@@ -17,16 +18,16 @@ export function CookieBanner({ open, lang, onChoose, onOpenLegal }: Props) {
   const hrefs = PAGINAS[lang];
   return (
     <div className="banner vidrio" role="region" aria-label={copy.label}>
-      <p>{copy.body}</p>
+      <p className="banner-texto">{copy.body}</p>
       <div className="banner-actions">
-        <button type="button" className="choice" onClick={() => onChoose('accepted')}>
+        <button type="button" className="control" onClick={() => onChoose('accepted')}>
           {copy.accept}
         </button>
-        <button type="button" className="choice" onClick={() => onChoose('rejected')}>
+        <button type="button" className="control" onClick={() => onChoose('rejected')}>
           {copy.reject}
         </button>
         <a
-          className="choice"
+          className="control"
           href={hrefs.cookies}
           onClick={(event) => {
             if (keepAppOnLegalClick(event)) onOpenLegal(hrefs.cookies, copy.more);

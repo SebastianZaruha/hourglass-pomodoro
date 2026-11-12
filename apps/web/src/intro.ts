@@ -33,8 +33,9 @@ export function useEntrada(): { className: string; blocksInput: boolean; settled
 
   if (fase === 'lista') return { className: '', blocksInput: false, settled: true };
   const extra = reducir ? ' entra-corta' : '';
+  const faseClase = fase === 'espera' ? 'entra entra-espera' : 'entra entra-sigue';
   return {
-    className: fase === 'espera' ? `entra entra-espera${extra}` : `entra${extra}`,
+    className: `${faseClase}${extra}`,
     blocksInput: true,
     settled: false,
   };

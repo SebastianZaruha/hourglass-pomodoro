@@ -1,20 +1,16 @@
 
-FALLO ESPERADO:  › chromium › baratas.spec.ts › el fondo de los controles no tiene matiz
-Error: .chip.chip-on rgb(197, 212, 204)
+FALLO ESPERADO:  › chromium › baratas.spec.ts › el menú no recorta contenido
+Error: 844x390: scroll 316 > cliente 162
 
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeLessThan[2m([22m[32mexpected[39m[2m)[22m
+[2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
 
-Expected: < [32m3[39m
-Received:   [31m15[39m
+[32m- Expected  - 1[39m
+[31m+ Received  + 3[39m
 
-
-FALLO ESPERADO:  › chromium › baratas.spec.ts › el vidrio y el halo calculados llevan desenfoque
-Error: .vidrio → none
-
-[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected substring: [32m"blur("[39m
-Received string:    [31m"none"[39m
+[32m- Array [][39m
+[31m+ Array [[39m
+[31m+   "844x390: scroll 316 > cliente 162",[39m
+[31m+ ][39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › el vídeo sigue al tema
@@ -26,28 +22,16 @@ Expected substring: [32m"arena"[39m
 Received string:    [31m"http://127.0.0.1:4173/fondos/lluvia-oscuro.webm"[39m
 
 
-FALLO ESPERADO:  › chromium › baratas.spec.ts › el menú no recorta contenido
-Error: 390x844: scroll 322 > cliente 310
-600x900: scroll 290 > cliente 278
-820x1180: scroll 303 > cliente 291
-1024x768: scroll 311 > cliente 299
-1440x900: scroll 299 > cliente 290
-844x390: scroll 308 > cliente 162
+FALLO ESPERADO:  › chromium › baratas.spec.ts › la superficie del agua queda a menos de 1°
+Error: 0° → 0.0° (arriba 0.0°/75, abajo -5.0°/82) · lecturas 0.0, 0.0, 0.0, 1.1, 1.4
+30° → -40.1° (arriba -40.1°/43, abajo 29.5°/49) · lecturas -40.1, -40.1, -40.1, -40.1, -40.1
+45° → -69.4° (arriba -69.4°/32, abajo 6.8°/35) · lecturas -69.4, -69.4, -69.4, -69.4, -69.4
+60° → -69.7° (arriba -69.7°/26, abajo -29.0°/32) · lecturas -69.7, -69.7, -69.7, -69.7, -69.7
 
-[2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBeLessThan[2m([22m[32mexpected[39m[2m)[22m
 
-[32m- Expected  - 1[39m
-[31m+ Received  + 8[39m
-
-[32m- Array [][39m
-[31m+ Array [[39m
-[31m+   "390x844: scroll 322 > cliente 310",[39m
-[31m+   "600x900: scroll 290 > cliente 278",[39m
-[31m+   "820x1180: scroll 303 > cliente 291",[39m
-[31m+   "1024x768: scroll 311 > cliente 299",[39m
-[31m+   "1440x900: scroll 299 > cliente 290",[39m
-[31m+   "844x390: scroll 308 > cliente 162",[39m
-[31m+ ][39m
+Expected: < [32m1[39m
+Received:   [31m40.134196436701785[39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › el agua llega a la máscara
@@ -57,27 +41,6 @@ Error: hueco 50 px · contraste borde 250.1 · 89 filas
 
 Expected: < [32m2[39m
 Received:   [31m50[39m
-
-
-FALLO ESPERADO:  › chromium › baratas.spec.ts › la superficie del agua queda a menos de 1°
-Error: 0° → 0.0° (arriba 0.0°/75, abajo -5.0°/82)
-30° → -40.1° (arriba -40.1°/43, abajo 29.5°/49)
-45° → -69.4° (arriba -69.4°/32, abajo 6.8°/35)
-60° → -69.7° (arriba -69.7°/26, abajo -28.9°/32)
-
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeLessThan[2m([22m[32mexpected[39m[2m)[22m
-
-Expected: < [32m1[39m
-Received:   [31m40.134196436701785[39m
-
-
-FALLO ESPERADO:  › chromium › baratas.spec.ts › el contraste del reloj en Lluvia claro
-Error: dígitos 2.22 · pista 3.60
-
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
-
-Expected: >= [32m3[39m
-Received:    [31m2.224790513839348[39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › el texto hablado coincide con 04:30
@@ -90,57 +53,55 @@ Received string:    [31m"Quedan 4 minutos y 58 segundos"[39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › el pie y los controles no se cortan desde 360 px
-Error: BUTTON.sheet-close: 64>36 «×»
-BUTTON.chip chip-on: 54>37 «5»
-BUTTON.chip: 59>42 «10»
-BUTTON.chip: 59>42 «15»
-BUTTON.chip: 62>45 «25»
-BUTTON.chip: 62>45 «45»
-BUTTON.chip: 62>45 «60»
-BUTTON.pill pill-fill pref: 105>95 «Automático»
-SPAN.: 80>56 «Automático»
-BUTTON.pill pill-fill pref: 99>95 «Español»
-SPAN.: 55>52 «Español»
-BUTTON.pill pref: 99>95 «Sonido»
+Error: SPAN.ayuda: 68>33 «×Cerrar ajustes»
+SPAN.ayuda: 111>97 «AutoTema: Automático»
+SPAN.ayuda: 104>97 «EspañolIdioma: Español»
 
 [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
 
-[32m- Expected  -  1[39m
-[31m+ Received  + 14[39m
+[32m- Expected  - 1[39m
+[31m+ Received  + 5[39m
 
 [32m- Array [][39m
 [31m+ Array [[39m
-[31m+   "BUTTON.sheet-close: 64>36 «×»",[39m
-[31m+   "BUTTON.chip chip-on: 54>37 «5»",[39m
-[31m+   "BUTTON.chip: 59>42 «10»",[39m
-[31m+   "BUTTON.chip: 59>42 «15»",[39m
-[31m+   "BUTTON.chip: 62>45 «25»",[39m
-[31m+   "BUTTON.chip: 62>45 «45»",[39m
-[31m+   "BUTTON.chip: 62>45 «60»",[39m
-[31m+   "BUTTON.pill pill-fill pref: 105>95 «Automático»",[39m
-[31m+   "SPAN.: 80>56 «Automático»",[39m
-[31m+   "BUTTON.pill pill-fill pref: 99>95 «Español»",[39m
-[31m+   "SPAN.: 55>52 «Español»",[39m
-[31m+   "BUTTON.pill pref: 99>95 «Sonido»",[39m
+[31m+   "SPAN.ayuda: 68>33 «×Cerrar ajustes»",[39m
+[31m+   "SPAN.ayuda: 111>97 «AutoTema: Automático»",[39m
+[31m+   "SPAN.ayuda: 104>97 «EspañolIdioma: Español»",[39m
 [31m+ ][39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › en reposo no se piden fotogramas
-Error: 44 fotogramas en 2 s con el reloj parado
+Error: 43 fotogramas en 2 s con el reloj parado
 
 [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
 Expected: [32m0[39m
-Received: [31m44[39m
+Received: [31m43[39m
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › al girar, el fotograma cabe en 8 ms
-Error: mediana 32.7 ms sobre 25 fotogramas
+Error: mediana 32.6 ms sobre 25 fotogramas
 
 [2mexpect([22m[31mreceived[39m[2m).[22mtoBeLessThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
 
 Expected: <= [32m8[39m
-Received:    [31m32.700000000186265[39m
+Received:    [31m32.60000000055879[39m
+
+
+FALLO ESPERADO:  › chromium › baratas.spec.ts › el botón del menú sigue en pausa
+Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator:  locator('#menu-button')
+Expected: visible
+Received: hidden
+Timeout:  15000ms
+
+Call log:
+[2m  - Expect "toBeVisible" locator('#menu-button') with timeout 15000ms[22m
+[2m  - waiting for locator('#menu-button')[22m
+[2m    33 × locator resolved to <button hidden="" type="button" id="menu-button" aria-expanded="false" class="menu-btn ayuda" aria-label="Abre el menú de ajustes">…</button>[22m
+[2m       - unexpected value "hidden"[22m
+
 
 
 FALLO ESPERADO:  › chromium › baratas.spec.ts › la precarga no pide tex-sand ni dos formatos del mismo fondo
@@ -168,25 +129,8 @@ Expected: [32mfalse[39m
 Received: [31mtrue[39m
 
 
-FALLO ESPERADO:  › chromium › baratas.spec.ts › el botón del menú sigue en pausa
-Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
-
-Locator:  locator('#menu-button')
-Expected: visible
-Received: hidden
-Timeout:  15000ms
-
-Call log:
-[2m  - Expect "toBeVisible" locator('#menu-button') with timeout 15000ms[22m
-[2m  - waiting for locator('#menu-button')[22m
-[2m    33 × locator resolved to <button hidden="" type="button" id="menu-button" class="menu-btn" aria-expanded="false" aria-label="Abre el menú de ajustes">…</button>[22m
-[2m       - unexpected value "hidden"[22m
-
-
-
 FALLO ESPERADO:  › chromium › barrido.spec.ts › barrido sin solapes
-Error: 384 solapes. Los primeros:
-cerrado 1440×390: frasco se sale
+Error: 442 solapes. Los primeros:
 menú 360×390: frasco solapa reloj
 menú 360×390: frasco solapa menú
 menú 360×390: reloj se sale
@@ -210,8 +154,9 @@ menú 480×390: frasco solapa menú
 menú 480×390: reloj se sale
 menú 500×390: frasco solapa reloj
 menú 500×390: frasco solapa menú
+menú 500×390: reloj se sale
 
 [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
 Expected: [32m0[39m
-Received: [31m384[39m
+Received: [31m442[39m

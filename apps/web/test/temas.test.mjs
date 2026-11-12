@@ -11,7 +11,8 @@ test('el texto del menú contrasta al menos 4.5 a 1 en cada tema y modo', async 
   try {
     for (const tema of mod.TEMAS) {
       for (const modo of [tema.claro, tema.oscuro]) {
-        const relacion = mod.contraste(modo.ui.tinta, modo.ui.menuSolido);
+        const papel = modo.ui.veloBrillo > 1 ? '#ffffff' : '#000000';
+        const relacion = mod.contraste(modo.ui.tinta, papel);
         assert.ok(relacion >= 4.5, `${tema.id} ${relacion.toFixed(2)}`);
       }
     }
@@ -70,8 +71,8 @@ test('la hora y la pista se leen sobre el muro claro', async () => {
       [mod.arena.claro, '#dcc19f'],
     ];
     for (const [modo, muro] of casos) {
-      assert.ok(mod.contraste(modo.ui.hora, muro) >= 3, modo.ui.hora);
-      assert.ok(mod.contraste(modo.ui.pista, muro) >= 4.5, modo.ui.pista);
+      assert.ok(mod.contraste(modo.reloj.digitos, muro) >= 3, modo.reloj.digitos);
+      assert.ok(mod.contraste(modo.reloj.pista, muro) >= 4.5, modo.reloj.pista);
     }
   } finally {
     cleanup();

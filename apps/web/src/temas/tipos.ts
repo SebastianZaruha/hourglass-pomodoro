@@ -23,20 +23,20 @@ export interface Luz {
   readonly nube: NubeLuz;
 }
 
+export interface RelojTema {
+  readonly digitos: string;
+  readonly pista: string;
+  readonly halo: string;
+  readonly haloOpacidad: number;
+}
+
+/** Tinta del texto y el vidrio de ese modo. El velo es blanco en los tres temas. */
 export interface UiTema {
   readonly tinta: string;
   readonly tintaSuave: string;
-  readonly hora: string;
-  readonly pista: string;
-  readonly pausa: string;
-  readonly menu: string;
-  readonly menuSolido: string;
+  readonly velo: string;
+  readonly veloBrillo: number;
   readonly borde: string;
-  readonly pastilla: string;
-  readonly pastillaTinta: string;
-  readonly pie: string;
-  readonly halo: string;
-  readonly barra: string;
 }
 
 export interface FotoEstrecha {
@@ -67,8 +67,13 @@ export type FondoTema =
 
 export interface ModoTema {
   readonly fondo: FondoTema;
+  /** Color plano mientras no llega la foto o el vídeo. */
+  readonly reserva: string;
   readonly luz: Luz;
+  readonly reloj: RelojTema;
   readonly ui: UiTema;
+  /** theme-color del navegador. */
+  readonly barra: string;
   readonly granos: 'clara' | 'oscura';
 }
 
@@ -84,6 +89,13 @@ export interface Tema {
   readonly anclaSuelo: { readonly x: number; readonly y: number };
   /** Lluvia lleva nube. El resto del código solo mira este flag. */
   readonly nube: boolean;
+  /**
+   * La precarga de hoy (causa 9) pide la textura de arena si el contenido
+   * no es arena, y el vídeo de la nube si el tema no es Lluvia.
+   * El campo guarda ese comportamiento hasta la fase de carga.
+   */
+  readonly adelantarArena: boolean;
+  readonly adelantarNube: boolean;
 }
 
 export function modoDe(tema: Tema, scheme: 'light' | 'dark'): ModoTema {

@@ -1,37 +1,18 @@
-import type { FondoTema, Luz, ModoTema, Tema, UiTema } from './tipos';
+import type { FondoTema, Luz, RelojTema, Tema } from './tipos';
+import { uiDe } from './vidrio';
 
-/** Los colores de «Claro» publicado: beige, hora suave, panel casi opaco. */
-const claro: UiTema = {
-  tinta: '#4f443b',
-  tintaSuave: '#6b5e53',
-  hora: '#4a4038',
-  pista: '#241f1b',
-  pausa: '#7d6e60',
-  menu: 'rgba(255, 255, 255, 0.86)',
-  menuSolido: '#f4f4f3',
-  borde: 'rgba(92, 78, 64, 0.12)',
-  pastilla: '#fffcf8',
-  pastillaTinta: '#3e342c',
-  pie: '#b3a698',
-  halo: 'rgba(255, 252, 246, 0.7)',
-  barra: '#ebe5dd',
+const relojClaro: RelojTema = {
+  digitos: '#36322F',
+  pista: '#24211F',
+  halo: '#FFFCF7',
+  haloOpacidad: 0.2,
 };
 
-/** Copia del oscuro publicado: hora y panel. El fondo es el estudio. */
-const oscuro: UiTema = {
-  tinta: '#f3ece3',
-  tintaSuave: '#cbbba8',
-  hora: '#f3ece4',
-  pista: '#fffaf4',
-  pausa: '#d9cbbc',
-  menu: 'rgba(8, 8, 10, 0.84)',
-  menuSolido: '#141416',
-  borde: 'rgba(255, 236, 214, 0.08)',
-  pastilla: '#d8c3a6',
-  pastillaTinta: '#3a312a',
-  pie: '#8a7d72',
-  halo: 'rgba(12, 10, 8, 0.7)',
-  barra: '#241c18',
+const relojOscuro: RelojTema = {
+  digitos: '#E4E0DA',
+  pista: '#F2EFEA',
+  halo: '#0C0B0A',
+  haloOpacidad: 0.25,
 };
 
 function foto(nombre: string): FondoTema {
@@ -69,16 +50,30 @@ const luzOscura: Luz = {
   nube: { brillo: 1, saturacion: 1, tinte: '#ffffff' },
 };
 
-function modo(fondo: FondoTema, ui: UiTema, granos: ModoTema['granos'], luz: Luz): ModoTema {
-  return { fondo, ui, granos, luz };
-}
-
 export const clasico: Tema = {
   id: 'clasico',
   nombre: 'Clásico',
   contenido: 'arena',
   nube: false,
+  adelantarArena: false,
+  adelantarNube: true,
   anclaSuelo: { x: 0.32, y: 0.8 },
-  claro: modo(foto('clasico-claro'), claro, 'clara', luzClara),
-  oscuro: modo(foto('clasico-oscuro'), oscuro, 'oscura', luzOscura),
+  claro: {
+    fondo: foto('clasico-claro'),
+    reserva: '#e8dfd4',
+    reloj: relojClaro,
+    ui: uiDe('light', '#36322F', '#4A453F'),
+    barra: '#ebe5dd',
+    granos: 'clara',
+    luz: luzClara,
+  },
+  oscuro: {
+    fondo: foto('clasico-oscuro'),
+    reserva: '#2a2422',
+    reloj: relojOscuro,
+    ui: uiDe('dark', '#F2EFEA', '#DDD6CC'),
+    barra: '#241c18',
+    granos: 'oscura',
+    luz: luzOscura,
+  },
 };

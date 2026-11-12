@@ -1,3 +1,4 @@
+import { PINTURA } from '../estilo/tokens';
 import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import { vectorLuz } from './alpha';
@@ -46,7 +47,7 @@ export function aplicarLuz(
     );
     const noche = Math.min(0.82, 0.22 + (1 - Math.min(1, luz.brillo)) * 0.55);
     grad.addColorStop(0, luz.tinte);
-    grad.addColorStop(0.34, 'rgba(255,255,255,0.12)');
+    grad.addColorStop(0.34, PINTURA.luzMedia);
     grad.addColorStop(1, `rgba(0,0,0,${noche.toFixed(3)})`);
     g.fillStyle = grad;
     g.fillRect(0, 0, w, h);
@@ -56,8 +57,8 @@ export function aplicarLuz(
     const radio = w * (0.2 + luz.brilloBorde * 0.22);
     const foco = g.createRadialGradient(hx, hy, 2, hx, hy, radio);
     foco.addColorStop(0, luz.tinte);
-    foco.addColorStop(0.42, 'rgba(255,255,255,0.7)');
-    foco.addColorStop(1, 'rgba(255,255,255,0)');
+    foco.addColorStop(0.42, PINTURA.focoMedio);
+    foco.addColorStop(1, PINTURA.focoFin);
     g.globalCompositeOperation = 'screen';
     g.globalAlpha = Math.min(1, 0.2 + luz.brilloBorde * 0.8);
     g.fillStyle = foco;
@@ -88,9 +89,9 @@ export function aplicarLuz(
       w / 2 - dir.x * w * 0.4,
       h / 2 - dir.y * h * 0.35,
     );
-    mascara.addColorStop(0, '#fff');
-    mascara.addColorStop(0.5, 'rgba(255,255,255,0.22)');
-    mascara.addColorStop(1, 'rgba(255,255,255,0)');
+    mascara.addColorStop(0, PINTURA.mascara0);
+    mascara.addColorStop(0.5, PINTURA.mascaraMedia);
+    mascara.addColorStop(1, PINTURA.mascaraFin);
     g2.globalCompositeOperation = 'destination-in';
     g2.globalAlpha = 1;
     g2.fillStyle = mascara;

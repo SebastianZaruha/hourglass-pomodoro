@@ -3,6 +3,7 @@ import type { SandSimulation, StreamParticles } from '@reloj/core';
 import type { Caja } from '../layout/calcularLayout';
 import { JAR_NECK_Y } from './jarTabla';
 import { lineaMenisco, poligonoLiquido } from './fisica/agua';
+import { PINTURA } from '../estilo/tokens';
 import { dibujarChorro } from './granos';
 
 export interface ContenidoFrame {
@@ -107,9 +108,9 @@ export function dibujarContenido(ctx: CanvasRenderingContext2D, frame: Contenido
  */
 function aguaEnVidrio(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(214, 232, 238, 0.28)');
-  grad.addColorStop(0.45, 'rgba(168, 198, 210, 0.34)');
-  grad.addColorStop(1, 'rgba(92, 132, 148, 0.46)');
+  grad.addColorStop(0, PINTURA.agua[0]);
+  grad.addColorStop(0.45, PINTURA.agua[1]);
+  grad.addColorStop(1, PINTURA.agua[2]);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 }
@@ -133,7 +134,7 @@ function menisco(
       else ctx.lineTo(x, y);
     });
   };
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = PINTURA.menisco;
   ctx.lineWidth = Math.max(0.6, w * 0.0016);
   trazo();
   ctx.stroke();
@@ -143,7 +144,7 @@ function menisco(
 function lluvia(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const cuello = JAR_NECK_Y * h;
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = PINTURA.lluvia;
   ctx.lineWidth = 1;
   ctx.lineCap = 'round';
   const ahora = performance.now() / 1000;

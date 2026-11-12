@@ -8,7 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: process.env.HG_FASE ? '**/*.captura.ts' : '**/*.spec.ts',
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,

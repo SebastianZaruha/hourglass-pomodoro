@@ -20,7 +20,10 @@ import {
 /**
  * Punto de partida, no referencias. Cada png es el build de producción
  * de 25fca17 para que se vea desde dónde se parte.
+ * Congelado: una corrida normal no los vuelve a escribir.
+ * HG_PUNTO=1 los regenera a propósito.
  */
+test.skip(process.env.HG_PUNTO !== '1', 'El punto de partida de la fase 0 queda congelado.');
 
 for (const tema of TEMAS) {
   for (const modo of MODOS) {

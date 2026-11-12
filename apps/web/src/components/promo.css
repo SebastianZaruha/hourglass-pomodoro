@@ -1,0 +1,90 @@
+.app-promo {
+  position: fixed;
+  z-index: 23;
+  left: clamp(0.7rem, 2.4vw, 1.15rem);
+  bottom: calc(2.65rem + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(28rem, calc(100% - 5.4rem));
+  padding: 0.45rem 0.35rem 0.45rem 0.75rem;
+  color: var(--tinta);
+  animation: app-promo-in var(--duracion-normal) ease both;
+}
+
+.app-promo.promo-pausa {
+  display: none;
+}
+
+.app-promo > .ayuda {
+  flex: none;
+}
+
+.app-promo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+
+.app-promo-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.app-promo-pitch,
+.app-promo-install {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--tinta-suave);
+}
+
+.app-promo-install {
+  margin-top: 0.12rem;
+}
+
+.app-promo-action {
+  flex: none;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.promo-cerrar {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--radio-boton);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+@media (max-width: 40rem) {
+  .app-promo {
+    bottom: calc(4.15rem + env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes app-promo-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--espacio-2));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-promo {
+    animation: none;
+  }
+}

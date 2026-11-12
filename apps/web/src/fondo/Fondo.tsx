@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { encuadreFondo } from './encuadre';
 import { colorDeFondo } from '../medios/assetLoader';
 import type { FondoTema, ModoTema } from '../temas/tipos';
+import './fondo.css';
 
 interface Props {
   readonly modo: ModoTema;
@@ -42,7 +43,7 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho
     return () => document.removeEventListener('visibilitychange', alVer);
   }, [clave]);
 
-  const base = { background: colorDeFondo(fondo) };
+  const base = { background: colorDeFondo(modo) };
 
   if (fondo.tipo === 'degradado') return <div className="fondo degradado" style={base} />;
 
@@ -61,9 +62,10 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho
   const video = !reducir && !ahorro && !fallo;
   return (
     <div className="fondo" style={base}>
-      <img src={fondo.poster} alt="" style={estilo} />
+      <img className="fondo-medio" src={fondo.poster} alt="" style={estilo} />
       {video ? (
         <video
+          className="fondo-medio"
           ref={videoRef}
           style={{ ...estilo, opacity: listo ? 1 : 0 }}
           muted
@@ -101,7 +103,7 @@ function Foto({
       {chica ? <source media="(max-width: 700px)" srcSet={chica.webp} type="image/webp" /> : null}
       {fondo.avif ? <source srcSet={fondo.avif} type="image/avif" /> : null}
       {fondo.jpg ? <source srcSet={fondo.src} type="image/webp" /> : null}
-      <img src={fondo.jpg ?? fondo.src} alt="" style={estilo} />
+      <img className="fondo-medio" src={fondo.jpg ?? fondo.src} alt="" style={estilo} />
     </picture>
   );
 }

@@ -1,3 +1,5 @@
+import './pausa.css';
+
 interface Props {
   readonly pista: string | null;
 }

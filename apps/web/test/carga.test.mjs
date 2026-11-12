@@ -25,7 +25,7 @@ test('el prefetch pide primero el otro modo y no adelanta vídeos con ahorro', a
     assert.equal(mod.conexionAhorro({ saveData: true }), true);
     assert.equal(mod.conexionAhorro({ effectiveType: '2g' }), true);
     assert.equal(mod.conexionAhorro({ effectiveType: '4g' }), false);
-    assert.match(mod.colorDeFondo(mod.TEMAS[0].claro.fondo), /^#/);
+    assert.match(mod.colorDeFondo(mod.TEMAS[0].claro), /^#/);
   } finally {
     cleanup();
   }

@@ -1,0 +1,79 @@
+.reloj {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.readout {
+  position: relative;
+  text-align: center;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.readout-ancha {
+  transform: translateY(calc(-1 * var(--clock-lift, 0px)));
+  transition: transform var(--duracion-lenta) var(--curva);
+}
+
+.halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 130%;
+  height: 170%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: 0;
+  background: color-mix(in srgb, var(--halo) var(--halo-alfa), transparent);
+  backdrop-filter: blur(var(--halo-blur));
+  mask-image: radial-gradient(closest-side, black 40%, transparent 100%);
+}
+
+.time {
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  color: var(--hora);
+}
+
+.hora-ancha {
+  font-size: clamp(2.7rem, min(6.8vw, 14vh), 7.25rem);
+}
+
+.hora-estrecha {
+  font-size: clamp(3.15rem, min(16vw, 11vh), 5.4rem);
+}
+
+.status {
+  margin-top: 0.55rem;
+  font-weight: 400;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+  color: var(--hora);
+}
+
+.hint {
+  margin: 0.4rem 0 0;
+  font-weight: 400;
+  font-size: var(--texto-15);
+  color: var(--pista);
+}
+
+.pista-estrecha {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readout {
+    transition: none;
+  }
+}
