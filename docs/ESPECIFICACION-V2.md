@@ -57,7 +57,7 @@ interface ModoTema {
   reserva: string;             // color mientras no llega nada
   luz: LuzMundo;               // dirección EN EL MUNDO, intensidad, brillo de borde, sombra
   contenido: ContenidoTema;    // agua { color, opacidad } o arena { tonos[], tamaño }
-  reloj: { digitos: string; pista: string; halo: string; haloOpacidad: number };
+  reloj: { digitos: string; pista: string };
   ui: { tinta: string; tintaSuave: string; velo: string; veloBrillo: number; borde: string };
   barra: string;               // theme-color del navegador
 }
@@ -90,7 +90,7 @@ Lo que **no** cambia entre temas vive una sola vez en `estilo/tokens.ts` (y de a
 
 - En el código fuente se escribe solo `backdrop-filter`. El prefijo `-webkit-` lo añade el compilador.
 - `vite.config.ts` fija los navegadores objetivo (`css.lightningcss.targets`, equivalente a Chrome ≥ 111, Safari ≥ 16, Firefox ≥ 115) para que la salida sea predecible.
-- `scripts/comprobar-dist.mjs` se ejecuta tras `vite build` y **falla** si en el CSS compilado alguna regla de `.vidrio` o del halo no tiene `backdrop-filter:` sin prefijo.
+- `scripts/comprobar-dist.mjs` se ejecuta tras `vite build` y **falla** si en el CSS compilado alguna regla de `.vidrio` no tiene `backdrop-filter:` sin prefijo.
 - stylelint prohíbe escribir `-webkit-backdrop-filter` a mano.
 
 ### N6. Una sola función de colocación, con medidas reales
@@ -148,26 +148,30 @@ Lo que **no** cambia entre temas vive una sola vez en `estilo/tokens.ts` (y de a
 **Aspecto:**
 - Dígitos en Manrope 200, cifras tabulares (no bailan al cambiar), sin tarjeta ni borde.
 - Debajo, la pista («clic para empezar · rueda para cambiar el tiempo») en 15 px, peso 400.
-- **Halo:** una zona de desenfoque suave detrás del bloque, sin bordes visibles. `backdrop-filter: blur(14px)` y un velo del color `reloj.halo`, con una máscara radial que se desvanece del 40 % al 100 %. Mide 1,3 × el ancho del bloque y 1,7 × su alto. Su función es garantizar el contraste cuando el fondo es variado; no debe verse como forma.
+- **Sin halo ni fondo de ningún tipo** (decisión de Sebastián, 12 nov 2026, en todos los escenarios). Nada detrás del reloj: ni desenfoque, ni velo, ni sombra, ni `text-shadow`. Se borra `reloj.halo`/`haloOpacidad` del tema y el elemento del halo.
 
-**Paleta (decidida midiendo el fondo real detrás del reloj):**
+**Paleta: discreta, «que se vea pero que no destaque»**
 
-He medido los píxeles de cada fondo en la zona donde va el reloj, a 1440×900 y a 390×844. El criterio es: **colores neutros** (casi sin matiz, como mucho un 3 % de saturación cálida o fría para que no parezcan grises de oficina), **claros sobre fondo oscuro y oscuros sobre fondo claro**, eligiendo según la luminancia real del fondo, no según el nombre del modo.
+Criterio: tonos neutros (≤ 3 % de saturación) y **apagados**, más oscuros que la paleta anterior en todos los modos. En los modos claros (y en Lluvia claro, que es gris medio) un gris carbón suave; en los oscuros, un gris medio-claro tenue, claramente más oscuro que los casi blancos de antes. El color se ajusta midiendo el fondo real detrás del reloj **sin halo**, para que quede dentro de esta banda:
 
-| Tema · modo | Fondo detrás (medido) | Dígitos | Pista | Halo | Contraste medido con halo (peor 5 %) |
-|---|---|---|---|---|---|
-| Lluvia · claro | gris verdoso medio, L ≈ 0,16 | `#F5F4F0` | `#FFFFFF` | `#141615` al 30 % | dígitos 4,6 · pista 5,1 |
-| Lluvia · oscuro | marrón muy oscuro, L ≈ 0,03 | `#ECEAE6` | `#F6F5F2` | `#0C0D0C` al 25 % | 9,7 · 10,7 |
-| Arena · claro | tostado, L ≈ 0,38 | `#2A2623` | `#1C1A18` | `#FFF8EE` al 22 % | 7,1 · 8,3 |
-| Arena · oscuro | casi negro cálido, L ≈ 0,007 | `#EDEAE5` | `#F6F4F0` | `#0C0A09` al 25 % | 14,2 · 15,5 |
-| Clásico · claro | crema, L ≈ 0,63 | `#36322F` | `#24211F` | `#FFFCF7` al 20 % | 8,3 · 10,4 |
-| Clásico · oscuro | carbón, L ≈ 0,01 | `#E4E0DA` | `#F2EFEA` | `#0C0B0A` al 25 % | 8,5 · 9,7 |
+- Dígitos: contraste entre **2,5:1 y 4:1** (peor 5 % de píxeles del fondo en la zona del reloj), en todas las anchuras del plan de tests. Por debajo no se ve; por encima destaca demasiado.
+- Pista: mismo tono un punto más marcado, contraste **≥ 3:1** y ≤ 5:1.
+- Valores de partida (ya sustituidos por la medida): Lluvia claro `#2E302F` · Lluvia oscuro `#8F8B86` · Arena claro `#4A4541` · Arena oscuro `#7E7A75` · Clásico claro `#5A5550` · Clásico oscuro `#86817B`.
 
-**Por qué así:**
-- El reloj de ahora usa el mismo marrón `#4a4038` en los tres modos claros. Sobre Lluvia claro, que es un gris medio, da 2:1 (ilegible y «sucio»), y en Arena oscuro el reloj llegó a salir marrón oscuro sobre negro.
-- **Lluvia claro es el único caso delicado.** Su fondo es gris medio: los dígitos oscuros solo llegan a 3:1 y la pista no llega nunca a 4,5:1. Los claros, con un halo un poco oscuro, sí llegan. Por eso Lluvia claro lleva dígitos casi blancos aunque el modo se llame «claro».
-- Los dígitos no son blanco puro (`#FFF`) en los oscuros para que no deslumbren; la pista sí es un punto más clara que los dígitos porque es texto pequeño.
-- Mínimos que se exigen siempre: dígitos ≥ 3:1 y pista ≥ 4,5:1, medidos en la captura real (con halo) en todas las anchuras del plan de tests.
+Contraste medido en la captura de producción, sin halo, peor 5 % de los píxeles de la zona del reloj. Grises neutros (saturación 0).
+
+| Tema · modo | Dígitos | Pista | 1440×900 dígitos / pista | 390×844 dígitos / pista |
+|---|---|---|---|---|
+| Lluvia claro | `#151515` | `#0A0A0A` | 3,57 / 3,87 | 2,92 / 3,16 |
+| Lluvia oscuro | `#8B8B8B` | `#9C9C9C` | 3,88 / 4,82 | 2,67 / 3,31 |
+| Arena claro | `#5D5D5D` | `#505050` | 2,99 / 3,66 | 3,51 / 4,29 |
+| Arena oscuro | `#737373` | `#828282` | 3,55 / 4,38 | 2,93 / 3,62 |
+| Clásico claro | `#727272` | `#626262` | 2,93 / 3,72 | 3,52 / 4,47 |
+| Clásico oscuro | `#787878` | `#888888` | 3,75 / 4,67 | 1,12 / 1,40 |
+
+Clásico oscuro en 390 queda fuera de la banda. Ahí el reloj se apoya en el suelo claro (luminancia ≈ 0,16) y en 1440 en el muro casi negro (≈ 0,013). Con un gris más claro que los dos fondos, el contraste en el muro es unas 3,3 veces el del suelo: para que el suelo llegue a 2,5:1, el muro se va a 8:1. El gris elegido deja el muro en 3,75:1 y el suelo en 1,12:1. El test no deja aclararlo para «arreglar» el suelo.
+
+**Por qué así:** Sebastián quiere un reloj presente pero sereno, que forme parte de la escena en vez de imponerse; el halo se veía como mancha. La banda de contraste lo hace comprobable con un test y evita que en el futuro alguien lo «arregle» subiéndolo a blanco o añadiendo fondo.
 
 **Comportamiento:**
 - **Siempre visible.** No comparte la lógica de autoocultado del botón del menú.
@@ -434,8 +438,8 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 Cada uno es comprobable; los marcados **(auto)** los comprueba un test y los marcados **(ojo)** los apruebas tú sobre capturas de producción. «En todas las anchuras» significa 390 × 844, 600 × 900, 820 × 1180, 1024 × 768 y 1440 × 900, en 3 temas × 2 modos.
 
 **Build y normas**
-1. **(auto)** El CSS compilado tiene `backdrop-filter:` sin prefijo en `.vidrio` y en el halo del reloj.
-2. **(auto)** `getComputedStyle` de `.vidrio` y del halo en la preview de producción contiene `blur(`.
+1. **(auto)** El CSS compilado tiene `backdrop-filter:` sin prefijo en `.vidrio`.
+2. **(auto)** `getComputedStyle` de `.vidrio` en la preview de producción contiene `blur(`.
 3. **(auto)** Cero colores literales fuera de `temas/` y `estilo/tokens.ts`. Cero comparaciones con ids de tema fuera de `temas/`. Cero `!important`. Especificidad ≤ 0,2,0.
 4. **(auto)** `npm run check` en verde: tipos, lint, stylelint, tests unitarios, tests visuales y comprobación de `dist/`.
 
@@ -447,7 +451,7 @@ Cada uno es comprobable; los marcados **(auto)** los comprueba un test y los mar
 9. **(auto)** El pie y todos los controles cumplen `scrollWidth ≤ clientWidth` (nada cortado ni con «…») desde 360 px.
 
 **Reloj y textos**
-10. **(auto)** Contraste medido en la captura de producción, en la zona del reloj: dígitos ≥ 3:1 y pista ≥ 4,5:1 en todas las anchuras, temas y modos.
+10. **(auto)** Contraste medido en la captura de producción, en la zona del reloj: dígitos entre 2,5:1 y 4:1 y pista entre 3:1 y 5:1, sin halo, en todas las anchuras, temas y modos, salvo Clásico oscuro a 390×844 (ver la tabla de 3.2: el mismo gris no cabe en el suelo y en el muro). Y no existe ningún elemento de halo ni `text-shadow` en el reloj.
 11. **(auto)** Texto de controles (elegidos y no elegidos), del pie y del panel legal ≥ 4,5:1 medido en la captura.
 12. **(auto)** El texto hablado del tiempo coincide con lo visible según la regla de 3.2 (con reloj congelado en 04:30, dice «5 minutos»; en pausa a 04:30 dice «4 minutos 30 segundos»).
 13. **(auto)** En pausa, el botón del menú existe, es visible al mover el puntero y abre el menú.
@@ -522,7 +526,7 @@ Se escriben **primero**, en la fase 0, y deben fallar sobre `25fca17`. Dicen *po
 
 | Comprobación | Hoy |
 |---|---|
-| `backdropFilter` calculado de `.vidrio` y halo contiene `blur(` | falla (`none`) |
+| `backdropFilter` calculado de `.vidrio` contiene `blur(` | falla (`none`) |
 | `dist/*.css` contiene `backdrop-filter:` sin prefijo | falla |
 | Fondo de controles sin matiz (diferencias R−G y G−B < 3 en valor absoluto) | falla (pastillas teñidas) |
 | Menú: `scrollHeight ≤ clientHeight + 1` en las 5 anchuras | falla (corta 10-23 px) |
@@ -569,7 +573,7 @@ Las fases van de los cimientos hacia fuera, para que lo de encima no se rompa al
 
 ## 7. Decisiones cerradas por Sebastián (12 nov 2026)
 
-1. **Reloj de Lluvia claro en blanco roto** (`#F5F4F0`, pista `#FFF`, halo oscuro). Confirmado.
+1. **Reloj discreto y más oscuro en todos los escenarios, sin halo ni fondo** (12 nov 2026, sustituye al blanco roto de Lluvia claro). Ver 3.2.
 2. **En estrecho el reloj va abajo y centrado, debajo del frasco, como en la web actual.** «Arriba a la derecha» es solo para la disposición ancha. Confirmado.
 3. **Pantallas muy bajas con el menú abierto:** se aplica lo propuesto (el reloj en ancho o el frasco en estrecho se desvanecen mientras el menú está abierto; sin scroll visible). Si al verlo no le gusta, se revisa.
 4. **Trabajo:** rama nueva `feature/web-v2` creada desde `feature/web-escenas` (`25fca17`). `feature/web-escenas` se queda como copia de seguridad.

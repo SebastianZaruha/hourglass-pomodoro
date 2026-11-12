@@ -17,8 +17,6 @@ export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' |
   const vars: Record<string, string> = {
     '--hora': modo.reloj.digitos,
     '--pista': modo.reloj.pista,
-    '--halo': modo.reloj.halo,
-    '--halo-alfa': `${modo.reloj.haloOpacidad * 100}%`,
     '--tinta': modo.ui.tinta,
     '--tinta-suave': modo.ui.tintaSuave,
     '--velo': modo.ui.velo,

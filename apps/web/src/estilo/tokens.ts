@@ -14,7 +14,6 @@ export const DURACION_LENTA = 620;
 export const CURVA = 'cubic-bezier(0.33, 0, 0.2, 1)';
 export const VIDRIO_BLUR = 36;
 export const VIDRIO_SATURACION = 1.1;
-export const HALO_BLUR = 14;
 
 /** Velo blanco, sin matiz. Claro 30 %, oscuro 7 %. */
 export const VIDRIO_CLARO = {

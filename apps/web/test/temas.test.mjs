@@ -65,7 +65,7 @@ test('la hora y la pista se leen sobre el muro claro', async () => {
      export { contraste } from './src/temas/contraste.ts';\n`,
   );
   try {
-    // El muro más claro detrás del reloj, con el halo ya mezclado.
+    // Muro claro de estudio, sin halo. La banda real la mide Playwright.
     const casos = [
       [mod.clasico.claro, '#e7dfd3'],
       [mod.arena.claro, '#dcc19f'],

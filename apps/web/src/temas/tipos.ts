@@ -26,8 +26,6 @@ export interface Luz {
 export interface RelojTema {
   readonly digitos: string;
   readonly pista: string;
-  readonly halo: string;
-  readonly haloOpacidad: number;
 }
 
 /** Tinta del texto y el vidrio de ese modo. El velo es blanco en los tres temas. */

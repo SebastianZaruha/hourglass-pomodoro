@@ -20,7 +20,6 @@
   --curva: cubic-bezier(0.33, 0, 0.2, 1);
   --vidrio-blur: 36px;
   --vidrio-saturacion: 1.1;
-  --halo-blur: 14px;
   font-family: Manrope, 'Segoe UI', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

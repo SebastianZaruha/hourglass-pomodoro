@@ -37,7 +37,6 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe, ancha
 
   return (
     <div className={ancha ? 'readout readout-ancha' : 'readout'}>
-      <div className="halo" aria-hidden="true" />
       <p className="sr-only" aria-live="polite">
         {label ? `${label}. ` : ''}
         {live}

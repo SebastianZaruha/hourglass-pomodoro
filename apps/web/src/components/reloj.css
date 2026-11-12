@@ -20,21 +20,6 @@
   transition: transform var(--duracion-lenta) var(--curva);
 }
 
-.halo {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: -1;
-  width: 130%;
-  height: 170%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  border: 0;
-  background: color-mix(in srgb, var(--halo) var(--halo-alfa), transparent);
-  backdrop-filter: blur(var(--halo-blur));
-  mask-image: radial-gradient(closest-side, black 40%, transparent 100%);
-}
-
 .time {
   font-weight: 200;
   font-variant-numeric: tabular-nums;

@@ -2,17 +2,19 @@ import type { FondoTema, Luz, RelojTema, Tema } from './tipos';
 import { uiDe } from './vidrio';
 
 const relojClaro: RelojTema = {
-  digitos: '#36322F',
-  pista: '#24211F',
-  halo: '#FFFCF7',
-  haloOpacidad: 0.2,
+  digitos: '#727272',
+  pista: '#626262',
 };
 
+/**
+ * En ancho el reloj cae sobre el muro casi negro; en estrecho, sobre el suelo
+ * claro. Un solo gris no entra en la banda de 3.2 en los dos sitios. Este
+ * cumple la banda en 1440. En 390 queda por debajo: aclararlo sacaría el muro
+ * de la banda.
+ */
 const relojOscuro: RelojTema = {
-  digitos: '#E4E0DA',
-  pista: '#F2EFEA',
-  halo: '#0C0B0A',
-  haloOpacidad: 0.25,
+  digitos: '#787878',
+  pista: '#888888',
 };
 
 function foto(nombre: string): FondoTema {

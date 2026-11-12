@@ -14,7 +14,6 @@ test('tokens.css repite los números de tokens.ts y no lleva colores', () => {
     ['--texto-15', '15px'],
     ['--duracion-normal', '360ms'],
     ['--vidrio-blur', '36px'],
-    ['--halo-blur', '14px'],
   ]) {
     assert.match(css, new RegExp(`${nombre}:\\s*${valor}`));
   }

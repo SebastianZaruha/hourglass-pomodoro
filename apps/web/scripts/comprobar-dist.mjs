@@ -1,6 +1,6 @@
 /**
  * Falla si el CSS de producción no deja `backdrop-filter` sin prefijo
- * en el vidrio o en el halo. Lightning CSS, si el fuente escribe las dos,
+ * en el vidrio. Lightning CSS, si el fuente escribe las dos,
  * se queda solo con `-webkit-backdrop-filter`, y Chrome y Firefox lo ignoran.
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -28,9 +28,9 @@ const reglas = css
     };
   });
 
-const deVidrio = reglas.filter((regla) => /(^|[^\w-])(\.vidrio|\.halo)(?![\w-])/.test(regla.selector));
+const deVidrio = reglas.filter((regla) => /(^|[^\w-])\.vidrio(?![\w-])/.test(regla.selector));
 if (deVidrio.length === 0) {
-  console.error('El CSS compilado no tiene reglas .vidrio ni .halo.');
+  console.error('El CSS compilado no tiene reglas .vidrio.');
   process.exit(1);
 }
 
@@ -44,20 +44,11 @@ for (const regla of deVidrio) {
   }
 }
 
-const vidrio = deVidrio.some(
-  (regla) => regla.selector.includes('.vidrio') && /(?<!-)backdrop-filter\s*:/.test(regla.cuerpo),
-);
-const halo = deVidrio.some(
-  (regla) => regla.selector.includes('.halo') && /(?<!-)backdrop-filter\s*:/.test(regla.cuerpo),
-);
+const vidrio = deVidrio.some((regla) => /(?<!-)backdrop-filter\s*:/.test(regla.cuerpo));
 if (!vidrio) {
   console.error('Ninguna regla .vidrio del CSS compilado tiene backdrop-filter sin prefijo.');
   mal = true;
 }
-if (!halo) {
-  console.error('Ninguna regla .halo del CSS compilado tiene backdrop-filter sin prefijo.');
-  mal = true;
-}
 
 if (mal) process.exit(1);
-console.log(`OK: backdrop-filter sin prefijo en .vidrio y .halo (${archivos.join(', ')}).`);
+console.log(`OK: backdrop-filter sin prefijo en .vidrio (${archivos.join(', ')}).`);

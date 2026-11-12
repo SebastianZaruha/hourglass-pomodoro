@@ -12,19 +12,15 @@ function luz(parcial: Omit<Luz, 'nube'> & { nube?: Luz['nube'] }): Luz {
   };
 }
 
-/** Blanco roto sobre el gris medio. Decisión cerrada en la sección 7. */
+/** Carbón sobre el gris medio. Medido sin halo, sección 3.2. */
 const relojClaro: RelojTema = {
-  digitos: '#F5F4F0',
-  pista: '#FFFFFF',
-  halo: '#141615',
-  haloOpacidad: 0.3,
+  digitos: '#151515',
+  pista: '#0A0A0A',
 };
 
 const relojOscuro: RelojTema = {
-  digitos: '#ECEAE6',
-  pista: '#F6F5F2',
-  halo: '#0C0D0C',
-  haloOpacidad: 0.25,
+  digitos: '#8B8B8B',
+  pista: '#9C9C9C',
 };
 
 /** Orbes cálidos a la izquierda del césped, donde se apoya el frasco. */
