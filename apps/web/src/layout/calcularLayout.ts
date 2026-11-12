@@ -1,4 +1,5 @@
-import { caja, cajaNube, frascoDesdeArriba, frascoEn, type Caja } from './cajas';
+import { JAR_ASPECT, JAR_FOOT_Y } from '../frasco/jarTabla';
+import { caja, cajaNube, frascoDesdeArriba, frascoEn, seSolapan, type Caja } from './cajas';
 import {
   AIRE,
   ALTO_CORTO,
@@ -6,9 +7,9 @@ import {
   ALTO_SIN_SCROLL,
   ANCHO_ANCHA,
   ANCHO_ANCHA_CORTA,
-  AVISO_HUECO,
-  AVISO_MAX,
-  AVISO_MIN,
+  AVISO_AIRE,
+  AVISO_ANCHO,
+  AVISO_BORDE,
   BORDE_PIE,
   BOTON,
   COLUMNA_X,
@@ -112,39 +113,30 @@ function cajaPie(e: EntradaLayout, margen: number): Caja {
   return caja((e.ancho - w) / 2, y, w, e.altoPie);
 }
 
-/** Entre 320 y 440 px. Si el hueco es menor, el hueco manda. */
-function anchoComodo(espacio: number): number {
-  if (espacio >= AVISO_MIN) return Math.min(AVISO_MAX, espacio);
-  return Math.max(0, espacio);
+/** Abajo a la izquierda, 12 px del borde y 320 px. El CSS pinta esa misma caja. */
+function avisoEnEsquina(e: EntradaLayout, pie: Caja): Caja {
+  if (e.altoAviso <= 0) return caja(0, e.alto + FUERA, 0, 0);
+  const w = Math.min(AVISO_ANCHO, Math.max(0, e.ancho - AVISO_BORDE * 2));
+  return caja(AVISO_BORDE, pie.y - e.altoAviso, w, e.altoAviso);
 }
 
-/**
- * En la columna, justo bajo el reloj. Si no cabe sobre el pie, el reloj sube.
- * Devuelve la y del reloj ya corregida.
- */
-function colocarAvisoAncho(
-  e: EntradaLayout,
-  reloj: Caja,
-  boton: Caja,
-  pie: Caja,
-  relojVisible: boolean,
-): { yReloj: number; aviso: Caja } {
-  if (e.altoAviso <= 0) return { yReloj: reloj.y, aviso: caja(0, e.alto + FUERA, 0, 0) };
-  const m = margenAncho(e.ancho);
-  const columnaX = e.ancho * COLUMNA_X;
-  const columnaW = Math.max(0, e.ancho - m - columnaX);
-  const w = anchoComodo(columnaW);
-  const x = columnaX + Math.max(0, columnaW - w) / 2;
-  const suelo = Math.min(pie.y, boton.y);
-  const techo = e.margenSeguro.arriba;
-  let yReloj = reloj.y;
-  if (relojVisible) {
-    const bloque = reloj.h + AVISO_HUECO + e.altoAviso;
-    if (yReloj + bloque > suelo) yReloj = Math.max(techo, suelo - bloque);
+/** Si el aviso toca el frasco, el frasco se aparta o se encoge. El aviso no se mueve. */
+function apartarFrasco(frasco: Caja, aviso: Caja, topeX: number): Caja {
+  if (aviso.w <= 1 || !seSolapan(frasco, aviso)) return frasco;
+  const x = aviso.x + aviso.w + AVISO_AIRE;
+  const hueco = topeX - x;
+  if (hueco >= frasco.w) return caja(x, frasco.y, frasco.w, frasco.h);
+  if (hueco >= frasco.w * 0.7) {
+    const ancho = hueco;
+    const alto = ancho / JAR_ASPECT;
+    const pieY = frasco.y + frasco.h * JAR_FOOT_Y;
+    return caja(x, pieY - alto * JAR_FOOT_Y, ancho, alto);
   }
-  const bajo = (relojVisible ? yReloj + reloj.h : techo) + AVISO_HUECO;
-  const y = bajo + e.altoAviso <= suelo ? bajo : Math.max(0, suelo - e.altoAviso);
-  return { yReloj, aviso: caja(x, y, w, e.altoAviso) };
+  const suelo = aviso.y - AVISO_AIRE;
+  const alto = Math.min(frasco.h, Math.max(0, suelo));
+  const ancho = alto * JAR_ASPECT;
+  const centro = Math.min(frasco.x + frasco.w / 2, topeX - ancho / 2);
+  return caja(centro - ancho / 2, suelo - alto, ancho, alto);
 }
 
 function amplio(e: EntradaLayout): Layout {
@@ -175,13 +167,13 @@ function amplio(e: EntradaLayout): Layout {
   }
   const menuW = Math.min(MENU_ANCHO_ANCHA, columnaW);
   const menu = caja(columnaX + (columnaW - menuW) / 2, e.menuAbierto ? menuY : e.alto + FUERA, menuW, altoMenu);
-  const colocado = colocarAvisoAncho(e, { ...relojBase, y: relojY }, botonMenu, pie, relojVisible);
-  const reloj = { ...relojBase, y: colocado.yReloj };
-  const aviso = colocado.aviso;
+  const reloj = { ...relojBase, y: relojY };
+  const aviso = avisoEnEsquina(e, pie);
+  const frascoPuesto = apartarFrasco(frasco, aviso, columnaX);
   return {
     ancha: true,
-    frasco,
-    nube: cajaNube(frasco),
+    frasco: frascoPuesto,
+    nube: cajaNube(frascoPuesto),
     reloj,
     menu,
     botonMenu,
@@ -211,11 +203,10 @@ function pilaEstrecha(e: EntradaLayout): { pie: Caja; aviso: Caja; zonaBottom: n
   const m = MARGEN_ESTRECHO;
   const pie = cajaPie(e, m);
   const avisoH = e.altoAviso;
-  const espacio = Math.max(0, e.ancho - m * 2);
-  const avisoW = avisoH > 0 ? anchoComodo(espacio) : 0;
+  const avisoW = avisoH > 0 ? Math.max(0, e.ancho - AVISO_BORDE * 2) : 0;
   const botonY = e.alto - e.margenSeguro.abajo - m - BOTON;
   const avisoY = avisoH > 0 ? Math.min(pie.y, botonY) - avisoH : pie.y;
-  const aviso = caja((e.ancho - avisoW) / 2, avisoY, avisoW, avisoH);
+  const aviso = caja(AVISO_BORDE, avisoY, avisoW, avisoH);
   const zonaBottom = (avisoH > 0 ? avisoY : pie.y) - m;
   return { pie, aviso, zonaBottom };
 }

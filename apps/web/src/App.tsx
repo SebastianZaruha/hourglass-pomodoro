@@ -83,13 +83,20 @@ function Reloj({
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const pausado = view.status === 'paused';
+  const avisoAndroid = androidPromoOpen({
+    settled: intro.settled,
+    dismissed: promoDismissed,
+    bannerOpen: consentimiento.bannerOpen,
+    menuOpen: menu,
+    legalOpen: legal !== null,
+  });
   const medidas = useMedidas({ menu: menuRef, aviso: avisoRef, pie: pieRef, sonda: sondaRef });
   const medidasDe = (menuAbierto: boolean) => ({
     ancho: medidas.ancho,
     alto: medidas.alto,
     menuAbierto,
     altoMenu: medidas.altoMenu,
-    altoAviso: menuAbierto ? 0 : medidas.altoAviso,
+    altoAviso: menuAbierto || !avisoAndroid ? 0 : medidas.altoAviso,
     altoPie: medidas.altoPie,
     margenSeguro: medidas.margenSeguro,
     digitos: medidas.digitos,
@@ -200,13 +207,6 @@ function Reloj({
     [t, view],
   );
   const action = view.status === 'running' ? t.pause : view.status === 'paused' ? t.notifResume : t.start;
-  const showAndroidPromo = androidPromoOpen({
-    settled: intro.settled,
-    dismissed: promoDismissed,
-    bannerOpen: consentimiento.bannerOpen,
-    menuOpen: menu,
-    legalOpen: legal !== null,
-  });
   const pie = { x: layout.frasco.x + layout.frasco.w / 2, y: layout.frasco.y + layout.frasco.h * 0.979 };
   if (pruebasActivas()) {
     publicarCajas({
@@ -217,12 +217,15 @@ function Reloj({
       nube: layout.nube,
     });
   }
-  const horaPx = { '--hora-px': `${layout.horaPx}px` } as CSSProperties;
+  const horaPx = {
+    '--hora-px': `${layout.horaPx}px`,
+    '--alto-pie': `${medidas.altoPie}px`,
+  } as CSSProperties;
 
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${pausado ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${pausado ? ' is-paused' : ''}${avisoAndroid ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-tema={tema.id}
       data-layout={layout.ancha ? 'wide' : 'narrow'}
@@ -287,11 +290,10 @@ function Reloj({
             />
           </div>
         </div>
-        {showAndroidPromo ? (
+        {avisoAndroid ? (
           <AndroidPromo
             lang={lang}
             pausado={pausado}
-            caja={layout.aviso}
             nodoRef={avisoRef}
             onDismiss={() => {
               writeAndroidPromoDismissed();
@@ -365,7 +367,6 @@ function Reloj({
       <CookieBanner
         open={consentimiento.bannerOpen}
         lang={lang}
-        caja={layout.aviso}
         nodoRef={avisoRef}
         onChoose={consentimiento.choose}
         onOpenLegal={(href, title) => setLegal({ href, title })}

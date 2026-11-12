@@ -94,9 +94,12 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
           if (pie) piezas.push({ nombre: 'pie', caja: pie });
           const textos: string[] = [];
           if (nombre === 'aviso' && aviso) {
-            const minimo = w >= 300 ? 300 : w * 0.9;
-            if (aviso.w + 0.5 < minimo) {
-              textos.push(`${nombre} ${w}×${h}: aviso estrecho ${Math.round(aviso.w)} < ${Math.round(minimo)}`);
+            const ancha = document.querySelector('.app')?.getAttribute('data-layout') === 'wide';
+            const esperado = ancha ? 320 : w - 24;
+            if (Math.abs(aviso.x - 12) > 2 || Math.abs(aviso.w - esperado) > 2) {
+              textos.push(
+                `${nombre} ${w}×${h}: aviso ${Math.round(aviso.x)},${Math.round(aviso.w)} en vez de 12,${esperado}`,
+              );
             }
           }
           const solapan = (

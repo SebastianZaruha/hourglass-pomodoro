@@ -5,9 +5,7 @@
 export const ANCHO_ANCHA = 900;
 /**
  * Por debajo de 900 la fórmula dice estrecha. 844×390 está en la tabla como
- * ancha, así que el móvil horizontal sigue siéndolo. Entre 500 y 700 la
- * columna queda bajo 320 px y el aviso de Android no cabe sin montarse
- * en el reloj: ahí manda la fórmula y sale estrecha.
+ * ancha, así que el móvil horizontal sigue siéndolo desde 720 px.
  */
 export const ANCHO_ANCHA_CORTA = 720;
 export const RATIO_ANCHA = 1.2;
@@ -56,10 +54,10 @@ export const MENU_FRACCION = 0.52;
 export const MENU_TOPE = 440;
 export const MENU_ANCHO_ESTRECHA = 520;
 export const MENU_MARGEN_X = 24;
-/** Ancho cómodo del aviso. Si la columna es más estrecha, usa la columna. */
-export const AVISO_MIN = 320;
-export const AVISO_MAX = 440;
-export const AVISO_HUECO = 12;
+/** Esquina del aviso Android, como en la web publicada. */
+export const AVISO_BORDE = 12;
+export const AVISO_ANCHO = 320;
+export const AVISO_AIRE = 8;
 
 export const NUBE_ANCHO = 1.72;
 export const NUBE_RELACION = 438 / 1100;

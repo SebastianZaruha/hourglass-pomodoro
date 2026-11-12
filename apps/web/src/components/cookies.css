@@ -2,11 +2,15 @@
   position: fixed;
   z-index: 60;
   left: 50%;
-  bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  bottom: calc(12px + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: min(40rem, calc(100% - 1.25rem));
+  width: calc(100% - 20px);
   padding: var(--espacio-4) var(--espacio-4) 14px;
   color: var(--tinta);
+}
+
+[data-layout='wide'] .banner {
+  width: 460px;
 }
 
 .banner-texto {
