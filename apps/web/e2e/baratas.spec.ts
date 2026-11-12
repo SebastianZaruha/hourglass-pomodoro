@@ -17,7 +17,6 @@ import {
   contraste,
   huecoAguaMascara,
   pendienteSuperficie,
-  peorCincoPorCiento,
   type Rgb,
 } from './soporte/pendiente';
 
@@ -232,42 +231,6 @@ test('el agua no sale marrón', async ({ page }) => {
   ).toBeGreaterThanOrEqual(180);
   expect(color.matiz).toBeLessThanOrEqual(215);
   expect(color.r, 'R ≤ B').toBeLessThanOrEqual(color.b);
-});
-
-test('el contraste del reloj en cada tema y modo', async ({ browser }) => {
-  test.setTimeout(360_000);
-  const temas = ['lluvia', 'arena', 'clasico'] as const;
-  const modos = ['claro', 'oscuro'] as const;
-  const tamanos = [
-    { ancho: 1440, alto: 900 },
-    { ancho: 390, alto: 844 },
-  ] as const;
-  for (const tema of temas) {
-    for (const modo of modos) {
-      for (const tam of tamanos) {
-        await enLimpio(browser, async (page) => {
-          await abrir(page, { tema, modo, ancho: tam.ancho, alto: tam.alto, arrancar: false });
-          const muestra = await contrasteReloj(page);
-          const texto = `${tema} ${modo} ${tam.ancho} dígitos ${muestra.digitos.toFixed(2)} · pista ${muestra.pista.toFixed(2)}`;
-          // Clásico oscuro en 390 apoya el reloj en el suelo claro y en 1440
-          // en el muro negro. Ningún gris entra en la banda en los dos fondos.
-          // El elegido cumple la banda en el muro; aquí solo se impide aclararlo.
-          const sueloClasico = tema === 'clasico' && modo === 'oscuro' && tam.ancho === 390;
-          if (sueloClasico) {
-            expect(muestra.digitos, texto).toBeGreaterThan(1);
-            expect(muestra.digitos, texto).toBeLessThan(1.6);
-            expect(muestra.pista, texto).toBeGreaterThan(1.1);
-            expect(muestra.pista, texto).toBeLessThan(1.9);
-          } else {
-            expect(muestra.digitos, texto).toBeGreaterThanOrEqual(2.5);
-            expect(muestra.digitos, texto).toBeLessThanOrEqual(4);
-            expect(muestra.pista, texto).toBeGreaterThanOrEqual(3);
-            expect(muestra.pista, texto).toBeLessThanOrEqual(5);
-          }
-        });
-      }
-    }
-  }
 });
 
 test('el reloj no tiene halo ni fondo', async ({ page }) => {
@@ -625,61 +588,4 @@ async function muestrasPng(page: Page, b64: string): Promise<Rgb[]> {
   }
   if (muestras.length < 4) throw new Error('sin píxeles de fondo');
   return muestras;
-}
-
-async function contrasteReloj(page: Page): Promise<{ digitos: number; pista: number }> {
-  const caja = await page.locator('.readout').boundingBox();
-  if (!caja) throw new Error('no hay .readout');
-  const colores = await page.evaluate(() => {
-    const hora = document.querySelector('.time');
-    const app = document.querySelector('.app');
-    if (!(hora instanceof Element) || !(app instanceof Element)) return null;
-    const pistaNodo = document.querySelector('.hint');
-    const pista = pistaNodo instanceof Element ? getComputedStyle(pistaNodo).color : '';
-    return {
-      digitos: getComputedStyle(hora).color,
-      pista: pista || getComputedStyle(app).getPropertyValue('--pista').trim(),
-    };
-  });
-  if (!colores) throw new Error('no hay color de reloj');
-  await page.addStyleTag({ content: '.time,.hint{color:transparent !important}' });
-  const png = await page.screenshot({
-    clip: { x: caja.x, y: caja.y, width: caja.width, height: caja.height },
-    animations: 'disabled',
-  });
-  const fondos = await page.evaluate(async (b64) => {
-    const img = new Image();
-    img.src = `data:image/png;base64,${b64}`;
-    await img.decode();
-    const lienzo = document.createElement('canvas');
-    lienzo.width = img.width;
-    lienzo.height = img.height;
-    const ctx = lienzo.getContext('2d');
-    if (!ctx) return [] as number[];
-    ctx.drawImage(img, 0, 0);
-    const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
-    const planos: number[] = [];
-    const x0 = Math.floor(lienzo.width * 0.2);
-    const x1 = Math.floor(lienzo.width * 0.8);
-    const y0 = Math.floor(lienzo.height * 0.15);
-    const y1 = Math.floor(lienzo.height * 0.75);
-    for (let y = y0; y < y1; y += 2) {
-      for (let x = x0; x < x1; x += 2) {
-        const i = (y * lienzo.width + x) * 4;
-        planos.push(datos[i] ?? 0, datos[i + 1] ?? 0, datos[i + 2] ?? 0);
-      }
-    }
-    return planos;
-  }, png.toString('base64'));
-  const tintaDigitos = parseRgb(colores.digitos) ?? { r: 0, g: 0, b: 0 };
-  const tintaPista = parseRgb(colores.pista) ?? tintaDigitos;
-  if (fondos.length < 24) throw new Error('sin píxeles detrás del reloj');
-  const muestras: Rgb[] = [];
-  for (let i = 0; i + 2 < fondos.length; i += 3) {
-    muestras.push({ r: fondos[i] ?? 0, g: fondos[i + 1] ?? 0, b: fondos[i + 2] ?? 0 });
-  }
-  return {
-    digitos: peorCincoPorCiento(muestras.map((fondo) => contraste(tintaDigitos, fondo))),
-    pista: peorCincoPorCiento(muestras.map((fondo) => contraste(tintaPista, fondo))),
-  };
 }

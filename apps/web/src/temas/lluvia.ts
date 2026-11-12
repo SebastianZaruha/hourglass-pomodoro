@@ -12,15 +12,15 @@ function luz(parcial: Omit<Luz, 'nube'> & { nube?: Luz['nube'] }): Luz {
   };
 }
 
-/** Carbón sobre el gris medio. Medido sin halo, sección 3.2. */
+/** Valores de partida de la sección 3.2. Sebastián los cambia aquí. */
 const relojClaro: RelojTema = {
-  digitos: '#151515',
-  pista: '#0A0A0A',
+  digitos: '#2E302F',
+  pista: '#2E302F',
 };
 
 const relojOscuro: RelojTema = {
-  digitos: '#8B8B8B',
-  pista: '#9C9C9C',
+  digitos: '#8F8B86',
+  pista: '#8F8B86',
 };
 
 /** Orbes cálidos a la izquierda del césped, donde se apoya el frasco. */

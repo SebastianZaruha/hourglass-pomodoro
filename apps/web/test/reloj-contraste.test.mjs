@@ -3,16 +3,14 @@ import { test } from 'node:test';
 
 import { bundle } from './bundle.mjs';
 
-/**
- * Paleta de la sección 3.2. El contraste sobre el píxel real lo mide Playwright.
- */
+/** Valores de partida de la sección 3.2. Dígitos y pista son el mismo gris. */
 const PALETA = {
-  'lluvia light': { digitos: '#151515', pista: '#0A0A0A' },
-  'lluvia dark': { digitos: '#8B8B8B', pista: '#9C9C9C' },
-  'arena light': { digitos: '#5D5D5D', pista: '#505050' },
-  'arena dark': { digitos: '#737373', pista: '#828282' },
-  'clasico light': { digitos: '#727272', pista: '#626262' },
-  'clasico dark': { digitos: '#787878', pista: '#888888' },
+  'lluvia light': { digitos: '#2E302F', pista: '#2E302F' },
+  'lluvia dark': { digitos: '#8F8B86', pista: '#8F8B86' },
+  'arena light': { digitos: '#4A4541', pista: '#4A4541' },
+  'arena dark': { digitos: '#7E7A75', pista: '#7E7A75' },
+  'clasico light': { digitos: '#5A5550', pista: '#5A5550' },
+  'clasico dark': { digitos: '#86817B', pista: '#86817B' },
 };
 
 test('la paleta del reloj es la de la sección 3.2', async () => {

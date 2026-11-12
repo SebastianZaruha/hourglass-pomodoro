@@ -2,13 +2,13 @@ import type { Luz, RelojTema, Tema } from './tipos';
 import { uiDe } from './vidrio';
 
 const relojClaro: RelojTema = {
-  digitos: '#5D5D5D',
-  pista: '#505050',
+  digitos: '#4A4541',
+  pista: '#4A4541',
 };
 
 const relojOscuro: RelojTema = {
-  digitos: '#737373',
-  pista: '#828282',
+  digitos: '#7E7A75',
+  pista: '#7E7A75',
 };
 
 function luz(oscuro: boolean): Luz {

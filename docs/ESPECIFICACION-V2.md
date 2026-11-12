@@ -156,22 +156,18 @@ Criterio: tonos neutros (≤ 3 % de saturación) y **apagados**, más oscuros qu
 
 - Dígitos: contraste entre **2,5:1 y 4:1** (peor 5 % de píxeles del fondo en la zona del reloj), en todas las anchuras del plan de tests. Por debajo no se ve; por encima destaca demasiado.
 - Pista: mismo tono un punto más marcado, contraste **≥ 3:1** y ≤ 5:1.
-- Valores de partida (ya sustituidos por la medida): Lluvia claro `#2E302F` · Lluvia oscuro `#8F8B86` · Arena claro `#4A4541` · Arena oscuro `#7E7A75` · Clásico claro `#5A5550` · Clásico oscuro `#86817B`.
+Valores de partida, los que hay ahora en el código (`reloj.digitos` y `reloj.pista`, el mismo gris). Sebastián los cambia editando esa línea. No hay medida de contraste en esta entrega.
 
-Contraste medido en la captura de producción, sin halo, peor 5 % de los píxeles de la zona del reloj. Grises neutros (saturación 0).
+| Tema · modo | Dígitos y pista |
+|---|---|
+| Lluvia claro | `#2E302F` |
+| Lluvia oscuro | `#8F8B86` |
+| Arena claro | `#4A4541` |
+| Arena oscuro | `#7E7A75` |
+| Clásico claro | `#5A5550` |
+| Clásico oscuro | `#86817B` |
 
-| Tema · modo | Dígitos | Pista | 1440×900 dígitos / pista | 390×844 dígitos / pista |
-|---|---|---|---|---|
-| Lluvia claro | `#151515` | `#0A0A0A` | 3,57 / 3,87 | 2,92 / 3,16 |
-| Lluvia oscuro | `#8B8B8B` | `#9C9C9C` | 3,88 / 4,82 | 2,67 / 3,31 |
-| Arena claro | `#5D5D5D` | `#505050` | 2,99 / 3,66 | 3,51 / 4,29 |
-| Arena oscuro | `#737373` | `#828282` | 3,55 / 4,38 | 2,93 / 3,62 |
-| Clásico claro | `#727272` | `#626262` | 2,93 / 3,72 | 3,52 / 4,47 |
-| Clásico oscuro | `#787878` | `#888888` | 3,75 / 4,67 | 1,12 / 1,40 |
-
-Clásico oscuro en 390 queda fuera de la banda. Ahí el reloj se apoya en el suelo claro (luminancia ≈ 0,16) y en 1440 en el muro casi negro (≈ 0,013). Con un gris más claro que los dos fondos, el contraste en el muro es unas 3,3 veces el del suelo: para que el suelo llegue a 2,5:1, el muro se va a 8:1. El gris elegido deja el muro en 3,75:1 y el suelo en 1,12:1. El test no deja aclararlo para «arreglar» el suelo.
-
-**Por qué así:** Sebastián quiere un reloj presente pero sereno, que forme parte de la escena en vez de imponerse; el halo se veía como mancha. La banda de contraste lo hace comprobable con un test y evita que en el futuro alguien lo «arregle» subiéndolo a blanco o añadiendo fondo.
+**Por qué así:** Sebastián quiere un reloj presente pero sereno, que forme parte de la escena en vez de imponerse; el halo se veía como mancha. El color final lo elige él.
 
 **Comportamiento:**
 - **Siempre visible.** No comparte la lógica de autoocultado del botón del menú.
@@ -451,7 +447,7 @@ Cada uno es comprobable; los marcados **(auto)** los comprueba un test y los mar
 9. **(auto)** El pie y todos los controles cumplen `scrollWidth ≤ clientWidth` (nada cortado ni con «…») desde 360 px.
 
 **Reloj y textos**
-10. **(auto)** Contraste medido en la captura de producción, en la zona del reloj: dígitos entre 2,5:1 y 4:1 y pista entre 3:1 y 5:1, sin halo, en todas las anchuras, temas y modos, salvo Clásico oscuro a 390×844 (ver la tabla de 3.2: el mismo gris no cabe en el suelo y en el muro). Y no existe ningún elemento de halo ni `text-shadow` en el reloj.
+10. **(auto)** El reloj no tiene halo, `text-shadow`, `backdrop-filter` ni fondo. La banda de contraste no se comprueba: el color lo elige Sebastián.
 11. **(auto)** Texto de controles (elegidos y no elegidos), del pie y del panel legal ≥ 4,5:1 medido en la captura.
 12. **(auto)** El texto hablado del tiempo coincide con lo visible según la regla de 3.2 (con reloj congelado en 04:30, dice «5 minutos»; en pausa a 04:30 dice «4 minutos 30 segundos»).
 13. **(auto)** En pausa, el botón del menú existe, es visible al mover el puntero y abre el menú.
