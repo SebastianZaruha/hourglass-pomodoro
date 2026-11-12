@@ -7,9 +7,10 @@ import {
   ALTO_SIN_SCROLL,
   ANCHO_ANCHA,
   ANCHO_ANCHA_CORTA,
-  AVISO_AIRE,
   AVISO_ANCHO,
   AVISO_BORDE,
+  AVISO_ESCENA,
+  AVISO_HOLGURA,
   BORDE_PIE,
   BOTON,
   COLUMNA_X,
@@ -113,17 +114,30 @@ function cajaPie(e: EntradaLayout, margen: number): Caja {
   return caja((e.ancho - w) / 2, y, w, e.altoPie);
 }
 
-/** Abajo a la izquierda, 12 px del borde y 320 px. El CSS pinta esa misma caja. */
+/** Abajo a la izquierda, a 12 px del borde y del pie. El CSS pinta esa misma caja. */
 function avisoEnEsquina(e: EntradaLayout, pie: Caja): Caja {
   if (e.altoAviso <= 0) return caja(0, e.alto + FUERA, 0, 0);
   const w = Math.min(AVISO_ANCHO, Math.max(0, e.ancho - AVISO_BORDE * 2));
-  return caja(AVISO_BORDE, pie.y - e.altoAviso, w, e.altoAviso);
+  return caja(AVISO_BORDE, pie.y - AVISO_HOLGURA - e.altoAviso, w, e.altoAviso);
 }
 
-/** Si el aviso toca el frasco, el frasco se aparta o se encoge. El aviso no se mueve. */
+/** Menos de `holgura` px entre las cajas, o un cruce. El barrido usa el mismo hueco. */
+function cerca(a: Caja, b: Caja, holgura: number): boolean {
+  return seSolapan(caja(a.x - holgura, a.y - holgura, a.w + holgura * 2, a.h + holgura * 2), b);
+}
+
+/**
+ * En ancha alta el aviso no se mueve. Si solo roza el pie del frasco, el frasco
+ * sube ese poco. Si lo tapa de lado, el frasco se aparta o se encoge.
+ */
 function apartarFrasco(frasco: Caja, aviso: Caja, topeX: number): Caja {
-  if (aviso.w <= 1 || !seSolapan(frasco, aviso)) return frasco;
-  const x = aviso.x + aviso.w + AVISO_AIRE;
+  if (aviso.w <= 1 || !cerca(frasco, aviso, AVISO_ESCENA)) return frasco;
+  const suelo = aviso.y - AVISO_ESCENA;
+  const subida = frasco.y + frasco.h - suelo;
+  if (subida > 0 && subida <= frasco.h * 0.15 && frasco.y - subida >= 0) {
+    return caja(frasco.x, frasco.y - subida, frasco.w, frasco.h);
+  }
+  const x = aviso.x + aviso.w + AVISO_ESCENA;
   const hueco = topeX - x;
   if (hueco >= frasco.w) return caja(x, frasco.y, frasco.w, frasco.h);
   if (hueco >= frasco.w * 0.7) {
@@ -132,11 +146,34 @@ function apartarFrasco(frasco: Caja, aviso: Caja, topeX: number): Caja {
     const pieY = frasco.y + frasco.h * JAR_FOOT_Y;
     return caja(x, pieY - alto * JAR_FOOT_Y, ancho, alto);
   }
-  const suelo = aviso.y - AVISO_AIRE;
   const alto = Math.min(frasco.h, Math.max(0, suelo));
   const ancho = alto * JAR_ASPECT;
   const centro = Math.min(frasco.x + frasco.w / 2, topeX - ancho / 2);
   return caja(centro - ancho / 2, suelo - alto, ancho, alto);
+}
+
+/** En horizontal bajo, frasco y reloj se reparten el hueco que queda encima del aviso. */
+function escenaSobreAviso(
+  e: EntradaLayout,
+  frasco: Caja,
+  reloj: Caja,
+  aviso: Caja,
+  columnaX: number,
+): { frasco: Caja; reloj: Caja } {
+  const suelo = aviso.y - AVISO_ESCENA;
+  const techo = e.margenSeguro.arriba;
+  const margen = margenAncho(e.ancho);
+  const anchoTope = Math.max(0, columnaX - AIRE - margen);
+  let alto = Math.min(frasco.h, Math.max(0, suelo - techo));
+  let ancho = alto * JAR_ASPECT;
+  if (ancho > anchoTope) {
+    ancho = anchoTope;
+    alto = ancho / JAR_ASPECT;
+  }
+  const centro = Math.min(frasco.x + frasco.w / 2, columnaX - AIRE - ancho / 2);
+  const puesto = caja(Math.max(margen, centro - ancho / 2), Math.max(techo, suelo - alto), ancho, alto);
+  const ry = Math.min(puesto.y + RELOJ_TOP * puesto.h, Math.max(techo, suelo - reloj.h));
+  return { frasco: puesto, reloj: { ...reloj, y: ry } };
 }
 
 function amplio(e: EntradaLayout): Layout {
@@ -167,9 +204,21 @@ function amplio(e: EntradaLayout): Layout {
   }
   const menuW = Math.min(MENU_ANCHO_ANCHA, columnaW);
   const menu = caja(columnaX + (columnaW - menuW) / 2, e.menuAbierto ? menuY : e.alto + FUERA, menuW, altoMenu);
-  const reloj = { ...relojBase, y: relojY };
   const aviso = avisoEnEsquina(e, pie);
-  const frascoPuesto = apartarFrasco(frasco, aviso, columnaX);
+  let reloj = { ...relojBase, y: relojY };
+  let frascoPuesto = frasco;
+  if (e.alto < ALTO_CORTO && aviso.h > 1) {
+    const escena = escenaSobreAviso(e, frasco, reloj, aviso, columnaX);
+    frascoPuesto = escena.frasco;
+    reloj = escena.reloj;
+  } else {
+    const arriba = frasco.y;
+    frascoPuesto = apartarFrasco(frasco, aviso, columnaX);
+    const subida = arriba - frascoPuesto.y;
+    if (subida > 0 && Math.abs(frascoPuesto.x - frasco.x) < 0.5 && Math.abs(frascoPuesto.h - frasco.h) < 0.5) {
+      reloj = { ...reloj, y: reloj.y - subida };
+    }
+  }
   return {
     ancha: true,
     frasco: frascoPuesto,

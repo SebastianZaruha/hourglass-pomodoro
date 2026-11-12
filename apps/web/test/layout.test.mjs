@@ -52,7 +52,7 @@ test('la tabla 3.11 elige la disposición y no hay solapes', async () => {
           assert.deepEqual(mal, [], `${ancho}×${alto} menú ${menu} aviso ${aviso}: ${mal.join(', ')}`);
           if (!menu && aviso > 0) {
             assert.ok(Math.abs(layout.aviso.x - 12) < 1, `${ancho}×${alto} aviso en ${layout.aviso.x}`);
-            const esperado = ancha ? 320 : ancho - 24;
+            const esperado = ancha ? Math.min(420, ancho - 24) : ancho - 24;
             assert.ok(Math.abs(layout.aviso.w - esperado) < 1, `${ancho}×${alto} aviso ${layout.aviso.w}`);
           }
         }
@@ -102,7 +102,7 @@ test('el barrido de 360 a 1920 no solapa las cajas', async () => {
           const layout = mod.calcularLayout(entrada);
           const mal = solapaAlguno(mod, layout, ancho, alto, menu);
           if (!menu && layout.aviso.h > 1) {
-            const esperado = layout.ancha ? 320 : ancho - 24;
+            const esperado = layout.ancha ? Math.min(420, ancho - 24) : ancho - 24;
             if (Math.abs(layout.aviso.x - 12) > 1 || Math.abs(layout.aviso.w - esperado) > 1) {
               mal.push(`aviso ${Math.round(layout.aviso.x)},${Math.round(layout.aviso.w)}`);
             }

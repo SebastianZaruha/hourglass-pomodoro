@@ -54,10 +54,13 @@ export const MENU_FRACCION = 0.52;
 export const MENU_TOPE = 440;
 export const MENU_ANCHO_ESTRECHA = 520;
 export const MENU_MARGEN_X = 24;
-/** Esquina del aviso Android, como en la web publicada. */
+/** Esquina del aviso Android. En ancha cabe el texto en unas 3 o 4 líneas. */
 export const AVISO_BORDE = 12;
-export const AVISO_ANCHO = 320;
-export const AVISO_AIRE = 8;
+export const AVISO_ANCHO = 420;
+/** Hueco entre el aviso y el pie. */
+export const AVISO_HOLGURA = 12;
+/** La sombra del frasco sale de su caja: la escena deja este hueco sobre el aviso. */
+export const AVISO_ESCENA = 28;
 
 export const NUBE_ANCHO = 1.72;
 export const NUBE_RELACION = 438 / 1100;

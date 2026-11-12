@@ -13,8 +13,26 @@
 }
 
 [data-layout='wide'] .app-promo {
-  width: 320px;
-  bottom: calc(12px + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
+  width: min(420px, calc(100% - 24px));
+  bottom: calc(24px + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
+}
+
+[data-layout='wide'] .app-promo-title {
+  font-size: 0.75rem;
+}
+
+[data-layout='wide'] .app-promo-pitch {
+  font-size: 0.66rem;
+}
+
+[data-layout='wide'] .app-promo-install {
+  font-size: 0.62rem;
+}
+
+[data-layout='wide'] .app-promo-action {
+  min-height: 1.5rem;
+  padding: 0 0.45rem;
+  font-size: 0.68rem;
 }
 
 .app-promo.promo-pausa {

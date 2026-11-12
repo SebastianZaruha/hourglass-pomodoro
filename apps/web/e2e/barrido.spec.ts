@@ -93,9 +93,9 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
           const pie = caja(pieNodo) ?? (nombre === 'aviso' ? caja(pieNodo, true) : null);
           if (pie) piezas.push({ nombre: 'pie', caja: pie });
           const textos: string[] = [];
+          const ancha = document.querySelector('.app')?.getAttribute('data-layout') === 'wide';
           if (nombre === 'aviso' && aviso) {
-            const ancha = document.querySelector('.app')?.getAttribute('data-layout') === 'wide';
-            const esperado = ancha ? 320 : w - 24;
+            const esperado = ancha ? Math.min(420, w - 24) : w - 24;
             if (Math.abs(aviso.x - 12) > 2 || Math.abs(aviso.w - esperado) > 2) {
               textos.push(
                 `${nombre} ${w}×${h}: aviso ${Math.round(aviso.x)},${Math.round(aviso.w)} en vez de 12,${esperado}`,
@@ -106,6 +106,18 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
             a: { x: number; y: number; w: number; h: number },
             b: { x: number; y: number; w: number; h: number },
           ) => a.x + a.w > b.x + 1 && b.x + b.w > a.x + 1 && a.y + a.h > b.y + 1 && b.y + b.h > a.y + 1;
+          /* Un borde a ras (hueco 0) o 8 px al lado no cruzan el +1 y el barrido los daba por buenos. */
+          const hueco = (
+            a: { x: number; y: number; w: number; h: number },
+            b: { x: number; y: number; w: number; h: number },
+          ) => {
+            const dx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+            const dy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+            if (dx < 0 && dy < 0) return Math.max(dx, dy);
+            if (dx < 0) return dy;
+            if (dy < 0) return dx;
+            return Math.hypot(dx, dy);
+          };
           for (let i = 0; i < piezas.length; i += 1) {
             const a = piezas[i];
             if (!a) continue;
@@ -120,7 +132,11 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
             for (let j = i + 1; j < piezas.length; j += 1) {
               const b = piezas[j];
               if (!b) continue;
-              if (solapan(a.caja, b.caja)) textos.push(`${nombre} ${w}×${h}: ${a.nombre} solapa ${b.nombre}`);
+              const junto =
+                nombre === 'aviso' && ancha && (a.nombre === 'aviso' || b.nombre === 'aviso')
+                  ? hueco(a.caja, b.caja) < 9
+                  : solapan(a.caja, b.caja);
+              if (junto) textos.push(`${nombre} ${w}×${h}: ${a.nombre} solapa ${b.nombre}`);
             }
           }
           return textos;
