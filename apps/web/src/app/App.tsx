@@ -165,6 +165,20 @@ function Timer({
   });
 
   const paused = view.status === 'paused';
+  const [vuelvePausa, setVuelvePausa] = useState(false);
+  const veniaDePausa = useRef(false);
+  if (paused) veniaDePausa.current = true;
+  if (paused && menu) setMenu(false);
+  if (paused && vuelvePausa) setVuelvePausa(false);
+  else if (!paused && veniaDePausa.current) {
+    veniaDePausa.current = false;
+    setVuelvePausa(true);
+  }
+  useEffect(() => {
+    if (!vuelvePausa) return;
+    const id = window.setTimeout(() => setVuelvePausa(false), 400);
+    return () => window.clearTimeout(id);
+  }, [vuelvePausa]);
   useEffect(() => {
     giro.enPausa(paused);
   }, [giro, paused]);
@@ -252,7 +266,7 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${vuelvePausa ? ' pausa-vuelve' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
     >
@@ -292,11 +306,13 @@ function Timer({
           </div>
         </div>
       </div>
-      <SiteFooter
-        lang={lang}
-        onCookies={() => avisos.setBannerOpen(true)}
-        onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
-      />
+      <div inert={paused || undefined}>
+        <SiteFooter
+          lang={lang}
+          onCookies={() => avisos.setBannerOpen(true)}
+          onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
+        />
+      </div>
       {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} /> : null}
       <CookieBanner
         open={avisos.bannerOpen}
@@ -319,10 +335,13 @@ function Timer({
         className="menu-btn"
         aria-label={t.openSettings}
         aria-expanded={menu}
-        aria-hidden={menu}
+        aria-hidden={menu || paused}
         hidden={menu}
+        inert={paused || undefined}
+        tabIndex={paused ? -1 : undefined}
         onClick={(ev) => {
           ev.stopPropagation();
+          if (paused) return;
           setMenu(true);
         }}
       >

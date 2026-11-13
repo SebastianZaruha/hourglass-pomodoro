@@ -6,9 +6,35 @@
   filter: blur(18px);
 }
 
-/* promo.css, más abajo, apaga el pie en pausa. El selector duplicado pesa más. */
+/* promo.css, más abajo, pone display:none. El selector duplicado lo deja en su sitio para poder fundirlo. */
+.app.is-paused .site-footer.site-footer,
+.app.is-paused .menu-btn.menu-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 360ms var(--suave),
+    visibility 0s linear 360ms;
+}
+
 .app.is-paused .site-footer.site-footer {
   display: flex;
+}
+
+.app.is-paused .site-footer.site-footer :is(a, button),
+.app.is-paused .menu-btn.menu-btn * {
+  pointer-events: none;
+}
+
+.app.pausa-vuelve .site-footer,
+.app.pausa-vuelve .menu-btn {
+  animation: pausa-vuelve 360ms var(--suave) both;
+}
+
+@keyframes pausa-vuelve {
+  from {
+    opacity: 0;
+  }
 }
 
 .pause-screen {
