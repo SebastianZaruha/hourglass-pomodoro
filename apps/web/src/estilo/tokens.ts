@@ -13,6 +13,9 @@ export const DURACION_NORMAL = 360;
 export const DURACION_LENTA = 620;
 export const CURVA = 'cubic-bezier(0.33, 0, 0.2, 1)';
 
+/** Vidrio neutro mientras no llegan las fotos del frasco. */
+export const VIDRIO_NEUTRO = 'rgba(244, 241, 236, 0.5)';
+
 /** Cortina detrás del panel legal. Negra, sin el marrón de antes. */
 export const SCRIM = 'rgba(0, 0, 0, 0.28)';
 

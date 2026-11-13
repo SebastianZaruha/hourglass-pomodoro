@@ -1,5 +1,6 @@
 import type { SandSimulation, StreamParticles } from '@reloj/core';
 
+import { VIDRIO_NEUTRO } from '../estilo/tokens';
 import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import type { Activos } from './activos';
@@ -42,7 +43,7 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   ctx.translate(-cx, -cy);
 
   if (activos.dorso) ctx.drawImage(activos.dorso, x, y, w, h);
-  else vidrioDeReserva(ctx, orden.frasco, orden.luz.tinte);
+  else if (activos.mascara) dibujarSilueta(ctx, orden.frasco, activos.mascara);
 
   dibujarContenido(ctx, {
     frasco: orden.frasco,
@@ -71,15 +72,25 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   }
 }
 
-/** Si las fotos no llegan, un vidrio relleno. Nunca el frasco de líneas viejo. */
-function vidrioDeReserva(ctx: CanvasRenderingContext2D, frasco: Caja, tinte: string): void {
-  const { x, y, w, h } = frasco;
-  ctx.save();
-  ctx.fillStyle = tinte;
-  ctx.globalAlpha = 0.22;
-  ctx.beginPath();
-  ctx.ellipse(x + w / 2, y + h * 0.24, w * 0.42, h * 0.22, 0, 0, Math.PI * 2);
-  ctx.ellipse(x + w / 2, y + h * 0.74, w * 0.42, h * 0.22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+let silueta: HTMLCanvasElement | null = null;
+
+/** La máscara real, con un vidrio neutro, hasta que llega la foto. */
+function dibujarSilueta(ctx: CanvasRenderingContext2D, frasco: Caja, mascara: CanvasImageSource): void {
+  const w = Math.max(2, Math.round(frasco.w));
+  const h = Math.max(2, Math.round(frasco.h));
+  if (!silueta || silueta.width !== w || silueta.height !== h) {
+    silueta = document.createElement('canvas');
+    silueta.width = w;
+    silueta.height = h;
+  }
+  const g = silueta.getContext('2d');
+  if (!g) return;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = VIDRIO_NEUTRO;
+  g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(mascara, 0, 0, w, h);
+  ctx.drawImage(silueta, frasco.x, frasco.y, frasco.w, frasco.h);
 }

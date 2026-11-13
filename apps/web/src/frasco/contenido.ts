@@ -1,7 +1,7 @@
 import type { SandSimulation, StreamParticles } from '@reloj/core';
 
 import type { Caja } from '../layout/calcularLayout';
-import { JAR_NECK_Y } from './jarTabla';
+import { JAR_NECK_Y } from './geometria';
 import { lineaMenisco, poligonoLiquido } from './fisica/agua';
 import { PINTURA } from '../estilo/tokens';
 import { dibujarChorro } from './granos';

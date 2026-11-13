@@ -1,4 +1,4 @@
-import { JAR_ASPECT, JAR_FOOT_Y } from '../frasco/jarTabla';
+import { JAR_ASPECT, JAR_FOOT_Y } from '../frasco/geometria';
 import { caja, cajaNube, frascoDesdeArriba, frascoEn, seSolapan, type Caja } from './cajas';
 import {
   AIRE,

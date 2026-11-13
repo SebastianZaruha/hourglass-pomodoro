@@ -1,4 +1,4 @@
-import { JAR_FOOT_X, JAR_FOOT_Y } from './jarTabla';
+import { JAR_FOOT_X, JAR_FOOT_Y } from './geometria';
 import { presenciaVertical } from './alpha';
 import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';

@@ -1,4 +1,4 @@
-import { JAR_ASPECT, JAR_FOOT_Y, JAR_TOP_BOX } from '../frasco/jarTabla';
+import { JAR_ASPECT, JAR_FOOT_Y, JAR_TOP_BOX } from '../frasco/geometria';
 import { NUBE_ANCHO, NUBE_BULBO, NUBE_RELACION } from './medidas';
 
 export interface Caja {

@@ -3,7 +3,13 @@
  * que deja el volumen pedido. En reposo se le suma un menisco fijo; el
  * vaivén lo frena el muelle, no esta función.
  */
-import { cajaBulbo, filasBulbo } from '../jarTabla';
+import { JAR_BOT_BOX, JAR_TOP_BOX } from '../geometria';
+
+type CajaJar = readonly [number, number, number, number];
+
+function cajaBulbo(bulbo: 'arriba' | 'abajo'): CajaJar {
+  return bulbo === 'arriba' ? JAR_TOP_BOX : JAR_BOT_BOX;
+}
 
 export interface Punto {
   readonly x: number;
@@ -18,44 +24,20 @@ export interface Superficie {
 
 const MUESTRAS = 36;
 
-function volumenEn(filas: readonly (readonly [number, number])[], y: number): number {
-  const primero = filas[0];
-  const ultimo = filas[filas.length - 1];
-  if (!primero || !ultimo) return 0;
-  if (y <= primero[0]) return primero[1];
-  if (y >= ultimo[0]) return ultimo[1];
-  for (let i = 1; i < filas.length; i++) {
-    const a = filas[i - 1];
-    const b = filas[i];
-    if (!a || !b || y < a[0] || y > b[0]) continue;
-    const t = (y - a[0]) / (b[0] - a[0] || 1);
-    return a[1] + (b[1] - a[1]) * t;
-  }
-  return ultimo[1];
-}
-
 /** Contorno del bulbo en coordenadas locales: x −1..1, y 0 (borde alto) .. 1 (borde bajo). */
-function contorno(bulbo: 'arriba' | 'abajo'): Punto[] {
-  const filas = filasBulbo(bulbo);
-  const box = cajaBulbo(bulbo);
-  const alto = box[3] - box[1] || 1;
-  const radios: number[] = [];
+function contorno(): Punto[] {
+  const derecha: Punto[] = [];
   for (let i = 0; i < MUESTRAS; i++) {
-    const t = i / (MUESTRAS - 1);
-    const antes = box[1] + alto * Math.max(0, t - 0.5 / MUESTRAS);
-    const despues = box[1] + alto * Math.min(1, t + 0.5 / MUESTRAS);
-    const dy = Math.abs(despues - antes) / alto || 1 / MUESTRAS;
-    radios.push(Math.abs(volumenEn(filas, antes) - volumenEn(filas, despues)) / (2 * dy));
+    const y = i / (MUESTRAS - 1);
+    derecha.push({ x: Math.sin(Math.PI * y), y });
   }
-  const maximo = Math.max(...radios, 1e-6);
-  const derecha = radios.map((radio, i) => ({ x: radio / maximo, y: i / (MUESTRAS - 1) }));
   const izquierda = [...derecha].reverse().map((punto) => ({ x: -punto.x, y: punto.y }));
   return [...derecha, ...izquierda];
 }
 
 const CONTORNOS = {
-  arriba: contorno('arriba'),
-  abajo: contorno('abajo'),
+  arriba: contorno(),
+  abajo: contorno(),
 } as const;
 
 function producto(normal: Punto, punto: Punto): number {

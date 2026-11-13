@@ -1,5 +1,4 @@
 import {
-  CLASSIC_MODEL,
   GRAVITY_DOWN,
   SAND,
   SandSimulation,
@@ -22,6 +21,7 @@ import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarGranos } from './granos';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
+import { PERFIL_FRASCO, dentroDeCelda, desdeLuminancia, type Geometria } from './geometria';
 import { crearSuavizado } from './suavizar';
 
 export interface ModeloFrasco {
@@ -39,12 +39,29 @@ export interface ModeloFrasco {
 
 const UMBRAL = 0.03;
 
-function dentro(frasco: Layout['frasco'], x: number, y: number): boolean {
-  const u = (x - frasco.x) / frasco.w - 0.5;
-  const v = ((y - frasco.y) / frasco.h - 0.5) * 2;
-  if (Math.abs(v) > 1.02) return false;
-  const ancho = 0.16 + 0.78 * Math.abs(v) ** 0.62;
-  return Math.abs(u * 2) <= ancho;
+function dentro(
+  frasco: Layout['frasco'],
+  x: number,
+  y: number,
+  angulo: number,
+  geo: Geometria | null,
+): boolean {
+  if (!geo) {
+    const u = (x - frasco.x) / frasco.w - 0.5;
+    const v = ((y - frasco.y) / frasco.h - 0.5) * 2;
+    if (Math.abs(v) > 1.02) return false;
+    const ancho = 0.16 + 0.78 * Math.abs(v) ** 0.62;
+    return Math.abs(u * 2) <= ancho;
+  }
+  const cx = frasco.x + frasco.w / 2;
+  const cy = frasco.y + frasco.h / 2;
+  const dx = x - cx;
+  const dy = y - cy;
+  const c = Math.cos(-angulo);
+  const s = Math.sin(-angulo);
+  const lx = dx * c - dy * s;
+  const ly = dx * s + dy * c;
+  return dentroDeCelda(geo, lx / frasco.w + 0.5, ly / frasco.h + 0.5);
 }
 
 /** Bucle único. Se duerme cuando el frasco, el agua y el reloj están quietos. */
@@ -65,7 +82,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     if (!canvas || !ctx) return;
 
     const sim = new SandSimulation({
-      profile: CLASSIC_MODEL.profile,
+      profile: PERFIL_FRASCO,
       cols: 161,
       seed: 11,
       slideChance: SAND.slideChance,
@@ -88,6 +105,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     // Solo lo escribe el gancho de Playwright. En uso normal se queda en null
     // y el fotograma sigue el gesto, igual que antes.
     let anguloFijo: number | null = null;
+    let geo: Geometria | null = null;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -117,6 +135,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
 
     const frame = (now: number) => {
       if (!activo) return;
+      if (!geo && activos.mascara) geo = geometriaDe(activos.mascara);
       const m = vivo.current;
       const dt = ultimo > 0 ? Math.min(0.05, (now - ultimo) / 1000) : 1 / 60;
       ultimo = now;
@@ -252,7 +271,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       if (estado.fase === 'volteando') return;
       const p = local(event);
       const frasco = visto;
-      if (!dentro(frasco, p.x, p.y)) return;
+      if (!dentro(frasco, p.x, p.y, estado.angulo, geo)) return;
       const ang = Math.atan2(p.y - (frasco.y + frasco.h / 2), p.x - (frasco.x + frasco.w / 2));
       arrastre = { id: event.pointerId, inicio: ang, base: estado.angulo, movio: false };
       canvas.setPointerCapture(event.pointerId);
@@ -304,4 +323,13 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       activos.nubeVideo?.pause();
     };
   }, [canvasRef]);
+}
+
+function geometriaDe(lienzo: HTMLCanvasElement): Geometria | null {
+  const g = lienzo.getContext('2d');
+  if (!g || lienzo.width < 2) return null;
+  const imagen = g.getImageData(0, 0, lienzo.width, lienzo.height);
+  const luma = new Uint8Array(lienzo.width * lienzo.height);
+  for (let i = 0, p = 0; i < imagen.data.length; i += 4, p++) luma[p] = imagen.data[i + 3] ?? 0;
+  return desdeLuminancia(luma, lienzo.width, lienzo.height);
 }
