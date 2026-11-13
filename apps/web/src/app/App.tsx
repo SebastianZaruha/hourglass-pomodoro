@@ -166,11 +166,13 @@ function Timer({
 
   const paused = view.status === 'paused';
   useEffect(() => {
-    if (paused) {
-      setMenu(false);
-      avisos.setLegal(null);
-    }
+    if (paused) avisos.setLegal(null);
   }, [paused, avisos.setLegal]);
+
+  const alReiniciar = useCallback(() => {
+    giro.ordenar({ tipo: 'reiniciar' });
+    wake();
+  }, [giro, wake]);
 
   const sideRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -287,40 +289,6 @@ function Timer({
           </div>
         </div>
 
-        <button
-          type="button"
-          id="menu-button"
-          className="menu-btn"
-          aria-label={t.openSettings}
-          aria-expanded={menu}
-          aria-hidden={menu || paused}
-          disabled={paused}
-          hidden={menu || paused}
-          onClick={(ev) => {
-            ev.stopPropagation();
-            if (paused || menu) return;
-            setMenu(true);
-          }}
-        >
-          <span className="bar long" />
-          <span className="bar short" />
-        </button>
-
-        {menu ? (
-          <button
-            type="button"
-            className="backdrop"
-            aria-label={t.closeSettings}
-            onClick={() => setMenu(false)}
-          />
-        ) : null}
-        <SettingsSheet
-          open={menu}
-          settings={settings}
-          t={t}
-          onChange={update}
-          onClose={() => setMenu(false)}
-        />
         <SiteFooter
           lang={lang}
           onCookies={() => avisos.setBannerOpen(true)}
@@ -343,6 +311,42 @@ function Timer({
         ) : null}
       </div>
       {paused ? <Pausa word={t.paused} hint={hint} /> : null}
+      <button
+        type="button"
+        id="menu-button"
+        className="menu-btn"
+        aria-label={t.openSettings}
+        aria-expanded={menu}
+        aria-hidden={menu}
+        hidden={menu}
+        onClick={(ev) => {
+          ev.stopPropagation();
+          setMenu(true);
+        }}
+      >
+        <span className="bar long" />
+        <span className="bar short" />
+      </button>
+      {menu ? (
+        <button
+          type="button"
+          className="backdrop"
+          aria-label={t.closeSettings}
+          onClick={() => setMenu(false)}
+        />
+      ) : null}
+      <SettingsSheet
+        open={menu}
+        settings={settings}
+        t={t}
+        escenas={escenas}
+        escenaId={escena.id}
+        idioma={lang}
+        onEscena={() => undefined}
+        alReiniciar={alReiniciar}
+        onChange={update}
+        onClose={() => setMenu(false)}
+      />
     </div>
   );
 }
