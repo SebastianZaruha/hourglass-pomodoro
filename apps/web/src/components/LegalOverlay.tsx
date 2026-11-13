@@ -69,7 +69,7 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   if (!doc || !win || win.location.href === 'about:blank') return;
-    const app = document.querySelector('.app');
+  const app = document.querySelector('.app');
   if (app) {
     const estilos = getComputedStyle(app);
     for (const nombre of ['--tinta', '--tinta-suave', '--borde']) {
@@ -133,7 +133,7 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
         onClose();
         return;
       }
-      if (!event.target.closest('button, .card, footer')) {
+      if (!event.target.closest('button, .card, footer, header')) {
         event.preventDefault();
         event.stopPropagation();
         onClose();

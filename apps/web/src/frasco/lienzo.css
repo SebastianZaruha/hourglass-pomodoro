@@ -19,7 +19,12 @@
   height: 100%;
   display: block;
   touch-action: none;
-  transition: opacity var(--duracion-lenta) var(--curva);
+  transition:
+    left var(--duracion-lenta) var(--curva),
+    top var(--duracion-lenta) var(--curva),
+    width var(--duracion-lenta) var(--curva),
+    height var(--duracion-lenta) var(--curva),
+    opacity var(--duracion-lenta) var(--curva);
 }
 
 .lienzo-oculto {

@@ -275,7 +275,7 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 
 ### 3.10 Cookies, aviso Android y panel legal
 
-- **Cookies:** vidrio, abajo centradas, justo encima del pie. En ancha miden hasta 640 px (el texto en menos líneas y los botones en una fila); en estrecha, el ancho con 10 px de margen y no cambia. Aparecen primero; el aviso Android solo puede salir cuando ya se ha decidido lo de las cookies. Nunca salen los dos a la vez. No mueven el frasco ni el reloj.
+- **Cookies:** vidrio, abajo centradas, 12 px por encima de los enlaces del pie, sin tocarlos. En ancha miden hasta 720 px (el texto en menos líneas y los botones en una fila); en estrecha, el ancho con 10 px de margen y no cambia. Aparecen primero; el aviso Android solo puede salir cuando ya se ha decidido lo de las cookies. Nunca salen los dos a la vez. No mueven el frasco ni el reloj.
 - **Aviso Android:** vidrio, abajo a la izquierda, a 12 px del borde y a 12 px por encima del pie. En ancha mide hasta 420 px, con el texto en unas 3 o 4 líneas; en estrecha, el ancho con 12 px de margen (el móvil no cambia). En estrecha el layout reserva su alto medido y el frasco y el reloj suben. En ancha alta, si se acerca al frasco, el frasco sube un poco o se aparta; el aviso no se mueve. En horizontal bajo (alto < 560 px) el frasco y el reloj se reparten el hueco de arriba y no tocan el aviso. Se oculta con el menú abierto. El botón «Descargar» es un `.control` elegido (sin color del tema) y la «×» un `.control` redondo.
 - **Panel legal:** diálogo de vidrio sobre la escena desenfocada.
   - La **cabecera** (título, ES/EN y «×») está **fuera** de la zona que hace scroll. El texto nunca pasa por debajo de ella; así siempre se lee.
@@ -300,10 +300,10 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | Nube | Sale del frasco: 1,72 × su ancho, con el borde de abajo a un 40 % del bulbo superior. |
 | Columna derecha | De `x = 0,52 W` a `W − m`. |
 | Reloj | Centrado en la columna. Arriba en `frasco.y + 0,06 · frasco.alto`. Letra `clamp(64, 0,13 H, 128)` px, limitada a lo que quepa en la columna con 32 px por lado. En Clásico, centrado en vertical en la columna. |
-| Menú (abierto) | En la columna, ancho `min(440, columna)`, 24 px bajo el reloj. Si no cabe sobre el botón del menú, el reloj sube lo necesario (hasta `m`; en Clásico, hasta el margen de arriba). Si aun así no cabe (alto < 560 px), el reloj se desvanece mientras el menú está abierto. |
+| Menú (abierto) | En la columna, ancho `min(440, columna)`, al menos 40 px bajo el reloj y centrado en el hueco que queda hasta el botón. Si no cabe, el reloj sube lo necesario (hasta `m`; en Clásico el menú sigue abajo y el reloj sube hasta el margen). Si aun así no cabe (alto < 560 px), el reloj se desvanece mientras el menú está abierto. |
 | Botón del menú | 44 × 44, a `m` de la esquina inferior derecha. |
 | Pie | Centrado abajo, a 12 px del borde. |
-| Cookies | Centradas, encima del pie, hasta 640 px. |
+| Cookies | Centradas, 12 px por encima del pie, hasta 720 px. |
 | Android | Abajo a la izquierda, a 12 px, hasta 420 px, 12 px por encima del pie. |
 
 **Estrecha** (`m = 12`):
@@ -311,7 +311,7 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | Elemento | Menú cerrado | Menú abierto |
 |---|---|---|
 | Reserva de abajo | `altoPie + altoAviso + m` | `altoMenu + m + margen seguro` |
-| Reloj | Centrado bajo el frasco, 64 px de separación (la sombra sale unos 24 y quedan más de 32 libres). Letra `clamp(56, 0,17 W, 96)` px y ≤ `0,10 H` | Se queda o sube; nunca baja. La letra puede bajar como mucho un 15 %, nunca por debajo de 48 px |
+| Reloj | Nube, frasco y reloj van centrados sobre el pie. La separación frasco-reloj es al menos 64 px y, si sobra sitio, un tercio del hueco. Letra `clamp(56, 0,17 W, 96)` px y ≤ `0,10 H` | Se queda o sube; nunca baja. La letra puede bajar como mucho un 15 %, nunca por debajo de 48 px |
 | Frasco + nube | Ocupan el resto de arriba, centrados. Alto del frasco `min(90 % del hueco, 0,56 H)`, ancho ≤ `0,42 W`. **Mínimo `0,30 H`** | Suben y se encogen con el hueco (como en la web publicada). **Mínimo `0,22 H`**; si no llega (pantallas de menos de 640 px de alto), el frasco y la nube se desvanecen mientras el menú está abierto |
 | Menú | Fuera, debajo | Desde abajo, con 24 px más el área segura por debajo. Ancho `W − 24` (máximo 520, centrado), alto medido ≤ `min(0,52 H, 440)` |
 | Pie | Centrado, una o dos líneas, nunca cortado | Oculto |

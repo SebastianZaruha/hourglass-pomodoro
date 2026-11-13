@@ -5,12 +5,16 @@
 }
 
 :where(html, body) {
+  height: 100%;
   margin: 0;
   background: var(--legal-fondo);
   color: var(--tinta);
 }
 
 :where(body) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   font:
     17px/1.65 system-ui,
     -apple-system,
@@ -18,18 +22,36 @@
     sans-serif;
 }
 
+.legal-top {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+
+.legal-top h1 {
+  margin: 0;
+}
+
 :where(main) {
+  flex: 1;
+  min-height: 0;
   max-width: 70ch;
   margin: 0 auto;
-  padding: 1.1rem 1.25rem 3rem;
+  padding: 12px 1.25rem 3rem;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--tinta) 40%, transparent) transparent;
 }
 
 .card {
-  background: var(--legal-fondo);
+  background: transparent;
   color: var(--tinta);
-  border: 1px solid var(--borde);
-  border-radius: 18px;
-  padding: 2rem 1.5rem;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 :where(h1) {
@@ -59,7 +81,7 @@
 }
 
 .lang {
-  margin: 0 7rem 1rem 0;
+  margin: 0.2rem 0 0;
 }
 
 :where(a) {
@@ -86,12 +108,9 @@
 }
 
 .leave {
-  position: fixed;
-  z-index: 5;
-  top: 1rem;
-  right: 1rem;
+  flex: none;
   border: 1px solid var(--borde);
-  background: var(--legal-fondo);
+  background: transparent;
   color: var(--tinta);
   border-radius: 999px;
   padding: 8px 16px;

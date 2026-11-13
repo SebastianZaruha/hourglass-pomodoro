@@ -35,6 +35,8 @@ export const HORA_MAX_ANCHA = 128;
 export const HORA_FRACCION_ANCHA = 0.13;
 export const RELOJ_TOP = 0.06;
 export const MENU_BAJO_RELOJ = 24;
+/** En ancha, el menú no se pega al reloj: 40 px como mínimo, y se centra si sobra sitio. */
+export const MENU_HUECO_ANCHA = 40;
 export const MENU_ANCHO_ANCHA = 440;
 
 export const HORA_MIN_ESTRECHA = 56;

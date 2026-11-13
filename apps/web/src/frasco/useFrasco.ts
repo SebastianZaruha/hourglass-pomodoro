@@ -22,6 +22,7 @@ import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarGranos } from './granos';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
+import { crearSuavizado } from './suavizar';
 
 export interface ModeloFrasco {
   readonly getSnapshot: () => SessionSnapshot;
@@ -96,6 +97,11 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     };
     const activos: Activos = cargarActivos(() => despertar());
     let arrastre: { id: number; inicio: number; base: number; movio: boolean } | null = null;
+    let visto = vivo.current.layout.frasco;
+    const suavizar = crearSuavizado(() => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+      return getComputedStyle(canvas).transitionDuration.split(',')[0]?.trim() === '0s';
+    });
 
     const pintarArena = () => {
       if (!arenaCtx) return;
@@ -172,6 +178,10 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         if (movio || particles.active) pintarArena();
       }
 
+      const suave = suavizar(now, { frasco: m.layout.frasco, nube: m.layout.nube });
+      visto = suave.par.frasco;
+      if (suave.sigue) movio = true;
+
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const pxW = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const pxH = Math.max(1, Math.round(canvas.clientHeight * dpr));
@@ -183,8 +193,8 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       dibujar(
         ctx,
         {
-          frasco: m.layout.frasco,
-          nube: m.layout.nube,
+          frasco: suave.par.frasco,
+          nube: suave.par.nube,
           luz: m.luz,
           tipo: m.tipo,
           angulo: estado.angulo,
@@ -241,7 +251,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     const down = (event: PointerEvent) => {
       if (estado.fase === 'volteando') return;
       const p = local(event);
-      const frasco = vivo.current.layout.frasco;
+      const frasco = visto;
       if (!dentro(frasco, p.x, p.y)) return;
       const ang = Math.atan2(p.y - (frasco.y + frasco.h / 2), p.x - (frasco.x + frasco.w / 2));
       arrastre = { id: event.pointerId, inicio: ang, base: estado.angulo, movio: false };
@@ -251,7 +261,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     const move = (event: PointerEvent) => {
       if (!arrastre || arrastre.id !== event.pointerId) return;
       const p = local(event);
-      const frasco = vivo.current.layout.frasco;
+      const frasco = visto;
       let delta =
         Math.atan2(p.y - (frasco.y + frasco.h / 2), p.x - (frasco.x + frasco.w / 2)) - arrastre.inicio;
       while (delta > Math.PI) delta -= Math.PI * 2;

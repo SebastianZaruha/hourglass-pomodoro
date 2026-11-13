@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 60;
   left: 50%;
-  bottom: calc(12px + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
+  bottom: calc(var(--espacio-5) + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: calc(100% - 20px);
   padding: var(--espacio-4) var(--espacio-4) 14px;
@@ -10,7 +10,7 @@
 }
 
 [data-layout='wide'] .banner {
-  width: min(640px, calc(100% - var(--espacio-5) * 2));
+  width: min(720px, calc(100% - var(--espacio-5) * 2));
 }
 
 [data-layout='wide'] .banner-actions {

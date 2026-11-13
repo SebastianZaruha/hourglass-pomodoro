@@ -37,6 +37,7 @@ import {
   MENU_ANCHO_ANCHA,
   MENU_ANCHO_ESTRECHA,
   MENU_BAJO_RELOJ,
+  MENU_HUECO_ANCHA,
   MENU_FRACCION,
   MENU_MARGEN_X,
   MENU_TOPE,
@@ -191,15 +192,20 @@ function amplio(e: EntradaLayout): Layout {
     ? techoColumna + Math.max(0, (sueloColumna - techoColumna - relojBase.h) / 2)
     : relojBase.y;
   let relojVisible = true;
-  const huecoBajo = () => sueloColumna - (relojY + relojBase.h + MENU_BAJO_RELOJ);
+  const huecoBajo = () => sueloColumna - (relojY + relojBase.h + MENU_HUECO_ANCHA);
   let altoMenu = Math.min(e.altoMenu, Math.max(0, huecoBajo()));
-  let menuY = e.relojCentrado ? sueloColumna - altoMenu : relojY + relojBase.h + MENU_BAJO_RELOJ;
+  const menuEnBanda = () => {
+    const banda = sueloColumna - (relojY + relojBase.h);
+    const hueco = Math.max(MENU_HUECO_ANCHA, (banda - altoMenu) / 2);
+    return relojY + relojBase.h + hueco;
+  };
+  let menuY = e.relojCentrado ? sueloColumna - altoMenu : menuEnBanda();
   if (e.menuAbierto && e.altoMenu > huecoBajo() + 1) {
     const falta = e.altoMenu - huecoBajo();
     const tope = e.relojCentrado ? relojY - techoColumna : Math.min(m, relojY - m);
     relojY -= Math.max(0, Math.min(falta, tope));
     altoMenu = Math.min(e.altoMenu, Math.max(0, huecoBajo()));
-    menuY = e.relojCentrado ? sueloColumna - altoMenu : relojY + relojBase.h + MENU_BAJO_RELOJ;
+    menuY = e.relojCentrado ? sueloColumna - altoMenu : menuEnBanda();
     if (e.alto < ALTO_CORTO && e.altoMenu > altoMenu + 1) {
       relojVisible = false;
       const techo = e.margenSeguro.arriba + 8;
@@ -209,7 +215,12 @@ function amplio(e: EntradaLayout): Layout {
     }
   }
   const menuW = Math.min(MENU_ANCHO_ANCHA, columnaW);
-  const menu = caja(columnaX + (columnaW - menuW) / 2, e.menuAbierto ? menuY : e.alto + FUERA, menuW, altoMenu);
+  const menu = caja(
+    columnaX + (columnaW - menuW) / 2,
+    e.menuAbierto ? menuY : e.alto + FUERA,
+    menuW,
+    altoMenu,
+  );
   const aviso = avisoEnEsquina(e, pie);
   let reloj = { ...relojBase, y: relojY };
   let frascoPuesto = frasco;
@@ -221,7 +232,11 @@ function amplio(e: EntradaLayout): Layout {
     const arriba = frasco.y;
     frascoPuesto = apartarFrasco(frasco, aviso, columnaX);
     const subida = arriba - frascoPuesto.y;
-    if (subida > 0 && Math.abs(frascoPuesto.x - frasco.x) < 0.5 && Math.abs(frascoPuesto.h - frasco.h) < 0.5) {
+    if (
+      subida > 0 &&
+      Math.abs(frascoPuesto.x - frasco.x) < 0.5 &&
+      Math.abs(frascoPuesto.h - frasco.h) < 0.5
+    ) {
       reloj = { ...reloj, y: reloj.y - subida };
     }
   }
@@ -266,14 +281,22 @@ function pilaEstrecha(e: EntradaLayout): { pie: Caja; aviso: Caja; zonaBottom: n
   return { pie, aviso, zonaBottom };
 }
 
-function jarraEnHueco(e: EntradaLayout, y: number, hueco: number, minimo: number): { frasco: Caja; visible: boolean } {
+function jarraEnHueco(
+  e: EntradaLayout,
+  y: number,
+  hueco: number,
+  minimo: number,
+): { frasco: Caja; visible: boolean } {
   const anchoMax = e.ancho * FRASCO_ANCHO_ESTRECHA;
   let alto = Math.min(Math.max(0, hueco) * FRASCO_HUECO, e.alto * FRASCO_ALTO_ESTRECHA);
   const probe = frascoDesdeArriba(e.ancho / 2, y, alto, anchoMax);
   alto = probe.h;
   const cabe = alto + 0.5 >= minimo && hueco + 0.5 >= minimo;
   if (!cabe && e.menuAbierto && e.alto < ALTO_FRASCO_SE_DESVANECE) {
-    return { frasco: frascoDesdeArriba(e.ancho / 2, y, Math.max(0, hueco * FRASCO_HUECO), anchoMax), visible: false };
+    return {
+      frasco: frascoDesdeArriba(e.ancho / 2, y, Math.max(0, hueco * FRASCO_HUECO), anchoMax),
+      visible: false,
+    };
   }
   if (!cabe && hueco >= minimo) alto = minimo;
   return { frasco: frascoDesdeArriba(e.ancho / 2, y, alto, anchoMax), visible: true };
@@ -298,10 +321,17 @@ function estrecho(e: EntradaLayout): Layout {
     const zonaH = Math.max(0, zonaBottom - zonaTop);
     const hueco = zonaH - relojH - SEPARACION_RELOJ;
     const { frasco, visible } = jarraEnHueco(e, zonaTop, hueco, e.alto * FRASCO_MIN_CERRADO);
-    const grupo = frasco.h + SEPARACION_RELOJ + relojH;
+    const libre = Math.max(0, zonaH - frasco.h - relojH);
+    const separacion = Math.max(SEPARACION_RELOJ, libre / 3);
+    const grupo = frasco.h + separacion + relojH;
     const inicio = zonaTop + Math.max(0, (zonaH - grupo) / 2);
-    const puesto = { ...frasco, y: inicio };
-    const reloj = caja((e.ancho - relojW) / 2, puesto.y + puesto.h + SEPARACION_RELOJ, relojW, relojH);
+    const vuela = Math.max(0, inicio - cajaNube({ ...frasco, y: inicio }).y);
+    const visual = vuela + grupo;
+    let y = zonaTop + vuela + Math.max(0, (zonaH - visual) / 2);
+    y = Math.min(y, zonaTop + Math.max(0, zonaH - grupo));
+    y = Math.max(zonaTop, y);
+    const puesto = { ...frasco, y };
+    const reloj = caja((e.ancho - relojW) / 2, puesto.y + puesto.h + separacion, relojW, relojH);
     const menu = caja(menuX, e.alto + FUERA, menuW, Math.min(e.altoMenu, topeDiseno));
     return {
       ancha: false,
