@@ -58,7 +58,7 @@ interface ModoTema {
   luz: LuzMundo;               // dirección EN EL MUNDO, intensidad, brillo de borde, sombra
   contenido: ContenidoTema;    // agua { color, opacidad } o arena { tonos[], tamaño }
   reloj: { digitos: string; pista: string };
-  ui: { tinta: string; tintaSuave: string; velo: string; veloBrillo: number; borde: string };
+  ui: { tinta: string; tintaSuave: string; velo: string; borde: string; brillo: string; sombra: string };
   barra: string;               // theme-color del navegador
 }
 ```
@@ -241,12 +241,12 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 
 | Propiedad | Valor | Por qué |
 |---|---|---|
-| Desenfoque | `backdrop-filter: blur(36px) saturate(1.1) brightness(var(--vidrio-brillo))` | Muy esmerilado: las luces del fondo se convierten en bokeh suave y el texto se lee. |
-| Tinte | **Ninguno.** Velo blanco, sin color: claro `rgba(255,255,255,0.30)`, oscuro `rgba(255,255,255,0.07)` | El color lo pone el fondo, no el tema. |
-| Brillo | claro 1,04 · oscuro 0,78 (acromático) | En oscuro, los orbes brillantes bajo el texto bajarían el contraste; atenuar sin teñir lo evita. |
-| Borde | 1 px, claro `rgba(255,255,255,0.45)`, oscuro `rgba(255,255,255,0.14)` | Una línea de luz finísima que define el panel. |
+| Desenfoque | `backdrop-filter: blur(36px) saturate(1.5)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El fondo se ve muy desenfocado, con sus colores y luces. |
+| Tinte | Velo blanco, sin gris: claro `rgba(255,255,255,0.22)`, oscuro `rgba(255,255,255,0.08)` | Bajo, para que el fondo se lea a través del vidrio. |
+| Brillo | `inset 0 1px 0 rgba(255,255,255,0.25)` | Un filo de luz arriba, sin apagar la escena. |
+| Borde | 1 px, claro `rgba(255,255,255,0.32)`, oscuro `rgba(255,255,255,0.30)` | Una línea de luz fina. |
 | Radio | 28 px | Grande y suave. |
-| Sombra | Ninguna (como mucho un brillo interior de 1 px) | Sin sombras pesadas. |
+| Sombra | Exterior, suave y difusa | Separa el panel sin tapar el fondo. |
 | Texto | `ui.tinta` del tema; contraste ≥ 4,5:1 medido en la captura | Legible sobre cualquier fondo. |
 | Sin soporte de `backdrop-filter` | Velo al 85 % | Que nunca quede transparente e ilegible. |
 

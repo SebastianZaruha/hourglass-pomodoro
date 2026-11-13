@@ -10,8 +10,10 @@ test('el texto del menú contrasta al menos 4.5 a 1 en cada tema y modo', async 
   );
   try {
     for (const tema of mod.TEMAS) {
-      for (const modo of [tema.claro, tema.oscuro]) {
-        const papel = modo.ui.veloBrillo > 1 ? '#ffffff' : '#000000';
+      for (const [modo, papel] of [
+        [tema.claro, '#ffffff'],
+        [tema.oscuro, '#000000'],
+      ]) {
         const relacion = mod.contraste(modo.ui.tinta, papel);
         assert.ok(relacion >= 4.5, `${tema.id} ${relacion.toFixed(2)}`);
       }

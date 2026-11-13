@@ -33,8 +33,11 @@ export interface UiTema {
   readonly tinta: string;
   readonly tintaSuave: string;
   readonly velo: string;
-  readonly veloBrillo: number;
   readonly borde: string;
+  /** Brillo interior, arriba. */
+  readonly brillo: string;
+  /** Sombra exterior, suave. */
+  readonly sombra: string;
 }
 
 export interface FotoEstrecha {

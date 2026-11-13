@@ -4,9 +4,9 @@
   background: var(--velo-opaco);
   border: 1px solid var(--borde);
   border-radius: var(--radio-panel);
-  box-shadow: none;
+  box-shadow: var(--vidrio-brillo), var(--vidrio-sombra);
   color: var(--tinta);
-  backdrop-filter: blur(var(--vidrio-blur)) saturate(var(--vidrio-saturacion)) brightness(var(--velo-brillo));
+  backdrop-filter: blur(var(--vidrio-blur)) saturate(var(--vidrio-saturacion));
 }
 
 @supports (backdrop-filter: blur(1px)) {

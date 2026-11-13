@@ -12,21 +12,6 @@ export const DURACION_RAPIDA = 160;
 export const DURACION_NORMAL = 360;
 export const DURACION_LENTA = 620;
 export const CURVA = 'cubic-bezier(0.33, 0, 0.2, 1)';
-export const VIDRIO_BLUR = 36;
-export const VIDRIO_SATURACION = 1.1;
-
-/** Velo blanco, sin matiz. Claro 30 %, oscuro 7 %. */
-export const VIDRIO_CLARO = {
-  velo: 'rgba(255, 255, 255, 0.30)',
-  veloBrillo: 1.04,
-  borde: 'rgba(255, 255, 255, 0.45)',
-} as const;
-
-export const VIDRIO_OSCURO = {
-  velo: 'rgba(255, 255, 255, 0.07)',
-  veloBrillo: 0.78,
-  borde: 'rgba(255, 255, 255, 0.14)',
-} as const;
 
 /** Elegido: blanco al 72 % en claro y al 18 % en oscuro. Hover: blanco al 10 %. */
 export const CONTROL_ELEGIDO_CLARO = 'rgba(255, 255, 255, 0.72)';

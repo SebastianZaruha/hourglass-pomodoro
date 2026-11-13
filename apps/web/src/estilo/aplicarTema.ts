@@ -1,4 +1,5 @@
 import type { ModoTema } from '../temas/tipos';
+import { VIDRIO } from '../temas/vidrio';
 import {
   CONTROL_ELEGIDO_CLARO,
   CONTROL_ELEGIDO_OSCURO,
@@ -20,8 +21,11 @@ export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' |
     '--tinta': modo.ui.tinta,
     '--tinta-suave': modo.ui.tintaSuave,
     '--velo': modo.ui.velo,
-    '--velo-brillo': String(modo.ui.veloBrillo),
     '--borde': modo.ui.borde,
+    '--vidrio-blur': `${VIDRIO.blur}px`,
+    '--vidrio-saturacion': String(VIDRIO.saturacion),
+    '--vidrio-brillo': modo.ui.brillo,
+    '--vidrio-sombra': modo.ui.sombra,
     '--reserva': modo.reserva,
     '--control-elegido': elegido,
     '--control-hover': CONTROL_HOVER,
