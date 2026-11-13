@@ -166,6 +166,9 @@ function Timer({
 
   const paused = view.status === 'paused';
   useEffect(() => {
+    giro.enPausa(paused);
+  }, [giro, paused]);
+  useEffect(() => {
     if (paused) avisos.setLegal(null);
   }, [paused, avisos.setLegal]);
 
@@ -288,29 +291,28 @@ function Timer({
             />
           </div>
         </div>
-
-        <SiteFooter
-          lang={lang}
-          onCookies={() => avisos.setBannerOpen(true)}
-          onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
-        />
-        {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} /> : null}
-        <CookieBanner
-          open={avisos.bannerOpen}
-          lang={lang}
-          onChoose={avisos.chooseCookies}
-          onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
-        />
-        {avisos.legal ? (
-          <LegalOverlay
-            src={avisos.legal.href}
-            title={avisos.legal.title}
-            onClose={() => avisos.setLegal(null)}
-            onConfigure={() => avisos.setBannerOpen(true)}
-          />
-        ) : null}
       </div>
-      {paused ? <Pausa word={t.paused} hint={hint} /> : null}
+      <SiteFooter
+        lang={lang}
+        onCookies={() => avisos.setBannerOpen(true)}
+        onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
+      />
+      {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} /> : null}
+      <CookieBanner
+        open={avisos.bannerOpen}
+        lang={lang}
+        onChoose={avisos.chooseCookies}
+        onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
+      />
+      {avisos.legal ? (
+        <LegalOverlay
+          src={avisos.legal.href}
+          title={avisos.legal.title}
+          onClose={() => avisos.setLegal(null)}
+          onConfigure={() => avisos.setBannerOpen(true)}
+        />
+      ) : null}
+      {paused ? <Pausa word={t.paused} hint={t.hintPaused} /> : null}
       <button
         type="button"
         id="menu-button"
