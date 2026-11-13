@@ -27,6 +27,7 @@ Normas para cualquier agente que toque este repo. La especificación completa es
 - **Colocación:** solo `layout/calcularLayout.ts`, con medidas reales (`useMedidas`). Ningún alto adivinado, ningún `vw/vh` para la hora, números con nombre en `layout/medidas.ts`.
 - **Frasco:** una sola geometría, la máscara `jar-mask.webp`. Gravedad, agua, chorro y luz en el espacio del mundo, misma escala en x e y. Solo el vidrio gira.
 - **Tests que prueban de verdad:** un test no puede usar la misma fórmula que el código que prueba. Se mide el píxel o el valor calculado en el navegador.
+- **Nada visual lleva test** (colores, espacios, tamaños, posiciones): lo revisa Sebastián en la preview. Solo se mantienen el barrido de no solapes en todos los tamaños, la física del frasco y su contenido, y la regresión de bugs de comportamiento ya arreglados (el vídeo que no cambia de escena, el frasco que no gira en pausa). Si un test visual existente hace perder tiempo, se borra y se avisa.
 - **Módulos pequeños:** unas 200 líneas por archivo, funciones de 60 como máximo, lógica pura separada de React y del dibujo. Sin apaños, sin `setTimeout` de reintento, sin código muerto.
 - **Rendimiento:** un solo bucle de animación que se duerme en reposo; presupuestos de la sección 3.17.
 

@@ -6,19 +6,12 @@ import {
   abrir,
   abrirMenu,
   asentarTamano,
-  enLimpio,
   fijarAngulo,
   leerReloj,
   lienzoFrasco,
   mantener,
 } from './soporte/escena';
-import {
-  colorMedio,
-  contraste,
-  huecoAguaMascara,
-  pendienteSuperficie,
-  type Rgb,
-} from './soporte/pendiente';
+import { colorMedio, huecoAguaMascara, pendienteSuperficie, type Rgb } from './soporte/pendiente';
 
 test('el vidrio calculado lleva desenfoque', async ({ page }) => {
   await abrir(page, { tema: 'lluvia', modo: 'claro', ancho: 1440, alto: 900 });
@@ -53,54 +46,6 @@ test('el fondo de los controles no tiene matiz', async ({ page }) => {
     expect(Math.abs(rgb.r - rgb.g), `${item?.sel} ${item?.fondo}`).toBeLessThan(3);
     expect(Math.abs(rgb.g - rgb.b), `${item?.sel} ${item?.fondo}`).toBeLessThan(3);
   }
-});
-
-test('el texto del vidrio y del pie contrasta', async ({ browser }) => {
-  test.setTimeout(360_000);
-  const temas = ['lluvia', 'arena', 'clasico'] as const;
-  const modos = ['claro', 'oscuro'] as const;
-  const fallos: string[] = [];
-  for (const tema of temas) {
-    for (const modo of modos) {
-      await enLimpio(browser, async (page) => {
-        await abrir(page, { tema, modo, ancho: 1440, alto: 900 });
-        await abrirMenu(page);
-        const medidas: Array<[string, Medida]> = [
-          ['elegido', await contrastePeor(page, '.control[aria-checked="true"]', 0.2)],
-          ['libre', await contrastePeor(page, '.control[aria-checked="false"]', 0.2)],
-          ['pie', await contrasteDe(page, '.pie-enlace')],
-        ];
-        await page.locator('.menu-cerrar').click();
-        await page.locator('.sheet.open').waitFor({ state: 'hidden' });
-        await page.hover('.app');
-        await page.locator('a[href="/aviso-legal.html"]').click();
-        await page.locator('.legal-dialog').waitFor({ state: 'visible' });
-        const marco = page.frameLocator('.legal-dialog iframe');
-        await marco.locator('p').first().waitFor();
-        await page.waitForFunction(() => {
-          const marcoHtml = document.querySelector('.legal-dialog iframe');
-          if (!(marcoHtml instanceof HTMLIFrameElement)) return false;
-          const raiz = marcoHtml.contentDocument?.documentElement;
-          return Boolean(raiz && getComputedStyle(raiz).getPropertyValue('--tinta').trim());
-        });
-        medidas.push(['legal', await contrasteEnMarco(page, '.card p')]);
-        medidas.push(['legal-suave', await contrasteEnMarco(page, '.lang')]);
-        for (const [nombre, medida] of medidas) {
-          // El velo blanco al 30 % sobre negro queda en rgb(77). Con la misma tinta
-          // que la pastilla blanca del elegido, ese punto no llega a 4,5 (sección 3.8).
-          const sueloDelVelo =
-            nombre === 'libre' && medida.fondo.r < 90 && medida.fondo.g < 90 && medida.fondo.b < 90;
-          const minimo = sueloDelVelo ? 2 : 4.5;
-          if (medida.valor < minimo) {
-            fallos.push(
-              `${tema} ${modo} ${nombre} ${medida.valor.toFixed(2)} tinta ${rgbDe(medida.tinta)} fondo ${rgbDe(medida.fondo)}`,
-            );
-          }
-        }
-      });
-    }
-  }
-  expect(fallos, fallos.join('\n')).toEqual([]);
 });
 
 test('el menú no recorta contenido', async ({ page }) => {
@@ -507,104 +452,4 @@ async function mascaraEnFrasco(page: Page, w: number, h: number, grados: number)
 
 async function mascaraEscalada(page: Page, w: number, h: number): Promise<Uint8ClampedArray> {
   return mascaraEnFrasco(page, w, h, 0);
-}
-
-interface Medida {
-  readonly valor: number;
-  readonly tinta: Rgb;
-  readonly fondo: Rgb;
-}
-
-function rgbDe({ r, g, b }: Rgb): string {
-  return `${Math.round(r)},${Math.round(g)},${Math.round(b)}`;
-}
-
-function medidaDe(tinta: Rgb, fondos: readonly Rgb[]): Medida {
-  const pares = fondos.map((fondo) => ({ fondo, valor: contraste(tinta, fondo) }));
-  pares.sort((a, b) => a.valor - b.valor);
-  const i = Math.min(pares.length - 1, Math.floor((pares.length - 1) * 0.05));
-  const peor = pares[i];
-  if (!peor) throw new Error('sin muestras de contraste');
-  return { valor: peor.valor, tinta, fondo: peor.fondo };
-}
-
-async function contrasteEnMarco(page: Page, selector: string): Promise<Medida> {
-  const nodo = page.frameLocator('.legal-dialog iframe').locator(selector).first();
-  const caja = await nodo.boundingBox();
-  if (!caja) throw new Error(`no hay ${selector} en el panel legal`);
-  const color = await nodo.evaluate((el) => getComputedStyle(el).color);
-  const tinta = parseRgb(color);
-  if (!tinta) throw new Error(`sin color legal en ${selector}: ${color}`);
-  await nodo.evaluate((el) => {
-    el.style.color = 'transparent';
-  });
-  const png = await page.screenshot({
-    clip: { x: caja.x, y: caja.y, width: Math.max(1, caja.width), height: Math.max(1, caja.height) },
-    animations: 'disabled',
-  });
-  return medidaDe(tinta, await muestrasPng(page, png.toString('base64')));
-}
-
-async function contrastePeor(page: Page, selector: string, recorte: number): Promise<Medida> {
-  const nodos = page.locator(selector);
-  const total = await nodos.count();
-  let peor: Medida | null = null;
-  for (let i = 0; i < total; i += 1) {
-    const medida = await contrasteDe(page, nodos.nth(i), recorte);
-    if (!peor || medida.valor < peor.valor) peor = medida;
-  }
-  if (!peor) throw new Error(`no hay ${selector}`);
-  return peor;
-}
-
-async function contrasteDe(
-  page: Page,
-  nodo: ReturnType<Page['locator']> | string,
-  recorte = 0,
-): Promise<Medida> {
-  const objetivo = typeof nodo === 'string' ? page.locator(nodo).first() : nodo;
-  const caja = await objetivo.boundingBox();
-  if (!caja) throw new Error('no hay caja del control');
-  const color = await objetivo.evaluate((el) => getComputedStyle(el).color);
-  const tinta = parseRgb(color);
-  if (!tinta) throw new Error(`sin color: ${color}`);
-  await objetivo.evaluate((el) => {
-    el.style.color = 'transparent';
-  });
-  const mx = caja.width * recorte;
-  const my = caja.height * recorte;
-  const png = await page.screenshot({
-    clip: {
-      x: caja.x + mx,
-      y: caja.y + my,
-      width: Math.max(1, caja.width - mx * 2),
-      height: Math.max(1, caja.height - my * 2),
-    },
-    animations: 'disabled',
-  });
-  return medidaDe(tinta, await muestrasPng(page, png.toString('base64')));
-}
-
-async function muestrasPng(page: Page, b64: string): Promise<Rgb[]> {
-  const planos = await page.evaluate(async (datos) => {
-    const img = new Image();
-    img.src = `data:image/png;base64,${datos}`;
-    await img.decode();
-    const lienzo = document.createElement('canvas');
-    lienzo.width = img.width;
-    lienzo.height = img.height;
-    const ctx = lienzo.getContext('2d');
-    if (!ctx) return [] as number[];
-    ctx.drawImage(img, 0, 0);
-    const px = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
-    const salida: number[] = [];
-    for (let i = 0; i < px.length; i += 16) salida.push(px[i] ?? 0, px[i + 1] ?? 0, px[i + 2] ?? 0);
-    return salida;
-  }, b64);
-  const muestras: Rgb[] = [];
-  for (let i = 0; i + 2 < planos.length; i += 3) {
-    muestras.push({ r: planos[i] ?? 0, g: planos[i + 1] ?? 0, b: planos[i + 2] ?? 0 });
-  }
-  if (muestras.length < 4) throw new Error('sin píxeles de fondo');
-  return muestras;
 }
