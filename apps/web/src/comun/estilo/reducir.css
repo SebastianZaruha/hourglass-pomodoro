@@ -1,0 +1,29 @@
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .readout,
+  .stage {
+    transition: none;
+  }
+
+  .app.intro-reduced.intro-play .readout,
+  .app.intro-reduced.intro-play .menu-btn,
+  .app.intro-reduced.intro-play .site-footer,
+  .app.intro-reduced.intro-play .banner {
+    transition:
+      opacity 280ms ease,
+      filter 280ms ease;
+  }
+
+  .app.intro-menu-pulse .menu-btn,
+  .app-promo {
+    animation: none;
+  }
+
+  .sheet {
+    filter: none;
+  }
+
+  .app.is-paused .scene {
+    filter: none;
+  }
+}

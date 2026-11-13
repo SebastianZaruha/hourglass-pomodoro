@@ -1,0 +1,16 @@
+.glass-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.glass-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  border: 0;
+  outline: none;
+}
