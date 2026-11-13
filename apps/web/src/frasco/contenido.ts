@@ -1,7 +1,6 @@
 import type { SandSimulation, StreamParticles } from '@reloj/core';
 
 import type { Caja } from '../layout/calcularLayout';
-import { dibujarChorro } from './granos';
 
 export interface ContenidoFrame {
   readonly frasco: Caja;
@@ -54,14 +53,6 @@ export function dibujarContenido(ctx: CanvasRenderingContext2D, frame: Contenido
   if (frame.tipo === 'arena' && frame.arena && frame.sim) {
     g.imageSmoothingEnabled = true;
     g.drawImage(frame.arena, 0, 0, pw, ph);
-    if (frame.chorro && frame.lut) {
-      dibujarChorro(g, frame.sim, frame.chorro, frame.lut, pw, ph, {
-        tinte: frame.tinte,
-        fuerzaTinte: frame.fuerzaTinte,
-        brillo: frame.brillo,
-        direccion: frame.direccion,
-      });
-    }
   } else {
     return;
   }

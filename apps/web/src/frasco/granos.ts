@@ -1,6 +1,8 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
+import type { Caja } from '../layout/calcularLayout';
 import { vectorLuz } from './alpha';
+import { JAR_NECK_Y } from './geometria';
 
 /** Lo que la luz de la escena le hace al color de la arena. */
 export interface LuzGrano {
@@ -10,9 +12,19 @@ export interface LuzGrano {
   readonly direccion: number;
 }
 
+function sextoTono(tones: ContentPalette['grainTones']): readonly [number, number, number] {
+  const a = tones[0] ?? [200, 170, 130];
+  const b = tones[tones.length - 1] ?? a;
+  return [
+    Math.round((a[0] ?? 0) * 0.4 + (b[0] ?? 0) * 0.6),
+    Math.round((a[1] ?? 0) * 0.4 + (b[1] ?? 0) * 0.6),
+    Math.round((a[2] ?? 0) * 0.4 + (b[2] ?? 0) * 0.6),
+  ];
+}
+
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
-  const tones = palette.grainTones;
+  const tones = palette.grainTones.length >= 6 ? palette.grainTones : [...palette.grainTones, sextoTono(palette.grainTones)];
   const mean = [0, 1, 2].map((c) => tones.reduce((sum, tone) => sum + (tone[c] ?? 0), 0) / tones.length);
   for (let t = 1; t < 256; t++) {
     const h = hash32(t * 977);
@@ -30,6 +42,45 @@ export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
     }
   }
   return lut;
+}
+
+let sello: ImageData | null = null;
+
+/** Un sello de 3×3 por grano. Las esquinas van a media opacidad. Un solo putImageData. */
+export function pintarSello(ctx: CanvasRenderingContext2D, sim: SandSimulation, lut: Uint8ClampedArray): void {
+  const cols = sim.cols * 3;
+  const rows = sim.rows * 3;
+  if (ctx.canvas.width !== cols || ctx.canvas.height !== rows) {
+    ctx.canvas.width = cols;
+    ctx.canvas.height = rows;
+  }
+  if (!sello || sello.width !== cols || sello.height !== rows) sello = ctx.createImageData(cols, rows);
+  const pixels = new Uint32Array(sello.data.buffer, sello.data.byteOffset, cols * rows);
+  pixels.fill(0);
+  const cells = sim.cells;
+  const ancho = sim.cols;
+  for (let i = 0; i < cells.length; i++) {
+    const tone = cells[i] ?? 0;
+    if (tone === 0) continue;
+    const col = i % ancho;
+    const row = (i / ancho) | 0;
+    const l = tone * 3;
+    const r = lut[l] ?? 0;
+    const g = lut[l + 1] ?? 0;
+    const b = lut[l + 2] ?? 0;
+    const lleno = (255 << 24) | (b << 16) | (g << 8) | r;
+    const medio = (128 << 24) | (b << 16) | (g << 8) | r;
+    const x0 = col * 3;
+    const y0 = row * 3;
+    for (let dy = 0; dy < 3; dy++) {
+      const fila = (y0 + dy) * cols + x0;
+      for (let dx = 0; dx < 3; dx++) {
+        const esquina = (dx === 0 || dx === 2) && (dy === 0 || dy === 2);
+        pixels[fila + dx] = esquina ? medio : lleno;
+      }
+    }
+  }
+  ctx.putImageData(sello, 0, 0);
 }
 
 export function paintCells(sim: SandSimulation, lut: Uint8ClampedArray, image: ImageData): void {
@@ -153,5 +204,35 @@ export function dibujarChorro(
     ctx.beginPath();
     ctx.arc((px / sim.cols) * w, (py / sim.rows) * h, Math.max(0.6, size * cellW), 0, Math.PI * 2);
     ctx.fill();
+  }
+}
+
+/** El chorro cae en vertical en el mundo, desde el cuello, sin seguir el giro del frasco. */
+export function dibujarChorroMundo(
+  ctx: CanvasRenderingContext2D,
+  sim: SandSimulation,
+  particles: StreamParticles,
+  lut: Uint8ClampedArray,
+  frasco: Caja,
+  angulo: number,
+): void {
+  const count = particles.count;
+  if (count === 0) return;
+  const cx = frasco.x + frasco.w / 2;
+  const cy = frasco.y + frasco.h / 2;
+  const c = Math.cos(angulo);
+  const s = Math.sin(angulo);
+  const cuelloY = (JAR_NECK_Y - 0.5) * frasco.h;
+  const nx = cx - cuelloY * s;
+  for (let i = 0; i < count; i++) {
+    const py = particles.y[i] ?? 0;
+    const px = particles.x[i] ?? 0;
+    const ly = (py / sim.rows - 0.5) * frasco.h;
+    const lx = (px / sim.cols - 0.5) * frasco.w;
+    const wy = cy + lx * s + ly * c;
+    const tone = particles.tone[i] ?? 1;
+    const l = tone * 3;
+    ctx.fillStyle = `rgb(${lut[l] ?? 0},${lut[l + 1] ?? 0},${lut[l + 2] ?? 0})`;
+    ctx.fillRect(nx - 0.75, wy, 1.5, 5);
   }
 }

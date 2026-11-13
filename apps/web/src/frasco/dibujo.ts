@@ -5,6 +5,7 @@ import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import type { Activos } from './activos';
 import { dibujarContenido } from './contenido';
+import { dibujarChorroMundo } from './granos';
 import type { Geometria } from './geometria';
 import { aplicarLuz } from './luzAplicar';
 import { pintarAgua } from './pintarAgua';
@@ -71,6 +72,10 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
     });
   }
   ctx.restore();
+
+  if (orden.tipo === 'arena' && orden.sim && orden.chorro && orden.lut) {
+    dibujarChorroMundo(ctx, orden.sim, orden.chorro, orden.lut, orden.frasco, orden.angulo);
+  }
 
   if (orden.tipo === 'agua' && orden.geo) {
     pintarAgua(ctx, {

@@ -3,6 +3,7 @@ import {
   SAND,
   SandSimulation,
   StreamParticles,
+  TiltLod,
   flowBudget,
   syncSandToTarget,
   type SessionSnapshot,
@@ -17,7 +18,7 @@ import type { Luz } from '../temas/tipos';
 import { cargarActivos, cargarArena, type Activos } from './activos';
 import { dibujar } from './dibujo';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
-import { buildPaletteLut, pintarGranos } from './granos';
+import { buildPaletteLut, pintarSello } from './granos';
 import { muelleSuperficie } from './fisica/superficie';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
 import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
@@ -114,6 +115,8 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     let superficie: Muelle = muelleQuieto(0);
     let anguloPrevio = 0;
     let vueltaVista = vivo.current.vuelta;
+    const lod = new TiltLod();
+    let ultimoSim = 0;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -131,14 +134,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
 
     const pintarArena = () => {
       if (!arenaCtx) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.max(2, Math.round(vivo.current.layout.frasco.w * dpr));
-      const h = Math.max(2, Math.round(vivo.current.layout.frasco.h * dpr));
-      if (arena.width !== w || arena.height !== h) {
-        arena.width = w;
-        arena.height = h;
-      }
-      pintarGranos(arenaCtx, sim, lut, w, h, vivo.current.luz);
+      pintarSello(arenaCtx, sim, lut);
     };
 
     const frame = (now: number) => {
@@ -200,14 +196,13 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       }
       if (m.tipo === 'arena') {
         cargarArena(activos, despertar);
-        const gravedad = Math.abs(estado.angulo) < 0.05 ? GRAVITY_DOWN : gravedadDelAngulo(estado.angulo);
-        // Inclinado, la arena se asienta ya en el lado bajo del mundo.
-        if (Math.abs(estado.angulo) >= 0.05) {
-          sim.arrange(sim.topCount, sim.bottomCount, gravedad, { crater: 0, mound: 0 });
-          movio = true;
-        } else if (
-          paso.volteoCompletado ||
-          (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle')
+        const inclinado = Math.abs(estado.angulo) >= 0.05;
+        const suave = inclinado ? gravedadDelAngulo(estado.angulo) : GRAVITY_DOWN;
+        const gravedad = lod.update(now, suave, suave, ultimoSim);
+        const tSim = performance.now();
+        if (
+          !inclinado &&
+          (paso.volteoCompletado || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle'))
         ) {
           if (sim.topCount !== objetivo) {
             sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
@@ -218,9 +213,10 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
           const budget = flowBudget(inicial, snap.durationMs, sim.totalGrains);
           if (syncSandToTarget(sim, objetivo, gravedad, { ...budget, crater: 0.16 }) !== 'idle') movio = true;
           if (sim.step(gravedad) > 0) movio = true;
-        } else if (estado.fase === 'arrastrando' || Math.abs(estado.angulo) > 0.01) {
+        } else if (inclinado || estado.fase === 'arrastrando') {
           if (sim.step(gravedad) > 0) movio = true;
         }
+        ultimoSim = performance.now() - tSim;
         input.dt = dt;
         input.emitting =
           !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(gravedad);
