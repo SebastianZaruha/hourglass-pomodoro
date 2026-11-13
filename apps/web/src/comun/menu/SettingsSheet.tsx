@@ -8,6 +8,8 @@ import {
   languageSpoken,
   nearestStepIndex,
   nextInCycle,
+  samePlan,
+  sessionPlanFor,
   stepMinutes,
   stepRounds,
   stepToDuration,
@@ -16,6 +18,7 @@ import {
   LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
+  type Language,
   type Messages,
   type Settings,
 } from '@reloj/core';
@@ -24,6 +27,11 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
+
+interface EscenaMenu {
+  readonly id: string;
+  readonly nombre: { readonly es: string; readonly en: string };
+}
 
 interface Props {
   readonly open: boolean;
@@ -35,28 +43,78 @@ interface Props {
       | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
   ) => void;
   readonly onClose: () => void;
+  readonly escenas?: readonly EscenaMenu[];
+  readonly escenaId?: string;
+  readonly idioma?: Language;
+  readonly onEscena?: (id: string) => void;
+  /** Solo si el plan (duración o sesión) cambia. Modo, idioma y sonido no lo llaman. */
+  readonly alReiniciar?: () => void;
 }
 
-export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
+export function SettingsSheet({
+  open,
+  settings,
+  t,
+  onChange,
+  onClose,
+  escenas = [],
+  escenaId = '',
+  idioma = 'es',
+  onEscena = () => undefined,
+  alReiniciar = () => undefined,
+}: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
   const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
   const [singleCustom, setSingleCustom] = useState(() => !onPreset);
   const customOn = singleCustom || !onPreset;
+  const hoja = useRef<HTMLDivElement>(null);
+  const [desborda, setDesborda] = useState(false);
 
   useEffect(() => {
     if (!onPreset) setSingleCustom(true);
   }, [onPreset]);
 
+  useEffect(() => {
+    const el = hoja.current;
+    if (!el) return;
+    const medir = () => setDesborda(el.scrollHeight > el.clientHeight + 1);
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    window.addEventListener('resize', medir);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener('resize', medir);
+    };
+  }, [open, settings, cycles, customOn, escenas.length]);
+
+  const aplicar = (
+    patch:
+      | Partial<Omit<Settings, 'version' | 'updatedAt'>>
+      | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
+  ) => {
+    const parcial = typeof patch === 'function' ? patch(settings) : patch;
+    const siguiente: Settings = { ...settings, ...parcial };
+    if (!samePlan(sessionPlanFor(settings), sessionPlanFor(siguiente))) alReiniciar();
+    onChange(patch);
+  };
+
   const chooseCustom = () => {
     const seed = settings.cyclePreset === 'custom' ? settings.customCycle : activeCycleConfig(settings);
-    onChange({ sessionMode: 'cycles', cyclePreset: 'custom', customCycle: seed });
+    aplicar({ sessionMode: 'cycles', cyclePreset: 'custom', customCycle: seed });
   };
+
+  const tema = themeName(t, settings.theme);
+  const idiomaNombre = languageName(t, settings.language);
 
   return (
     <div
-      className={open ? 'sheet open' : 'sheet'}
+      ref={hoja}
+      className={['sheet', 'vidrio', open ? 'open' : '', desborda ? 'desborda' : '']
+        .filter(Boolean)
+        .join(' ')}
       role="dialog"
       aria-modal="true"
       aria-hidden={!open}
@@ -71,18 +129,45 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
     >
       <div className="sheet-head">
         <h2>{t.settings}</h2>
-        <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
+        <button
+          type="button"
+          className="control redondo sheet-close"
+          aria-label={t.closeSettings}
+          onClick={onClose}
+        >
           ×
         </button>
       </div>
+
+      {escenas.length > 1 ? (
+        <div
+          className="scene-row"
+          role="radiogroup"
+          aria-label={t.settings}
+          style={{ ['--escenas' as string]: escenas.length }}
+        >
+          {escenas.map((escena) => (
+            <button
+              key={escena.id}
+              type="button"
+              role="radio"
+              aria-checked={escena.id === escenaId}
+              className="control"
+              onClick={() => onEscena(escena.id)}
+            >
+              {escena.nombre[idioma]}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
         <button
           type="button"
           role="radio"
           aria-checked={!cycles}
-          className={!cycles ? 'pill pill-fill' : 'pill'}
-          onClick={() => onChange({ sessionMode: 'single' })}
+          className="control"
+          onClick={() => aplicar({ sessionMode: 'single' })}
         >
           {t.single}
         </button>
@@ -90,8 +175,8 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           type="button"
           role="radio"
           aria-checked={cycles}
-          className={cycles ? 'pill pill-fill' : 'pill'}
-          onClick={() => onChange({ sessionMode: 'cycles' })}
+          className="control"
+          onClick={() => aplicar({ sessionMode: 'cycles' })}
         >
           {t.cycles}
         </button>
@@ -106,9 +191,9 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 type="button"
                 role="radio"
                 aria-checked={settings.cyclePreset === preset.id}
-                className={settings.cyclePreset === preset.id ? 'chip chip-on' : 'chip'}
+                className="control"
                 aria-label={t.presetSpoken(preset.config.workMin, preset.config.breakMin)}
-                onClick={() => onChange({ sessionMode: 'cycles', cyclePreset: preset.id })}
+                onClick={() => aplicar({ sessionMode: 'cycles', cyclePreset: preset.id })}
               >
                 {preset.config.workMin}/{preset.config.breakMin}
               </button>
@@ -117,7 +202,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
               type="button"
               role="radio"
               aria-checked={settings.cyclePreset === 'custom'}
-              className={settings.cyclePreset === 'custom' ? 'chip chip-on' : 'chip'}
+              className="control"
               onClick={chooseCustom}
             >
               {t.custom}
@@ -134,7 +219,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 canDec={cycle.workMin > CYCLE_LIMITS.minMinutes}
                 canInc={cycle.workMin < CYCLE_LIMITS.maxMinutes}
                 onStep={(d) =>
-                  onChange((current) => {
+                  aplicar((current) => {
                     const next = activeCycleConfig(current);
                     return {
                       sessionMode: 'cycles',
@@ -153,7 +238,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 canDec={cycle.breakMin > CYCLE_LIMITS.minMinutes}
                 canInc={cycle.breakMin < CYCLE_LIMITS.maxMinutes}
                 onStep={(d) =>
-                  onChange((current) => {
+                  aplicar((current) => {
                     const next = activeCycleConfig(current);
                     return {
                       sessionMode: 'cycles',
@@ -172,7 +257,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 canDec={cycle.rounds > CYCLE_LIMITS.minRounds}
                 canInc={cycle.rounds < CYCLE_LIMITS.maxRounds}
                 onStep={(d) =>
-                  onChange((current) => {
+                  aplicar((current) => {
                     const next = activeCycleConfig(current);
                     return {
                       sessionMode: 'cycles',
@@ -194,11 +279,11 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 type="button"
                 role="radio"
                 aria-checked={!customOn && lastMin === min}
-                className={!customOn && lastMin === min ? 'chip chip-on' : 'chip'}
+                className="control"
                 aria-label={t.minutes(min)}
                 onClick={() => {
                   setSingleCustom(false);
-                  onChange({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
+                  aplicar({ sessionMode: 'single', lastDurationMs: min * MINUTE_MS });
                 }}
               >
                 {min}
@@ -208,14 +293,14 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
               type="button"
               role="radio"
               aria-checked={customOn}
-              className={customOn ? 'chip chip-on' : 'chip'}
+              className="control"
               onClick={() => setSingleCustom(true)}
             >
               {t.custom}
             </button>
           </div>
           {customOn ? (
-            <div className="stepper-row stepper-solo">
+            <div className="stepper-row">
               <Stepper
                 label={t.session}
                 value={`${DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)]} min`}
@@ -227,13 +312,13 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
                 scrubIndex={nearestStepIndex(settings.lastDurationMs)}
                 scrubMax={DURATION_STEPS_MIN.length - 1}
                 onStep={(d) =>
-                  onChange((current) => ({
+                  aplicar((current) => ({
                     sessionMode: 'single',
                     lastDurationMs: stepToDuration(nearestStepIndex(current.lastDurationMs) + d),
                   }))
                 }
                 onScrubIndex={(index) =>
-                  onChange({
+                  aplicar({
                     sessionMode: 'single',
                     lastDurationMs: stepToDuration(index),
                   })
@@ -247,31 +332,33 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       <div className="pref-row">
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="control"
+          aria-pressed="true"
           aria-label={themeSpoken(t, settings.theme)}
-          title={t.tapToChange}
-          onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
+          title={tema === t.automatic ? tema : t.tapToChange}
+          onClick={() => aplicar((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
         >
           <SunIcon />
-          <span>{themeName(t, settings.theme)}</span>
+          <span>{tema === t.automatic ? t.automaticShort : tema}</span>
         </button>
         <button
           type="button"
-          className="pill pill-fill pref"
+          className="control"
+          aria-pressed="true"
           aria-label={languageSpoken(t, settings.language)}
-          title={t.tapToChange}
-          onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
+          title={idiomaNombre === t.automatic ? idiomaNombre : t.tapToChange}
+          onClick={() => aplicar((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
         >
           <GlobeIcon />
-          <span>{languageName(t, settings.language)}</span>
+          <span>{idiomaNombre === t.automatic ? t.automaticShort : idiomaNombre}</span>
         </button>
         <button
           type="button"
-          className={settings.sound ? 'pill pill-fill pref' : 'pill pref'}
+          className="control"
           role="switch"
           aria-checked={settings.sound}
           aria-label={t.sound}
-          onClick={() => onChange((current) => ({ sound: !current.sound }))}
+          onClick={() => aplicar((current) => ({ sound: !current.sound }))}
         >
           <SpeakerIcon off={!settings.sound} />
           <span>{t.sound}</span>
@@ -384,15 +471,23 @@ function Stepper({
       >
         <button
           type="button"
+          className="control redondo"
           aria-label={`${decLabel} ${label}`}
           disabled={!canDec}
           onClick={() => onStep(-1)}
         >
           −
         </button>
-        <span aria-hidden="true">{value}</span>
+        <span className="stepper-valor">
+          <span aria-hidden="true">{value}</span>
+          <span className="stepper-label secundario">
+            <span className="sr-only">{spoken}. </span>
+            {label}
+          </span>
+        </span>
         <button
           type="button"
+          className="control redondo"
           aria-label={`${incLabel} ${label}`}
           disabled={!canInc}
           onClick={() => onStep(1)}
@@ -400,10 +495,6 @@ function Stepper({
           +
         </button>
       </div>
-      <span className="stepper-label">
-        <span className="sr-only">{spoken}. </span>
-        {label}
-      </span>
     </div>
   );
 }
