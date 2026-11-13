@@ -13,14 +13,6 @@ export const DURACION_NORMAL = 360;
 export const DURACION_LENTA = 620;
 export const CURVA = 'cubic-bezier(0.33, 0, 0.2, 1)';
 
-/** Elegido: blanco al 72 % en claro y al 18 % en oscuro. Hover: blanco al 10 %. */
-export const CONTROL_ELEGIDO_CLARO = 'rgba(255, 255, 255, 0.72)';
-export const CONTROL_ELEGIDO_OSCURO = 'rgba(255, 255, 255, 0.18)';
-export const CONTROL_HOVER = 'rgba(255, 255, 255, 0.10)';
-
-/** Sin backdrop-filter el velo sube al 85 % para que el texto no quede al aire. */
-export const VELO_SIN_FILTRO = 'rgba(255, 255, 255, 0.85)';
-
 /** Cortina detrás del panel legal. Negra, sin el marrón de antes. */
 export const SCRIM = 'rgba(0, 0, 0, 0.28)';
 

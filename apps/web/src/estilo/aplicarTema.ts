@@ -1,12 +1,6 @@
 import type { ModoTema } from '../temas/tipos';
-import { VIDRIO } from '../temas/vidrio';
-import {
-  CONTROL_ELEGIDO_CLARO,
-  CONTROL_ELEGIDO_OSCURO,
-  CONTROL_HOVER,
-  SCRIM,
-  VELO_SIN_FILTRO,
-} from './tokens';
+import { CONTROLES, VELO_SIN_FILTRO, VIDRIO, VIDRIO_TEXTO } from '../temas/vidrio';
+import { SCRIM } from './tokens';
 
 /**
  * Escribe en `.app` las variables que salen del modo.
@@ -14,7 +8,6 @@ import {
  */
 export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' | 'dark'): void {
   nodo.style.colorScheme = scheme;
-  const elegido = scheme === 'dark' ? CONTROL_ELEGIDO_OSCURO : CONTROL_ELEGIDO_CLARO;
   const vars: Record<string, string> = {
     '--hora': modo.reloj.digitos,
     '--pista': modo.reloj.pista,
@@ -27,9 +20,15 @@ export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' |
     '--vidrio-brillo': modo.ui.brillo,
     '--vidrio-sombra': modo.ui.sombra,
     '--vidrio-texto': modo.ui.sombraTexto,
+    '--vidrio-tinta': VIDRIO_TEXTO.tinta,
+    '--vidrio-tinta-suave': VIDRIO_TEXTO.tintaSuave,
+    '--vidrio-icono': VIDRIO_TEXTO.icono,
+    '--vidrio-foco': VIDRIO_TEXTO.foco,
+    '--vidrio-linea': VIDRIO_TEXTO.linea,
     '--reserva': modo.reserva,
-    '--control-elegido': elegido,
-    '--control-hover': CONTROL_HOVER,
+    '--control-reposo': CONTROLES.reposo,
+    '--control-hover': CONTROLES.hover,
+    '--control-elegido': CONTROLES.elegido,
     '--velo-opaco': VELO_SIN_FILTRO,
     '--scrim': SCRIM,
   };

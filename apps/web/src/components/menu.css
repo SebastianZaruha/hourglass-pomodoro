@@ -71,7 +71,6 @@
   gap: var(--espacio-3);
   overflow: visible;
   padding: var(--espacio-4);
-  color: var(--tinta);
   opacity: 0;
   pointer-events: none;
   filter: blur(16px);
@@ -179,7 +178,7 @@
 }
 
 .stepper + .stepper {
-  border-left: 1px solid color-mix(in srgb, var(--tinta) 22%, transparent);
+  border-left: 1px solid var(--vidrio-linea);
 }
 
 .stepper-controls {
@@ -188,7 +187,6 @@
   justify-content: center;
   gap: var(--espacio-2);
   font-weight: 500;
-  color: var(--tinta);
 }
 
 .stepper-solo .stepper-controls {
@@ -222,7 +220,7 @@
   display: block;
   margin-top: 2px;
   font-size: var(--texto-13);
-  color: var(--tinta-suave);
+  color: var(--vidrio-tinta-suave);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -28,7 +28,7 @@ export interface RelojTema {
   readonly pista: string;
 }
 
-/** Tinta del texto y el vidrio de ese modo. El velo es blanco en los tres temas. */
+/** Tinta de lo que no es vidrio (pie, botón del menú). El vidrio lleva su propio blanco. */
 export interface UiTema {
   readonly tinta: string;
   readonly tintaSuave: string;

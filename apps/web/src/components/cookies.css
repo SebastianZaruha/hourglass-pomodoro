@@ -6,7 +6,6 @@
   transform: translateX(-50%);
   width: calc(100% - 20px);
   padding: var(--espacio-4) var(--espacio-4) 14px;
-  color: var(--tinta);
 }
 
 [data-layout='wide'] .banner {

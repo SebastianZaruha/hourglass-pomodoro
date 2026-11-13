@@ -58,7 +58,7 @@ interface ModoTema {
   luz: LuzMundo;               // dirección EN EL MUNDO, intensidad, brillo de borde, sombra
   contenido: ContenidoTema;    // agua { color, opacidad } o arena { tonos[], tamaño }
   reloj: { digitos: string; pista: string };
-  ui: { tinta: string; tintaSuave: string; velo: string; borde: string; brillo: string; sombra: string };
+  ui: { tinta: string; tintaSuave: string; velo: string; borde: string; brillo: string; sombra: string; sombraTexto: string };
   barra: string;               // theme-color del navegador
 }
 ```
@@ -242,18 +242,20 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | Propiedad | Valor | Por qué |
 |---|---|---|
 | Desenfoque | `backdrop-filter: blur(32px) saturate(1.4)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El desenfoque no sube: ya bastaba. La saturación devuelve el color del fondo. |
-| Tinte | `rgba(255,255,255,0.04)` en claro y en oscuro. Nada de velo negro | El tinte apagaba los colores. Casi no hay. |
+| Tinte | `rgba(0,0,0,0.12)` en claro y en oscuro. Nada de tinte blanco | Un oscurecido muy bajo deja ver el color del fondo y sostiene el texto blanco. |
+| Texto | Blanco en los dos modos, con sombra oscura suave. Los iconos heredan ese blanco | Como un widget del tiempo: el texto no es oscuro sobre el vidrio. |
 | Brillo | `inset 0 1px 0 rgba(255,255,255,0.22)` | Un filo de luz arriba. |
 | Borde | 1 px `rgba(255,255,255,0.32)` | Una línea clara y fina. |
 | Radio | 28 px | Grande y suave. |
-| Sombra | Exterior, suave. El texto lleva una sombra suave, no un velo | El texto se lee sin tapar el fondo. |
-| Sin soporte de `backdrop-filter` | Velo al 85 % | Que nunca quede transparente e ilegible. |
+| Sombra | Exterior, suave | Separa el panel sin tapar el fondo. |
+| Sin soporte de `backdrop-filter` | Velo negro al 72 % | El texto blanco sigue leyéndose. |
 
 **Controles dentro del vidrio (`.control`):**
-- Cápsula de 40 px de alto (44 px en táctil), texto de 15 px.
-- No elegido: fondo transparente, borde de 1 px con la tinta al 22 %, **texto con la misma tinta que el elegido** (sin bajar opacidad). Así lo no elegido se lee igual de bien.
-- Elegido: fondo blanco al 72 % (claro) o al 18 % (oscuro), mismo borde, peso 500. Neutro, sin color del tema.
-- Hover: fondo blanco al 10 %. Foco de teclado: anillo de 2 px con la tinta.
+- Cápsula de 40 px de alto (44 px en táctil), texto de 15 px, blanco.
+- Sin borde y sin relleno fuerte.
+- Reposo: blanco al 7 %. Hover: blanco al 12 %.
+- Elegido (`aria-checked` o `aria-pressed`): blanco al 18 %, peso 500. Nunca un bloque blanco ni un color del tema.
+- Foco de teclado: outline de 1 px, solo en `:focus-visible`.
 - **Nunca texto cortado con «…»** desde 360 px de ancho. «Automático» pasa a «Auto», con el valor completo en el tooltip.
 
 ### 3.9 Menú

@@ -72,10 +72,17 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   const app = document.querySelector('.app');
   if (app) {
     const estilos = getComputedStyle(app);
-    for (const nombre of ['--tinta', '--tinta-suave', '--borde']) {
-      const valor = estilos.getPropertyValue(nombre).trim();
-      if (valor) doc.documentElement.style.setProperty(nombre, valor);
+    const copiar: ReadonlyArray<readonly [string, string]> = [
+      ['--tinta', '--vidrio-tinta'],
+      ['--tinta-suave', '--vidrio-tinta-suave'],
+      ['--borde', '--borde'],
+    ];
+    for (const [destino, origen] of copiar) {
+      const valor = estilos.getPropertyValue(origen).trim();
+      if (valor) doc.documentElement.style.setProperty(destino, valor);
     }
+    const sombra = estilos.getPropertyValue('--vidrio-texto').trim();
+    if (sombra) doc.body.style.textShadow = sombra;
     doc.documentElement.style.setProperty('--legal-fondo', 'transparent');
     /* El mismo esquema que la página: si no, Chromium pinta el iframe de blanco opaco. */
     const esquema = estilos.colorScheme === 'dark' ? 'dark' : 'light';

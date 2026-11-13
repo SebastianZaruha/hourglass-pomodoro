@@ -1,11 +1,11 @@
-/* Un solo vidrio y un solo control. El color lo ponen las variables del modo. */
+/* Un solo vidrio y un solo control. El color lo ponen las variables del tema. */
 
 .vidrio {
   background: var(--velo-opaco);
   border: 1px solid var(--borde);
   border-radius: var(--radio-panel);
   box-shadow: var(--vidrio-brillo), var(--vidrio-sombra);
-  color: var(--tinta);
+  color: var(--vidrio-tinta);
   text-shadow: var(--vidrio-texto);
   backdrop-filter: blur(var(--vidrio-blur)) saturate(var(--vidrio-saturacion));
 }
@@ -23,11 +23,11 @@
   gap: var(--espacio-2);
   min-height: 40px;
   padding: 0 var(--espacio-3);
-  border: 1px solid color-mix(in srgb, var(--tinta) 22%, transparent);
+  border: 0;
   border-radius: var(--radio-control);
-  background: transparent;
+  background: var(--control-reposo);
   box-shadow: none;
-  color: var(--tinta);
+  color: inherit;
   font-family: inherit;
   font-size: var(--texto-15);
   font-weight: 400;
@@ -35,6 +35,10 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+}
+
+.control svg {
+  filter: var(--vidrio-icono);
 }
 
 .control:hover {
@@ -45,11 +49,10 @@
 .control[aria-pressed='true'] {
   background: var(--control-elegido);
   font-weight: 500;
-  text-shadow: none;
 }
 
 .control:focus-visible {
-  outline: 2px solid var(--tinta);
+  outline: 1px solid var(--vidrio-foco);
   outline-offset: 2px;
 }
 
