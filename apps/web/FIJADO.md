@@ -14,13 +14,13 @@ Una línea por comportamiento. Lo activo no puede empeorar en ninguna vuelta. En
 
 ## Menú y paneles
 
-- N08 (V1) El menú está en el sitio publicado, en vidrio, con texto blanco, sin scroll ni cortes, con padding igual y − y + redondos. **pendiente**
-- N09 (V1) El menú se abre en pausa. Escena, modo y sonido mantienen la pausa; la duración y Sesión/Ciclos reinician con el giro. **pendiente**
+- N08 (V1) El menú está en el sitio publicado, en vidrio, con texto blanco, sin scroll ni cortes, con padding igual y − y + redondos. **activa**
+- N09 (V1) El menú se abre en pausa. Escena, modo y sonido mantienen la pausa; la duración y Sesión/Ciclos reinician con el giro. **activa**
 - N10 (V2) En pausa: «Pausa» blanca y traducida, la escena borrosa, y el botón del menú y el pie disponibles. **pendiente**
 - N11 (V3) El banner de cookies está en el sitio publicado, en vidrio, a ≥ 12 px del pie, y a 720 px de ancho en pantallas grandes. **pendiente**
 - N12 (V4) El aviso Android está en el sitio publicado. Nunca coincide con las cookies, el menú, la pausa o el panel legal. El reloj nunca lo pisa. **pendiente**
 - N13 (V5) En el panel legal, la cabecera queda fija y nunca tapa el texto. Las URL son las de siempre. **pendiente**
-- N14 (V1) Nada se solapa (reloj, frasco, menú, pie, avisos y botón) a 1440×900 y 390×844. **pendiente**
+- N14 (V1) Nada se solapa (reloj, frasco, menú, pie, avisos y botón) a 1440×900 y 390×844. **activa**
 
 ## Frasco y contenido
 
