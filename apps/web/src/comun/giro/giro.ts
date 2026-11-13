@@ -60,6 +60,7 @@ export function crearGiro() {
   let phaseRequest = false;
 
   let intro: PoseIntro = { activa: false, angulo: 0, escala: 1, sombra: 1 };
+  let quieto = false;
   let velocidad = 0;
   let prevAng = 0;
   let last = 0;
@@ -87,6 +88,12 @@ export function crearGiro() {
   return {
     ocupado: () => flipBusy,
     arrastrando: () => dragOn,
+    enPausa(valor: boolean) {
+      quieto = valor;
+      if (!valor || !dragOn) return;
+      dragOn = false;
+      gestureActive = false;
+    },
     poseIntro: (): PoseIntro => intro,
     fijarIntro(pose: PoseIntro) {
       intro = pose;
@@ -100,6 +107,14 @@ export function crearGiro() {
     ordenar(o: OrdenGiro): ResultadoOrden {
       if (o.tipo === 'agarrar') {
         if (flipBusy) return 'nada';
+        if (quieto) {
+          dragOn = true;
+          dragMoved = false;
+          gestureActive = false;
+          startAng = o.anguloPuntero;
+          startRot = gestureAngle;
+          return 'nada';
+        }
         dragOn = true;
         startAng = o.anguloPuntero;
         startRot = gestureAngle;
@@ -109,6 +124,13 @@ export function crearGiro() {
       }
       if (o.tipo === 'mover') {
         if (!dragOn) return 'nada';
+        if (quieto) {
+          let delta = o.anguloPuntero - startAng;
+          while (delta > Math.PI) delta -= Math.PI * 2;
+          while (delta < -Math.PI) delta += Math.PI * 2;
+          if (Math.abs(delta) > 0.03) dragMoved = true;
+          return 'nada';
+        }
         let delta = o.anguloPuntero - startAng;
         while (delta > Math.PI) delta -= Math.PI * 2;
         while (delta < -Math.PI) delta += Math.PI * 2;
@@ -121,6 +143,13 @@ export function crearGiro() {
       }
       if (o.tipo === 'soltar') {
         if (!dragOn) return 'nada';
+        if (quieto) {
+          dragOn = false;
+          gestureActive = false;
+          const moved = dragMoved;
+          dragMoved = false;
+          return moved ? 'moved' : 'nada';
+        }
         dragOn = false;
         gestureActive = false;
         const moved = dragMoved;
