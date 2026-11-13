@@ -51,25 +51,54 @@ export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
 }
 
 const ESCALA_GRANO = 3;
+const RADIO_SELLO = 2;
 
-function disco(radio: number): readonly (readonly [number, number])[] {
-  const r = Math.ceil(radio);
-  const puntos: (readonly [number, number])[] = [];
-  for (let y = -r; y <= r; y++) {
-    for (let x = -r; x <= r; x++) {
-      if (x * x + y * y <= radio * radio) puntos.push([x, y]);
-    }
-  }
-  return puntos;
+interface FormaGrano {
+  readonly cols: number;
+  readonly n: number;
+  readonly cx: Int16Array;
+  readonly cy: Int16Array;
+  /** Brillo en octavos de 256: 194 es 0,76 y 314 es 1,23. */
+  readonly brillo: Uint16Array;
+  readonly largo: Uint8Array;
 }
 
-const DISCO_CORTO = disco(1.55);
-const DISCO_LARGO = disco(2.05);
-
+let forma: FormaGrano | null = null;
 let sello: ImageData | null = null;
+let vista: Uint32Array | null = null;
+let revision = 0;
+
+/** Cambia cada vez que el sello se vuelve a pintar. El fotograma reutiliza la lámina si no cambió. */
+export function revisionSello(): number {
+  return revision;
+}
+
+function formaDe(cols: number, n: number): FormaGrano {
+  if (forma && forma.cols === cols && forma.n >= n) return forma;
+  const cx = new Int16Array(n);
+  const cy = new Int16Array(n);
+  const brillo = new Uint16Array(n);
+  const largo = new Uint8Array(n);
+  const maxX = cols * ESCALA_GRANO - 1 - RADIO_SELLO;
+  const maxY = Math.ceil(n / cols) * ESCALA_GRANO - 1 - RADIO_SELLO;
+  for (let i = 0; i < n; i++) {
+    const h = hash32(i + 1);
+    const col = i % cols;
+    const row = (i / cols) | 0;
+    const jx = ((h & 15) - 7) * 0.24;
+    const jy = (((h >>> 4) & 15) - 7) * 0.24;
+    cx[i] = Math.min(maxX, Math.max(RADIO_SELLO, Math.round(col * ESCALA_GRANO + 1.5 + jx)));
+    cy[i] = Math.min(maxY, Math.max(RADIO_SELLO, Math.round(row * ESCALA_GRANO + 1.5 + jy)));
+    brillo[i] = 194 + ((h >>> 8) & 15) * 8;
+    largo[i] = (h >>> 12) & 1;
+  }
+  forma = { cols, n, cx, cy, brillo, largo };
+  return forma;
+}
 
 /**
  * Granos sueltos: disco opaco, centro desplazado y brillo propio.
+ * La forma sale de una tabla fija; el fotograma solo aplica el tono.
  * Al escalar, el suavizado borra la celda. Sin esquinas a media tinta.
  */
 export function pintarSello(ctx: CanvasRenderingContext2D, sim: SandSimulation, lut: Uint8ClampedArray): void {
@@ -79,37 +108,48 @@ export function pintarSello(ctx: CanvasRenderingContext2D, sim: SandSimulation, 
     ctx.canvas.width = cols;
     ctx.canvas.height = rows;
   }
-  if (!sello || sello.width !== cols || sello.height !== rows) sello = ctx.createImageData(cols, rows);
-  const pixels = new Uint32Array(sello.data.buffer, sello.data.byteOffset, cols * rows);
+  if (!sello || sello.width !== cols || sello.height !== rows) {
+    sello = ctx.createImageData(cols, rows);
+    vista = null;
+  }
+  if (!vista || vista.length !== cols * rows) {
+    vista = new Uint32Array(sello.data.buffer, sello.data.byteOffset, cols * rows);
+  }
+  const pixels = vista;
   pixels.fill(0);
   const cells = sim.cells;
-  const ancho = sim.cols;
+  const f = formaDe(sim.cols, cells.length);
+  const { cx, cy, brillo, largo } = f;
   for (let i = 0; i < cells.length; i++) {
     const tone = cells[i] ?? 0;
     if (tone === 0) continue;
-    const h = hash32(i + 1);
-    const col = i % ancho;
-    const row = (i / ancho) | 0;
     const l = tone * 3;
-    const brillo = 0.76 + ((h >>> 8) & 15) / 15 * 0.48;
-    const r = Math.min(255, Math.round((lut[l] ?? 0) * brillo));
-    const g = Math.min(255, Math.round((lut[l + 1] ?? 0) * brillo));
-    const b = Math.min(255, Math.round((lut[l + 2] ?? 0) * brillo));
+    const q = brillo[i] ?? 256;
+    const r = Math.min(255, ((lut[l] ?? 0) * q) >> 8);
+    const g = Math.min(255, ((lut[l + 1] ?? 0) * q) >> 8);
+    const b = Math.min(255, ((lut[l + 2] ?? 0) * q) >> 8);
     const tinta = (255 << 24) | (b << 16) | (g << 8) | r;
-    const jx = ((h & 15) - 7) * 0.24;
-    const jy = (((h >>> 4) & 15) - 7) * 0.24;
-    const cx = Math.round(col * ESCALA_GRANO + 1.5 + jx);
-    const cy = Math.round(row * ESCALA_GRANO + 1.5 + jy);
-    const forma = (h >>> 12) & 1 ? DISCO_LARGO : DISCO_CORTO;
-    for (let k = 0; k < forma.length; k++) {
-      const punto = forma[k] ?? [0, 0];
-      const x = cx + punto[0];
-      const y = cy + punto[1];
-      if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
-      pixels[y * cols + x] = tinta;
+    const x = cx[i] ?? 0;
+    const y = cy[i] ?? 0;
+    const p = y * cols + x;
+    pixels[p] = tinta;
+    pixels[p - 1] = tinta;
+    pixels[p + 1] = tinta;
+    pixels[p - cols] = tinta;
+    pixels[p + cols] = tinta;
+    pixels[p - cols - 1] = tinta;
+    pixels[p - cols + 1] = tinta;
+    pixels[p + cols - 1] = tinta;
+    pixels[p + cols + 1] = tinta;
+    if (largo[i]) {
+      pixels[p - 2] = tinta;
+      pixels[p + 2] = tinta;
+      pixels[p - cols * 2] = tinta;
+      pixels[p + cols * 2] = tinta;
     }
   }
   ctx.putImageData(sello, 0, 0);
+  revision += 1;
 }
 
 export function paintCells(sim: SandSimulation, lut: Uint8ClampedArray, image: ImageData): void {

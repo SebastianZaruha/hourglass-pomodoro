@@ -5,6 +5,24 @@ import { vectorLuz } from './alpha';
 
 let placa: HTMLCanvasElement | null = null;
 let placaCtx: CanvasRenderingContext2D | null = null;
+let lavado: HTMLCanvasElement | null = null;
+let frenteListo: HTMLCanvasElement | null = null;
+let claveLuz = '';
+
+function guardar(origen: HTMLCanvasElement, previo: HTMLCanvasElement | null): HTMLCanvasElement {
+  if (!previo || previo.width !== origen.width || previo.height !== origen.height) {
+    previo = document.createElement('canvas');
+    previo.width = origen.width;
+    previo.height = origen.height;
+  }
+  const g = previo.getContext('2d');
+  if (g) {
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, previo.width, previo.height);
+    g.drawImage(origen, 0, 0);
+  }
+  return previo;
+}
 
 function hoja(w: number, h: number): CanvasRenderingContext2D | null {
   const width = Math.max(2, Math.round(w));
@@ -47,6 +65,18 @@ export function aplicarLuz(
   contenido: HTMLCanvasElement | null = null,
 ): void {
   const { x, y, w, h } = frasco;
+  const clave = `${Math.round(w)}|${Math.round(h)}|${angulo}|${luz.brillo}|${luz.brilloBorde}|${luz.reflejos}|${luz.direccion}|${contenido ? 1 : 0}`;
+  if (clave === claveLuz && lavado && frenteListo) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = 0.15;
+    ctx.drawImage(lavado, x, y, w, h);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = Math.min(1, luz.reflejos * Math.max(0.35, luz.brillo));
+    ctx.drawImage(frenteListo, x, y, w, h);
+    ctx.restore();
+    return;
+  }
   const dir = vectorLuz(luz.direccion);
   const g = hoja(w, h);
   if (g && placa && dorso) {
@@ -76,6 +106,7 @@ export function aplicarLuz(
     g.globalAlpha = 1;
     girar(g, w, h, angulo, () => g.drawImage(dorso, 0, 0, w, h));
 
+    lavado = guardar(placa, lavado);
     ctx.save();
     ctx.globalCompositeOperation = 'overlay';
     ctx.globalAlpha = 0.15;
@@ -109,6 +140,8 @@ export function aplicarLuz(
       g2.globalAlpha = 1;
       girar(g2, w, h, angulo, () => g2.drawImage(contenido, 0, 0, w, h));
     }
+    frenteListo = guardar(placa, frenteListo);
+    claveLuz = clave;
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = Math.min(1, luz.reflejos * Math.max(0.35, luz.brillo));

@@ -1,6 +1,7 @@
 import type { SandSimulation, StreamParticles } from '@reloj/core';
 
 import type { Caja } from '../layout/calcularLayout';
+import { revisionSello } from './granos';
 
 export interface ContenidoFrame {
   readonly frasco: Caja;
@@ -22,6 +23,10 @@ export interface ContenidoFrame {
 
 let hoja: HTMLCanvasElement | null = null;
 let hojaCtx: CanvasRenderingContext2D | null = null;
+let laminaRevision = -1;
+let laminaW = 0;
+let laminaH = 0;
+let laminaMascara: CanvasImageSource | null = null;
 
 function placa(w: number, h: number): CanvasRenderingContext2D | null {
   const width = Math.max(2, Math.round(w));
@@ -48,17 +53,30 @@ export function dibujarContenido(ctx: CanvasRenderingContext2D, frame: Contenido
   const escala = Math.max(1, ctx.getTransform().a || 1);
   const pw = Math.max(2, Math.round(w * escala));
   const ph = Math.max(2, Math.round(h * escala));
-  const g = placa(pw, ph);
-  if (!g || !hoja) return;
-  if (frame.tipo === 'arena' && frame.arena && frame.sim) {
+  if (!(frame.tipo === 'arena' && frame.arena && frame.sim)) return;
+  const revision = revisionSello();
+  const misma =
+    hoja !== null &&
+    hoja.width === pw &&
+    hoja.height === ph &&
+    revision === laminaRevision &&
+    pw === laminaW &&
+    ph === laminaH &&
+    frame.mascara === laminaMascara;
+  if (!misma) {
+    const g = placa(pw, ph);
+    if (!g || !hoja) return;
     g.imageSmoothingEnabled = true;
     g.drawImage(frame.arena, 0, 0, pw, ph);
-  } else {
-    return;
+    if (frame.mascara) {
+      g.globalCompositeOperation = 'destination-in';
+      g.drawImage(frame.mascara, 0, 0, pw, ph);
+    }
+    laminaRevision = revision;
+    laminaW = pw;
+    laminaH = ph;
+    laminaMascara = frame.mascara;
   }
-  if (frame.mascara) {
-    g.globalCompositeOperation = 'destination-in';
-    g.drawImage(frame.mascara, 0, 0, pw, ph);
-  }
+  if (!hoja) return;
   ctx.drawImage(hoja, frame.frasco.x, frame.frasco.y, w, h);
 }
