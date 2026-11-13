@@ -369,7 +369,6 @@ test('al girar, el fotograma cabe en 8 ms', async ({ page }) => {
   const orden = [...tiempos].sort((a, b) => a - b);
   expect(orden.length, 'el bucle no llegó a pintar con el frasco girado').toBeGreaterThan(8);
   const mediana = orden[Math.floor(orden.length / 2)] ?? Number.NaN;
-  falloEsperado(10, '17.292 granos con arc+fill rondan los 40 ms por fotograma');
   expect(mediana, `mediana ${mediana.toFixed(1)} ms sobre ${orden.length} fotogramas`).toBeLessThanOrEqual(8);
 });
 
