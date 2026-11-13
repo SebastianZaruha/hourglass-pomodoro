@@ -47,7 +47,7 @@
   padding: 0 12px;
   border: 0;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.07);
   color: inherit;
   font-family: inherit;
   font-size: var(--texto-15, 15px);
@@ -59,19 +59,19 @@
 }
 
 .control:hover {
-  background: rgba(0, 0, 0, 0.20);
+  background: rgba(0, 0, 0, 0.11);
 }
 
 .control[aria-checked='true'],
 .control[aria-pressed='true'] {
-  background: rgba(0, 0, 0, 0.30);
+  background: rgba(0, 0, 0, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.22);
   font-weight: 500;
 }
 
 .control[aria-checked='true']:hover,
 .control[aria-pressed='true']:hover {
-  background: rgba(0, 0, 0, 0.30);
+  background: rgba(0, 0, 0, 0.16);
 }
 
 .control:focus-visible {
