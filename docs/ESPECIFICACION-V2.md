@@ -241,13 +241,12 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 
 | Propiedad | Valor | Por qué |
 |---|---|---|
-| Desenfoque | `backdrop-filter: blur(36px) saturate(1.5)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El fondo se ve muy desenfocado, con sus colores y luces. |
-| Tinte | Velo blanco, sin gris: claro `rgba(255,255,255,0.22)`, oscuro `rgba(255,255,255,0.08)` | Bajo, para que el fondo se lea a través del vidrio. |
-| Brillo | `inset 0 1px 0 rgba(255,255,255,0.25)` | Un filo de luz arriba, sin apagar la escena. |
-| Borde | 1 px, claro `rgba(255,255,255,0.32)`, oscuro `rgba(255,255,255,0.30)` | Una línea de luz fina. |
+| Desenfoque | `backdrop-filter: blur(32px) saturate(1.4)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El desenfoque no sube: ya bastaba. La saturación devuelve el color del fondo. |
+| Tinte | `rgba(255,255,255,0.04)` en claro y en oscuro. Nada de velo negro | El tinte apagaba los colores. Casi no hay. |
+| Brillo | `inset 0 1px 0 rgba(255,255,255,0.22)` | Un filo de luz arriba. |
+| Borde | 1 px `rgba(255,255,255,0.32)` | Una línea clara y fina. |
 | Radio | 28 px | Grande y suave. |
-| Sombra | Exterior, suave y difusa | Separa el panel sin tapar el fondo. |
-| Texto | `ui.tinta` del tema; contraste ≥ 4,5:1 medido en la captura | Legible sobre cualquier fondo. |
+| Sombra | Exterior, suave. El texto lleva una sombra suave, no un velo | El texto se lee sin tapar el fondo. |
 | Sin soporte de `backdrop-filter` | Velo al 85 % | Que nunca quede transparente e ilegible. |
 
 **Controles dentro del vidrio (`.control`):**

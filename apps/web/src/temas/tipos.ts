@@ -38,6 +38,8 @@ export interface UiTema {
   readonly brillo: string;
   /** Sombra exterior, suave. */
   readonly sombra: string;
+  /** Sombra del texto, para leerlo sin velo. */
+  readonly sombraTexto: string;
 }
 
 export interface FotoEstrecha {

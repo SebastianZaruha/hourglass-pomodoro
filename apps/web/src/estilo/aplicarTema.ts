@@ -26,6 +26,7 @@ export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' |
     '--vidrio-saturacion': String(VIDRIO.saturacion),
     '--vidrio-brillo': modo.ui.brillo,
     '--vidrio-sombra': modo.ui.sombra,
+    '--vidrio-texto': modo.ui.sombraTexto,
     '--reserva': modo.reserva,
     '--control-elegido': elegido,
     '--control-hover': CONTROL_HOVER,
