@@ -83,6 +83,17 @@ function Reloj({
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const pausado = view.status === 'paused';
+  const [vuelta, setVuelta] = useState(0);
+  const [contenidoFijo, setContenidoFijo] = useState<{
+    durationMs: number;
+    remainingMs: number;
+  } | null>(null);
+  const empezarVuelta = useCallback(() => {
+    if (state.timer.status === 'paused') return;
+    const snap = getSnapshot();
+    setContenidoFijo({ durationMs: snap.durationMs, remainingMs: snap.remainingMs });
+    setVuelta((v) => v + 1);
+  }, [getSnapshot, state.timer.status]);
   const avisoAndroid = androidPromoOpen({
     settled: intro.settled,
     dismissed: promoDismissed,
@@ -156,6 +167,7 @@ function Reloj({
 
   const onWheel = useCallback(
     (pasos: number) => {
+      empezarVuelta();
       if (settings.sessionMode === 'cycles') {
         const cycle = activeCycleConfig(settings);
         update({
@@ -170,7 +182,7 @@ function Reloj({
         });
       }
     },
-    [settings, update],
+    [settings, update, empezarVuelta],
   );
 
   const entrada = useStageInput({
@@ -179,7 +191,10 @@ function Reloj({
     intro: intro.blocksInput,
     status: view.status,
     onToggle: doToggle,
-    onRestart: restart,
+    onRestart: () => {
+      empezarVuelta();
+      restart();
+    },
     onCloseMenu: () => setMenu(false),
     onCloseLegal: () => setLegal(null),
     onWheel,
@@ -268,6 +283,10 @@ function Reloj({
             ahorro={medios.ahorro}
             layout={layout}
             oculto={!layout.frascoVisible}
+            pausado={pausado}
+            vuelta={vuelta}
+            contenidoFijo={contenidoFijo}
+            onVueltaLista={() => setContenidoFijo(null)}
             onVolteo={flip}
             onSuprimirClic={() => {
               suprimirClic.current = true;
@@ -357,7 +376,18 @@ function Reloj({
           setTemaId(id);
           guardarEscena(id);
         }}
-        onChange={update}
+        onChange={(patch) => {
+          const plano = typeof patch === 'function' ? patch(settings) : patch;
+          if (
+            plano.lastDurationMs !== undefined ||
+            plano.sessionMode !== undefined ||
+            plano.cyclePreset !== undefined ||
+            plano.customCycle !== undefined
+          ) {
+            empezarVuelta();
+          }
+          update(patch);
+        }}
         onClose={() => setMenu(false)}
         caja={menuLayout.menu}
         estrecho={!layout.ancha}

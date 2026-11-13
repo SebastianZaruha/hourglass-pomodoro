@@ -10,15 +10,18 @@ export interface EstadoFrasco {
   readonly angulo: number;
   readonly velocidad: number;
   readonly objetivo: number;
+  /** Media vuelta de reinicio: al llegar no se canjean los bulbos del reloj. */
+  readonly reinicio: boolean;
 }
 
 export function estadoInicial(): EstadoFrasco {
-  return { fase: 'reposo', angulo: 0, velocidad: 0, objetivo: 0 };
+  return { fase: 'reposo', angulo: 0, velocidad: 0, objetivo: 0, reinicio: false };
 }
 
 export type OrdenFrasco =
   | { readonly tipo: 'arrastrar'; readonly angulo: number; readonly dt: number }
   | { readonly tipo: 'soltar'; readonly reducir: boolean }
+  | { readonly tipo: 'reiniciar'; readonly reducir: boolean }
   | { readonly tipo: 'quieto'; readonly dt: number; readonly reducir: boolean };
 
 export interface PasoFrasco {
@@ -40,6 +43,20 @@ function signo(valor: number): number {
  * bulbos lo hace quien pinta, y los dos fotogramas coinciden.
  */
 export function pasoFrasco(estado: EstadoFrasco, orden: OrdenFrasco): PasoFrasco {
+  if (orden.tipo === 'reiniciar') {
+    if (orden.reducir) return { estado: estadoInicial(), volteoCompletado: false };
+    return {
+      estado: {
+        fase: 'volteando',
+        angulo: estado.angulo,
+        velocidad: 0,
+        objetivo: Math.PI,
+        reinicio: true,
+      },
+      volteoCompletado: false,
+    };
+  }
+
   if (orden.tipo === 'arrastrar') {
     const angulo = limitar(orden.angulo);
     const dt = Math.max(1 / 240, orden.dt);
@@ -49,6 +66,7 @@ export function pasoFrasco(estado: EstadoFrasco, orden: OrdenFrasco): PasoFrasco
         angulo,
         velocidad: (angulo - estado.angulo) / dt,
         objetivo: angulo,
+        reinicio: false,
       },
       volteoCompletado: false,
     };
@@ -61,7 +79,7 @@ export function pasoFrasco(estado: EstadoFrasco, orden: OrdenFrasco): PasoFrasco
     }
     const objetivo = comprometer ? signo(estado.angulo) * Math.PI : 0;
     return {
-      estado: { ...estado, fase: 'volteando', objetivo },
+      estado: { ...estado, fase: 'volteando', objetivo, reinicio: false },
       volteoCompletado: false,
     };
   }
@@ -84,7 +102,7 @@ export function pasoFrasco(estado: EstadoFrasco, orden: OrdenFrasco): PasoFrasco
   const cruzo =
     estado.objetivo !== 0 && (estado.angulo - estado.objetivo) * (siguiente.valor - estado.objetivo) <= 0;
   if (cruzo || (estado.objetivo !== 0 && siguiente.valor === estado.objetivo)) {
-    return { estado: estadoInicial(), volteoCompletado: true };
+    return { estado: estadoInicial(), volteoCompletado: !estado.reinicio };
   }
   const llego = siguiente.velocidad === 0 && siguiente.valor === estado.objetivo;
   return {
@@ -93,6 +111,7 @@ export function pasoFrasco(estado: EstadoFrasco, orden: OrdenFrasco): PasoFrasco
       angulo: siguiente.valor,
       velocidad: siguiente.velocidad,
       objetivo: llego ? 0 : estado.objetivo,
+      reinicio: estado.reinicio,
     },
     volteoCompletado: false,
   };

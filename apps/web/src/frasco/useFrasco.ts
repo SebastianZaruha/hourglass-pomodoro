@@ -16,10 +16,11 @@ import { alFijarAngulo } from '../pruebas';
 import type { Luz } from '../temas/tipos';
 import { cargarActivos, cargarArena, type Activos } from './activos';
 import { dibujar } from './dibujo';
-import { cuelloMojado } from './fisica/agua';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarGranos } from './granos';
+import { muelleSuperficie } from './fisica/superficie';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
+import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
 import { PERFIL_FRASCO, dentroDeCelda, desdeLuminancia, type Geometria } from './geometria';
 import { crearSuavizado } from './suavizar';
@@ -35,6 +36,10 @@ export interface ModeloFrasco {
   readonly layout: Layout;
   readonly onVolteo: () => void;
   readonly onSuprimirClic: () => void;
+  readonly pausado: boolean;
+  readonly vuelta: number;
+  readonly contenidoFijo: { readonly durationMs: number; readonly remainingMs: number } | null;
+  readonly onVueltaLista: () => void;
 }
 
 const UMBRAL = 0.03;
@@ -106,6 +111,9 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
     // y el fotograma sigue el gesto, igual que antes.
     let anguloFijo: number | null = null;
     let geo: Geometria | null = null;
+    let superficie: Muelle = muelleQuieto(0);
+    let anguloPrevio = 0;
+    let vueltaVista = vivo.current.vuelta;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -140,19 +148,44 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       const dt = ultimo > 0 ? Math.min(0.05, (now - ultimo) / 1000) : 1 / 60;
       ultimo = now;
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
+      const eraReinicio = estado.reinicio;
       if (anguloFijo === null) {
         estado = paso.estado;
         orden = { tipo: 'quieto', dt, reducir: m.reducir };
         if (paso.volteoCompletado) m.onVolteo();
+        if (eraReinicio && !estado.reinicio) m.onVueltaLista();
       } else {
         // Ángulo de prueba: se pinta ese valor y no se suelta al muelle.
-        estado = { fase: 'reposo', angulo: anguloFijo, velocidad: 0, objetivo: anguloFijo };
+        estado = { fase: 'reposo', angulo: anguloFijo, velocidad: 0, objetivo: anguloFijo, reinicio: false };
         orden = { tipo: 'quieto', dt, reducir: m.reducir };
+      }
+      if (m.vuelta !== vueltaVista) {
+        vueltaVista = m.vuelta;
+        if (m.pausado || m.reducir || anguloFijo !== null) m.onVueltaLista();
+        else orden = { tipo: 'reiniciar', reducir: false };
+      }
+      if (anguloFijo !== null) {
+        superficie = muelleQuieto(0);
+        anguloPrevio = estado.angulo;
+      } else {
+        const delta = estado.angulo - anguloPrevio;
+        anguloPrevio = estado.angulo;
+        const constantes = muelleSuperficie();
+        superficie = pasoMuelle(
+          { valor: superficie.valor + delta, velocidad: superficie.velocidad },
+          0,
+          dt,
+          constantes.rigidez,
+          constantes.amortiguacion,
+        );
       }
 
       const snap = m.getSnapshot();
-      const arriba = nivelDesdeTiempo(snap.durationMs, snap.remainingMs);
-      const objetivo = granosObjetivo(sim.totalGrains, snap.durationMs, snap.remainingMs);
+      const tiempo = m.contenidoFijo ?? snap;
+      const fraccion =
+        tiempo.durationMs > 0 ? Math.min(1, Math.max(0, tiempo.remainingMs / tiempo.durationMs)) : 0;
+      const arriba = nivelDesdeTiempo(tiempo.durationMs, tiempo.remainingMs);
+      const objetivo = granosObjetivo(sim.totalGrains, tiempo.durationMs, tiempo.remainingMs);
       const girando = estado.fase === 'volteando';
       let movio = forzar || girando || Math.abs(estado.velocidad) > 0;
       forzar = false;
@@ -218,11 +251,15 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
           tipo: m.tipo,
           angulo: estado.angulo,
           anguloAgua: estado.angulo,
-          volumenArriba: arriba,
-          volumenAbajo: nivelAbajo(snap.durationMs, snap.remainingMs),
+          phi: superficie.valor,
+          volumenArriba: m.tipo === 'agua' ? fraccion : arriba,
+          volumenAbajo: m.tipo === 'agua' ? 1 - fraccion : nivelAbajo(tiempo.durationMs, tiempo.remainingMs),
+          oscuro: m.granos === 'oscura',
+          dt,
+          geo,
           mostrarNube: m.mostrarNube,
           reducir: m.reducir,
-          llueve: m.tipo === 'agua' && snap.status === 'running' && cuelloMojado(arriba, estado.angulo),
+          llueve: m.tipo === 'agua' && snap.status === 'running' && fraccion > 0.01 && fraccion < 0.995,
           sim,
           chorro: particles,
           lut,
@@ -240,6 +277,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         snap.status === 'running' ||
         estado.fase !== 'reposo' ||
         Math.abs(estado.angulo) > 0.001 ||
+        Math.abs(superficie.valor) > 0.01 ||
         nubeViva ||
         arrastre !== null;
       raf = seguir ? requestAnimationFrame(frame) : 0;
@@ -268,7 +306,7 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
       return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     };
     const down = (event: PointerEvent) => {
-      if (estado.fase === 'volteando') return;
+      if (vivo.current.pausado || estado.fase === 'volteando') return;
       const p = local(event);
       const frasco = visto;
       if (!dentro(frasco, p.x, p.y, estado.angulo, geo)) return;

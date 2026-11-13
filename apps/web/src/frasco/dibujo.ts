@@ -5,7 +5,9 @@ import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import type { Activos } from './activos';
 import { dibujarContenido } from './contenido';
+import type { Geometria } from './geometria';
 import { aplicarLuz } from './luzAplicar';
+import { pintarAgua } from './pintarAgua';
 import { dibujarSombra } from './luz';
 import { dibujarNube, actualizarNube } from './nube';
 
@@ -16,8 +18,12 @@ export interface OrdenDibujo {
   readonly tipo: 'arena' | 'agua';
   readonly angulo: number;
   readonly anguloAgua: number;
+  readonly phi: number;
   readonly volumenArriba: number;
   readonly volumenAbajo: number;
+  readonly oscuro: boolean;
+  readonly dt: number;
+  readonly geo: Geometria | null;
   readonly mostrarNube: boolean;
   readonly reducir: boolean;
   readonly llueve: boolean;
@@ -45,26 +51,43 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   if (activos.dorso) ctx.drawImage(activos.dorso, x, y, w, h);
   else if (activos.mascara) dibujarSilueta(ctx, orden.frasco, activos.mascara);
 
-  dibujarContenido(ctx, {
-    frasco: orden.frasco,
-    tipo: orden.tipo,
-    volumenArriba: orden.volumenArriba,
-    volumenAbajo: orden.volumenAbajo,
-    anguloAgua: orden.anguloAgua,
-    arena: orden.arena,
-    mascara: activos.mascara,
-    sim: orden.sim,
-    chorro: orden.chorro,
-    lut: orden.lut,
-    llueve: orden.llueve,
-    tinte: orden.luz.tinte,
-    direccion: orden.luz.direccion,
-    brillo: orden.luz.brillo,
-    fuerzaTinte: orden.luz.fuerzaTinte,
-  });
-
-  aplicarLuz(ctx, orden.frasco, orden.luz, activos.frente, activos.dorso);
+  if (orden.tipo === 'arena') {
+    dibujarContenido(ctx, {
+      frasco: orden.frasco,
+      tipo: orden.tipo,
+      volumenArriba: orden.volumenArriba,
+      volumenAbajo: orden.volumenAbajo,
+      anguloAgua: orden.anguloAgua,
+      arena: orden.arena,
+      mascara: activos.mascara,
+      sim: orden.sim,
+      chorro: orden.chorro,
+      lut: orden.lut,
+      llueve: orden.llueve,
+      tinte: orden.luz.tinte,
+      direccion: orden.luz.direccion,
+      brillo: orden.luz.brillo,
+      fuerzaTinte: orden.luz.fuerzaTinte,
+    });
+  }
   ctx.restore();
+
+  if (orden.tipo === 'agua' && orden.geo) {
+    pintarAgua(ctx, {
+      frasco: orden.frasco,
+      geo: orden.geo,
+      angulo: orden.angulo,
+      phi: orden.phi,
+      fraccionArriba: orden.volumenArriba,
+      fraccionAbajo: orden.volumenAbajo,
+      oscuro: orden.oscuro,
+      llueve: orden.llueve,
+      dt: orden.dt,
+      mascara: activos.mascara,
+    });
+  }
+
+  aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso);
 
   if (orden.mostrarNube) {
     const fuente = actualizarNube(orden.reducir ? null : activos.nubeVideo, activos.nubePoster);

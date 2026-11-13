@@ -28,10 +28,20 @@ function hoja(w: number, h: number): CanvasRenderingContext2D | null {
  * El lavado se recorta al vidrio en una hoja: destination-in
  * en el lienzo principal borraría el resto del fotograma.
  */
+function girar(g: CanvasRenderingContext2D, w: number, h: number, angulo: number, pintar: () => void): void {
+  g.save();
+  g.translate(w / 2, h / 2);
+  g.rotate(angulo);
+  g.translate(-w / 2, -h / 2);
+  pintar();
+  g.restore();
+}
+
 export function aplicarLuz(
   ctx: CanvasRenderingContext2D,
   frasco: Caja,
   luz: Luz,
+  angulo: number,
   frente: CanvasImageSource | null,
   dorso: CanvasImageSource | null,
 ): void {
@@ -45,10 +55,8 @@ export function aplicarLuz(
       w / 2 - dir.x * w * 0.62,
       h / 2 - dir.y * h * 0.55,
     );
-    const noche = Math.min(0.82, 0.22 + (1 - Math.min(1, luz.brillo)) * 0.55);
-    grad.addColorStop(0, luz.tinte);
-    grad.addColorStop(0.34, PINTURA.luzMedia);
-    grad.addColorStop(1, `rgba(0,0,0,${noche.toFixed(3)})`);
+    grad.addColorStop(0, PINTURA.luzMedia);
+    grad.addColorStop(1, PINTURA.lavadoFin);
     g.fillStyle = grad;
     g.fillRect(0, 0, w, h);
 
@@ -56,21 +64,20 @@ export function aplicarLuz(
     const hy = h / 2 + dir.y * h * 0.3;
     const radio = w * (0.2 + luz.brilloBorde * 0.22);
     const foco = g.createRadialGradient(hx, hy, 2, hx, hy, radio);
-    foco.addColorStop(0, luz.tinte);
-    foco.addColorStop(0.42, PINTURA.focoMedio);
+    foco.addColorStop(0, PINTURA.focoMedio);
     foco.addColorStop(1, PINTURA.focoFin);
     g.globalCompositeOperation = 'screen';
-    g.globalAlpha = Math.min(1, 0.2 + luz.brilloBorde * 0.8);
+    g.globalAlpha = Math.min(0.35, 0.08 + luz.brilloBorde * 0.15);
     g.fillStyle = foco;
     g.fillRect(0, 0, w, h);
 
     g.globalCompositeOperation = 'destination-in';
     g.globalAlpha = 1;
-    g.drawImage(dorso, 0, 0, w, h);
+    girar(g, w, h, angulo, () => g.drawImage(dorso, 0, 0, w, h));
 
     ctx.save();
     ctx.globalCompositeOperation = 'overlay';
-    ctx.globalAlpha = Math.min(0.95, 0.32 + luz.fuerzaTinte * 0.72);
+    ctx.globalAlpha = 0.15;
     ctx.drawImage(placa, x, y, w, h);
     ctx.restore();
   }
@@ -78,10 +85,10 @@ export function aplicarLuz(
   if (frente && placa) {
     const g2 = hoja(w, h);
     if (!g2) return;
-    g2.drawImage(frente, 0, 0, w, h);
+    girar(g2, w, h, angulo, () => g2.drawImage(frente, 0, 0, w, h));
     g2.globalCompositeOperation = 'source-atop';
-    g2.globalAlpha = Math.min(0.9, 0.2 + luz.fuerzaTinte);
-    g2.fillStyle = luz.tinte;
+    g2.globalAlpha = Math.min(0.25, luz.reflejos * 0.2);
+    g2.fillStyle = PINTURA.luzMedia;
     g2.fillRect(0, 0, w, h);
     const mascara = g2.createLinearGradient(
       w / 2 + dir.x * w * 0.55,

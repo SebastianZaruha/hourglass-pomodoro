@@ -24,10 +24,15 @@ export const SCRIM = 'rgba(0, 0, 0, 0.28)';
  * Viven aquí para que no haya literales en el dibujo. Los números son los de 25fca17.
  */
 export const PINTURA = {
-  agua: ['rgba(214, 232, 238, 0.28)', 'rgba(168, 198, 210, 0.34)', 'rgba(92, 132, 148, 0.46)'] as const,
-  menisco: 'rgba(255,255,255,0.28)',
-  lluvia: 'rgba(255,255,255,0.28)',
+  /** Velo frío. El segundo color es el mismo, un 6 % más oscuro hacia abajo. */
+  agua: ['rgba(214, 228, 234, 0.26)', 'rgba(201, 214, 220, 0.26)'] as const,
+  aguaOscura: ['rgba(160, 178, 188, 0.20)', 'rgba(150, 167, 177, 0.20)'] as const,
+  /** Menisco de 2 px, apenas más claro. No es una línea blanca. */
+  menisco: 'rgba(220, 232, 236, 0.42)',
+  meniscoOscuro: 'rgba(172, 188, 196, 0.36)',
+  lluvia: 'rgba(214, 228, 234, 0.55)',
   luzMedia: 'rgba(255,255,255,0.12)',
+  lavadoFin: 'rgba(0,0,0,0.08)',
   focoMedio: 'rgba(255,255,255,0.7)',
   focoFin: 'rgba(255,255,255,0)',
   mascara0: '#fff',
