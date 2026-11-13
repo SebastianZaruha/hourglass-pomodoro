@@ -3,12 +3,12 @@ import { test } from 'node:test';
 
 import { bundle } from './bundle.mjs';
 
-/** Valores de partida de la sección 3.2. Dígitos y pista son el mismo gris. */
+/** Valores de partida de la sección 3.2. Arena oscuro está subido para leerse en el móvil. */
 const PALETA = {
   'lluvia light': { digitos: '#2E302F', pista: '#2E302F' },
   'lluvia dark': { digitos: '#8F8B86', pista: '#8F8B86' },
   'arena light': { digitos: '#4A4541', pista: '#4A4541' },
-  'arena dark': { digitos: '#7E7A75', pista: '#7E7A75' },
+  'arena dark': { digitos: '#B7B1AA', pista: '#B7B1AA' },
   'clasico light': { digitos: '#5A5550', pista: '#5A5550' },
   'clasico dark': { digitos: '#86817B', pista: '#86817B' },
 };

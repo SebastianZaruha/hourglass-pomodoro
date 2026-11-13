@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
@@ -7,24 +8,27 @@ import { bundle } from './bundle.mjs';
 
 const mascara = path.resolve(import.meta.dirname, '../public/frasco/jar-mask.webp');
 
+/** Ancho y alto del VP8, en los 14 bits que siguen a la firma. */
+function medidasWebp(ruta) {
+  const cab = readFileSync(ruta).subarray(0, 64);
+  const firma = cab.indexOf(Buffer.from([0x9d, 0x01, 0x2a]));
+  assert.ok(firma >= 0 && firma + 7 <= cab.length, 'la máscara no es un WebP VP8');
+  return {
+    ancho: cab.readUInt16LE(firma + 3) & 0x3fff,
+    alto: cab.readUInt16LE(firma + 5) & 0x3fff,
+  };
+}
+
+/** Lee el gris del WebP con ffmpeg, que el CI ya instala. */
 function luminancia() {
-  const script = `
-from PIL import Image
-im = Image.open(${JSON.stringify(mascara)}).convert('RGB')
-w, h = im.size
-px = im.load()
-out = bytearray(w * h)
-for y in range(h):
-    fila = y * w
-    for x in range(w):
-        out[fila + x] = px[x, y][0]
-import sys
-sys.stdout.buffer.write(w.to_bytes(4, 'little') + h.to_bytes(4, 'little') + out)
-`;
-  const bruto = execFileSync('python3', ['-c', script], { maxBuffer: 8_000_000 });
-  const ancho = bruto.readUInt32LE(0);
-  const alto = bruto.readUInt32LE(4);
-  return { ancho, alto, luma: new Uint8Array(bruto.buffer, bruto.byteOffset + 8, ancho * alto) };
+  const { ancho, alto } = medidasWebp(mascara);
+  const bruto = execFileSync(
+    'ffmpeg',
+    ['-v', 'error', '-i', mascara, '-f', 'rawvideo', '-pix_fmt', 'gray', 'pipe:1'],
+    { maxBuffer: 8_000_000 },
+  );
+  assert.equal(bruto.length, ancho * alto, `ffmpeg no devolvió ${ancho}x${alto}`);
+  return { ancho, alto, luma: new Uint8Array(bruto.buffer, bruto.byteOffset, bruto.byteLength) };
 }
 
 test('la rejilla copia la máscara y el cuello es la fila más estrecha', async () => {
