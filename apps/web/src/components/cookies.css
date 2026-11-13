@@ -10,7 +10,11 @@
 }
 
 [data-layout='wide'] .banner {
-  width: 460px;
+  width: min(640px, calc(100% - var(--espacio-5) * 2));
+}
+
+[data-layout='wide'] .banner-actions {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .banner-texto {

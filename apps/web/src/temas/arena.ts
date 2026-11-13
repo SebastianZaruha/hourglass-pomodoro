@@ -43,6 +43,7 @@ export const arena: Tema = {
   nube: false,
   adelantarArena: false,
   adelantarNube: true,
+  relojCentrado: false,
   anclaSuelo: { x: 0.3, y: 0.84 },
   claro: {
     fondo: {

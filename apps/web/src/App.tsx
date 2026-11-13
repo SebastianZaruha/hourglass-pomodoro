@@ -100,6 +100,7 @@ function Reloj({
     altoPie: medidas.altoPie,
     margenSeguro: medidas.margenSeguro,
     digitos: medidas.digitos,
+    relojCentrado: tema.relojCentrado,
   });
   const layout = calcularLayout(medidasDe(menu));
   const menuLayout = menu ? layout : calcularLayout(medidasDe(true));

@@ -43,7 +43,11 @@ export const HORA_FRACCION_ESTRECHA = 0.17;
 export const HORA_TOPE_ALTO = 0.1;
 export const HORA_SUELO = 48;
 export const HORA_BAJA = 0.15;
-export const SEPARACION_RELOJ = 16;
+/**
+ * Desde la caja del frasco. El desenfoque de la sombra sale unos 24 px,
+ * y por debajo quedan más de 32 px libres.
+ */
+export const SEPARACION_RELOJ = 64;
 export const SEPARACION_MENU = 12;
 export const FRASCO_HUECO = 0.9;
 export const FRASCO_ALTO_ESTRECHA = 0.56;
@@ -88,6 +92,8 @@ export interface EntradaLayout {
   readonly altoPie: number;
   readonly margenSeguro: MargenSeguro;
   readonly digitos: MetricasDigitos;
+  /** Clásico centra el reloj en la columna ancha. El resto lo deja arriba. */
+  readonly relojCentrado: boolean;
 }
 
 /** Hasta que la fuente se mide. Manrope 200, «00:00», pista de 15 px. */
@@ -122,6 +128,7 @@ export function entradaDe(
     altoPie: 40,
     margenSeguro: MARGEN_CERO,
     digitos: DIGITOS_BASE,
+    relojCentrado: false,
     ...extra,
   };
 }

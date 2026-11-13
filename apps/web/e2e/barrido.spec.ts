@@ -5,16 +5,25 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { ALTOS_BARRIDO, abrir, abrirMenu, enLimpio } from './soporte/escena';
 
+/** Ventana a un tercio: el reloj no puede bajar al abrir el menú. */
+const EXTRA = [
+  { ancho: 620, alto: 1000 },
+  { ancho: 465, alto: 1000 },
+] as const;
+
 /**
- * De 360 a 1920 px, de 20 en 20, con las cinco alturas de la tabla 3.11.
- * Menú cerrado, menú abierto y aviso Android visible.
+ * De 360 a 1920 px, de 20 en 20, con las cinco alturas de la tabla 3.11,
+ * más 620×1000 y 465×1000. Menú cerrado, menú abierto y aviso Android visible.
  */
 test('barrido sin solapes', async ({ browser }) => {
   test.setTimeout(600_000);
   const fallos: string[] = [];
   const anchos: number[] = [];
   for (let ancho = 360; ancho <= 1920; ancho += 20) anchos.push(ancho);
+  const tamanos = anchos.flatMap((ancho) => ALTOS_BARRIDO.map((alto) => ({ ancho, alto })));
+  tamanos.push(...EXTRA);
 
+  let cerrados = new Map<string, number | null>();
   await enLimpio(browser, async (page) => {
     await abrir(page, {
       tema: 'lluvia',
@@ -23,7 +32,9 @@ test('barrido sin solapes', async ({ browser }) => {
       alto: 900,
       arrancar: false,
     });
-    fallos.push(...(await barrer(page, anchos, 'cerrado')));
+    const pasada = await barrer(page, tamanos, 'cerrado');
+    fallos.push(...pasada.fallos);
+    cerrados = pasada.relojes;
   });
 
   await enLimpio(browser, async (page) => {
@@ -35,7 +46,15 @@ test('barrido sin solapes', async ({ browser }) => {
       arrancar: false,
     });
     await abrirMenu(page);
-    fallos.push(...(await barrer(page, anchos, 'menú')));
+    const pasada = await barrer(page, tamanos, 'menú');
+    fallos.push(...pasada.fallos);
+    for (const [clave, abierto] of pasada.relojes) {
+      const cerrado = cerrados.get(clave);
+      if (abierto == null || cerrado == null) continue;
+      if (abierto > cerrado + 1) {
+        fallos.push(`menú ${clave}: el reloj baja de ${Math.round(cerrado)} a ${Math.round(abierto)}`);
+      }
+    }
   });
 
   await enLimpio(browser, async (page) => {
@@ -48,7 +67,7 @@ test('barrido sin solapes', async ({ browser }) => {
       promo: true,
     });
     await page.locator('.app-promo').waitFor({ state: 'visible' });
-    fallos.push(...(await barrer(page, anchos, 'aviso')));
+    fallos.push(...(await barrer(page, tamanos, 'aviso')).fallos);
   });
 
   const salida = path.resolve(import.meta.dirname, 'salida');
@@ -57,13 +76,17 @@ test('barrido sin solapes', async ({ browser }) => {
   expect(fallos.length, `${fallos.length} solapes. Los primeros:\n${fallos.slice(0, 24).join('\n')}`).toBe(0);
 });
 
-async function barrer(page: Page, anchos: readonly number[], estado: string): Promise<string[]> {
+async function barrer(
+  page: Page,
+  tamanos: readonly { ancho: number; alto: number }[],
+  estado: string,
+): Promise<{ fallos: string[]; relojes: Map<string, number | null> }> {
   const fallos: string[] = [];
-  for (const ancho of anchos) {
-    for (const alto of ALTOS_BARRIDO) {
-      await page.setViewportSize({ width: ancho, height: alto });
-      await page.clock.runFor(40);
-      const choques = await page.evaluate(
+  const relojes = new Map<string, number | null>();
+  for (const { ancho, alto } of tamanos) {
+    await page.setViewportSize({ width: ancho, height: alto });
+    await page.clock.runFor(40);
+    const choques = await page.evaluate(
         ({ ancho: w, alto: h, estado: nombre }) => {
           const caja = (nodo: Element | null, forzar = false) => {
             if (!(nodo instanceof HTMLElement)) return null;
@@ -139,12 +162,13 @@ async function barrer(page: Page, anchos: readonly number[], estado: string): Pr
               if (junto) textos.push(`${nombre} ${w}×${h}: ${a.nombre} solapa ${b.nombre}`);
             }
           }
-          return textos;
+          const yReloj = reloj?.y ?? null;
+          return { textos, yReloj };
         },
         { ancho, alto, estado },
       );
-      fallos.push(...choques);
-    }
+      fallos.push(...choques.textos);
+      relojes.set(`${ancho}×${alto}`, choques.yReloj);
   }
-  return fallos;
+  return { fallos, relojes };
 }

@@ -185,15 +185,21 @@ function amplio(e: EntradaLayout): Layout {
   const pie = cajaPie(e, m);
   const horaPx = horaAncha(e, columnaW);
   const relojBase = caja(columnaX, frasco.y + RELOJ_TOP * frasco.h, columnaW, altoBloque(horaPx, e.digitos));
-  let relojY = relojBase.y;
+  const techoColumna = e.margenSeguro.arriba;
+  const sueloColumna = botonMenu.y - 8;
+  let relojY = e.relojCentrado
+    ? techoColumna + Math.max(0, (sueloColumna - techoColumna - relojBase.h) / 2)
+    : relojBase.y;
   let relojVisible = true;
-  const huecoBajo = () => botonMenu.y - 8 - (relojY + relojBase.h + MENU_BAJO_RELOJ);
+  const huecoBajo = () => sueloColumna - (relojY + relojBase.h + MENU_BAJO_RELOJ);
   let altoMenu = Math.min(e.altoMenu, Math.max(0, huecoBajo()));
-  let menuY = relojY + relojBase.h + MENU_BAJO_RELOJ;
+  let menuY = e.relojCentrado ? sueloColumna - altoMenu : relojY + relojBase.h + MENU_BAJO_RELOJ;
   if (e.menuAbierto && e.altoMenu > huecoBajo() + 1) {
-    relojY -= Math.max(0, Math.min(e.altoMenu - huecoBajo(), m, relojY - m));
+    const falta = e.altoMenu - huecoBajo();
+    const tope = e.relojCentrado ? relojY - techoColumna : Math.min(m, relojY - m);
+    relojY -= Math.max(0, Math.min(falta, tope));
     altoMenu = Math.min(e.altoMenu, Math.max(0, huecoBajo()));
-    menuY = relojY + relojBase.h + MENU_BAJO_RELOJ;
+    menuY = e.relojCentrado ? sueloColumna - altoMenu : relojY + relojBase.h + MENU_BAJO_RELOJ;
     if (e.alto < ALTO_CORTO && e.altoMenu > altoMenu + 1) {
       relojVisible = false;
       const techo = e.margenSeguro.arriba + 8;
@@ -273,6 +279,10 @@ function jarraEnHueco(e: EntradaLayout, y: number, hueco: number, minimo: number
   return { frasco: frascoDesdeArriba(e.ancho / 2, y, alto, anchoMax), visible: true };
 }
 
+function relojEstrechoCerrado(e: EntradaLayout): number {
+  return estrecho({ ...e, menuAbierto: false, altoAviso: 0 }).reloj.y;
+}
+
 function estrecho(e: EntradaLayout): Layout {
   const m = MARGEN_ESTRECHO;
   const botonMenu = caja(e.ancho - m - BOTON, e.alto - e.margenSeguro.abajo - m - BOTON, BOTON, BOTON);
@@ -308,10 +318,12 @@ function estrecho(e: EntradaLayout): Layout {
       menuConScroll: false,
     };
   }
-  const altoLibre = e.alto - e.margenSeguro.abajo - m - relojH - SEPARACION_MENU - e.margenSeguro.arriba;
+  const margenPie = e.margenSeguro.abajo + MENU_BAJO_RELOJ;
+  const altoLibre = e.alto - margenPie - m - relojH - SEPARACION_MENU - e.margenSeguro.arriba;
   const altoMenu = Math.min(e.altoMenu, e.alto >= ALTO_SIN_SCROLL ? Math.max(0, altoLibre) : topeDiseno);
-  const menuY = e.alto - e.margenSeguro.abajo - altoMenu;
-  const relojY = menuY - SEPARACION_MENU - relojH;
+  const menuY = e.alto - margenPie - altoMenu;
+  const propuesto = menuY - SEPARACION_MENU - relojH;
+  const relojY = Math.min(propuesto, relojEstrechoCerrado(e));
   const reloj = caja((e.ancho - relojW) / 2, relojY, relojW, relojH);
   const hueco = relojY - SEPARACION_RELOJ - e.margenSeguro.arriba;
   const { frasco, visible } = jarraEnHueco(e, e.margenSeguro.arriba, hueco, e.alto * FRASCO_MIN_ABIERTO);

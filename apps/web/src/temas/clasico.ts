@@ -53,6 +53,7 @@ export const clasico: Tema = {
   nube: false,
   adelantarArena: false,
   adelantarNube: true,
+  relojCentrado: true,
   anclaSuelo: { x: 0.32, y: 0.8 },
   claro: {
     fondo: foto('clasico-claro'),

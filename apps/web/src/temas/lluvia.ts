@@ -31,6 +31,7 @@ export const lluvia: Tema = {
   nube: true,
   adelantarArena: true,
   adelantarNube: false,
+  relojCentrado: false,
   anclaSuelo: { x: 0.28, y: 0.8 },
   claro: {
     fondo: {

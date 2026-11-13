@@ -65,6 +65,7 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho
       <img className="fondo-medio" src={fondo.poster} alt="" style={estilo} />
       {video ? (
         <video
+          key={clave}
           className="fondo-medio"
           ref={videoRef}
           style={{ ...estilo, opacity: listo ? 1 : 0 }}

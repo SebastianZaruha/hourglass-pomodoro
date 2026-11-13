@@ -145,13 +145,14 @@ test('el vídeo sigue al tema', async ({ page }) => {
   await abrirMenu(page);
   await page.getByRole('radio', { name: 'Escena Arena' }).click();
   await mantener(page);
-  const src = await page.evaluate(() => {
-    const video = document.querySelector('.fondo video');
-    return video instanceof HTMLVideoElement ? video.currentSrc : '';
-  });
-  expect(src.length, 'el vídeo no llegó a tener currentSrc').toBeGreaterThan(0);
-  falloEsperado(6, 'React reutiliza el <video> y el navegador no llama a load()');
-  expect(src, `currentSrc=${src}`).toContain('arena');
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const video = document.querySelector('.fondo video');
+        return video instanceof HTMLVideoElement ? video.currentSrc : '';
+      }),
+    )
+    .toContain('arena');
 });
 
 test('la superficie del agua queda a menos de 1°', async ({ page }) => {

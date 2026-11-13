@@ -94,6 +94,8 @@ export interface Tema {
    */
   readonly adelantarArena: boolean;
   readonly adelantarNube: boolean;
+  /** En ancha, el reloj se centra en la columna. Lluvia y Arena lo dejan arriba. */
+  readonly relojCentrado: boolean;
 }
 
 export function modoDe(tema: Tema, scheme: 'light' | 'dark'): ModoTema {

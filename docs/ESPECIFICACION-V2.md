@@ -143,7 +143,7 @@ Lo que **no** cambia entre temas vive una sola vez en `estilo/tokens.ts` (y de a
 
 ### 3.2 Reloj
 
-**Dónde:** en ancho, arriba a la derecha, con la parte de arriba a la altura del bulbo superior. En estrecho, centrado justo debajo del frasco (como en la web publicada). Mismo sitio en los tres temas.
+**Dónde:** en ancho, arriba a la derecha, con la parte de arriba a la altura del bulbo superior. En Clásico ancha el reloj va centrado en vertical en su columna; al abrir el menú sube lo justo y el menú sale desde abajo, sin solaparlo. En estrecho, centrado justo debajo del frasco (como en la web publicada), en los tres temas.
 
 **Aspecto:**
 - Dígitos en Manrope 200, cifras tabulares (no bailan al cambiar), sin tarjeta ni borde.
@@ -275,7 +275,7 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 
 ### 3.10 Cookies, aviso Android y panel legal
 
-- **Cookies:** vidrio, abajo centradas, justo encima del pie. En ancha miden 460 px; en estrecha, el ancho con 10 px de margen. Aparecen primero; el aviso Android solo puede salir cuando ya se ha decidido lo de las cookies. Nunca salen los dos a la vez. No mueven el frasco ni el reloj.
+- **Cookies:** vidrio, abajo centradas, justo encima del pie. En ancha miden hasta 640 px (el texto en menos líneas y los botones en una fila); en estrecha, el ancho con 10 px de margen y no cambia. Aparecen primero; el aviso Android solo puede salir cuando ya se ha decidido lo de las cookies. Nunca salen los dos a la vez. No mueven el frasco ni el reloj.
 - **Aviso Android:** vidrio, abajo a la izquierda, a 12 px del borde y a 12 px por encima del pie. En ancha mide hasta 420 px, con el texto en unas 3 o 4 líneas; en estrecha, el ancho con 12 px de margen (el móvil no cambia). En estrecha el layout reserva su alto medido y el frasco y el reloj suben. En ancha alta, si se acerca al frasco, el frasco sube un poco o se aparta; el aviso no se mueve. En horizontal bajo (alto < 560 px) el frasco y el reloj se reparten el hueco de arriba y no tocan el aviso. Se oculta con el menú abierto. El botón «Descargar» es un `.control` elegido (sin color del tema) y la «×» un `.control` redondo.
 - **Panel legal:** diálogo de vidrio sobre la escena desenfocada.
   - La **cabecera** (título, ES/EN y «×») está **fuera** de la zona que hace scroll. El texto nunca pasa por debajo de ella; así siempre se lee.
@@ -299,11 +299,11 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | Frasco | Alto `0,70 H` (ancho como máximo `0,34 W`). Centro en `x = 0,30 W`, base en `y = 0,80 H`. No se mueve al abrir el menú si no hay aviso. Si el aviso se acerca en una pantalla alta, el frasco sube un poco o se aparta. En horizontal bajo, frasco y reloj se reparten el hueco que queda encima del aviso. |
 | Nube | Sale del frasco: 1,72 × su ancho, con el borde de abajo a un 40 % del bulbo superior. |
 | Columna derecha | De `x = 0,52 W` a `W − m`. |
-| Reloj | Centrado en la columna. Arriba en `frasco.y + 0,06 · frasco.alto`. Letra `clamp(64, 0,13 H, 128)` px, limitada a lo que quepa en la columna con 32 px por lado. |
-| Menú (abierto) | En la columna, ancho `min(440, columna)`, 24 px bajo el reloj. Si no cabe sobre el botón del menú, el reloj sube lo necesario (hasta `m`). Si aun así no cabe (alto < 560 px), el reloj se desvanece mientras el menú está abierto. |
+| Reloj | Centrado en la columna. Arriba en `frasco.y + 0,06 · frasco.alto`. Letra `clamp(64, 0,13 H, 128)` px, limitada a lo que quepa en la columna con 32 px por lado. En Clásico, centrado en vertical en la columna. |
+| Menú (abierto) | En la columna, ancho `min(440, columna)`, 24 px bajo el reloj. Si no cabe sobre el botón del menú, el reloj sube lo necesario (hasta `m`; en Clásico, hasta el margen de arriba). Si aun así no cabe (alto < 560 px), el reloj se desvanece mientras el menú está abierto. |
 | Botón del menú | 44 × 44, a `m` de la esquina inferior derecha. |
 | Pie | Centrado abajo, a 12 px del borde. |
-| Cookies | Centradas, encima del pie, 460 px. |
+| Cookies | Centradas, encima del pie, hasta 640 px. |
 | Android | Abajo a la izquierda, a 12 px, hasta 420 px, 12 px por encima del pie. |
 
 **Estrecha** (`m = 12`):
@@ -311,15 +311,15 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | Elemento | Menú cerrado | Menú abierto |
 |---|---|---|
 | Reserva de abajo | `altoPie + altoAviso + m` | `altoMenu + m + margen seguro` |
-| Reloj | Centrado bajo el frasco, 16 px de separación. Letra `clamp(56, 0,17 W, 96)` px y ≤ `0,10 H` | Justo encima del menú (12 px). La letra puede bajar como mucho un 15 %, nunca por debajo de 48 px |
+| Reloj | Centrado bajo el frasco, 64 px de separación (la sombra sale unos 24 y quedan más de 32 libres). Letra `clamp(56, 0,17 W, 96)` px y ≤ `0,10 H` | Se queda o sube; nunca baja. La letra puede bajar como mucho un 15 %, nunca por debajo de 48 px |
 | Frasco + nube | Ocupan el resto de arriba, centrados. Alto del frasco `min(90 % del hueco, 0,56 H)`, ancho ≤ `0,42 W`. **Mínimo `0,30 H`** | Suben y se encogen con el hueco (como en la web publicada). **Mínimo `0,22 H`**; si no llega (pantallas de menos de 640 px de alto), el frasco y la nube se desvanecen mientras el menú está abierto |
-| Menú | Fuera, debajo | Desde abajo, ancho `W − 24` (máximo 520, centrado), alto medido ≤ `min(0,52 H, 440)` |
+| Menú | Fuera, debajo | Desde abajo, con 24 px más el área segura por debajo. Ancho `W − 24` (máximo 520, centrado), alto medido ≤ `min(0,52 H, 440)` |
 | Pie | Centrado, una o dos líneas, nunca cortado | Oculto |
 | Aviso Android | A 12 px del borde, a lo ancho menos el margen, encima del pie. El frasco y el reloj suben | Oculto |
 | Botón del menú | 44 × 44 abajo a la derecha | Oculto (la «×» está en el panel) |
 
 - Todos los cambios de posición se animan con la transición lenta (620 ms); con *reducir movimiento*, sin animación.
-- Cambiar de tema **nunca** mueve ni cambia de tamaño nada.
+- Cambiar de tema **nunca** mueve ni cambia de tamaño nada, salvo el reloj en Clásico ancha, que se centra en la columna.
 
 **Qué disposición sale en cada tamaño del plan de tests:**
 
@@ -334,7 +334,7 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 | 960 × 900 | Estrecha (ratio 1,07) | Caso intermedio del vídeo |
 | 1100 × 820 | Ancha si cabe; si no, estrecha | La regla «cabe o no cabe» decide |
 
-**Test barrido:** de 360 a 1920 px de ancho en pasos de 20 y con 5 altos, ni el reloj, ni el menú, ni el aviso, ni el pie se solapan con el frasco ni entre sí, y nada se sale de la pantalla. El aviso Android queda a 12 px del borde: hasta 420 px en ancha, y a lo ancho menos el margen en estrecha. En ancha, un hueco de menos de 9 px entre el aviso y el frasco, el reloj o el pie cuenta como solape: así falla el caso en que el aviso queda a ras del pie o a 8 px del frasco.
+**Test barrido:** de 360 a 1920 px de ancho en pasos de 20 y con 5 altos, más 620×1000 y 465×1000, ni el reloj, ni el menú, ni el aviso, ni el pie se solapan con el frasco ni entre sí, y nada se sale de la pantalla. El reloj no baja al abrir el menú. El aviso Android queda a 12 px del borde: hasta 420 px en ancha, y a lo ancho menos el margen en estrecha. En ancha, un hueco de menos de 9 px entre el aviso y el frasco, el reloj o el pie cuenta como solape: así falla el caso en que el aviso queda a ras del pie o a 8 px del frasco.
 
 ### 3.12 Pie de página
 
