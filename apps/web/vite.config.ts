@@ -17,8 +17,20 @@ export default defineConfig({
     fs: { allow: [repoRoot] },
   },
   preview: { port: 4173 },
+  css: {
+    transformer: 'lightningcss',
+    lightningcss: {
+      // Chrome ≥ 111, Safari ≥ 16, Firefox ≥ 115: deja backdrop-filter sin quedarse solo en el prefijo.
+      targets: {
+        chrome: 111 << 16,
+        safari: 16 << 16,
+        firefox: 115 << 16,
+      },
+    },
+  },
   build: {
     target: 'es2022',
+    cssMinify: 'lightningcss',
     sourcemap: true,
   },
 });
