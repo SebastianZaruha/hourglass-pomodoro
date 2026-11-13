@@ -40,6 +40,8 @@ export interface UiTema {
   readonly sombra: string;
   /** Sombra del texto, para leerlo sin velo. */
   readonly sombraTexto: string;
+  /** Saturación del fondo tras el vidrio. Arena la baja para no teñir de caramelo. */
+  readonly saturacion: number;
 }
 
 export interface FotoEstrecha {

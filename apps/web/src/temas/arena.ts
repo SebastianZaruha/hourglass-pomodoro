@@ -1,5 +1,5 @@
 import type { Luz, RelojTema, Tema } from './tipos';
-import { uiDe } from './vidrio';
+import { uiDe, VIDRIO_ARENA } from './vidrio';
 
 const relojClaro: RelojTema = {
   digitos: '#4A4541',
@@ -54,7 +54,7 @@ export const arena: Tema = {
     },
     reserva: '#e4c7a4',
     reloj: relojClaro,
-    ui: uiDe('light', '#2A2623', '#3A342F'),
+    ui: uiDe('light', '#2A2623', '#3A342F', VIDRIO_ARENA),
     barra: '#e6d7c4',
     granos: 'clara',
     luz: luz(false),
@@ -68,7 +68,7 @@ export const arena: Tema = {
     },
     reserva: '#3a2618',
     reloj: relojOscuro,
-    ui: uiDe('dark', '#FFFFFF', '#E4DDD4'),
+    ui: uiDe('dark', '#FFFFFF', '#E4DDD4', VIDRIO_ARENA),
     barra: '#241910',
     granos: 'oscura',
     luz: luz(true),

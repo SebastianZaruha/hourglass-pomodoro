@@ -16,7 +16,7 @@ export function aplicarTema(nodo: HTMLElement, modo: ModoTema, scheme: 'light' |
     '--velo': modo.ui.velo,
     '--borde': modo.ui.borde,
     '--vidrio-blur': `${VIDRIO.blur}px`,
-    '--vidrio-saturacion': String(VIDRIO.saturacion),
+    '--vidrio-saturacion': String(modo.ui.saturacion),
     '--vidrio-brillo': modo.ui.brillo,
     '--vidrio-sombra': modo.ui.sombra,
     '--vidrio-texto': modo.ui.sombraTexto,

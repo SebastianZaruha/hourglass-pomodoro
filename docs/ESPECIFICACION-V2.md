@@ -241,8 +241,8 @@ Es **un** estilo. Lo único que hace que se vea distinto es lo que hay detrás.
 
 | Propiedad | Valor | Por qué |
 |---|---|---|
-| Desenfoque | `backdrop-filter: blur(32px) saturate(1.4)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El desenfoque no sube: ya bastaba. La saturación devuelve el color del fondo. |
-| Tinte | `rgba(0,0,0,0.12)` en claro y en oscuro. Nada de tinte blanco | Un oscurecido muy bajo deja ver el color del fondo y sostiene el texto blanco. |
+| Desenfoque | `backdrop-filter: blur(32px) saturate(1.4)`. Arena usa `saturate(1.05)`. El build añade `-webkit-backdrop-filter` y conserva el de sin prefijo | El desenfoque no sube. En Arena la saturación alta teñía el vidrio de caramelo. |
+| Tinte | `rgba(0,0,0,0.12)` en claro y en oscuro. Arena, `rgba(0,0,0,0.08)`. Nada de tinte blanco | Un oscurecido muy bajo deja ver el color del fondo. En Arena, un poco menos para no volverlo marrón. |
 | Texto | Blanco en los dos modos, con sombra oscura suave. Los iconos heredan ese blanco | Como un widget del tiempo: el texto no es oscuro sobre el vidrio. |
 | Brillo | `inset 0 1px 0 rgba(255,255,255,0.22)` | Un filo de luz arriba. |
 | Borde | 1 px `rgba(255,255,255,0.32)` | Una línea clara y fina. |

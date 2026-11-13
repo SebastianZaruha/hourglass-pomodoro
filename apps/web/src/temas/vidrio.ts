@@ -33,6 +33,12 @@ export const CONTROLES = {
 /** Sin backdrop-filter el velo se vuelve opaco y oscuro, para que el texto blanco siga leyéndose. */
 export const VELO_SIN_FILTRO = 'rgba(0, 0, 0, 0.72)';
 
+/** Arena: la saturación alta y el velo de 0,12 vuelven el vidrio caramelo. */
+export const VIDRIO_ARENA = {
+  saturacion: 1.05,
+  velo: 'rgba(0, 0, 0, 0.08)',
+} as const;
+
 /** Velo negro suave. Nada de tinte blanco. */
 export const VIDRIO_CLARO = {
   velo: 'rgba(0, 0, 0, 0.12)',
@@ -50,16 +56,22 @@ export const VIDRIO_OSCURO = {
   sombraTexto: VIDRIO_TEXTO.sombra,
 } as const;
 
-/** El vidrio es el mismo en los tres temas. La tinta de fuera (pie, botón) sí cambia. */
-export function uiDe(scheme: 'light' | 'dark', tinta: string, tintaSuave: string): UiTema {
+/** La tinta de fuera (pie, botón) cambia con el tema. El vidrio, solo si se pasa un ajuste. */
+export function uiDe(
+  scheme: 'light' | 'dark',
+  tinta: string,
+  tintaSuave: string,
+  ajuste?: { readonly saturacion: number; readonly velo: string },
+): UiTema {
   const vidrio = scheme === 'dark' ? VIDRIO_OSCURO : VIDRIO_CLARO;
   return {
     tinta,
     tintaSuave,
-    velo: vidrio.velo,
+    velo: ajuste?.velo ?? vidrio.velo,
     borde: vidrio.borde,
     brillo: vidrio.brillo,
     sombra: vidrio.sombra,
     sombraTexto: vidrio.sombraTexto,
+    saturacion: ajuste?.saturacion ?? VIDRIO.saturacion,
   };
 }
