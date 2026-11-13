@@ -64,3 +64,87 @@ export function opacidadNube(angulo: number): number {
   return Math.max(0, Math.min(1, 1 - t));
 }
 
+/** Durante la media vuelta la nube sigue entera. Fuera de ella vale el ángulo. */
+export function opacidadNubeEnVuelta(angulo: number, reinicio: boolean): number {
+  if (reinicio) return 1;
+  return opacidadNube(angulo);
+}
+
+const FUNDIDO_BUCLE_S = 2;
+
+/** Cruce de los dos vídeos. `queda` es lo que le falta al que se está viendo. */
+export function fundidoBucle(queda: number, fundido = FUNDIDO_BUCLE_S): { activo: number; reserva: number } {
+  if (!(fundido > 0) || !(queda < fundido)) return { activo: 1, reserva: 0 };
+  const k = Math.max(0, queda / fundido);
+  return { activo: k, reserva: 1 - k };
+}
+
+export interface BucleNube {
+  empezar(): void;
+  parar(): void;
+  destruir(): void;
+}
+
+/**
+ * Dos vídeos del mismo plano. El cruce va en `timeupdate`, no en el fotograma
+ * del frasco: en reposo ese bucle duerme.
+ */
+export function crearBucleNube(a: HTMLVideoElement, b: HTMLVideoElement): BucleNube {
+  let principal = a;
+  let apoyo = b;
+  let encendido = false;
+  const aplicar = () => {
+    if (!encendido || !Number.isFinite(principal.duration)) return;
+    const queda = principal.duration - principal.currentTime;
+    const fundido = fundidoBucle(queda);
+    if (fundido.reserva > 0 && apoyo.paused) {
+      try {
+        apoyo.currentTime = 0;
+      } catch {
+        /* el plano aún no tiene duración */
+      }
+      void apoyo.play().catch(() => undefined);
+    }
+    principal.style.opacity = fundido.activo.toFixed(3);
+    apoyo.style.opacity = fundido.reserva.toFixed(3);
+    if (principal.ended || queda < 0.05) {
+      principal.pause();
+      try {
+        principal.currentTime = 0;
+      } catch {
+        /* igual que arriba */
+      }
+      principal.style.opacity = '0';
+      const saliente = principal;
+      principal = apoyo;
+      apoyo = saliente;
+      principal.style.opacity = '1';
+      if (principal.paused) void principal.play().catch(() => undefined);
+    }
+  };
+  a.addEventListener('timeupdate', aplicar);
+  b.addEventListener('timeupdate', aplicar);
+  a.addEventListener('ended', aplicar);
+  b.addEventListener('ended', aplicar);
+  return {
+    empezar() {
+      encendido = true;
+      if (principal.paused) void principal.play().catch(() => undefined);
+    },
+    parar() {
+      encendido = false;
+      a.pause();
+      b.pause();
+    },
+    destruir() {
+      encendido = false;
+      a.removeEventListener('timeupdate', aplicar);
+      b.removeEventListener('timeupdate', aplicar);
+      a.removeEventListener('ended', aplicar);
+      b.removeEventListener('ended', aplicar);
+      a.pause();
+      b.pause();
+    },
+  };
+}
+

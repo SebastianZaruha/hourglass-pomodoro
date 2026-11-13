@@ -89,7 +89,12 @@ export function prefetchEnReposo(urls: readonly string[], win: Ventana = window)
 }
 
 /** El vídeo de la nube solo pide bytes cuando Lluvia está activa y hay red. */
-export function activarNube(video: HTMLVideoElement, activa: boolean, ahorro: boolean): void {
+export function activarNube(
+  video: HTMLVideoElement,
+  activa: boolean,
+  ahorro: boolean,
+  reproducir = true,
+): void {
   if (!activa || ahorro) {
     video.pause();
     return;
@@ -106,5 +111,5 @@ export function activarNube(video: HTMLVideoElement, activa: boolean, ahorro: bo
       { once: true },
     );
   }
-  if (video.paused) void video.play().catch(() => undefined);
+  if (reproducir && video.paused) void video.play().catch(() => undefined);
 }

@@ -38,6 +38,7 @@ import { calcularLayout } from './layout/calcularLayout';
 import { ensureNotificationPermission, showPhaseNotification } from './notify';
 import { playCue, primeAudio } from './sound';
 import { pruebasActivas, publicarCajas } from './pruebas';
+import { giroArranca, ruedaGiraFrasco, vueltaArranca } from './stageClick';
 import { guardarEscena, leerEscena, modoDe, temaPorId, TEMAS, type IdTema } from './temas';
 import { useSession } from './useSession';
 import { useSettings, type SettingsPatch } from './useSettings';
@@ -167,7 +168,7 @@ function Reloj({
 
   const onWheel = useCallback(
     (pasos: number) => {
-      empezarVuelta();
+      if (ruedaGiraFrasco()) empezarVuelta();
       if (settings.sessionMode === 'cycles') {
         const cycle = activeCycleConfig(settings);
         update({
@@ -193,6 +194,7 @@ function Reloj({
     onToggle: doToggle,
     onRestart: () => {
       empezarVuelta();
+      if (vueltaArranca()) flip();
       restart();
     },
     onCloseMenu: () => setMenu(false),
@@ -279,6 +281,7 @@ function Reloj({
             tipo={tema.contenido}
             granos={modo.granos}
             mostrarNube={tema.nube}
+            enMarcha={view.status === 'running'}
             reducir={medios.reducir}
             ahorro={medios.ahorro}
             layout={layout}
@@ -287,7 +290,9 @@ function Reloj({
             vuelta={vuelta}
             contenidoFijo={contenidoFijo}
             onVueltaLista={() => setContenidoFijo(null)}
-            onVolteo={flip}
+            onVolteo={() => {
+              if (giroArranca(getSnapshot().status)) flip();
+            }}
             onSuprimirClic={() => {
               suprimirClic.current = true;
             }}
@@ -385,6 +390,7 @@ function Reloj({
             plano.customCycle !== undefined
           ) {
             empezarVuelta();
+            if (vueltaArranca()) flip();
           }
           update(patch);
         }}

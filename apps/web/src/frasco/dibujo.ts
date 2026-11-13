@@ -1,14 +1,14 @@
 import type { SandSimulation, StreamParticles } from '@reloj/core';
 
-import { VIDRIO_NEUTRO } from '../estilo/tokens';
+import { VIDRIO_CONTORNO, VIDRIO_NEUTRO } from '../estilo/tokens';
 import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import type { Activos } from './activos';
 import { dibujarContenido } from './contenido';
-import { dibujarChorroMundo } from './granos';
+import { dibujarChorro, dibujarChorroMundo } from './granos';
 import type { Geometria } from './geometria';
 import { aplicarLuz } from './luzAplicar';
-import { pintarAgua } from './pintarAgua';
+import { pintarAgua, pintarGotasEncima, type AguaFrame } from './pintarAgua';
 import { dibujarSombra } from './luz';
 
 export interface OrdenDibujo {
@@ -33,10 +33,12 @@ export interface OrdenDibujo {
   readonly arena: HTMLCanvasElement | null;
   /** 0 = silueta de la máscara, 1 = foto del vidrio. */
   readonly vidrio: number;
+  /** La media vuelta pinta el contenido en el frasco, no quieto en el mundo. */
+  readonly enElFrasco: boolean;
 }
 
-/** Pinta sombra, vidrio, contenido y nube. Los colores salen de `luz`. */
-export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activos: Activos): void {
+/** Pinta sombra, vidrio, contenido y nube. Los colores salen de `luz`. Devuelve si las gotas siguen en el aire. */
+export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activos: Activos): boolean {
   const viewW = ctx.canvas.clientWidth;
   const viewH = ctx.canvas.clientHeight;
   ctx.clearRect(0, 0, viewW, viewH);
@@ -76,34 +78,58 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
       brillo: orden.luz.brillo,
       fuerzaTinte: orden.luz.fuerzaTinte,
     });
+    if (orden.enElFrasco && orden.sim && orden.chorro && orden.lut) {
+      ctx.save();
+      ctx.translate(x, y);
+      dibujarChorro(ctx, orden.sim, orden.chorro, orden.lut, w, h);
+      ctx.restore();
+    }
   }
   ctx.restore();
 
-  if (orden.tipo === 'arena' && orden.sim && orden.chorro && orden.lut) {
+  if (orden.tipo === 'arena' && !orden.enElFrasco && orden.sim && orden.chorro && orden.lut) {
     dibujarChorroMundo(ctx, orden.sim, orden.chorro, orden.lut, orden.frasco, orden.angulo);
   }
 
   if (orden.tipo === 'agua' && orden.geo) {
-    pintarAgua(ctx, {
-      frasco: orden.frasco,
-      geo: orden.geo,
-      angulo: orden.angulo,
-      phi: orden.phi,
-      fraccionArriba: orden.volumenArriba,
-      fraccionAbajo: orden.volumenAbajo,
-      oscuro: orden.oscuro,
-      llueve: orden.llueve,
-      dt: orden.dt,
-      mascara: activos.mascara,
-    });
+    pintarAgua(
+      ctx,
+      cuadroAgua(orden, activos.mascara, orden.angulo, orden.enElFrasco ? -orden.angulo : orden.phi),
+    );
   }
 
   if (activos.dorso && orden.vidrio > 0) {
     ctx.save();
     ctx.globalAlpha = orden.vidrio;
-    aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso);
+    aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso, activos.mascara);
     ctx.restore();
   }
+
+  let gotas = false;
+  if (orden.tipo === 'agua' && orden.geo) {
+    gotas = pintarGotasEncima(ctx, cuadroAgua(orden, activos.mascara, orden.angulo, orden.phi), orden.enElFrasco);
+  }
+  return gotas;
+}
+
+function cuadroAgua(
+  orden: OrdenDibujo,
+  mascara: HTMLCanvasElement | null,
+  angulo: number,
+  phi: number,
+): AguaFrame {
+  return {
+    frasco: orden.frasco,
+    geo: orden.geo as Geometria,
+    angulo,
+    phi,
+    fraccionArriba: orden.volumenArriba,
+    fraccionAbajo: orden.volumenAbajo,
+    oscuro: orden.oscuro,
+    llueve: orden.llueve,
+    dt: orden.dt,
+    mascara,
+  };
 }
 
 let silueta: HTMLCanvasElement | null = null;
@@ -126,5 +152,19 @@ function dibujarSilueta(ctx: CanvasRenderingContext2D, frasco: Caja, mascara: Ca
   g.fillRect(0, 0, w, h);
   g.globalCompositeOperation = 'destination-in';
   g.drawImage(mascara, 0, 0, w, h);
+  ctx.drawImage(silueta, frasco.x, frasco.y, frasco.w, frasco.h);
+
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, w, h);
+  g.save();
+  g.translate(w / 2, h / 2);
+  g.fillStyle = VIDRIO_CONTORNO;
+  g.fillRect(-w / 2, -h / 2, w, h);
+  g.globalCompositeOperation = 'destination-in';
+  const margen = 2.5;
+  g.drawImage(mascara, -w / 2 - margen, -h / 2 - margen, w + margen * 2, h + margen * 2);
+  g.globalCompositeOperation = 'destination-out';
+  g.drawImage(mascara, -w / 2, -h / 2, w, h);
+  g.restore();
   ctx.drawImage(silueta, frasco.x, frasco.y, frasco.w, frasco.h);
 }

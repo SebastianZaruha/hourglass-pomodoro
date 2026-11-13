@@ -49,3 +49,18 @@ export function arrastreSuprimeClic(deltaAngulo: number): boolean {
 export function ruedaAjustaTiempo(status: TimerStatus, menuAbierto: boolean): boolean {
   return status === 'idle' && !menuAbierto;
 }
+
+/** Girar o arrastrar el frasco no lo pone en marcha. Solo sigue si ya corría. */
+export function giroArranca(status: TimerStatus): boolean {
+  return status === 'running';
+}
+
+/** La rueda cambia el tiempo y no gira el frasco. */
+export function ruedaGiraFrasco(): boolean {
+  return false;
+}
+
+/** La media vuelta del reinicio o del menú no arranca la cuenta. */
+export function vueltaArranca(): boolean {
+  return false;
+}

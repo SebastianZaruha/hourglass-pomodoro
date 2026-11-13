@@ -139,7 +139,7 @@ test('la superficie del agua queda a menos de 1°', async ({ page }) => {
   const recto = medidas.find((m) => m.pedido === 0);
   expect(recto?.columnas ?? 0, detalle).toBeGreaterThanOrEqual(8);
   expect(Math.abs(recto?.grados ?? Number.NaN), detalle).toBeLessThan(1);
-  falloEsperado(3, 'el agua se calcula en un espacio estirado: a 30° el error ronda los 22°');
+  falloEsperado(3, 'a 60° el tramo horizontal es corto y la lectura se queda en unos 3°');
   for (const medida of medidas.filter((m) => m.pedido !== 0)) {
     expect(medida.columnas, detalle).toBeGreaterThanOrEqual(8);
     expect(Math.abs(medida.grados), detalle).toBeLessThan(1);
@@ -153,7 +153,7 @@ test('el agua llega a la máscara', async ({ page }) => {
   const mask = await mascaraEscalada(page, jar.w, jar.h);
   const hueco = huecoAguaMascara(jar.data, mask, jar.w, jar.h);
   expect(hueco.filas, 'la máscara no cubre el bulbo de arriba').toBeGreaterThan(8);
-  falloEsperado(2, 'el contorno del agua es r² y no llega al cristal: el hueco pasa de 2 px');
+  falloEsperado(2, 'el velo deja ver el sombreado del dorso: el borde no iguala el centro hasta unos 20 px');
   expect(
     hueco.hueco,
     `hueco ${hueco.hueco} px · contraste borde ${hueco.contraste.toFixed(1)} · ${hueco.filas} filas`,

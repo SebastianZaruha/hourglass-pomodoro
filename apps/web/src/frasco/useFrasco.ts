@@ -24,9 +24,9 @@ import { buildPaletteLut, pintarSello } from './granos';
 import { muelleSuperficie } from './fisica/superficie';
 import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from './maquina';
 import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
-import { nivelAbajo, nivelDesdeTiempo } from './nivel';
+import { pasoNivel, volumenAgua, volumenTrasCanje } from './nivel';
 import { PERFIL_FRASCO, dentroDeCelda, desdeLuminancia, type Geometria } from './geometria';
-import { opacidadNube } from './nube';
+import { crearBucleNube, opacidadNubeEnVuelta } from './nube';
 import { crearSuavizado } from './suavizar';
 
 export interface ModeloFrasco {
@@ -35,6 +35,8 @@ export interface ModeloFrasco {
   readonly tipo: 'arena' | 'agua';
   readonly granos: 'clara' | 'oscura';
   readonly mostrarNube: boolean;
+  /** El reloj corre. Despierta el bucle, que en reposo está dormido. */
+  readonly enMarcha: boolean;
   readonly reducir: boolean;
   readonly ahorro: boolean;
   readonly layout: Layout;
@@ -77,7 +79,7 @@ function dentro(
 export function useFrasco(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   modelo: ModeloFrasco,
-  nubeRef: RefObject<HTMLVideoElement | null>,
+  nubeRef: RefObject<HTMLElement | null>,
 ): void {
   const vivo = useRef(modelo);
   const pedir = useRef<() => void>(() => undefined);
@@ -92,6 +94,7 @@ export function useFrasco(
     modelo.tipo,
     modelo.granos,
     modelo.mostrarNube,
+    modelo.enMarcha,
     modelo.reducir,
     modelo.ahorro,
     modelo.pausado,
@@ -150,6 +153,13 @@ export function useFrasco(
     let superficie: Muelle = muelleQuieto(0);
     let anguloPrevio = 0;
     let vueltaVista = vivo.current.vuelta;
+    let nivelVisto = { arriba: -1, abajo: -1 };
+    const capaNube = nubeRef.current;
+    const videosNube = capaNube?.querySelectorAll('video');
+    const bucleNube =
+      videosNube && videosNube.length >= 2
+        ? crearBucleNube(videosNube[0] as HTMLVideoElement, videosNube[1] as HTMLVideoElement)
+        : null;
     const lod = new TiltLod();
     let ultimoSim = 0;
     let vidrioDesde = 0;
@@ -181,9 +191,18 @@ export function useFrasco(
       ultimo = now;
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
       const eraReinicio = estado.reinicio;
+      let canje = false;
       if (anguloFijo === null) {
         estado = paso.estado;
         orden = { tipo: 'quieto', dt, reducir: m.reducir };
+        canje = paso.volteoCompletado || (eraReinicio && !estado.reinicio);
+        if (canje) {
+          sim.rotateHalfTurn();
+          if (nivelVisto.arriba >= 0) {
+            const cambiado = volumenTrasCanje(nivelVisto.arriba, nivelVisto.abajo);
+            nivelVisto = { arriba: cambiado.arriba, abajo: cambiado.abajo };
+          }
+        }
         if (paso.volteoCompletado) m.onVolteo();
         if (eraReinicio && !estado.reinicio) m.onVueltaLista();
       } else {
@@ -213,10 +232,11 @@ export function useFrasco(
       }
 
       const snap = m.getSnapshot();
+      const enReinicio = estado.reinicio;
       const tiempo = m.contenidoFijo ?? snap;
       const fraccion =
         tiempo.durationMs > 0 ? Math.min(1, Math.max(0, tiempo.remainingMs / tiempo.durationMs)) : 0;
-      const arriba = nivelDesdeTiempo(tiempo.durationMs, tiempo.remainingMs);
+      const vol = volumenAgua(tiempo.durationMs, tiempo.remainingMs);
       const objetivo = granosObjetivo(sim.totalGrains, tiempo.durationMs, tiempo.remainingMs);
       const girando = estado.fase === 'volteando';
       let movio = forzar || girando || Math.abs(estado.velocidad) > 0;
@@ -230,25 +250,48 @@ export function useFrasco(
         }
         movio = true;
       }
+      if (nivelVisto.arriba < 0) nivelVisto = { arriba: vol.arriba, abajo: vol.abajo };
+      else if (!enReinicio && m.contenidoFijo === null) {
+        const arribaNivel = pasoNivel(nivelVisto.arriba, vol.arriba, dt);
+        const abajoNivel = pasoNivel(nivelVisto.abajo, vol.abajo, dt);
+        if (arribaNivel !== nivelVisto.arriba || abajoNivel !== nivelVisto.abajo) movio = true;
+        nivelVisto = { arriba: arribaNivel, abajo: abajoNivel };
+      }
       if (m.tipo === 'arena') {
         const inclinado = Math.abs(estado.angulo) >= 0.05;
         const suave = inclinado ? gravedadDelAngulo(estado.angulo) : GRAVITY_DOWN;
         const gravedad = lod.update(now, suave, suave, ultimoSim);
         const tSim = performance.now();
         if (
+          !enReinicio &&
           !inclinado &&
-          (paso.volteoCompletado || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle'))
+          (canje || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle'))
         ) {
-          if (sim.topCount !== objetivo) {
-            sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
+          const delta = objetivo - sim.topCount;
+          if (delta !== 0) {
+            const salto = !canje && (sim.topCount === 0 || Math.abs(delta) > sim.totalGrains * 0.35);
+            if (salto) {
+              sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
+            } else if (delta < 0) {
+              syncSandToTarget(sim, objetivo, GRAVITY_DOWN, {
+                maxPerFrame: Math.max(30, Math.round(sim.totalGrains * 0.01)),
+                teleportThreshold: sim.totalGrains,
+                crater: 0.16,
+              });
+              sim.step(GRAVITY_DOWN);
+            } else {
+              const cupo = Math.max(30, Math.round(sim.totalGrains * 0.012));
+              const n = Math.min(objetivo, sim.topCount + cupo);
+              sim.arrange(n, Math.max(0, sim.totalGrains - n), GRAVITY_DOWN);
+            }
             movio = true;
           }
-        } else if (!girando && snap.status !== 'idle') {
+        } else if (!enReinicio && !girando && snap.status !== 'idle') {
           const inicial = granosObjetivo(sim.totalGrains, snap.durationMs, snap.durationMs);
           const budget = flowBudget(inicial, snap.durationMs, sim.totalGrains);
           if (syncSandToTarget(sim, objetivo, gravedad, { ...budget, crater: 0.16 }) !== 'idle') movio = true;
           if (sim.step(gravedad) > 0) movio = true;
-        } else if (inclinado || estado.fase === 'arrastrando') {
+        } else if (!enReinicio && (inclinado || estado.fase === 'arrastrando')) {
           if (sim.step(gravedad) > 0) movio = true;
         }
         ultimoSim = performance.now() - tSim;
@@ -257,7 +300,7 @@ export function useFrasco(
           !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(gravedad);
         input.gravity = gravedad;
         input.calm = m.reducir;
-        particles.update(sim, input);
+        if (!enReinicio) particles.update(sim, input);
         if (movio || particles.active) pintarArena();
       }
 
@@ -277,7 +320,7 @@ export function useFrasco(
         canvas.height = pxH;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      dibujar(
+      const gotasVivas = dibujar(
         ctx,
         {
           frasco: suave.par.frasco,
@@ -286,33 +329,40 @@ export function useFrasco(
           tipo: m.tipo,
           angulo: estado.angulo,
           anguloAgua: estado.angulo,
-          phi: superficie.valor,
-          volumenArriba: m.tipo === 'agua' ? fraccion : arriba,
-          volumenAbajo: m.tipo === 'agua' ? 1 - fraccion : nivelAbajo(tiempo.durationMs, tiempo.remainingMs),
+          phi: enReinicio ? 0 : superficie.valor,
+          volumenArriba: nivelVisto.arriba,
+          volumenAbajo: nivelVisto.abajo,
           oscuro: m.granos === 'oscura',
           dt,
           geo,
           mostrarNube: m.mostrarNube,
           reducir: m.reducir,
-          llueve: m.tipo === 'agua' && snap.status === 'running' && fraccion > 0.01 && fraccion < 0.995,
+          llueve: m.tipo === 'agua' && (enReinicio || snap.status === 'running') && fraccion > 0.01,
           sim,
           chorro: particles,
           lut,
           arena,
           vidrio,
+          enElFrasco: enReinicio,
         },
         activos,
       );
+      if (gotasVivas) movio = true;
 
-      const video = nubeRef.current;
-      if (video && nubeLista) {
+      const capa = nubeRef.current;
+      const videos = capa?.querySelectorAll('video');
+      if (capa && videos && videos.length >= 2 && nubeLista) {
         const caja = cajaNube(visto);
-        video.style.transform = `translate3d(${Math.round(caja.x)}px, ${Math.round(caja.y)}px, 0)`;
-        video.style.width = `${Math.round(caja.w)}px`;
-        video.style.height = `${Math.round(caja.h)}px`;
-        video.style.opacity = m.mostrarNube ? opacidadNube(estado.angulo).toFixed(3) : '0';
-        video.style.filter = `brightness(${m.luz.nube.brillo}) saturate(${m.luz.nube.saturacion})`;
-        activarNube(video, m.mostrarNube && !document.hidden && !m.reducir, m.ahorro);
+        capa.style.transform = `translate3d(${Math.round(caja.x)}px, ${Math.round(caja.y)}px, 0)`;
+        capa.style.width = `${Math.round(caja.w)}px`;
+        capa.style.height = `${Math.round(caja.h)}px`;
+        capa.style.opacity = m.mostrarNube ? opacidadNubeEnVuelta(estado.angulo, estado.reinicio).toFixed(3) : '0';
+        capa.style.filter = `brightness(${m.luz.nube.brillo}) saturate(${m.luz.nube.saturacion})`;
+        const ver = m.mostrarNube && !document.hidden && !m.reducir && !m.ahorro;
+        activarNube(videos[0] as HTMLVideoElement, ver, false, false);
+        activarNube(videos[1] as HTMLVideoElement, ver, false, false);
+        if (ver) bucleNube?.empezar();
+        else bucleNube?.parar();
       }
       const seguir =
         movio ||
@@ -392,8 +442,10 @@ export function useFrasco(
     });
     observer.observe(canvas);
     const alVer = () => {
-      if (document.hidden) activos.nubeVideo?.pause();
-      else despertar();
+      if (document.hidden) {
+        activos.nubeVideo?.pause();
+        bucleNube?.parar();
+      } else despertar();
     };
     document.addEventListener('visibilitychange', alVer);
     despertar();
@@ -408,6 +460,7 @@ export function useFrasco(
       canvas.removeEventListener('pointercancel', up);
       document.removeEventListener('visibilitychange', alVer);
       activos.nubeVideo?.pause();
+      bucleNube?.destruir();
     };
   }, [canvasRef]);
 }

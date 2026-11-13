@@ -12,20 +12,28 @@ export interface LuzGrano {
   readonly direccion: number;
 }
 
+/** Un tono más oscuro que el más oscuro de la paleta, para que el sexto se distinga. */
 function sextoTono(tones: ContentPalette['grainTones']): readonly [number, number, number] {
-  const a = tones[0] ?? [200, 170, 130];
-  const b = tones[tones.length - 1] ?? a;
+  let elegido = tones[0] ?? [80, 60, 40];
+  let suma = Number.POSITIVE_INFINITY;
+  for (const tono of tones) {
+    const s = (tono[0] ?? 0) + (tono[1] ?? 0) + (tono[2] ?? 0);
+    if (s < suma) {
+      suma = s;
+      elegido = tono;
+    }
+  }
   return [
-    Math.round((a[0] ?? 0) * 0.4 + (b[0] ?? 0) * 0.6),
-    Math.round((a[1] ?? 0) * 0.4 + (b[1] ?? 0) * 0.6),
-    Math.round((a[2] ?? 0) * 0.4 + (b[2] ?? 0) * 0.6),
+    Math.round((elegido[0] ?? 0) * 0.62),
+    Math.round((elegido[1] ?? 0) * 0.62),
+    Math.round((elegido[2] ?? 0) * 0.62),
   ];
 }
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
-  const tones = palette.grainTones.length >= 6 ? palette.grainTones : [...palette.grainTones, sextoTono(palette.grainTones)];
-  const mean = [0, 1, 2].map((c) => tones.reduce((sum, tone) => sum + (tone[c] ?? 0), 0) / tones.length);
+  const tones =
+    palette.grainTones.length >= 6 ? palette.grainTones : [...palette.grainTones, sextoTono(palette.grainTones)];
   for (let t = 1; t < 256; t++) {
     const h = hash32(t * 977);
     const speck = (h % 1000) / 1000 < palette.speckRatio;
@@ -36,20 +44,37 @@ export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
       ? palette.speck
       : [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
     for (let c = 0; c < 3; c++) {
-      const channel = mean[c] ?? 0;
-      const value = rgb[c] ?? channel;
-      lut[t * 3 + c] = Math.round(channel + (value - channel) * 0.75);
+      lut[t * 3 + c] = Math.round(Math.max(0, Math.min(255, rgb[c] ?? 0)));
     }
   }
   return lut;
 }
 
+const ESCALA_GRANO = 3;
+
+function disco(radio: number): readonly (readonly [number, number])[] {
+  const r = Math.ceil(radio);
+  const puntos: (readonly [number, number])[] = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      if (x * x + y * y <= radio * radio) puntos.push([x, y]);
+    }
+  }
+  return puntos;
+}
+
+const DISCO_CORTO = disco(1.55);
+const DISCO_LARGO = disco(2.05);
+
 let sello: ImageData | null = null;
 
-/** Un sello de 3×3 por grano. Las esquinas van a media opacidad. Un solo putImageData. */
+/**
+ * Granos sueltos: disco opaco, centro desplazado y brillo propio.
+ * Al escalar, el suavizado borra la celda. Sin esquinas a media tinta.
+ */
 export function pintarSello(ctx: CanvasRenderingContext2D, sim: SandSimulation, lut: Uint8ClampedArray): void {
-  const cols = sim.cols * 3;
-  const rows = sim.rows * 3;
+  const cols = sim.cols * ESCALA_GRANO;
+  const rows = sim.rows * ESCALA_GRANO;
   if (ctx.canvas.width !== cols || ctx.canvas.height !== rows) {
     ctx.canvas.width = cols;
     ctx.canvas.height = rows;
@@ -62,22 +87,26 @@ export function pintarSello(ctx: CanvasRenderingContext2D, sim: SandSimulation, 
   for (let i = 0; i < cells.length; i++) {
     const tone = cells[i] ?? 0;
     if (tone === 0) continue;
+    const h = hash32(i + 1);
     const col = i % ancho;
     const row = (i / ancho) | 0;
     const l = tone * 3;
-    const r = lut[l] ?? 0;
-    const g = lut[l + 1] ?? 0;
-    const b = lut[l + 2] ?? 0;
-    const lleno = (255 << 24) | (b << 16) | (g << 8) | r;
-    const medio = (128 << 24) | (b << 16) | (g << 8) | r;
-    const x0 = col * 3;
-    const y0 = row * 3;
-    for (let dy = 0; dy < 3; dy++) {
-      const fila = (y0 + dy) * cols + x0;
-      for (let dx = 0; dx < 3; dx++) {
-        const esquina = (dx === 0 || dx === 2) && (dy === 0 || dy === 2);
-        pixels[fila + dx] = esquina ? medio : lleno;
-      }
+    const brillo = 0.76 + ((h >>> 8) & 15) / 15 * 0.48;
+    const r = Math.min(255, Math.round((lut[l] ?? 0) * brillo));
+    const g = Math.min(255, Math.round((lut[l + 1] ?? 0) * brillo));
+    const b = Math.min(255, Math.round((lut[l + 2] ?? 0) * brillo));
+    const tinta = (255 << 24) | (b << 16) | (g << 8) | r;
+    const jx = ((h & 15) - 7) * 0.24;
+    const jy = (((h >>> 4) & 15) - 7) * 0.24;
+    const cx = Math.round(col * ESCALA_GRANO + 1.5 + jx);
+    const cy = Math.round(row * ESCALA_GRANO + 1.5 + jy);
+    const forma = (h >>> 12) & 1 ? DISCO_LARGO : DISCO_CORTO;
+    for (let k = 0; k < forma.length; k++) {
+      const punto = forma[k] ?? [0, 0];
+      const x = cx + punto[0];
+      const y = cy + punto[1];
+      if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
+      pixels[y * cols + x] = tinta;
     }
   }
   ctx.putImageData(sello, 0, 0);

@@ -44,6 +44,7 @@ export function aplicarLuz(
   angulo: number,
   frente: CanvasImageSource | null,
   dorso: CanvasImageSource | null,
+  contenido: HTMLCanvasElement | null = null,
 ): void {
   const { x, y, w, h } = frasco;
   const dir = vectorLuz(luz.direccion);
@@ -103,6 +104,11 @@ export function aplicarLuz(
     g2.globalAlpha = 1;
     g2.fillStyle = mascara;
     g2.fillRect(0, 0, w, h);
+    if (contenido) {
+      g2.globalCompositeOperation = 'destination-out';
+      g2.globalAlpha = 1;
+      girar(g2, w, h, angulo, () => g2.drawImage(contenido, 0, 0, w, h));
+    }
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = Math.min(1, luz.reflejos * Math.max(0.35, luz.brillo));

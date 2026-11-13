@@ -60,6 +60,50 @@ function poligono(
   ctx.closePath();
 }
 
+const solidas = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>();
+
+/** La máscara del contenido, umbral y un par de píxeles hacia el cristal. */
+export function mascaraSolida(origen: HTMLCanvasElement): HTMLCanvasElement {
+  const ya = solidas.get(origen);
+  if (ya) return ya;
+  const w = origen.width;
+  const h = origen.height;
+  const src = origen.getContext('2d')?.getImageData(0, 0, w, h);
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  if (!src) return origen;
+  const base = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) base[i] = (src.data[i * 4 + 3] ?? 0) > 32 ? 255 : 0;
+  let entrada = base;
+  let salida = new Uint8Array(w * h);
+  for (let paso = 0; paso < 2; paso++) {
+    salida.set(entrada);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x;
+        if (entrada[i]) continue;
+        if (entrada[i - 1] || entrada[i + 1] || entrada[i - w] || entrada[i + w]) salida[i] = 255;
+      }
+    }
+    const tmp = entrada;
+    entrada = salida;
+    salida = tmp;
+  }
+  const g = out.getContext('2d');
+  if (!g) return origen;
+  const img = g.createImageData(w, h);
+  for (let i = 0; i < entrada.length; i++) {
+    img.data[i * 4] = 255;
+    img.data[i * 4 + 1] = 255;
+    img.data[i * 4 + 2] = 255;
+    img.data[i * 4 + 3] = entrada[i] ?? 0;
+  }
+  g.putImageData(img, 0, 0);
+  solidas.set(origen, out);
+  return out;
+}
+
 /** Agua en el mundo: semiplano horizontal, recortado por el cuello y la máscara girada. */
 export function pintarAgua(ctx: CanvasRenderingContext2D, frame: AguaFrame): void {
   const { w, h } = frame.frasco;
@@ -75,6 +119,7 @@ export function pintarAgua(ctx: CanvasRenderingContext2D, frame: AguaFrame): voi
 
   const colores = frame.oscuro ? PINTURA.aguaOscura : PINTURA.agua;
   const menisco = frame.oscuro ? PINTURA.meniscoOscuro : PINTURA.menisco;
+  const reflejo = frame.oscuro ? PINTURA.reflejoOscuro : PINTURA.reflejo;
   const grad = g.createLinearGradient(0, 0, 0, ph);
   grad.addColorStop(0, colores[0]);
   grad.addColorStop(1, colores[1]);
@@ -92,7 +137,6 @@ export function pintarAgua(ctx: CanvasRenderingContext2D, frame: AguaFrame): voi
     },
   ] as const;
 
-  let superficieAbajo: number | null = null;
   for (const bulbo of bulbos) {
     const corte = corteDeBulbo(
       frame.geo.puntos,
@@ -105,7 +149,6 @@ export function pintarAgua(ctx: CanvasRenderingContext2D, frame: AguaFrame): voi
       jh,
     );
     if (corte === null) continue;
-    if (!bulbo.arriba) superficieAbajo = ph / 2 + corte * Math.cos(frame.phi);
     g.save();
     poligono(g, pw, ph, -s, c, (cuello - 0.5) * jh, !bulbo.arriba);
     g.clip();
@@ -118,65 +161,122 @@ export function pintarAgua(ctx: CanvasRenderingContext2D, frame: AguaFrame): voi
     const ty = -nx;
     const cx = pw / 2 + nx * corte;
     const cy = ph / 2 + ny * corte;
+    const banda = 3 * escala;
+    const brillo = g.createLinearGradient(cx, cy, cx + nx * banda, cy + ny * banda);
+    brillo.addColorStop(0, reflejo);
+    brillo.addColorStop(1, PINTURA.reflejoFin);
+    g.fillStyle = brillo;
+    poligono(g, pw, ph, nx, ny, corte, true);
+    g.fill();
     g.beginPath();
     g.moveTo(cx - tx * pw, cy - ty * pw);
     g.lineTo(cx + tx * pw, cy + ty * pw);
     g.strokeStyle = menisco;
-    g.lineWidth = 2;
+    g.lineWidth = Math.max(2, escala * 1.6);
     g.stroke();
     g.restore();
   }
-
-  pintarGotas(g, frame, jh, cuello, superficieAbajo, pw, ph);
 
   if (frame.mascara) {
     g.save();
     g.globalCompositeOperation = 'destination-in';
     g.translate(pw / 2, ph / 2);
     g.rotate(frame.angulo);
+    const recorte = frame.mascara instanceof HTMLCanvasElement ? mascaraSolida(frame.mascara) : frame.mascara;
+    g.drawImage(recorte, -jw / 2, -jh / 2, jw, jh);
+    g.restore();
+  }
+  ctx.drawImage(
+    hoja,
+    frame.frasco.x + w / 2 - pw / escala / 2,
+    frame.frasco.y + h / 2 - ph / escala / 2,
+    pw / escala,
+    ph / escala,
+  );
+}
+
+/**
+ * Gotas encima del vidrio, en píxeles de pantalla: 1,5 de ancho y 6–14 de largo.
+ * En la media vuelta siguen el eje del frasco. En marcha, caen en vertical.
+ */
+export function pintarGotasEncima(ctx: CanvasRenderingContext2D, frame: AguaFrame, ejeFrasco: boolean): boolean {
+  const { w, h } = frame.frasco;
+  const cuello = (frame.geo.cuelloFila + 0.5) / frame.geo.filas;
+  const corte = corteDeBulbo(
+    frame.geo.puntos,
+    frame.geo.inicioAbajo,
+    frame.geo.puntosAbajo,
+    frame.fraccionAbajo,
+    ejeFrasco ? 0 : frame.angulo,
+    ejeFrasco ? 0 : frame.phi,
+    w,
+    h,
+  );
+  const activo = frame.llueve && (ejeFrasco || cercaDeLaVertical(frame.angulo)) && corte !== null;
+  alphaGotas = pasoGotas(alphaGotas, activo, frame.dt);
+  if (alphaGotas <= 0 || corte === null) return alphaGotas > 0;
+  const cx = frame.frasco.x + w / 2;
+  const cy = frame.frasco.y + h / 2;
+  const dy = (cuello - 0.5) * h;
+  const ang = frame.angulo;
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  const cuelloX = cx - dy * s;
+  const cuelloY = cy + dy * c;
+  let hastaX = cuelloX;
+  let hastaY = cy + corte;
+  if (ejeFrasco) {
+    hastaX = cx - corte * s;
+    hastaY = cy + corte * c;
+  } else {
+    const sp = Math.sin(frame.phi);
+    const cp = Math.cos(frame.phi);
+    const ox = cx + sp * corte;
+    const oy = cy + cp * corte;
+    const t = Math.abs(cp) > 0.2 ? (cuelloX - ox) / cp : 0;
+    hastaX = cuelloX;
+    hastaY = oy - t * sp;
+  }
+  const largo = Math.hypot(hastaX - cuelloX, hastaY - cuelloY);
+  if (largo < 8) return alphaGotas > 0;
+  const ux = (hastaX - cuelloX) / largo;
+  const uy = (hastaY - cuelloY) / largo;
+  relojGotas += frame.dt;
+  const escala = Math.max(1, ctx.getTransform().a || 1);
+  const jw = Math.max(2, Math.round(w * escala));
+  const jh = Math.max(2, Math.round(h * escala));
+  const pw = Math.max(jw, Math.ceil(Math.abs(jw * c) + Math.abs(jh * s)) + 4);
+  const ph = Math.max(jh, Math.ceil(Math.abs(jw * s) + Math.abs(jh * c)) + 4);
+  const g = placa(pw, ph);
+  if (!g || !hoja) return alphaGotas > 0;
+  const color = frame.oscuro ? PINTURA.gotaOscura : PINTURA.gota;
+  g.lineWidth = 1.5 * escala;
+  g.lineCap = 'round';
+  g.strokeStyle = color;
+  const aPlaca = (sx: number, sy: number) => ({ x: (sx - cx) * escala + pw / 2, y: (sy - cy) * escala + ph / 2 });
+  for (const gota of GOTAS) {
+    const onda = Math.sin(relojGotas * 2.2 + gota.fase * Math.PI * 2) * 1.1;
+    const dist = (relojGotas * gota.velocidad + gota.fase * largo) % largo;
+    const x0 = cuelloX + ux * dist - uy * onda;
+    const y0 = cuelloY + uy * dist + ux * onda;
+    const llega = Math.min(gota.largo, largo - dist);
+    const p0 = aPlaca(x0, y0);
+    const p1 = aPlaca(x0 + ux * llega, y0 + uy * llega);
+    g.globalAlpha = gota.opacidad * alphaGotas;
+    g.beginPath();
+    g.moveTo(p0.x, p0.y);
+    g.lineTo(p1.x, p1.y);
+    g.stroke();
+  }
+  if (frame.mascara) {
+    g.save();
+    g.globalCompositeOperation = 'destination-in';
+    g.globalAlpha = 1;
+    g.translate(pw / 2, ph / 2);
+    g.rotate(ang);
     g.drawImage(frame.mascara, -jw / 2, -jh / 2, jw, jh);
     g.restore();
   }
-  ctx.drawImage(hoja, frame.frasco.x + w / 2 - pw / escala / 2, frame.frasco.y + h / 2 - ph / escala / 2, pw / escala, ph / escala);
-}
-
-function pintarGotas(
-  g: CanvasRenderingContext2D,
-  frame: AguaFrame,
-  h: number,
-  cuello: number,
-  superficieAbajo: number | null,
-  placaW: number,
-  placaH: number,
-): void {
-  const activo = frame.llueve && cercaDeLaVertical(frame.angulo) && superficieAbajo !== null;
-  alphaGotas = pasoGotas(alphaGotas, activo, frame.dt);
-  if (alphaGotas <= 0 || superficieAbajo === null) return;
-  const dy = (cuello - 0.5) * h;
-  const c = Math.cos(frame.angulo);
-  const s = Math.sin(frame.angulo);
-  const nx = -dy * s + placaW / 2;
-  const ny = dy * c + placaH / 2;
-  const hasta = superficieAbajo;
-  const recorrido = Math.max(8, hasta - ny);
-  if (recorrido < 4) return;
-  relojGotas += frame.dt;
-  g.save();
-  g.lineWidth = 1.5;
-  g.lineCap = 'round';
-  g.strokeStyle = PINTURA.lluvia;
-  for (const gota of GOTAS) {
-    const y = ny + ((relojGotas * gota.velocidad + gota.fase * recorrido) % recorrido);
-    g.globalAlpha = gota.opacidad * alphaGotas;
-    g.beginPath();
-    g.moveTo(nx, y);
-    g.lineTo(nx, Math.min(hasta, y + gota.largo));
-    g.stroke();
-    if (y + gota.largo >= hasta - 1) {
-      g.beginPath();
-      g.ellipse(nx, hasta, 3, 1.2, 0, 0, Math.PI * 2);
-      g.stroke();
-    }
-  }
-  g.restore();
+  ctx.drawImage(hoja, cx - pw / escala / 2, cy - ph / escala / 2, pw / escala, ph / escala);
+  return alphaGotas > 0;
 }

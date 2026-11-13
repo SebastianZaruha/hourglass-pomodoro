@@ -38,7 +38,7 @@ export function frascoDesdeArriba(centroX: number, y: number, alto: number, anch
   return caja(centroX - w / 2, y, w, h);
 }
 
-/** Cubre el borde de arriba del frasco y no pasa de 1,15 veces su ancho. */
+/** Cubre el borde de arriba del frasco y no pasa de 1,3 veces su ancho. */
 export function cajaNube(frasco: Caja): Caja {
   const ancho = frasco.w * NUBE_ANCHO;
   const alto = ancho * NUBE_RELACION;
