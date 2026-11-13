@@ -14,7 +14,8 @@ import {
   type SessionPlan,
   type SessionSnapshot,
   type SessionState,
-} from '@reloj/core';
+} from '../../../../../packages/core/src/index';
+// Ruta de archivo, no `@reloj/core`: el barril lo empaquetan tests con esbuild neutral, que ignora `main`.
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const PHASE_WATCH_MS = 250;

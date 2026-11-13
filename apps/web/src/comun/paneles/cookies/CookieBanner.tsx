@@ -1,8 +1,8 @@
 import type { Language } from '@reloj/core';
 
-import { bannerCopy, legalHrefs } from '../copy';
-import type { ConsentChoice } from '../cookies';
-import { keepAppOnLegalClick } from './LegalOverlay';
+import { bannerCopy, legalHrefs } from '../../tiempo';
+import { keepAppOnLegalClick } from '../legal';
+import type { ConsentChoice } from './cookies';
 
 interface Props {
   readonly open: boolean;

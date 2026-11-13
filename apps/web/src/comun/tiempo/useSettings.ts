@@ -2,7 +2,13 @@
  * Ajustes de la web. Misma forma que el móvil (`sanitizeSettings`),
  * pero el sonido nace apagado si todavía no hay nada guardado.
  */
-import { DEFAULT_SETTINGS, sanitizeSettings, updateSettings, type Settings } from '@reloj/core';
+import {
+  DEFAULT_SETTINGS,
+  sanitizeSettings,
+  updateSettings,
+  type Settings,
+} from '../../../../../packages/core/src/index';
+// Igual que useSession: esbuild neutral no resuelve el `main` de `@reloj/core`.
 import { useCallback, useState } from 'react';
 
 export const WEB_SETTINGS_KEY = 'hourglass-web/ajustes';

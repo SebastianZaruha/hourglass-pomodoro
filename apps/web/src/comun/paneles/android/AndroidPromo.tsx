@@ -1,7 +1,7 @@
 import type { Language } from '@reloj/core';
 
-import { ANDROID_APP } from '../androidApp';
-import { androidPromoCopy } from '../copy';
+import { androidPromoCopy } from '../../tiempo';
+import { ANDROID_APP } from './androidApp';
 
 interface Props {
   readonly lang: Language;

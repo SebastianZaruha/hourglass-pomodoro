@@ -4,7 +4,8 @@ import {
   type Messages,
   type SessionCue,
   type SessionSnapshot,
-} from '@reloj/core';
+} from '../../../../../packages/core/src/index';
+// Igual que useSession: esbuild neutral no resuelve el `main` de `@reloj/core`.
 
 export function notificationSupported(): boolean {
   return typeof Notification !== 'undefined';

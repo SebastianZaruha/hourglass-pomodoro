@@ -1,8 +1,8 @@
 import type { Language } from '@reloj/core';
 import type { MouseEvent } from 'react';
 
-import { footerCopy, legalHrefs } from '../copy';
-import { keepAppOnLegalClick } from './LegalOverlay';
+import { footerCopy, legalHrefs } from '../../tiempo';
+import { keepAppOnLegalClick } from '../legal';
 
 interface Props {
   readonly lang: Language;
