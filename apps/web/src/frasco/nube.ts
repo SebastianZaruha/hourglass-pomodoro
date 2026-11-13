@@ -1,6 +1,4 @@
-import type { Caja } from '../layout/calcularLayout';
-import type { NubeLuz } from '../temas/tipos';
-import { alphaFromBlack, presenciaVertical } from './alpha';
+import { alphaFromBlack } from './alpha';
 
 let clave: HTMLCanvasElement | null = null;
 let claveCtx: CanvasRenderingContext2D | null = null;
@@ -60,40 +58,9 @@ function medirAsiento(data: Uint8ClampedArray, width: number, height: number): n
   return 1;
 }
 
-/**
- * Cuánto hay que subir la nube, en pixeles de su caja, para que no se
- * pose sobre el bulbo cuando el frasco gira. De pie no se mueve.
- */
-export function despegueNube(angulo: number, alto: number): number {
-  const sacar = Math.min(1, Math.abs(Math.sin(angulo)) / Math.sin(Math.PI / 5));
-  return sacar * alto * 0.62;
+/** 1 de pie, 0 a los 50°. La nube no se levanta: solo se apaga. */
+export function opacidadNube(angulo: number): number {
+  const t = Math.abs(angulo) / ((50 * Math.PI) / 180);
+  return Math.max(0, Math.min(1, 1 - t));
 }
 
-export function dibujarNube(
-  ctx: CanvasRenderingContext2D,
-  caja: Caja,
-  fuente: CanvasImageSource | null,
-  angulo: number,
-  luz: NubeLuz,
-): void {
-  if (!fuente) return;
-  const alpha = presenciaVertical(angulo);
-  if (alpha < 0.02) return;
-  // El asiento es fijo: la caja ya viene del layout y no se recalcula aquí.
-  const bajar = Math.round(caja.h * (1 - (asiento ?? 0.86)) + caja.h * 0.11);
-  const subir = despegueNube(angulo, caja.h);
-  const y = caja.y + bajar - subir;
-  const atras = {
-    x: caja.x + caja.w * 0.08,
-    y: y + caja.h * 0.12,
-    w: caja.w * 0.84,
-    h: caja.h * 0.84,
-  };
-  ctx.save();
-  ctx.filter = `brightness(${luz.brillo}) saturate(${luz.saturacion})`;
-  ctx.globalAlpha = alpha * 0.38;
-  ctx.drawImage(fuente, atras.x, atras.y, atras.w, atras.h);
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(fuente, caja.x, y, caja.w, caja.h);
-  ctx.restore();
-}

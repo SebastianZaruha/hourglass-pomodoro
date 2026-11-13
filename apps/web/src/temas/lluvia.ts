@@ -76,7 +76,7 @@ export const lluvia: Tema = {
       reflejos: 0.28,
       brilloBorde: 0.96,
       sombra: sombra('#000000', 0.74, 20, 36),
-      nube: { brillo: 0.62, saturacion: 0.55, tinte: '#9aa3a6' },
+      nube: { brillo: 0.72, saturacion: 0.85, tinte: '#9aa3a6' },
     }),
   },
 };

@@ -31,6 +31,20 @@
   opacity: 0;
 }
 
+.nube-dom {
+  position: absolute;
+  left: 0;
+  top: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  object-fit: cover;
+  mask-image: linear-gradient(to bottom, black 42%, transparent 100%);
+}
+
+.nube-oculta {
+  opacity: 0;
+}
+
 .entra .lienzo {
   opacity: 0;
   transform: scale(0.94);

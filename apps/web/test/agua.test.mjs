@@ -20,12 +20,12 @@ test('la superficie sigue el mundo y el chorro para si el cuello queda en seco',
   }
 });
 
-test('la nube se levanta al inclinar y se queda en el cuello si el frasco está derecho', async () => {
-  const { mod, cleanup } = await bundle(`export { despegueNube } from './src/frasco/nube.ts';\n`);
+test('la nube se apaga al pasar de 50° y de pie se queda entera', async () => {
+  const { mod, cleanup } = await bundle(`export { opacidadNube } from './src/frasco/nube.ts';\n`);
   try {
-    assert.equal(mod.despegueNube(0, 200), 0);
-    assert.ok(mod.despegueNube(Math.PI / 4, 200) > 100);
-    assert.ok(mod.despegueNube((3 * Math.PI) / 4, 200) > 100);
+    assert.equal(mod.opacidadNube(0), 1);
+    assert.ok(Math.abs(mod.opacidadNube((25 * Math.PI) / 180) - 0.5) < 0.02);
+    assert.equal(mod.opacidadNube((50 * Math.PI) / 180), 0);
   } finally {
     cleanup();
   }

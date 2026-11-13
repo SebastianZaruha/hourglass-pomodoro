@@ -11,6 +11,8 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, type RefObject } from 'react';
 
+import { cajaNube } from '../layout/cajas';
+
 import type { Layout } from '../layout/calcularLayout';
 import { activarNube } from '../medios/assetLoader';
 import { alFijarAngulo } from '../pruebas';
@@ -24,6 +26,7 @@ import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from '
 import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
 import { nivelAbajo, nivelDesdeTiempo } from './nivel';
 import { PERFIL_FRASCO, dentroDeCelda, desdeLuminancia, type Geometria } from './geometria';
+import { opacidadNube } from './nube';
 import { crearSuavizado } from './suavizar';
 
 export interface ModeloFrasco {
@@ -71,7 +74,11 @@ function dentro(
 }
 
 /** Bucle único. Se duerme cuando el frasco, el agua y el reloj están quietos. */
-export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo: ModeloFrasco): void {
+export function useFrasco(
+  canvasRef: RefObject<HTMLCanvasElement | null>,
+  modelo: ModeloFrasco,
+  nubeRef: RefObject<HTMLVideoElement | null>,
+): void {
   const vivo = useRef(modelo);
   const pedir = useRef<() => void>(() => undefined);
   vivo.current = modelo;
@@ -264,9 +271,16 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         activos,
       );
 
-      const video = activos.nubeVideo;
-      if (video && nubeLista) activarNube(video, m.mostrarNube && !document.hidden && !m.reducir, m.ahorro);
-      const nubeViva = m.mostrarNube && !m.reducir && !!video && !video.paused && video.readyState >= 2;
+      const video = nubeRef.current;
+      if (video && nubeLista) {
+        const caja = cajaNube(visto);
+        video.style.transform = `translate3d(${Math.round(caja.x)}px, ${Math.round(caja.y)}px, 0)`;
+        video.style.width = `${Math.round(caja.w)}px`;
+        video.style.height = `${Math.round(caja.h)}px`;
+        video.style.opacity = m.mostrarNube ? opacidadNube(estado.angulo).toFixed(3) : '0';
+        video.style.filter = `brightness(${m.luz.nube.brillo}) saturate(${m.luz.nube.saturacion})`;
+        activarNube(video, m.mostrarNube && !document.hidden && !m.reducir, m.ahorro);
+      }
       const seguir =
         movio ||
         particles.active ||
@@ -274,7 +288,6 @@ export function useFrasco(canvasRef: RefObject<HTMLCanvasElement | null>, modelo
         estado.fase !== 'reposo' ||
         Math.abs(estado.angulo) > 0.001 ||
         Math.abs(superficie.valor) > 0.01 ||
-        nubeViva ||
         arrastre !== null;
       raf = seguir ? requestAnimationFrame(frame) : 0;
     };

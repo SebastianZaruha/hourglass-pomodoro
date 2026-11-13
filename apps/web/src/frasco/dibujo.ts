@@ -10,7 +10,6 @@ import type { Geometria } from './geometria';
 import { aplicarLuz } from './luzAplicar';
 import { pintarAgua } from './pintarAgua';
 import { dibujarSombra } from './luz';
-import { dibujarNube, actualizarNube } from './nube';
 
 export interface OrdenDibujo {
   readonly frasco: Caja;
@@ -93,11 +92,6 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   }
 
   aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso);
-
-  if (orden.mostrarNube) {
-    const fuente = actualizarNube(orden.reducir ? null : activos.nubeVideo, activos.nubePoster);
-    dibujarNube(ctx, orden.nube, fuente, orden.angulo, orden.luz.nube);
-  }
 }
 
 let silueta: HTMLCanvasElement | null = null;

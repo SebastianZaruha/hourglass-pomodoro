@@ -1,5 +1,5 @@
-import { JAR_ASPECT, JAR_FOOT_Y, JAR_TOP_BOX } from '../frasco/geometria';
-import { NUBE_ANCHO, NUBE_BULBO, NUBE_RELACION } from './medidas';
+import { JAR_ASPECT, JAR_FOOT_Y } from '../frasco/geometria';
+import { NUBE_ANCHO, NUBE_RELACION } from './medidas';
 
 export interface Caja {
   readonly x: number;
@@ -38,10 +38,10 @@ export function frascoDesdeArriba(centroX: number, y: number, alto: number, anch
   return caja(centroX - w / 2, y, w, h);
 }
 
-/** El borde de abajo de la nube cae sobre el cristal, un poco dentro del bulbo. */
+/** Cubre el borde de arriba del frasco y no pasa de 1,15 veces su ancho. */
 export function cajaNube(frasco: Caja): Caja {
   const ancho = frasco.w * NUBE_ANCHO;
   const alto = ancho * NUBE_RELACION;
-  const bulbo = JAR_TOP_BOX[1] + NUBE_BULBO * (JAR_TOP_BOX[3] - JAR_TOP_BOX[1]);
-  return caja(frasco.x + frasco.w / 2 - ancho / 2, frasco.y + frasco.h * bulbo - alto, ancho, alto);
+  const y = frasco.y - alto * 0.28;
+  return caja(frasco.x + frasco.w / 2 - ancho / 2, y, ancho, alto);
 }

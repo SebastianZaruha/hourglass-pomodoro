@@ -68,7 +68,7 @@ export const AVISO_HOLGURA = 12;
 /** La sombra del frasco sale de su caja: la escena deja este hueco sobre el aviso. */
 export const AVISO_ESCENA = 28;
 
-export const NUBE_ANCHO = 1.72;
+export const NUBE_ANCHO = 1.15;
 export const NUBE_RELACION = 438 / 1100;
 export const NUBE_BULBO = 0.4;
 
