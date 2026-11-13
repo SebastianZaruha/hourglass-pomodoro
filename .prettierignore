@@ -7,6 +7,13 @@ package-lock.json
 docs/capturas
 # Texto oficial de la licencia: no se reformatea
 LICENSE.md
+# Copiados tal cual (especificación aprobada). No se reformatean.
+AGENTS.md
+docs/ESPECIFICACION-V2.md
+docs/AUDITORIA-RAMA.md
+# Salida de Playwright: punto de partida y registro de fallos esperados.
+apps/web/e2e/punto-de-partida
+apps/web/e2e/salida
 # Páginas legales: se copian tal cual (no reformatear)
 docs/privacidad.html
 docs/privacy.html

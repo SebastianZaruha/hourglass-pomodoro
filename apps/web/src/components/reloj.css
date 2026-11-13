@@ -1,0 +1,56 @@
+.reloj {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition:
+    left var(--duracion-lenta) var(--curva),
+    top var(--duracion-lenta) var(--curva),
+    width var(--duracion-lenta) var(--curva),
+    height var(--duracion-lenta) var(--curva),
+    opacity var(--duracion-lenta) var(--curva);
+}
+
+.reloj-oculto {
+  opacity: 0;
+}
+
+.readout {
+  position: relative;
+  text-align: center;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.time {
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  font-size: var(--hora-px);
+  color: var(--hora);
+}
+
+.status {
+  margin-top: 0.55rem;
+  font-weight: 400;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+  color: var(--hora);
+}
+
+.hint {
+  margin: 0.4rem 0 0;
+  font-weight: 400;
+  font-size: var(--texto-15);
+  color: var(--pista);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reloj {
+    transition: none;
+  }
+}

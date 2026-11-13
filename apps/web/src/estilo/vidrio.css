@@ -1,0 +1,68 @@
+/* Un solo vidrio y un solo control. El color lo ponen las variables del tema. */
+
+.vidrio {
+  background: var(--velo-opaco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  box-shadow: var(--vidrio-brillo), var(--vidrio-sombra);
+  color: var(--vidrio-tinta);
+  text-shadow: var(--vidrio-texto);
+  backdrop-filter: blur(var(--vidrio-blur)) saturate(var(--vidrio-saturacion));
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .vidrio {
+    background: var(--velo);
+  }
+}
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2);
+  min-height: 40px;
+  padding: 0 var(--espacio-3);
+  border: 0;
+  border-radius: var(--radio-control);
+  background: var(--control-reposo);
+  box-shadow: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--texto-15);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.control svg {
+  filter: var(--vidrio-icono);
+}
+
+.control:hover {
+  background: var(--control-hover);
+}
+
+.control[aria-checked='true'],
+.control[aria-pressed='true'] {
+  background: var(--control-elegido);
+  font-weight: 500;
+}
+
+.control:focus-visible {
+  outline: 1px solid var(--vidrio-foco);
+  outline-offset: 2px;
+}
+
+.control:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@media (pointer: coarse) {
+  .control {
+    min-height: 44px;
+  }
+}

@@ -4,24 +4,29 @@ import {
   DURATION_STEPS_MIN,
   MINUTE_MS,
   activeCycleConfig,
-  languageName,
-  languageSpoken,
   nearestStepIndex,
   nextInCycle,
   stepMinutes,
   stepRounds,
   stepToDuration,
+  languageName,
+  languageSpoken,
+  LANGUAGE_CYCLE,
   themeName,
   themeSpoken,
-  LANGUAGE_CYCLE,
   THEME_CYCLE,
   type CyclePresetId,
   type Messages,
   type Settings,
 } from '@reloj/core';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { Tooltip } from './Tooltip';
+import type { SettingsPatch } from '../useSettings';
+import { TEMAS, type IdTema } from '../temas';
+import type { Caja } from '../layout/calcularLayout';
+import './menu.css';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -29,15 +34,29 @@ interface Props {
   readonly open: boolean;
   readonly settings: Settings;
   readonly t: Messages;
-  readonly onChange: (
-    patch:
-      | Partial<Omit<Settings, 'version' | 'updatedAt'>>
-      | ((current: Settings) => Partial<Omit<Settings, 'version' | 'updatedAt'>>),
-  ) => void;
+  readonly temaId: IdTema;
+  readonly onTema: (id: IdTema) => void;
+  readonly onChange: (patch: SettingsPatch | ((current: Settings) => SettingsPatch)) => void;
   readonly onClose: () => void;
+  readonly caja: Caja;
+  readonly estrecho: boolean;
+  readonly scroll: boolean;
+  readonly hojaRef: RefObject<HTMLDivElement | null>;
 }
 
-export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
+export function SettingsSheet({
+  open,
+  settings,
+  t,
+  temaId,
+  onTema,
+  onChange,
+  onClose,
+  caja,
+  estrecho,
+  scroll,
+  hojaRef,
+}: Props) {
   const cycles = settings.sessionMode === 'cycles';
   const cycle = activeCycleConfig(settings);
   const lastMin = Math.round(settings.lastDurationMs / MINUTE_MS);
@@ -56,7 +75,18 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
 
   return (
     <div
-      className={open ? 'sheet open' : 'sheet'}
+      ref={hojaRef}
+      className={['sheet', 'vidrio', open ? 'open' : '', estrecho ? 'sheet-estrecha' : '', scroll ? 'menu-scroll' : '']
+        .filter(Boolean)
+        .join(' ')}
+      style={{
+        left: caja.x,
+        top: caja.y,
+        width: caja.w,
+        maxHeight: scroll ? caja.h : undefined,
+        right: 'auto',
+        bottom: 'auto',
+      }}
       role="dialog"
       aria-modal="true"
       aria-hidden={!open}
@@ -70,18 +100,37 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
       }}
     >
       <div className="sheet-head">
-        <h2>{t.settings}</h2>
-        <button type="button" className="sheet-close" aria-label={t.closeSettings} onClick={onClose}>
-          ×
-        </button>
+        <h2 className="menu-titulo">{t.settings}</h2>
+        <Tooltip texto={t.closeSettings}>
+          <button type="button" className="control menu-cerrar" aria-label={t.closeSettings} onClick={onClose}>
+            ×
+          </button>
+        </Tooltip>
       </div>
 
-      <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
+      <div className="menu-fila" role="radiogroup" aria-label="Escena">
+        {TEMAS.map((tema) => (
+          <button
+            key={tema.id}
+            type="button"
+            role="radio"
+            aria-checked={temaId === tema.id}
+            aria-label={`Escena ${tema.nombre}`}
+            className="control"
+            onClick={() => onTema(tema.id)}
+          >
+            {tema.nombre}
+          </button>
+        ))}
+      </div>
+
+      <div className="menu-par" role="radiogroup" aria-label={t.sessionType}>
         <button
           type="button"
           role="radio"
           aria-checked={!cycles}
-          className={!cycles ? 'pill pill-fill' : 'pill'}
+          aria-label={t.single}
+          className="control"
           onClick={() => onChange({ sessionMode: 'single' })}
         >
           {t.single}
@@ -90,7 +139,8 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
           type="button"
           role="radio"
           aria-checked={cycles}
-          className={cycles ? 'pill pill-fill' : 'pill'}
+          aria-label={t.cycles}
+          className="control"
           onClick={() => onChange({ sessionMode: 'cycles' })}
         >
           {t.cycles}
@@ -99,14 +149,14 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
 
       {cycles ? (
         <>
-          <div className="chip-row" role="radiogroup" aria-label={t.cycle}>
+          <div className="menu-fila" role="radiogroup" aria-label={t.cycle}>
             {CYCLE_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 role="radio"
                 aria-checked={settings.cyclePreset === preset.id}
-                className={settings.cyclePreset === preset.id ? 'chip chip-on' : 'chip'}
+                className="control"
                 aria-label={t.presetSpoken(preset.config.workMin, preset.config.breakMin)}
                 onClick={() => onChange({ sessionMode: 'cycles', cyclePreset: preset.id })}
               >
@@ -117,7 +167,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
               type="button"
               role="radio"
               aria-checked={settings.cyclePreset === 'custom'}
-              className={settings.cyclePreset === 'custom' ? 'chip chip-on' : 'chip'}
+              className="control"
               onClick={chooseCustom}
             >
               {t.custom}
@@ -187,14 +237,14 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         </>
       ) : (
         <>
-          <div className="chip-row" role="radiogroup" aria-label={t.quickTimes}>
+          <div className="menu-fila" role="radiogroup" aria-label={t.quickTimes}>
             {QUICK_TIMES_MIN.map((min) => (
               <button
                 key={min}
                 type="button"
                 role="radio"
                 aria-checked={!customOn && lastMin === min}
-                className={!customOn && lastMin === min ? 'chip chip-on' : 'chip'}
+                className="control"
                 aria-label={t.minutes(min)}
                 onClick={() => {
                   setSingleCustom(false);
@@ -208,7 +258,7 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
               type="button"
               role="radio"
               aria-checked={customOn}
-              className={customOn ? 'chip chip-on' : 'chip'}
+              className="control"
               onClick={() => setSingleCustom(true)}
             >
               {t.custom}
@@ -244,33 +294,37 @@ export function SettingsSheet({ open, settings, t, onChange, onClose }: Props) {
         </>
       )}
 
-      <div className="pref-row">
+      <div className="menu-preferencias">
+        <Tooltip texto={themeSpoken(t, settings.theme)}>
+          <button
+            type="button"
+            className="control"
+            aria-pressed="true"
+            aria-label={themeSpoken(t, settings.theme)}
+            onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
+          >
+            <SunIcon />
+            <span>{settings.theme === 'system' ? t.automaticShort : themeName(t, settings.theme)}</span>
+          </button>
+        </Tooltip>
+        <Tooltip texto={languageSpoken(t, settings.language)}>
+          <button
+            type="button"
+            className="control"
+            aria-pressed="true"
+            aria-label={languageSpoken(t, settings.language)}
+            onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
+          >
+            <GlobeIcon />
+            <span>{settings.language === 'system' ? t.automaticShort : languageName(t, settings.language)}</span>
+          </button>
+        </Tooltip>
         <button
           type="button"
-          className="pill pill-fill pref"
-          aria-label={themeSpoken(t, settings.theme)}
-          title={t.tapToChange}
-          onClick={() => onChange((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
-        >
-          <SunIcon />
-          <span>{themeName(t, settings.theme)}</span>
-        </button>
-        <button
-          type="button"
-          className="pill pill-fill pref"
-          aria-label={languageSpoken(t, settings.language)}
-          title={t.tapToChange}
-          onClick={() => onChange((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
-        >
-          <GlobeIcon />
-          <span>{languageName(t, settings.language)}</span>
-        </button>
-        <button
-          type="button"
-          className={settings.sound ? 'pill pill-fill pref' : 'pill pref'}
+          className="control"
           role="switch"
           aria-checked={settings.sound}
-          aria-label={t.sound}
+          aria-label={`${t.sound}. ${settings.sound ? 'Activado' : 'Silencio'}`}
           onClick={() => onChange((current) => ({ sound: !current.sound }))}
         >
           <SpeakerIcon off={!settings.sound} />
@@ -384,15 +438,19 @@ function Stepper({
       >
         <button
           type="button"
+          className="control control-menos"
           aria-label={`${decLabel} ${label}`}
           disabled={!canDec}
           onClick={() => onStep(-1)}
         >
           −
         </button>
-        <span aria-hidden="true">{value}</span>
+        <span className="stepper-valor" aria-hidden="true">
+          {value}
+        </span>
         <button
           type="button"
+          className="control control-mas"
           aria-label={`${incLabel} ${label}`}
           disabled={!canInc}
           onClick={() => onStep(1)}

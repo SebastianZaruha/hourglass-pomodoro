@@ -1,0 +1,25 @@
+.ayuda {
+  position: relative;
+}
+
+.ayuda-texto {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + var(--espacio-2));
+  z-index: 8;
+  transform: translateX(-50%);
+  padding: 4px var(--espacio-2);
+  border-radius: var(--espacio-2);
+  background: var(--tinta);
+  color: var(--reserva);
+  font-size: var(--texto-13);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:where(.ayuda:hover, .ayuda:focus-within) > .ayuda-texto {
+  opacity: 1;
+}

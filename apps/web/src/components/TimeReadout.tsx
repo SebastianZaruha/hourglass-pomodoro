@@ -1,6 +1,8 @@
 import { formatDuration, type SessionSnapshot } from '@reloj/core';
 import { useEffect, useState } from 'react';
 
+import './reloj.css';
+
 interface Props {
   readonly getSnapshot: () => SessionSnapshot;
   readonly running: boolean;

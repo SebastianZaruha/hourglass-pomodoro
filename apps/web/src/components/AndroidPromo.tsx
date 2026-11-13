@@ -1,25 +1,35 @@
+import type { RefObject } from 'react';
+
 import type { Language } from '@reloj/core';
 
 import { ANDROID_APP } from '../androidApp';
 import { androidPromoCopy } from '../copy';
+import { Tooltip } from './Tooltip';
+import './promo.css';
 
 interface Props {
   readonly lang: Language;
+  readonly pausado: boolean;
+  readonly nodoRef: RefObject<HTMLDivElement | null>;
   readonly onDismiss: () => void;
 }
 
-/** Tira discreta, debajo del reloj. No es el banner de cookies. */
-export function AndroidPromo({ lang, onDismiss }: Props) {
-  const copy = androidPromoCopy(lang, ANDROID_APP.distribution);
+/** Abajo a la izquierda. La posición la pone el CSS. */
+export function AndroidPromo({ lang, pausado, nodoRef, onDismiss }: Props) {
+  const copy = androidPromoCopy(ANDROID_APP.distribution, lang);
   return (
-    <div className="app-promo" onClick={(event) => event.stopPropagation()}>
+    <div
+      ref={nodoRef}
+      className={pausado ? 'app-promo vidrio promo-pausa' : 'app-promo vidrio'}
+      onClick={(event) => event.stopPropagation()}
+    >
       <p className="app-promo-text">
         <span className="app-promo-title">{copy.title}</span>
         <span className="app-promo-pitch">{copy.pitch}</span>
         <span className="app-promo-install">{copy.installNote}</span>
       </p>
       <a
-        className="app-promo-action"
+        className="control app-promo-action"
         href={ANDROID_APP.url}
         target="_blank"
         rel="noopener noreferrer"
@@ -28,9 +38,11 @@ export function AndroidPromo({ lang, onDismiss }: Props) {
       >
         {copy.action}
       </a>
-      <button type="button" className="app-promo-dismiss" aria-label={copy.dismiss} onClick={onDismiss}>
-        ×
-      </button>
+      <Tooltip texto={copy.dismiss}>
+        <button type="button" className="control promo-cerrar" aria-label={copy.dismiss} onClick={onDismiss}>
+          ×
+        </button>
+      </Tooltip>
     </div>
   );
 }

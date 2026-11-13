@@ -1,0 +1,174 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
+import { expect, test, type Page } from '@playwright/test';
+
+import { ALTOS_BARRIDO, abrir, abrirMenu, enLimpio } from './soporte/escena';
+
+/** Ventana a un tercio: el reloj no puede bajar al abrir el menú. */
+const EXTRA = [
+  { ancho: 620, alto: 1000 },
+  { ancho: 465, alto: 1000 },
+] as const;
+
+/**
+ * De 360 a 1920 px, de 20 en 20, con las cinco alturas de la tabla 3.11,
+ * más 620×1000 y 465×1000. Menú cerrado, menú abierto y aviso Android visible.
+ */
+test('barrido sin solapes', async ({ browser }) => {
+  test.setTimeout(600_000);
+  const fallos: string[] = [];
+  const anchos: number[] = [];
+  for (let ancho = 360; ancho <= 1920; ancho += 20) anchos.push(ancho);
+  const tamanos = anchos.flatMap((ancho) => ALTOS_BARRIDO.map((alto) => ({ ancho, alto })));
+  tamanos.push(...EXTRA);
+
+  let cerrados = new Map<string, number | null>();
+  await enLimpio(browser, async (page) => {
+    await abrir(page, {
+      tema: 'lluvia',
+      modo: 'claro',
+      ancho: 1440,
+      alto: 900,
+      arrancar: false,
+    });
+    const pasada = await barrer(page, tamanos, 'cerrado');
+    fallos.push(...pasada.fallos);
+    cerrados = pasada.relojes;
+  });
+
+  await enLimpio(browser, async (page) => {
+    await abrir(page, {
+      tema: 'lluvia',
+      modo: 'claro',
+      ancho: 1440,
+      alto: 900,
+      arrancar: false,
+    });
+    await abrirMenu(page);
+    const pasada = await barrer(page, tamanos, 'menú');
+    fallos.push(...pasada.fallos);
+    for (const [clave, abierto] of pasada.relojes) {
+      const cerrado = cerrados.get(clave);
+      if (abierto == null || cerrado == null) continue;
+      if (abierto > cerrado + 1) {
+        fallos.push(`menú ${clave}: el reloj baja de ${Math.round(cerrado)} a ${Math.round(abierto)}`);
+      }
+    }
+  });
+
+  await enLimpio(browser, async (page) => {
+    await abrir(page, {
+      tema: 'lluvia',
+      modo: 'claro',
+      ancho: 1440,
+      alto: 900,
+      arrancar: false,
+      promo: true,
+    });
+    await page.locator('.app-promo').waitFor({ state: 'visible' });
+    fallos.push(...(await barrer(page, tamanos, 'aviso')).fallos);
+  });
+
+  const salida = path.resolve(import.meta.dirname, 'salida');
+  mkdirSync(salida, { recursive: true });
+  writeFileSync(path.join(salida, 'barrido.txt'), fallos.join('\n') + '\n', 'utf8');
+  expect(fallos.length, `${fallos.length} solapes. Los primeros:\n${fallos.slice(0, 24).join('\n')}`).toBe(0);
+});
+
+async function barrer(
+  page: Page,
+  tamanos: readonly { ancho: number; alto: number }[],
+  estado: string,
+): Promise<{ fallos: string[]; relojes: Map<string, number | null> }> {
+  const fallos: string[] = [];
+  const relojes = new Map<string, number | null>();
+  for (const { ancho, alto } of tamanos) {
+    await page.setViewportSize({ width: ancho, height: alto });
+    await page.clock.runFor(40);
+    const choques = await page.evaluate(
+        ({ ancho: w, alto: h, estado: nombre }) => {
+          const caja = (nodo: Element | null, forzar = false) => {
+            if (!(nodo instanceof HTMLElement)) return null;
+            const estilo = getComputedStyle(nodo);
+            if (
+              !forzar &&
+              (estilo.display === 'none' ||
+                estilo.visibility === 'hidden' ||
+                Number(estilo.opacity) < 0.05)
+            ) {
+              return null;
+            }
+            const r = nodo.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) return null;
+            return { x: r.x, y: r.y, w: r.width, h: r.height };
+          };
+          const frasco = window.__hg?.cajas?.frasco ?? null;
+          const piezas: { nombre: string; caja: { x: number; y: number; w: number; h: number } }[] = [];
+          if (frasco) piezas.push({ nombre: 'frasco', caja: frasco });
+          const reloj = caja(document.querySelector('.reloj'));
+          if (reloj) piezas.push({ nombre: 'reloj', caja: reloj });
+          const menu = caja(document.querySelector('.sheet.open'));
+          if (menu) piezas.push({ nombre: 'menú', caja: menu });
+          const aviso = caja(document.querySelector('.app-promo'));
+          if (aviso) piezas.push({ nombre: 'aviso', caja: aviso });
+          const pieNodo = document.querySelector('.site-footer');
+          const pie = caja(pieNodo) ?? (nombre === 'aviso' ? caja(pieNodo, true) : null);
+          if (pie) piezas.push({ nombre: 'pie', caja: pie });
+          const textos: string[] = [];
+          const ancha = document.querySelector('.app')?.getAttribute('data-layout') === 'wide';
+          if (nombre === 'aviso' && aviso) {
+            const esperado = ancha ? Math.min(420, w - 24) : w - 24;
+            if (Math.abs(aviso.x - 12) > 2 || Math.abs(aviso.w - esperado) > 2) {
+              textos.push(
+                `${nombre} ${w}×${h}: aviso ${Math.round(aviso.x)},${Math.round(aviso.w)} en vez de 12,${esperado}`,
+              );
+            }
+          }
+          const solapan = (
+            a: { x: number; y: number; w: number; h: number },
+            b: { x: number; y: number; w: number; h: number },
+          ) => a.x + a.w > b.x + 1 && b.x + b.w > a.x + 1 && a.y + a.h > b.y + 1 && b.y + b.h > a.y + 1;
+          /* Un borde a ras (hueco 0) o 8 px al lado no cruzan el +1 y el barrido los daba por buenos. */
+          const hueco = (
+            a: { x: number; y: number; w: number; h: number },
+            b: { x: number; y: number; w: number; h: number },
+          ) => {
+            const dx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+            const dy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+            if (dx < 0 && dy < 0) return Math.max(dx, dy);
+            if (dx < 0) return dy;
+            if (dy < 0) return dx;
+            return Math.hypot(dx, dy);
+          };
+          for (let i = 0; i < piezas.length; i += 1) {
+            const a = piezas[i];
+            if (!a) continue;
+            if (
+              a.caja.x < -1 ||
+              a.caja.y < -1 ||
+              a.caja.x + a.caja.w > w + 1 ||
+              a.caja.y + a.caja.h > h + 1
+            ) {
+              textos.push(`${nombre} ${w}×${h}: ${a.nombre} se sale`);
+            }
+            for (let j = i + 1; j < piezas.length; j += 1) {
+              const b = piezas[j];
+              if (!b) continue;
+              const junto =
+                nombre === 'aviso' && ancha && (a.nombre === 'aviso' || b.nombre === 'aviso')
+                  ? hueco(a.caja, b.caja) < 9
+                  : solapan(a.caja, b.caja);
+              if (junto) textos.push(`${nombre} ${w}×${h}: ${a.nombre} solapa ${b.nombre}`);
+            }
+          }
+          const yReloj = reloj?.y ?? null;
+          return { textos, yReloj };
+        },
+        { ancho, alto, estado },
+      );
+      fallos.push(...choques.textos);
+      relojes.set(`${ancho}×${alto}`, choques.yReloj);
+  }
+  return { fallos, relojes };
+}

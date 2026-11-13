@@ -1,0 +1,24 @@
+/* Números de estilo/tokens.ts. Sin colores: esos los escribe aplicarTema(). */
+:root {
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 24px;
+  --espacio-6: 32px;
+  --espacio-7: 48px;
+  --radio-panel: 28px;
+  --radio-control: 999px;
+  --radio-boton: 50%;
+  --texto-13: 13px;
+  --texto-15: 15px;
+  --texto-17: 17px;
+  --texto-22: 22px;
+  --duracion-rapida: 160ms;
+  --duracion-normal: 360ms;
+  --duracion-lenta: 620ms;
+  --curva: cubic-bezier(0.33, 0, 0.2, 1);
+  font-family: Manrope, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}

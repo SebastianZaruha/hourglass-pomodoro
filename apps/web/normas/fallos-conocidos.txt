@@ -1,0 +1,2 @@
+# Normas N1, N4, N5 y N8. La fase 1 las dejó en cero.
+# Si vuelve a aparecer un fallo, esta orden se pone roja: no se archiva en silencio.

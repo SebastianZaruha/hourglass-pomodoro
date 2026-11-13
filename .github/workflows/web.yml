@@ -1,0 +1,27 @@
+name: web
+
+on:
+  push:
+    branches:
+      - feature/web-v2
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ffmpeg y ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg ripgrep
+          command -v ffmpeg
+          command -v rg
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run check --workspace @reloj/web

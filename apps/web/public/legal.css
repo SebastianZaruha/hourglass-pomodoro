@@ -1,0 +1,127 @@
+/* Los colores los copia el panel desde el tema. Aquí no hay literales. */
+
+* {
+  box-sizing: border-box;
+}
+
+:where(html, body) {
+  height: 100%;
+  margin: 0;
+  background: var(--legal-fondo);
+  color: var(--tinta);
+}
+
+:where(body) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font:
+    17px/1.65 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.legal-top {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+
+.legal-top h1 {
+  margin: 0;
+}
+
+:where(main) {
+  flex: 1;
+  min-height: 0;
+  max-width: 70ch;
+  margin: 0 auto;
+  padding: 12px 1.25rem 3rem;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+:where(main)::-webkit-scrollbar {
+  display: none;
+}
+
+.card {
+  background: transparent;
+  color: var(--tinta);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+:where(h1) {
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.35rem;
+}
+
+:where(h2) {
+  font-weight: 560;
+  font-size: 1.15rem;
+  margin: 1.8rem 0 0.45rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--borde);
+}
+
+:where(p, li) {
+  max-width: 70ch;
+}
+
+.meta,
+.lang,
+.links {
+  color: var(--tinta-suave);
+  font-size: 0.95rem;
+}
+
+.lang {
+  margin: 0.2rem 0 0;
+}
+
+:where(a) {
+  color: var(--tinta);
+}
+
+:where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+:where(th, td) {
+  border: 1px solid var(--borde);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+:where(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.leave {
+  flex: none;
+  border: 1px solid var(--borde);
+  background: transparent;
+  color: var(--tinta);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.links {
+  text-align: center;
+  margin-top: 1.4rem;
+}

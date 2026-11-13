@@ -1,0 +1,106 @@
+.app-promo {
+  position: fixed;
+  z-index: 23;
+  left: 12px;
+  bottom: calc(12px + max(44px, var(--alto-pie, 32px)) + env(safe-area-inset-bottom));
+  width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.35rem 0.45rem 0.75rem;
+  animation: app-promo-in var(--duracion-normal) ease both;
+}
+
+[data-layout='wide'] .app-promo {
+  width: min(420px, calc(100% - 24px));
+  bottom: calc(24px + var(--alto-pie, 32px) + env(safe-area-inset-bottom));
+}
+
+[data-layout='wide'] .app-promo-title {
+  font-size: 0.75rem;
+}
+
+[data-layout='wide'] .app-promo-pitch {
+  font-size: 0.66rem;
+}
+
+[data-layout='wide'] .app-promo-install {
+  font-size: 0.62rem;
+}
+
+[data-layout='wide'] .app-promo-action {
+  min-height: 1.5rem;
+  padding: 0 0.45rem;
+  font-size: 0.68rem;
+}
+
+.app-promo.promo-pausa {
+  display: none;
+}
+
+.app-promo > .ayuda {
+  flex: none;
+}
+
+.app-promo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+
+.app-promo-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.app-promo-pitch,
+.app-promo-install {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--vidrio-tinta-suave);
+}
+
+.app-promo-install {
+  margin-top: 0.12rem;
+}
+
+.app-promo-action {
+  flex: none;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.promo-cerrar {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--radio-boton);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+@keyframes app-promo-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--espacio-2));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-promo {
+    animation: none;
+  }
+}

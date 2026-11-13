@@ -1,5 +1,7 @@
 import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 
+import './legal.css';
+
 interface Props {
   readonly src: string;
   readonly title: string;
@@ -52,7 +54,7 @@ export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="legal-dialog" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="legal-dialog vidrio" role="dialog" aria-modal="true" aria-label={title}>
         <iframe ref={frameRef} src={src} title={title} />
       </div>
     </div>
@@ -67,6 +69,27 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   if (!doc || !win || win.location.href === 'about:blank') return;
+  const app = document.querySelector('.app');
+  if (app) {
+    const estilos = getComputedStyle(app);
+    const copiar: ReadonlyArray<readonly [string, string]> = [
+      ['--tinta', '--vidrio-tinta'],
+      ['--tinta-suave', '--vidrio-tinta-suave'],
+      ['--borde', '--borde'],
+    ];
+    for (const [destino, origen] of copiar) {
+      const valor = estilos.getPropertyValue(origen).trim();
+      if (valor) doc.documentElement.style.setProperty(destino, valor);
+    }
+    const sombra = estilos.getPropertyValue('--vidrio-texto').trim();
+    if (sombra) doc.body.style.textShadow = sombra;
+    doc.documentElement.style.setProperty('--legal-fondo', 'transparent');
+    /* El mismo esquema que la página: si no, Chromium pinta el iframe de blanco opaco. */
+    const esquema = estilos.colorScheme === 'dark' ? 'dark' : 'light';
+    frame.style.colorScheme = esquema;
+    doc.documentElement.style.colorScheme = esquema;
+    doc.body.style.backgroundColor = 'transparent';
+  }
   const path = win.location.pathname;
   if (path === '/' || path === '') {
     const params = new URLSearchParams(win.location.search);
@@ -117,7 +140,7 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
         onClose();
         return;
       }
-      if (!event.target.closest('button, .card, footer')) {
+      if (!event.target.closest('button, .card, footer, header')) {
         event.preventDefault();
         event.stopPropagation();
         onClose();
