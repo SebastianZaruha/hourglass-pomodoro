@@ -23,6 +23,8 @@ export interface ContenidoFrame {
 
 let hoja: HTMLCanvasElement | null = null;
 let hojaCtx: CanvasRenderingContext2D | null = null;
+let copia: HTMLCanvasElement | null = null;
+let copiaCtx: CanvasRenderingContext2D | null = null;
 let laminaRevision = -1;
 let laminaW = 0;
 let laminaH = 0;
@@ -68,6 +70,22 @@ export function dibujarContenido(ctx: CanvasRenderingContext2D, frame: Contenido
     if (!g || !hoja) return;
     g.imageSmoothingEnabled = true;
     g.drawImage(frame.arena, 0, 0, pw, ph);
+    // El perfil queda dentro de la máscara en el hombro. Se desplaza la arena
+    // ya escalada y la máscara recorta. El cuello de la máscara está vacío.
+    if (!copia || copia.width !== pw || copia.height !== ph) {
+      copia = document.createElement('canvas');
+      copia.width = pw;
+      copia.height = ph;
+      copiaCtx = copia.getContext('2d');
+    }
+    if (copia && copiaCtx && hoja) {
+      copiaCtx.setTransform(1, 0, 0, 1, 0, 0);
+      copiaCtx.clearRect(0, 0, pw, ph);
+      copiaCtx.drawImage(hoja, 0, 0);
+      const avance = Math.max(1, Math.round(pw * (48 / 446)));
+      g.drawImage(copia, avance, 0);
+      g.drawImage(copia, -avance, 0);
+    }
     if (frame.mascara) {
       g.globalCompositeOperation = 'destination-in';
       g.drawImage(frame.mascara, 0, 0, pw, ph);

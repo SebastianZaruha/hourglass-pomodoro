@@ -24,7 +24,7 @@ import './components/Tooltip.css';
 import { SiteFooter } from './components/SiteFooter';
 import { TimeReadout } from './components/TimeReadout';
 import { aplicarTema } from './estilo/aplicarTema';
-import { hintFor } from './copy';
+import { hintFor, textoPausa } from './copy';
 import { Fondo } from './fondo/Fondo';
 import { conexionAhorro, prefetchEnReposo, urlsPrefetch } from './medios/assetLoader';
 import { Lienzo } from './frasco/Lienzo';
@@ -400,7 +400,7 @@ function Reloj({
         scroll={menuLayout.menuConScroll}
         hojaRef={menuRef}
       />
-      {pausado ? <Pausa pista={hint} /> : null}
+      {pausado ? <Pausa palabra={textoPausa(lang)} pista={hint} /> : null}
       <CookieBanner
         open={consentimiento.bannerOpen}
         lang={lang}

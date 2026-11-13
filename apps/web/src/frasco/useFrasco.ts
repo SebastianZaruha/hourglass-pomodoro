@@ -26,7 +26,7 @@ import { estadoInicial, pasoFrasco, type EstadoFrasco, type OrdenFrasco } from '
 import { muelleQuieto, pasoMuelle, type Muelle } from './muelle';
 import { pasoNivel, volumenAgua, volumenTrasCanje } from './nivel';
 import { PERFIL_FRASCO, dentroDeCelda, desdeLuminancia, type Geometria } from './geometria';
-import { crearBucleNube, opacidadNubeEnVuelta } from './nube';
+import { crearBucleNube, posturaNube } from './nube';
 import { crearSuavizado } from './suavizar';
 
 export interface ModeloFrasco {
@@ -90,11 +90,14 @@ export function useFrasco(
   const frasco = modelo.layout.frasco;
   const nube = modelo.layout.nube;
   const luz = modelo.luz;
+  const plan = modelo.getSnapshot();
   const firmaPintura = [
     modelo.tipo,
     modelo.granos,
     modelo.mostrarNube,
     modelo.enMarcha,
+    plan.durationMs,
+    plan.remainingMs,
     modelo.reducir,
     modelo.ahorro,
     modelo.pausado,
@@ -154,6 +157,7 @@ export function useFrasco(
     let anguloPrevio = 0;
     let vueltaVista = vivo.current.vuelta;
     let nivelVisto = { arriba: -1, abajo: -1 };
+    let listoTrasReinicio = false;
     const capaNube = nubeRef.current;
     const videosNube = capaNube?.querySelectorAll('video');
     const bucleNube =
@@ -192,19 +196,29 @@ export function useFrasco(
       const paso = pasoFrasco(estado, orden.tipo === 'quieto' ? { ...orden, dt, reducir: m.reducir } : orden);
       const eraReinicio = estado.reinicio;
       let canje = false;
+      let finReinicio = false;
       if (anguloFijo === null) {
         estado = paso.estado;
         orden = { tipo: 'quieto', dt, reducir: m.reducir };
-        canje = paso.volteoCompletado || (eraReinicio && !estado.reinicio);
-        if (canje) {
-          sim.rotateHalfTurn();
-          if (nivelVisto.arriba >= 0) {
-            const cambiado = volumenTrasCanje(nivelVisto.arriba, nivelVisto.abajo);
-            nivelVisto = { arriba: cambiado.arriba, abajo: cambiado.abajo };
+        finReinicio = eraReinicio && !estado.reinicio;
+        canje = paso.volteoCompletado || finReinicio;
+        if (canje && m.tipo === 'arena') {
+          // La rejilla es de la arena. Lluvia no la toca: si se volteara aquí,
+          // al cambiar de escena la arena quedaría dada la vuelta.
+          if (finReinicio) {
+            const sesion = m.getSnapshot();
+            const meta = granosObjetivo(sim.totalGrains, sesion.durationMs, sesion.remainingMs);
+            sim.arrange(meta, Math.max(0, sim.totalGrains - meta), GRAVITY_DOWN);
+            listoTrasReinicio = true;
+          } else {
+            sim.rotateHalfTurn();
           }
+        } else if (canje && nivelVisto.arriba >= 0) {
+          const cambiado = volumenTrasCanje(nivelVisto.arriba, nivelVisto.abajo);
+          nivelVisto = { arriba: cambiado.arriba, abajo: cambiado.abajo };
         }
         if (paso.volteoCompletado) m.onVolteo();
-        if (eraReinicio && !estado.reinicio) m.onVueltaLista();
+        if (finReinicio) m.onVueltaLista();
       } else {
         // Ángulo de prueba: se pinta ese valor y no se suelta al muelle.
         estado = { fase: 'reposo', angulo: anguloFijo, velocidad: 0, objetivo: anguloFijo, reinicio: false };
@@ -215,7 +229,9 @@ export function useFrasco(
         if (m.pausado || m.reducir || anguloFijo !== null) m.onVueltaLista();
         else orden = { tipo: 'reiniciar', reducir: false };
       }
-      if (anguloFijo !== null) {
+      if (anguloFijo !== null || (!estado.reinicio && Math.abs(estado.angulo) > 0.02)) {
+        // Inclinado, el agua va con el frasco. Si el muelle guardara el ángulo,
+        // al soltar la superficie saltaría.
         superficie = muelleQuieto(0);
         anguloPrevio = estado.angulo;
       } else {
@@ -262,14 +278,17 @@ export function useFrasco(
         const suave = inclinado ? gravedadDelAngulo(estado.angulo) : GRAVITY_DOWN;
         const gravedad = lod.update(now, suave, suave, ultimoSim);
         const tSim = performance.now();
+        if (listoTrasReinicio && !m.contenidoFijo) listoTrasReinicio = false;
         if (
+          !listoTrasReinicio &&
+          !finReinicio &&
           !enReinicio &&
           !inclinado &&
           (canje || (!girando && estado.fase !== 'arrastrando' && snap.status === 'idle'))
         ) {
           const delta = objetivo - sim.topCount;
           if (delta !== 0) {
-            const salto = !canje && (sim.topCount === 0 || Math.abs(delta) > sim.totalGrains * 0.35);
+            const salto = !canje && sim.topCount === 0;
             if (salto) {
               sim.arrange(objetivo, Math.max(0, sim.totalGrains - objetivo), GRAVITY_DOWN);
             } else if (delta < 0) {
@@ -297,8 +316,10 @@ export function useFrasco(
         ultimoSim = performance.now() - tSim;
         input.dt = dt;
         input.emitting =
-          !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(gravedad);
-        input.gravity = gravedad;
+          !girando && snap.status === 'running' && snap.remainingMs > 0 && sim.hasGrainAtNeck(GRAVITY_DOWN);
+        // El montón sigue la gravedad del mundo. El chorro baja por el cuello,
+        // con el frasco, y cae en el montón.
+        input.gravity = GRAVITY_DOWN;
         input.calm = m.reducir;
         if (!enReinicio) particles.update(sim, input);
         if (movio || particles.active) pintarArena();
@@ -343,7 +364,7 @@ export function useFrasco(
           lut,
           arena,
           vidrio,
-          enElFrasco: enReinicio,
+          enElFrasco: enReinicio || Math.abs(estado.angulo) > 0.02,
         },
         activos,
       );
@@ -353,10 +374,12 @@ export function useFrasco(
       const videos = capa?.querySelectorAll('video');
       if (capa && videos && videos.length >= 2 && nubeLista) {
         const caja = cajaNube(visto);
-        capa.style.transform = `translate3d(${Math.round(caja.x)}px, ${Math.round(caja.y)}px, 0)`;
+        const postura = posturaNube(caja, visto, estado.angulo, estado.reinicio);
+        capa.style.transformOrigin = '0 0';
+        capa.style.transform = postura.transform;
         capa.style.width = `${Math.round(caja.w)}px`;
         capa.style.height = `${Math.round(caja.h)}px`;
-        capa.style.opacity = m.mostrarNube ? opacidadNubeEnVuelta(estado.angulo, estado.reinicio).toFixed(3) : '0';
+        capa.style.opacity = m.mostrarNube ? '1' : '0';
         capa.style.filter = `brightness(${m.luz.nube.brillo}) saturate(${m.luz.nube.saturacion})`;
         const ver = m.mostrarNube && !document.hidden && !m.reducir && !m.ahorro;
         activarNube(videos[0] as HTMLVideoElement, ver, false, false);

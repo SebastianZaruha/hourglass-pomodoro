@@ -1,5 +1,17 @@
 # AGENTS.md — Hourglass web (`apps/web`)
 
+## Reglas obligatorias
+
+1. **Bien a la primera.** Antes de tocar código, entiende el sistema entero (giro, física, carga, escenas, menú) y elige la mejor solución, no un parche. Nada de ir probando.
+2. **FIJADO.md es ley.** En apps/web hay una lista de cada comportamiento ya arreglado, en una línea cada uno. Nada de esa lista se puede romper. Antes de cada push la repasas a mano en el build de producción, con rueda, arrastre y doble clic de verdad.
+3. **No se escriben tests nuevos.** Nada de tests de colores ni de cosas visuales. Los pocos que ya existen (solapes, física) siguen como están.
+4. **Nada de "arreglado" sin haberlo visto.** El informe enseña cada punto con recortes 1:1 del build real. Si algo no se ha conseguido, se dice claro.
+5. **Si un arreglo toca algo que no era el objetivo**, se para y se avisa.
+6. **No hay vueltas por iniciativa propia.** Si el CI falla, solo se arregla ese fallo.
+7. **Sin merge, sin publicar y sin esperar al CI.**
+
+Estas reglas sustituyen a la política anterior de tests. No se escribe un test que falle antes del arreglo, ni un test de color o de aspecto.
+
 Normas para cualquier agente que toque este repo. La especificación completa es `docs/ESPECIFICACION-V2.md`. Si algo choca, manda la especificación.
 
 ## Lo que nunca se hace
@@ -15,8 +27,8 @@ Normas para cualquier agente que toque este repo. La especificación completa es
 3. Un commit = un cambio pequeño y revisable, con mensaje en español que diga qué y por qué.
 
 ## Para decir «arreglado»
-- Adjunta la captura del **build de producción** (`vite preview`) en el estado concreto (tema, modo, anchura, menú, ángulo) y el nombre del test que lo cubre.
-- Si no hay test que lo cubra, escribe primero uno que falle y luego el arreglo.
+- Adjunta la captura del **build de producción** (`vite preview`) en el estado concreto (tema, modo, anchura, menú, ángulo).
+- No se escriben tests nuevos. Los que ya existen se quedan como están.
 - Si cambia algo visible: hoja «antes / después» para que Sebastián apruebe las referencias nuevas. Hasta su OK, no está terminado.
 
 ## Normas de código (resumen de la especificación, sección 2)
@@ -27,7 +39,7 @@ Normas para cualquier agente que toque este repo. La especificación completa es
 - **Colocación:** solo `layout/calcularLayout.ts`, con medidas reales (`useMedidas`). Ningún alto adivinado, ningún `vw/vh` para la hora, números con nombre en `layout/medidas.ts`.
 - **Frasco:** una sola geometría, la máscara `jar-mask.webp`. Gravedad, agua, chorro y luz en el espacio del mundo, misma escala en x e y. Solo el vidrio gira.
 - **Tests que prueban de verdad:** un test no puede usar la misma fórmula que el código que prueba. Se mide el píxel o el valor calculado en el navegador.
-- **Nada visual lleva test** (colores, espacios, tamaños, posiciones): lo revisa Sebastián en la preview. Solo se mantienen el barrido de no solapes en todos los tamaños, la física del frasco y su contenido, y la regresión de bugs de comportamiento ya arreglados (el vídeo que no cambia de escena, el frasco que no gira en pausa). Si un test visual existente hace perder tiempo, se borra y se avisa.
+- **Nada visual lleva test** (colores, espacios, tamaños, posiciones): lo revisa Sebastián en la preview. Solo se mantienen los tests que ya existen: el barrido de no solapes, la física del frasco y su contenido, y las regresiones de comportamiento ya escritas. No se añaden más. Si un test visual existente hace perder tiempo, se borra y se avisa.
 - **Módulos pequeños:** unas 200 líneas por archivo, funciones de 60 como máximo, lógica pura separada de React y del dibujo. Sin apaños, sin `setTimeout` de reintento, sin código muerto.
 - **Rendimiento:** un solo bucle de animación que se duerme en reposo; presupuestos de la sección 3.17.
 

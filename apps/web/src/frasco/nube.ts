@@ -72,6 +72,31 @@ export function opacidadNubeEnVuelta(angulo: number, reinicio: boolean): number 
 
 const FUNDIDO_BUCLE_S = 2;
 
+interface CajaPlana {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+/**
+ * La nube se queda en la boca y gira con el frasco. En la media vuelta de
+ * reinicio no orbita: el ángulo vuelve a cero de golpe y se vería el salto.
+ */
+export function posturaNube(
+  caja: CajaPlana,
+  frasco: CajaPlana,
+  angulo: number,
+  reinicio: boolean,
+): { readonly transform: string } {
+  const giro = reinicio ? 0 : angulo;
+  const cx = frasco.x + frasco.w / 2;
+  const cy = frasco.y + frasco.h / 2;
+  return {
+    transform: `translate(${cx}px, ${cy}px) rotate(${giro}rad) translate(${caja.x - cx}px, ${caja.y - cy}px)`,
+  };
+}
+
 /** Cruce de los dos vídeos. `queda` es lo que le falta al que se está viendo. */
 export function fundidoBucle(queda: number, fundido = FUNDIDO_BUCLE_S): { activo: number; reserva: number } {
   if (!(fundido > 0) || !(queda < fundido)) return { activo: 1, reserva: 0 };
@@ -86,62 +111,104 @@ export interface BucleNube {
 }
 
 /**
- * Dos vídeos del mismo plano. El cruce va en `timeupdate`, no en el fotograma
- * del frasco: en reposo ese bucle duerme.
+ * Dos vídeos del mismo plano. El cruce va con el fotograma del vídeo, no con
+ * el bucle del frasco: en reposo ese bucle duerme. El plano que sale no vuelve
+ * al primer fotograma mientras aún se ve.
  */
 export function crearBucleNube(a: HTMLVideoElement, b: HTMLVideoElement): BucleNube {
   let principal = a;
   let apoyo = b;
   let encendido = false;
-  const aplicar = () => {
-    if (!encendido || !Number.isFinite(principal.duration)) return;
-    const queda = principal.duration - principal.currentTime;
-    const fundido = fundidoBucle(queda);
-    if (fundido.reserva > 0 && apoyo.paused) {
+  let apoyoLanzado = false;
+  let ocupado = false;
+  let cuadroVideo: HTMLVideoElement | null = null;
+  let cuadroId = 0;
+
+  const soltarCuadro = () => {
+    if (cuadroVideo && cuadroId) cuadroVideo.cancelVideoFrameCallback(cuadroId);
+    cuadroVideo = null;
+    cuadroId = 0;
+  };
+
+  const pintar = () => {
+    if (!encendido || ocupado) return;
+    const duracion = principal.duration;
+    if (!Number.isFinite(duracion) || duracion <= 0) return;
+    ocupado = true;
+    const queda = duracion - principal.currentTime;
+    const fundido = fundidoBucle(queda, Math.min(FUNDIDO_BUCLE_S, duracion * 0.4));
+    if (fundido.reserva > 0 && apoyo.paused && !apoyoLanzado) {
+      apoyoLanzado = true;
       try {
         apoyo.currentTime = 0;
       } catch {
-        /* el plano aún no tiene duración */
+        apoyoLanzado = false;
       }
-      void apoyo.play().catch(() => undefined);
+      if (apoyoLanzado) {
+        void apoyo.play().catch(() => {
+          apoyoLanzado = false;
+        });
+      }
     }
     principal.style.opacity = fundido.activo.toFixed(3);
-    apoyo.style.opacity = fundido.reserva.toFixed(3);
-    if (principal.ended || queda < 0.05) {
-      principal.pause();
-      try {
-        principal.currentTime = 0;
-      } catch {
-        /* igual que arriba */
-      }
-      principal.style.opacity = '0';
+    apoyo.style.opacity = (apoyoLanzado ? fundido.reserva : 0).toFixed(3);
+    if (principal.ended || queda <= 0.04) {
       const saliente = principal;
       principal = apoyo;
       apoyo = saliente;
+      apoyoLanzado = false;
       principal.style.opacity = '1';
+      apoyo.style.opacity = '0';
+      apoyo.pause();
+      try {
+        apoyo.currentTime = 0;
+      } catch {
+        /* ya no se ve */
+      }
       if (principal.paused) void principal.play().catch(() => undefined);
     }
+    ocupado = false;
   };
-  a.addEventListener('timeupdate', aplicar);
-  b.addEventListener('timeupdate', aplicar);
-  a.addEventListener('ended', aplicar);
-  b.addEventListener('ended', aplicar);
+
+  const alCuadro = () => {
+    if (!encendido) return;
+    pintar();
+    const video = principal;
+    if (typeof video.requestVideoFrameCallback !== 'function') return;
+    cuadroVideo = video;
+    cuadroId = video.requestVideoFrameCallback(alCuadro);
+  };
+
+  const alTiempo = (evento: Event) => {
+    if (!encendido || evento.target !== principal) return;
+    if (typeof principal.requestVideoFrameCallback === 'function') return;
+    pintar();
+  };
+
+  a.addEventListener('timeupdate', alTiempo);
+  b.addEventListener('timeupdate', alTiempo);
+  a.addEventListener('ended', pintar);
+  b.addEventListener('ended', pintar);
   return {
     empezar() {
       encendido = true;
       if (principal.paused) void principal.play().catch(() => undefined);
+      soltarCuadro();
+      alCuadro();
     },
     parar() {
       encendido = false;
+      soltarCuadro();
       a.pause();
       b.pause();
     },
     destruir() {
       encendido = false;
-      a.removeEventListener('timeupdate', aplicar);
-      b.removeEventListener('timeupdate', aplicar);
-      a.removeEventListener('ended', aplicar);
-      b.removeEventListener('ended', aplicar);
+      soltarCuadro();
+      a.removeEventListener('timeupdate', alTiempo);
+      b.removeEventListener('timeupdate', alTiempo);
+      a.removeEventListener('ended', pintar);
+      b.removeEventListener('ended', pintar);
       a.pause();
       b.pause();
     },

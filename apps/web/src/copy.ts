@@ -2,6 +2,11 @@ import type { Language, TimerStatus } from '@reloj/core';
 
 import type { AndroidDistribution } from './androidApp';
 
+/** Rótulo grande de la pausa. El inglés es el de los mensajes del reloj. */
+export function textoPausa(lang: Language = 'es'): string {
+  return lang === 'es' ? 'En pausa' : 'Paused';
+}
+
 /** Pistas de ratón. El idioma de la interfaz es el de Ajustes. */
 
 export function hintFor(status: TimerStatus, cyclesFinished: boolean, lang: Language = 'es'): string | null {

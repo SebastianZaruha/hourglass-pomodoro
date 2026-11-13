@@ -1,8 +1,6 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
-import type { Caja } from '../layout/calcularLayout';
 import { vectorLuz } from './alpha';
-import { JAR_NECK_Y } from './geometria';
 
 /** Lo que la luz de la escena le hace al color de la arena. */
 export interface LuzGrano {
@@ -273,35 +271,5 @@ export function dibujarChorro(
     ctx.beginPath();
     ctx.arc((px / sim.cols) * w, (py / sim.rows) * h, Math.max(0.6, size * cellW), 0, Math.PI * 2);
     ctx.fill();
-  }
-}
-
-/** El chorro cae en vertical en el mundo, desde el cuello, sin seguir el giro del frasco. */
-export function dibujarChorroMundo(
-  ctx: CanvasRenderingContext2D,
-  sim: SandSimulation,
-  particles: StreamParticles,
-  lut: Uint8ClampedArray,
-  frasco: Caja,
-  angulo: number,
-): void {
-  const count = particles.count;
-  if (count === 0) return;
-  const cx = frasco.x + frasco.w / 2;
-  const cy = frasco.y + frasco.h / 2;
-  const c = Math.cos(angulo);
-  const s = Math.sin(angulo);
-  const cuelloY = (JAR_NECK_Y - 0.5) * frasco.h;
-  const nx = cx - cuelloY * s;
-  for (let i = 0; i < count; i++) {
-    const py = particles.y[i] ?? 0;
-    const px = particles.x[i] ?? 0;
-    const ly = (py / sim.rows - 0.5) * frasco.h;
-    const lx = (px / sim.cols - 0.5) * frasco.w;
-    const wy = cy + lx * s + ly * c;
-    const tone = particles.tone[i] ?? 1;
-    const l = tone * 3;
-    ctx.fillStyle = `rgb(${lut[l] ?? 0},${lut[l + 1] ?? 0},${lut[l + 2] ?? 0})`;
-    ctx.fillRect(nx - 0.75, wy, 1.5, 5);
   }
 }

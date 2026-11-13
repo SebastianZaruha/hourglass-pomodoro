@@ -5,7 +5,7 @@ import type { Caja } from '../layout/calcularLayout';
 import type { Luz } from '../temas/tipos';
 import type { Activos } from './activos';
 import { dibujarContenido } from './contenido';
-import { dibujarChorro, dibujarChorroMundo } from './granos';
+import { dibujarChorro } from './granos';
 import type { Geometria } from './geometria';
 import { aplicarLuz } from './luzAplicar';
 import { pintarAgua, pintarGotasEncima, type AguaFrame } from './pintarAgua';
@@ -78,7 +78,7 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
       brillo: orden.luz.brillo,
       fuerzaTinte: orden.luz.fuerzaTinte,
     });
-    if (orden.enElFrasco && orden.sim && orden.chorro && orden.lut) {
+    if (orden.sim && orden.chorro && orden.lut) {
       ctx.save();
       ctx.translate(x, y);
       dibujarChorro(ctx, orden.sim, orden.chorro, orden.lut, w, h);
@@ -86,10 +86,6 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
     }
   }
   ctx.restore();
-
-  if (orden.tipo === 'arena' && !orden.enElFrasco && orden.sim && orden.chorro && orden.lut) {
-    dibujarChorroMundo(ctx, orden.sim, orden.chorro, orden.lut, orden.frasco, orden.angulo);
-  }
 
   if (orden.tipo === 'agua' && orden.geo) {
     pintarAgua(
