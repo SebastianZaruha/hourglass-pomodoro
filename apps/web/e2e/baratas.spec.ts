@@ -320,7 +320,6 @@ test('en reposo no se piden fotogramas', async ({ page }) => {
   const n = await page.evaluate(
     () => (window as unknown as { __muestras?: number[] }).__muestras?.length ?? 0,
   );
-  falloEsperado(10, 'en Lluvia la nube mantiene el bucle despierto (unos 35 fotogramas en 2 s)');
   expect(n, `${n} fotogramas en 2 s con el reloj parado`).toBe(0);
 });
 
@@ -381,7 +380,6 @@ test('la precarga no pide tex-sand ni dos formatos del mismo fondo', async ({ pa
     [...document.querySelectorAll('link[rel="prefetch"]')].map((nodo) => (nodo as HTMLLinkElement).href),
   );
   expect(hrefs.length, 'no apareció ningún prefetch').toBeGreaterThan(0);
-  falloEsperado(9, 'se precargan tex-sand (no se pinta) y todos los formatos de cada fondo');
   expect(
     hrefs.some((href) => href.includes('tex-sand')),
     hrefs.join('\n'),

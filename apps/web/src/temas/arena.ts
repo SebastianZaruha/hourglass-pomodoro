@@ -7,8 +7,8 @@ const relojClaro: RelojTema = {
 };
 
 const relojOscuro: RelojTema = {
-  digitos: '#7E7A75',
-  pista: '#7E7A75',
+  digitos: '#B7B1AA',
+  pista: '#B7B1AA',
 };
 
 function luz(oscuro: boolean): Luz {

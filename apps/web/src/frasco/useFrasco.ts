@@ -17,7 +17,7 @@ import type { Layout } from '../layout/calcularLayout';
 import { activarNube } from '../medios/assetLoader';
 import { alFijarAngulo } from '../pruebas';
 import type { Luz } from '../temas/tipos';
-import { cargarActivos, cargarArena, type Activos } from './activos';
+import { cargarActivos, type Activos } from './activos';
 import { dibujar } from './dibujo';
 import { granosObjetivo, gravedadDelAngulo } from './fisica/arena';
 import { buildPaletteLut, pintarSello } from './granos';
@@ -83,11 +83,39 @@ export function useFrasco(
   const pedir = useRef<() => void>(() => undefined);
   vivo.current = modelo;
 
-  // El bucle se duerme en reposo. Un cambio de tema tiene que pintarse
-  // en el acto, sin esperar al siguiente clic o al siguiente tick.
+  // El bucle se duerme en reposo. Un cambio que se ve (tema, caja, luz)
+  // lo despierta; un render del reloj parado no.
+  const frasco = modelo.layout.frasco;
+  const nube = modelo.layout.nube;
+  const luz = modelo.luz;
+  const firmaPintura = [
+    modelo.tipo,
+    modelo.granos,
+    modelo.mostrarNube,
+    modelo.reducir,
+    modelo.ahorro,
+    modelo.pausado,
+    modelo.vuelta,
+    modelo.contenidoFijo?.durationMs ?? '',
+    modelo.contenidoFijo?.remainingMs ?? '',
+    frasco.x,
+    frasco.y,
+    frasco.w,
+    frasco.h,
+    nube.x,
+    nube.y,
+    nube.w,
+    nube.h,
+    luz.tinte,
+    luz.brillo,
+    luz.direccion,
+    luz.fuerzaTinte,
+    luz.nube.brillo,
+    luz.nube.saturacion,
+  ].join('|');
   useEffect(() => {
     pedir.current();
-  });
+  }, [firmaPintura]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -124,6 +152,7 @@ export function useFrasco(
     let vueltaVista = vivo.current.vuelta;
     const lod = new TiltLod();
     let ultimoSim = 0;
+    let vidrioDesde = 0;
     const input: StreamInput = {
       dt: 1 / 60,
       emitting: false,
@@ -202,7 +231,6 @@ export function useFrasco(
         movio = true;
       }
       if (m.tipo === 'arena') {
-        cargarArena(activos, despertar);
         const inclinado = Math.abs(estado.angulo) >= 0.05;
         const suave = inclinado ? gravedadDelAngulo(estado.angulo) : GRAVITY_DOWN;
         const gravedad = lod.update(now, suave, suave, ultimoSim);
@@ -237,6 +265,10 @@ export function useFrasco(
       visto = suave.par.frasco;
       if (suave.sigue) movio = true;
 
+      if (activos.dorso && vidrioDesde === 0) vidrioDesde = now;
+      const vidrio = activos.dorso ? Math.min(1, (now - vidrioDesde) / 160) : 0;
+      if (activos.dorso && vidrio < 1) movio = true;
+
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const pxW = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const pxH = Math.max(1, Math.round(canvas.clientHeight * dpr));
@@ -267,6 +299,7 @@ export function useFrasco(
           chorro: particles,
           lut,
           arena,
+          vidrio,
         },
         activos,
       );
@@ -303,12 +336,12 @@ export function useFrasco(
       anguloFijo = radianes;
       despertar();
     });
-    const ocioso =
-      window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 500) as unknown as number);
-    ocioso(() => {
+    const mostrarNube = () => {
       nubeLista = true;
       despertar();
-    });
+    };
+    if (window.requestIdleCallback) window.requestIdleCallback(mostrarNube, { timeout: 400 });
+    else window.setTimeout(mostrarNube, 200);
 
     const local = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -349,7 +382,14 @@ export function useFrasco(
     canvas.addEventListener('pointermove', move);
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', up);
-    const observer = new ResizeObserver(() => despertar());
+    let anchoVisto = canvas.clientWidth;
+    let altoVisto = canvas.clientHeight;
+    const observer = new ResizeObserver(() => {
+      if (canvas.clientWidth === anchoVisto && canvas.clientHeight === altoVisto) return;
+      anchoVisto = canvas.clientWidth;
+      altoVisto = canvas.clientHeight;
+      despertar();
+    });
     observer.observe(canvas);
     const alVer = () => {
       if (document.hidden) activos.nubeVideo?.pause();

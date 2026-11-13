@@ -31,6 +31,8 @@ export interface OrdenDibujo {
   readonly chorro: StreamParticles | null;
   readonly lut: Uint8ClampedArray | null;
   readonly arena: HTMLCanvasElement | null;
+  /** 0 = silueta de la máscara, 1 = foto del vidrio. */
+  readonly vidrio: number;
 }
 
 /** Pinta sombra, vidrio, contenido y nube. Los colores salen de `luz`. */
@@ -48,8 +50,13 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
   ctx.rotate(orden.angulo);
   ctx.translate(-cx, -cy);
 
-  if (activos.dorso) ctx.drawImage(activos.dorso, x, y, w, h);
-  else if (activos.mascara) dibujarSilueta(ctx, orden.frasco, activos.mascara);
+  if (activos.mascara && orden.vidrio < 1) dibujarSilueta(ctx, orden.frasco, activos.mascara);
+  if (activos.dorso && orden.vidrio > 0) {
+    ctx.save();
+    ctx.globalAlpha = orden.vidrio;
+    ctx.drawImage(activos.dorso, x, y, w, h);
+    ctx.restore();
+  }
 
   if (orden.tipo === 'arena') {
     dibujarContenido(ctx, {
@@ -91,7 +98,12 @@ export function dibujar(ctx: CanvasRenderingContext2D, orden: OrdenDibujo, activ
     });
   }
 
-  aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso);
+  if (activos.dorso && orden.vidrio > 0) {
+    ctx.save();
+    ctx.globalAlpha = orden.vidrio;
+    aplicarLuz(ctx, orden.frasco, orden.luz, orden.angulo, activos.frente, activos.dorso);
+    ctx.restore();
+  }
 }
 
 let silueta: HTMLCanvasElement | null = null;

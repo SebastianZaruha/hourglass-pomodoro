@@ -104,17 +104,3 @@ export function cargarActivos(alListo: () => void): Activos {
   return activos;
 }
 
-const arenaPedida = new WeakSet<Activos>();
-
-/** La textura de arena solo hace falta en Arena y Clásico. */
-export function cargarArena(activos: Activos, alListo: () => void): void {
-  if (activos.arena || arenaPedida.has(activos)) return;
-  arenaPedida.add(activos);
-  const destino = activos as { -readonly [K in keyof Activos]: Activos[K] };
-  void imagen('/frasco/tex-sand.webp')
-    .then((img) => {
-      destino.arena = img;
-      alListo();
-    })
-    .catch(() => undefined);
-}

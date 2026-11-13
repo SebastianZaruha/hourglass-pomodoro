@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { esAncha } from '../layout/calcularLayout';
 import { entradaDe } from '../layout/medidas';
+import { conexionAhorro } from '../medios/assetLoader';
 
 function useConsulta(query: string): boolean {
   const [coincide, setCoincide] = useState(() => window.matchMedia(query).matches);
@@ -19,8 +20,8 @@ export function useMedios() {
   const oscuroSistema = useConsulta('(prefers-color-scheme: dark)');
   const reducir = useConsulta('(prefers-reduced-motion: reduce)');
   const [ahorro, setAhorro] = useState(() => {
-    const red = navigator as Navigator & { connection?: { saveData?: boolean } };
-    return red.connection?.saveData === true;
+    const red = navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } };
+    return conexionAhorro(red.connection);
   });
   const [tamano, setTamano] = useState(() => ({ ancho: window.innerWidth, alto: window.innerHeight }));
 
@@ -32,11 +33,15 @@ export function useMedios() {
 
   useEffect(() => {
     const red = navigator as Navigator & {
-      connection?: { saveData?: boolean; addEventListener?: (t: string, fn: () => void) => void };
+      connection?: {
+        saveData?: boolean;
+        effectiveType?: string;
+        addEventListener?: (t: string, fn: () => void) => void;
+      };
     };
     const conexion = red.connection;
     if (!conexion?.addEventListener) return;
-    const alCambiar = () => setAhorro(conexion.saveData === true);
+    const alCambiar = () => setAhorro(conexionAhorro(conexion));
     conexion.addEventListener('change', alCambiar);
     return () => {
       const quitar = conexion as { removeEventListener?: (t: string, fn: () => void) => void };

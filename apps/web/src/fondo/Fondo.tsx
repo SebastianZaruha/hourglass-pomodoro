@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { encuadreFondo } from './encuadre';
 import { colorDeFondo } from '../medios/assetLoader';
+import { miniaturaDe } from '../temas/miniaturas';
 import type { FondoTema, ModoTema } from '../temas/tipos';
 import './fondo.css';
 
@@ -43,7 +44,13 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho
     return () => document.removeEventListener('visibilitychange', alVer);
   }, [clave]);
 
-  const base = { background: colorDeFondo(modo) };
+  const urlMini =
+    fondo.tipo === 'foto' ? fondo.src : fondo.tipo === 'video' ? fondo.poster : '';
+  const mini = miniaturaDe(urlMini);
+  const base: { backgroundColor: string; '--mini': string } = {
+    backgroundColor: colorDeFondo(modo),
+    '--mini': mini ? `url("${mini}")` : 'none',
+  };
 
   if (fondo.tipo === 'degradado') return <div className="fondo degradado" style={base} />;
 
@@ -62,13 +69,19 @@ export function Fondo({ modo, ancla, ancho, alto, pie, reducir, ahorro, estrecho
   const video = !reducir && !ahorro && !fallo;
   return (
     <div className="fondo" style={base}>
-      <img className="fondo-medio" src={fondo.poster} alt="" style={estilo} />
+      <img
+        className="fondo-medio"
+        src={fondo.poster}
+        alt=""
+        style={estilo}
+        onLoad={(event) => event.currentTarget.classList.add('visto')}
+      />
       {video ? (
         <video
           key={clave}
-          className="fondo-medio"
           ref={videoRef}
-          style={{ ...estilo, opacity: listo ? 1 : 0 }}
+          style={estilo}
+          className={listo ? 'fondo-medio visto' : 'fondo-medio'}
           muted
           loop
           playsInline
@@ -94,7 +107,7 @@ function Foto({
 }: {
   readonly fondo: Extract<FondoTema, { tipo: 'foto' }>;
   readonly estilo: { left: number; top: number; width: number; height: number };
-  readonly base: { background: string };
+  readonly base: { backgroundColor: string; '--mini': string };
   readonly estrecho: boolean;
 }) {
   const chica = estrecho ? fondo.estrecho : undefined;
@@ -104,7 +117,13 @@ function Foto({
       {chica ? <source media="(max-width: 700px)" srcSet={chica.webp} type="image/webp" /> : null}
       {fondo.avif ? <source srcSet={fondo.avif} type="image/avif" /> : null}
       {fondo.jpg ? <source srcSet={fondo.src} type="image/webp" /> : null}
-      <img className="fondo-medio" src={fondo.jpg ?? fondo.src} alt="" style={estilo} />
+      <img
+        className="fondo-medio"
+        src={fondo.jpg ?? fondo.src}
+        alt=""
+        style={estilo}
+        onLoad={(event) => event.currentTarget.classList.add('visto')}
+      />
     </picture>
   );
 }

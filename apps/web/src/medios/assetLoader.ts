@@ -1,7 +1,6 @@
 import type { FondoTema, IdTema, ModoTema, Tema } from '../temas/tipos';
 
 export const NUBE_VIDEO = '/nube/nube.webm';
-export const ARENA_TEXTURA = '/frasco/tex-sand.webp';
 export const NUBE_VIDEO_MP4 = '/nube/nube.mp4';
 
 export interface Red {
@@ -9,11 +8,12 @@ export interface Red {
   readonly effectiveType?: string;
 }
 
-/** Ahorro de datos o una red 2G: no se adelantan los vídeos. */
+/** Ahorro de datos o una red 2G o 3G: no se adelantan los vídeos. */
 export function conexionAhorro(red: Red | null | undefined): boolean {
   if (!red) return false;
   if (red.saveData) return true;
-  return red.effectiveType === '2g' || red.effectiveType === 'slow-2g';
+  const tipo = red.effectiveType;
+  return tipo === 'slow-2g' || tipo === '2g' || tipo === '3g';
 }
 
 export function colorDeFondo(modo: Pick<ModoTema, 'reserva'>): string {
@@ -41,15 +41,9 @@ export function colaDeFondos(temas: readonly Tema[], activo: IdTema, scheme: 'li
 /** URLs de un fondo. Con ahorro no van los vídeos, solo el póster. */
 export function urlsDeFondo(fondo: FondoTema, ahorro: boolean): string[] {
   if (fondo.tipo === 'degradado') return [];
-  if (fondo.tipo === 'foto') {
-    return unicos([fondo.estrecho?.avif, fondo.estrecho?.webp, fondo.avif, fondo.src, fondo.jpg]);
-  }
-  return unicos([
-    fondo.poster,
-    fondo.estrecho?.avif,
-    fondo.estrecho?.webp,
-    ...(ahorro ? [] : [fondo.webm, fondo.mp4]),
-  ]);
+  if (fondo.tipo === 'foto') return unicos([fondo.avif ?? fondo.src]);
+  if (ahorro) return unicos([fondo.poster]);
+  return unicos([fondo.webm]);
 }
 
 export function urlsPrefetch(
@@ -60,7 +54,6 @@ export function urlsPrefetch(
 ): string[] {
   const fondos = colaDeFondos(temas, activo, scheme).flatMap((fondo) => urlsDeFondo(fondo, ahorro));
   const tema = temas.find((item) => item.id === activo);
-  if (tema?.adelantarArena) fondos.push(ARENA_TEXTURA);
   if (tema?.adelantarNube && !ahorro) fondos.push(NUBE_VIDEO);
   return unicos(fondos);
 }

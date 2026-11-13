@@ -13,17 +13,26 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  background: var(--reserva);
+  background-color: var(--reserva);
+  background-image: var(--mini, none);
+  background-size: cover;
+  background-position: center;
 }
 
 .fondo-medio {
   position: absolute;
   display: block;
   max-width: none;
+  opacity: 0;
+  transition: opacity 160ms linear;
+}
+
+.fondo-medio.visto {
+  opacity: 1;
 }
 
 .fondo video {
-  transition: opacity 480ms ease;
+  transition: opacity 160ms linear;
 }
 
 .entra .fondo {

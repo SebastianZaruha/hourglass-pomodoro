@@ -3,11 +3,9 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
 import { instalarPruebas } from './pruebas';
-import '@fontsource/manrope/200.css';
-import '@fontsource/manrope/300.css';
-import '@fontsource/manrope/400.css';
-import '@fontsource/manrope/500.css';
-import '@fontsource/manrope/600.css';
+import '@fontsource/manrope/latin-200.css';
+import '@fontsource/manrope/latin-400.css';
+import '@fontsource/manrope/latin-500.css';
 import './estilo/tokens.css';
 import './styles.css';
 import './estilo/vidrio.css';
