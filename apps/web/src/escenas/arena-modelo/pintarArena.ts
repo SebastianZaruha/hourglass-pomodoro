@@ -74,6 +74,8 @@ export interface ArenaPintada {
   readonly particles: StreamParticles;
   readonly lut: Uint8ClampedArray;
   readonly geo: GeometriaFrasco;
+  /** Arena de antes del reinicio. `queda` es su opacidad; la nueva entra con el resto. */
+  readonly fundido?: { readonly viejo: HTMLCanvasElement; readonly queda: number };
 }
 
 let hoja: HTMLCanvasElement | null = null;
@@ -105,7 +107,16 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const vh = (geo.ventana.y1 - geo.ventana.y0) * caja.h;
 
   g.imageSmoothingEnabled = false;
-  g.drawImage(scene.sand, vx, vy, vw, vh);
+  if (scene.fundido) {
+    const queda = scene.fundido.queda;
+    g.globalAlpha = queda;
+    g.drawImage(scene.fundido.viejo, vx, vy, vw, vh);
+    g.globalAlpha = 1 - queda;
+    g.drawImage(scene.sand, vx, vy, vw, vh);
+    g.globalAlpha = 1;
+  } else {
+    g.drawImage(scene.sand, vx, vy, vw, vh);
+  }
 
   g.save();
   g.globalCompositeOperation = 'source-atop';
