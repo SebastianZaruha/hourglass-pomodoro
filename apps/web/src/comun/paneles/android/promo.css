@@ -1,0 +1,103 @@
+.app.is-paused .site-footer,
+.app.is-paused .app-promo {
+  display: none;
+}
+
+.app-promo {
+  position: fixed;
+  z-index: 23;
+  left: clamp(0.7rem, 2.4vw, 1.15rem);
+  bottom: calc(2.65rem + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(28rem, calc(100% - 5.4rem));
+  padding: 0.45rem 0.35rem 0.45rem 0.75rem;
+  border-radius: 16px;
+  border: 1px solid var(--sheet-edge);
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  animation: app-promo-in 420ms ease both;
+}
+
+.app-promo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+
+.app-promo-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.app-promo-pitch {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.app-promo-install {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 0.12rem;
+}
+
+.app-promo-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--pill-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-promo-dismiss {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.app-promo-dismiss:hover {
+  background: var(--track);
+  color: var(--ink);
+}
+
+@keyframes app-promo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 40rem) {
+  .app-promo {
+    bottom: calc(4.15rem + env(safe-area-inset-bottom));
+  }
+}

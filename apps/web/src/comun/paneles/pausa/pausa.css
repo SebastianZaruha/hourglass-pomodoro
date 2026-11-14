@@ -1,0 +1,91 @@
+.scene {
+  transition: filter 360ms var(--suave);
+}
+
+.app.is-paused .scene {
+  filter: blur(18px);
+}
+
+/* promo.css, más abajo, pone display:none. El selector duplicado lo deja en su sitio para poder fundirlo. */
+.app.is-paused .site-footer.site-footer,
+.app.is-paused .menu-btn.menu-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 360ms var(--suave),
+    visibility 0s linear 360ms;
+}
+
+.app.is-paused .site-footer.site-footer {
+  display: flex;
+}
+
+.app.is-paused .site-footer.site-footer :is(a, button),
+.app.is-paused .menu-btn.menu-btn * {
+  pointer-events: none;
+}
+
+.app.pausa-vuelve .site-footer,
+.app.pausa-vuelve .menu-btn {
+  animation: pausa-vuelve 360ms var(--suave) both;
+}
+
+@keyframes pausa-vuelve {
+  from {
+    opacity: 0;
+  }
+}
+
+.pause-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  animation: pausa-entra 360ms var(--suave) both;
+}
+
+.pause-word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 8vw, 6rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--pause);
+  text-shadow:
+    0 0 22px var(--pause-veil),
+    0 0 42px var(--bg-bottom);
+}
+
+.pause-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4.2rem);
+  transform: translateX(-50%);
+  max-width: 32rem;
+  padding: 0 1.2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--hint);
+  text-shadow: none;
+}
+
+.app[data-scheme='dark'] .pause-word,
+.app[data-scheme='dark'] .pause-hint {
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(0, 0, 0, 0.28);
+}
+
+@keyframes pausa-entra {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

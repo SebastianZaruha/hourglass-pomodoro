@@ -1,0 +1,13 @@
+@import '../escenas/clasico/clasico.css';
+@import '../comun/estilo/base.css';
+@import './rejilla.css';
+@import '../comun/paneles/pausa/pausa.css';
+@import '../comun/frasco/frasco.css';
+@import '../comun/reloj/reloj.css';
+@import '../comun/menu/menu.css';
+@import '../comun/paneles/pie/pie.css';
+@import '../comun/paneles/legal/legal.css';
+@import '../comun/paneles/android/promo.css';
+@import '../comun/paneles/cookies/cookies.css';
+@import './intro.css';
+@import '../comun/estilo/reducir.css';

@@ -1,0 +1,19 @@
+/* Números de la vuelta del vidrio. Sin colores: esos van en la escena. */
+:root {
+  --espacio-4: 4px;
+  --espacio-8: 8px;
+  --espacio-12: 12px;
+  --espacio-16: 16px;
+  --espacio-24: 24px;
+  --espacio-32: 32px;
+  --espacio-48: 48px;
+  --radio-panel: 28px;
+  --texto-13: 13px;
+  --texto-15: 15px;
+  --texto-17: 17px;
+  --texto-22: 22px;
+  --duracion-160: 160ms;
+  --duracion-360: 360ms;
+  --duracion-620: 620ms;
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
+}

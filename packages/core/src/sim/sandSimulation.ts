@@ -54,6 +54,12 @@ export interface SandSimulationOptions {
    * valores bajos = avalanchas más lentas y "a trompicones".
    */
   readonly staticFriction?: number;
+  /**
+   * Radio interior (0..1 del semiancho) a la altura y ∈ [-1, 1].
+   * Si se pasa, sustituye a `innerRadiusAt` y al grosor de pared.
+   * Si no se pasa, la máscara se construye como siempre.
+   */
+  readonly radioInterior?: (y: number) => number;
 }
 
 export interface ArrangeOptions {
@@ -131,7 +137,9 @@ export class SandSimulation {
     this.listNext = new Int32Array(size);
 
     // Construimos la máscara evaluando el perfil en el centro de cada celda.
-    const wallY = profile.wallThickness / profile.halfHeightRatio;
+    // `radioInterior` sustituye al perfil y al grosor. Sin ella, el cálculo es el de siempre.
+    const radioInterior = options.radioInterior;
+    const wallY = radioInterior ? 0 : profile.wallThickness / profile.halfHeightRatio;
     const cellW = 2 / this.cols;
     let top = 0;
     let bottom = 0;
@@ -140,7 +148,7 @@ export class SandSimulation {
       const y = ((row + 0.5) / this.rows) * 2 - 1;
       if (Math.abs(y) > 1 - wallY) continue;
       // Garantizamos al menos media celda de hueco en el cuello.
-      const r = Math.max(innerRadiusAt(profile, y), cellW * 0.5);
+      const r = Math.max(radioInterior ? radioInterior(y) : innerRadiusAt(profile, y), cellW * 0.5);
       for (let col = 0; col < this.cols; col++) {
         const x = ((col + 0.5) / this.cols) * 2 - 1;
         if (Math.abs(x) > r) continue;
