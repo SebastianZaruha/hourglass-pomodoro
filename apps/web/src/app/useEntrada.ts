@@ -106,7 +106,13 @@ export function useEntrada(e: Entrada) {
     if (!el) return;
     const onWheel = (ev: WheelEvent) => {
       ev.preventDefault();
-      if (introRef.current || e.menu || e.state.timer.status === 'running') return;
+      if (
+        introRef.current ||
+        e.menu ||
+        e.state.timer.status === 'running' ||
+        e.state.timer.status === 'paused'
+      )
+        return;
       let dy = ev.deltaY;
       if (ev.deltaMode === 1) dy *= 16;
       if (ev.deltaMode === 2) dy *= 400;
