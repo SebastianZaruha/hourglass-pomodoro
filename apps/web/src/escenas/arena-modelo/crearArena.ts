@@ -5,9 +5,7 @@ import {
   SAND,
   SandSimulation,
   StreamParticles,
-  flowBudget,
   sandLevelForDuration,
-  syncSandToTarget,
   targetSourceGrains,
   type HourglassProfile,
   type SessionSnapshot,
@@ -15,6 +13,7 @@ import {
 } from '@reloj/core';
 
 import {
+  RELLENO_ANCHO,
   geometriaDelFrasco,
   layoutFor,
   type Contenido,
@@ -26,8 +25,11 @@ import {
 } from '../../comun/frasco';
 import { buildPaletteLut, makeGrainNoise, paintCells, pintarArena } from './pintarArena';
 
-/** Embudo del bulbo de arriba, el de la publicada. */
-const TOP_CRATER = 0.16;
+/**
+ * Embudo del bulbo de arriba. 0,16 era una V de punta y, al vaciar por el
+ * centro, se hundía mucho más. 0,10 deja una hondonada de unos 5 % del ancho.
+ */
+const TOP_CRATER = 0.1;
 const STEPS_PER_FRAME = 2;
 const SAND_CELL_PX = 2.15;
 /** Ventana interior de la foto: 961 de alto y 395 de ancho. */
@@ -62,7 +64,7 @@ function columnas(anchoInterior: number): number {
 
 function crearSim(medida: MedidaLienzo, geo: GeometriaFrasco): SandSimulation {
   const guess = layoutFor(medida.ancho, medida.alto);
-  const ancho = guess.halfW * 2 * (geo.ventana.x1 - geo.ventana.x0);
+  const ancho = guess.halfW * 2 * RELLENO_ANCHO * (geo.ventana.x1 - geo.ventana.x0);
   return new SandSimulation({
     profile: PERFIL,
     cols: columnas(ancho),
@@ -172,17 +174,17 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       mode = snap.status;
 
       let moved = false;
-      const ticks = Math.min(3, Math.max(1, Math.round(e.dt * 60 - 0.2)));
       if (turning) {
         // Durante el giro la arena va pegada al vidrio.
       } else if (populated && snap.status !== 'idle') {
+        // syncSandToTarget vacía por el centro y clava la V. Colocar el
+        // nivel con arrange deja el embudo ancho; el paso solo asienta.
         const target = targetSourceGrains(runInitial, snap.remainingMs, snap.durationMs);
-        const budget = flowBudget(runInitial, snap.durationMs, sim.totalGrains);
-        for (let k = 0; k < ticks; k++) {
-          if (syncSandToTarget(sim, target, GRAVITY_DOWN, { ...budget, crater: TOP_CRATER }) !== 'idle')
-            moved = true;
-          for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
+        if (sim.topCount !== target) {
+          sim.arrange(target, Math.max(0, sim.totalGrains - target), GRAVITY_DOWN, { crater: TOP_CRATER });
+          moved = true;
         }
+        for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
       } else {
         for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(GRAVITY_DOWN) > 0) moved = true;
       }
