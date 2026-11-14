@@ -3,7 +3,7 @@
  * La luz va con fuerza 0: Clásico sigue con el degradado publicado.
  */
 import type { GeometriaFrasco } from './contrato';
-import { FOTO_ALTO, FOTO_ANCHO } from './geometria';
+import { FOTO_ALTO, FOTO_ANCHO, RELLENO_ANCHO } from './geometria';
 import { pintarLuz, type LuzEscena } from './luz';
 import { pintarSombra } from './sombra';
 
@@ -82,6 +82,12 @@ function cajaDe(layout: GlassLayout): CajaVidrio {
   };
 }
 
+/** La foto, más ancha, para que el vidrio opaco coincida con la caja. */
+function cajaFoto(caja: CajaVidrio): CajaVidrio {
+  const w = caja.w * RELLENO_ANCHO;
+  return { x: caja.x + (caja.w - w) / 2, y: caja.y, w, h: caja.h };
+}
+
 function conGiro(
   ctx: CanvasRenderingContext2D,
   layout: GlassLayout,
@@ -133,7 +139,7 @@ export function pintarVidrio(
   pintarContenido: (ctx: CanvasRenderingContext2D, caja: CajaVidrio) => void,
 ): void {
   const { layout, scheme } = scene;
-  const caja = cajaDe(layout);
+  const caja = cajaFoto(cajaDe(layout));
   pintarSombra(ctx, layout, scheme, scene.sombra, scene.poseScale);
 
   const fotos = scene.atras && scene.delante;

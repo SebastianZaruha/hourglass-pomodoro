@@ -1,4 +1,4 @@
-import { FOTO_ALTO, FOTO_ANCHO, CUELLO_FILA, SEMI_ALTO, SEMI_ANCHO } from './geometria';
+import { FOTO_ALTO, FOTO_ANCHO, CUELLO_FILA, RELLENO_ANCHO, SEMI_ALTO, SEMI_ANCHO } from './geometria';
 import type { GeometriaFrasco } from './contrato';
 import type { GlassLayout } from './pintarVidrio';
 
@@ -21,7 +21,8 @@ export function golpe(
   const s = Math.sin(angulo);
   const lx = dx * c + dy * s;
   const ly = -dx * s + dy * c;
-  const fotoX = ((lx + layout.halfW) / (layout.halfW * 2)) * FOTO_ANCHO;
+  const medioAncho = layout.halfW * RELLENO_ANCHO;
+  const fotoX = ((lx + medioAncho) / (medioAncho * 2)) * FOTO_ANCHO;
   const fotoY = ((ly + layout.halfH) / (layout.halfH * 2)) * FOTO_ALTO;
   const nx = (fotoX - CENTRO_X) / SEMI_ANCHO;
   const ny = (fotoY - CUELLO_FILA) / SEMI_ALTO;

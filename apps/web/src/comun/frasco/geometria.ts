@@ -10,6 +10,11 @@ export const VENTANA_PX = { x0: 26, x1: 421, y0: 16, y1: 977 } as const;
 /** Medio ancho y medio alto de esa ventana. */
 export const SEMI_ANCHO = 197.5;
 export const SEMI_ALTO = 480.5;
+/**
+ * El archivo deja 25 px transparentes a cada lado (841 de 891).
+ * Sin esto el vidrio se ve más estrecho que el dibujado de producción.
+ */
+export const RELLENO_ANCHO = 891 / 841;
 
 const MASCARA = '/frasco/jar-mask.webp';
 const ATRAS = '/frasco/jar-back.webp';
