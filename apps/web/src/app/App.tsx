@@ -328,7 +328,7 @@ function Timer({
           onConfigure={() => avisos.setBannerOpen(true)}
         />
       ) : null}
-      {paused ? <Pausa word={t.paused} hint={t.hintPaused} /> : null}
+      {paused ? <Pausa word={t.paused} lang={lang} /> : null}
       <button
         type="button"
         id="menu-button"
