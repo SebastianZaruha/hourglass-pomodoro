@@ -28,6 +28,15 @@
   transition: transform 760ms cubic-bezier(0.45, 0.02, 0.12, 1);
 }
 
+/* Arena y Lluvia, en ancha: el borde de arriba del reloj va al bulbo. */
+.app[data-layout='wide'][data-reloj='alto'] .side {
+  align-items: flex-start;
+}
+
+.app[data-layout='wide'][data-reloj='alto'] .readout {
+  margin-top: var(--reloj-top, 0px);
+}
+
 .time {
   font-weight: 200;
   font-variant-numeric: tabular-nums;

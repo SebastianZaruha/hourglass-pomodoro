@@ -1,6 +1,8 @@
+import { arena } from '../escenas/arena';
 import { clasicoPublicado } from '../escenas/clasico';
 
+export { arena } from '../escenas/arena';
 export { barraPublicada, clasicoPublicado } from '../escenas/clasico';
 
-/** Una sola escena: el menú no tiene fila de escenas. */
-export const escenas = [clasicoPublicado] as const;
+/** Clásico, la publicada, y Arena. Con dos, el menú muestra la fila. */
+export const escenas = [clasicoPublicado, arena] as const;

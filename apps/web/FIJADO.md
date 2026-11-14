@@ -28,8 +28,8 @@ Una línea por comportamiento. Lo activo no puede empeorar en ninguna vuelta. En
 - N16 (V6) El chorro de arena sale del centro del cuello y nunca atraviesa el vidrio. **activa**
 - N17 (V6) Al cargar no se ve ningún frasco provisional de líneas o elipses. **activa**
 - N18 (V7) La arena resbala grano a grano al inclinar, sin cambiar los granos de arriba, y nunca se parte en bloques al voltear. **activa**
-- N19 (V8) Cambiar de escena no mueve ninguna caja y no deja restos: la escena nueva empieza limpia. **pendiente**
-- N20 (V8) Cada escena y modo muestra su propio fondo (el vídeo correcto). **pendiente**
+- N19 (V8) Cambiar de escena no mueve ninguna caja y no deja restos: la escena nueva empieza limpia. **activa**
+- N20 (V8) Cada escena y modo muestra su propio fondo (el vídeo correcto). **activa**
 - N21 (V9) El agua es una masa continua, horizontal en el mundo, que se mece y se calma en menos de 1 s, sin línea blanca y nunca marrón. **pendiente**
 - N22 (V10) Las gotas caen verticales en pantalla, solo en marcha y a menos de 35°. **pendiente**
 - N23 (V11) La nube nunca se mueve ni gira con el frasco: solo cambia de opacidad. Su bucle no salta. **pendiente**
