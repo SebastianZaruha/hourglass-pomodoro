@@ -45,20 +45,54 @@ const STEPS_PER_FRAME = 2;
 const MAX_CATCH_UP = 3;
 /** Escalón fino de la simulación en el móvil (`MotionProcessor`, 3°). */
 const PASO_SIM_GRADOS = 3;
-/** Montón de abajo al cargar (`arrange`, por defecto). */
-const MONTON = 0.45;
 /**
- * A partir de aquí la superficie va a nivel del mundo. Por debajo, el cráter
- * y el montón de reposo se aplanan para que al agarrar no haya un salto.
+ * El `step` del core no mueve un montón hasta unos 35°: por debajo, la
+ * superficie se queda clavada al vidrio. `arrange` con la gravedad real
+ * sí deja el montón en el lado bajo (a 15°, el centro de masa del de abajo
+ * se corre unos 15 columnas). Esta ganancia lleva el ángulo del frasco a
+ * ese escalón: 15° de ratón → unos 58° de simulación, y a 30° sigue
+ * habiendo componente hacia abajo. El chorro y el cuello usan el ángulo real.
  */
-const NIVEL_PLANO = 0.2;
+const GANANCIA_RESBALAR = 6;
+/** Por debajo de esto el frasco ya está casi derecho y el montón tiene que volver. */
+const ASENTAR_ANGULO = 0.22;
+/** Empuje hacia el centro (rad) cuando el montón se quedó ladeado. */
+const ASENTAR_EMPUJE = 0.95;
 
-/** Gravedad del mundo en el marco del frasco: de pie (0, 1), boca abajo (0, −1). */
+/** Gravedad en el marco del frasco: de pie es (0, 1). */
 function gravedadDelAngulo(angulo: number, out: MutableVec2): void {
   out.x = Math.sin(angulo);
   out.y = Math.cos(angulo);
 }
 
+/** Ángulo con el que `step` sí resbala. Se satura antes de 90°. */
+function anguloDeResbalar(angulo: number): number {
+  const tope = Math.PI / 2 - 0.02;
+  const a = Math.max(-tope, Math.min(tope, angulo));
+  return Math.atan(GANANCIA_RESBALAR * Math.tan(a));
+}
+
+/**
+ * Centro de masa horizontal, en columnas desde el eje. Positivo: más arena
+ * a la derecha. Al soltar, el montón queda en una pendiente que `step`
+ * con gravedad vertical ya no deshace; hay que empujarlo hacia el centro.
+ */
+function descentre(sim: SandSimulation): number {
+  const mid = (sim.cols - 1) / 2;
+  let n = 0;
+  let sx = 0;
+  const { cells, cols, rows, gateRow } = sim;
+  for (let row = 0; row < rows; row++) {
+    if (row === gateRow) continue;
+    const base = row * cols;
+    for (let col = 0; col < cols; col++) {
+      if (cells[base + col] === 0) continue;
+      n++;
+      sx += col - mid;
+    }
+  }
+  return n ? sx / n : 0;
+}
 const SAND_CELL_PX = 2.15;
 /** Ventana interior de la foto: 961 de alto y 395 de ancho. */
 const PERFIL: HourglassProfile = {
@@ -105,10 +139,8 @@ function crearSim(medida: MedidaLienzo, geo: GeometriaFrasco): SandSimulation {
 }
 
 /**
- * La arena publicada, en la ventana de la foto. Al inclinar, la superficie
- * se queda a nivel del mundo: el `step` del core se para en su ángulo de
- * reposo y, con la fórmula que se saturaba cerca de 90°, el montón giraba
- * rígido con el frasco. El chorro y el cuello siguen el ángulo real.
+ * La arena publicada, en la ventana de la foto. Al inclinar, cada grano
+ * resbala con la gravedad del ángulo, como el móvil con el acelerómetro.
  */
 export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): Contenido {
   let sim: SandSimulation | null = null;
@@ -138,13 +170,13 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
+  const gravedadPaso: MutableVec2 = { x: 0, y: 1 };
   const gravedadSim: MutableVec2 = { x: 0, y: 1 };
-  /** Escalón de 1° para la superficie: el ratón tiembla menos que eso y no debe hervir el borde. */
-  const gravedadNivel: MutableVec2 = { x: 0, y: 1 };
   const lod = new TiltLod();
   const presupuesto = { maxPerFrame: 8, teleportThreshold: 40, crater: TOP_CRATER };
   let simMs = 0;
   let ultimoAhora = 0;
+  let ladeado = false;
 
   void geometriaDelFrasco().then(
     (g) => {
@@ -184,9 +216,9 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       const inclinado = !turning && (e.fase === 'arrastre' || e.fase === 'volviendo');
       const angulo = inclinado ? e.angulo : 0;
       gravedadDelAngulo(angulo, gravedad);
-      quantizeDirection(gravedad, 1, gravedadNivel);
-      quantizeDirection(gravedad, PASO_SIM_GRADOS, gravedadSim);
-      const gs = turning ? gravedadSim : lod.update(e.ahora, gravedad, gravedadSim, simMs);
+      gravedadDelAngulo(inclinado ? anguloDeResbalar(angulo) : 0, gravedadPaso);
+      quantizeDirection(gravedadPaso, PASO_SIM_GRADOS, gravedadSim);
+      const gs = turning ? gravedadSim : lod.update(e.ahora, gravedadPaso, gravedadSim, simMs);
       const frameDt = ultimoAhora > 0 ? (e.ahora - ultimoAhora) / 1000 : 1 / 60;
       ultimoAhora = e.ahora;
       const ticks = lod.isActive ? 1 : Math.min(MAX_CATCH_UP, Math.max(1, Math.round(frameDt * 60 - 0.2)));
@@ -229,7 +261,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (turning) {
         // Durante el giro la arena va pegada al vidrio: no se simula.
       } else if (populated) {
-        // Solo el flujo del tiempo pasa granos por el cuello, y con el ángulo real.
+        // Solo el flujo del tiempo pasa granos por el cuello. Inclinar solo resbala.
         const syncing = snap.status !== 'idle';
         const budget = syncing ? flowBudget(runInitial, snap.durationMs, sim.totalGrains) : null;
         if (budget) {
@@ -237,27 +269,20 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
           presupuesto.teleportThreshold = budget.teleportThreshold;
         }
         const target = syncing ? targetSourceGrains(runInitial, snap.remainingMs, snap.durationMs) : 0;
+        let pasoG = gs;
+        if (inclinado && Math.abs(e.angulo) > 0.05) ladeado = true;
+        if (ladeado && e.fase !== 'arrastre' && Math.abs(angulo) < ASENTAR_ANGULO) {
+          const bias = descentre(sim);
+          if (Math.abs(bias) > 1) {
+            gravedadDelAngulo(-Math.sign(bias) * ASENTAR_EMPUJE, gravedadPaso);
+            quantizeDirection(gravedadPaso, PASO_SIM_GRADOS, gravedadSim);
+            pasoG = gravedadSim;
+          } else ladeado = false;
+        }
         const simStart = performance.now();
-        if (inclinado) {
-          for (let k = 0; k < ticks; k++) {
-            if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
-          }
-          // `step` no pasa de su ángulo de reposo: a partir de cierto giro el
-          // montón se quedaba clavado y giraba con el vidrio. Colocar los
-          // granos con la gravedad del mundo los deja a nivel en todo el
-          // rango, sin cambiar cuántos hay en cada bulbo.
-          const anguloNivel = Math.atan2(gravedadNivel.x, gravedadNivel.y);
-          const plano = Math.min(1, Math.abs(anguloNivel) / NIVEL_PLANO);
-          sim.arrange(sim.topCount, sim.bottomCount, gravedadNivel, {
-            crater: TOP_CRATER * (1 - plano),
-            mound: MONTON * (1 - plano),
-          });
-          moved = true;
-        } else {
-          for (let k = 0; k < ticks; k++) {
-            if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
-            for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(gs) > 0) moved = true;
-          }
+        for (let k = 0; k < ticks; k++) {
+          if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
+          for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(pasoG) > 0) moved = true;
         }
         simMs = performance.now() - simStart;
       }
@@ -305,6 +330,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (motivo === 'fase') {
         sim.rotateHalfTurn();
         lod.reset();
+        ladeado = false;
         runInitial = sim.topCount;
         dirty = true;
         particles.reset(7);
@@ -322,6 +348,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       }
       sim.rotateHalfTurn();
       lod.reset();
+      ladeado = false;
       runInitial = sim.topCount;
       idleKey = String(snap.durationMs);
       populated = true;
