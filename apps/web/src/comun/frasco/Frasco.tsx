@@ -50,6 +50,7 @@ export function Frasco({
   wakeRef,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const paintRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef<GlassLayout | null>(null);
   const geoRef = useRef<GeometriaFrasco | null>(null);
   const crearRef = useRef(crearContenido);
@@ -68,6 +69,8 @@ export function Frasco({
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d', { alpha: true });
+    const paint = paintRef.current;
+    const paintCtx = paint?.getContext('2d', { alpha: true }) ?? null;
     if (!canvas || !ctx) return;
     const contenido = crearRef.current(
       { ancho: Math.max(280, canvas.clientWidth || 480), alto: Math.max(360, canvas.clientHeight || 640) },
@@ -153,33 +156,69 @@ export function Frasco({
       const schemeAhora = schemeRef.current;
       const pose = giro.poseIntro();
       const poseScale = pose.activa ? escalaDeIntro(pose.escala, layout, pose.angulo, cssW, cssH) : 1;
-      ctx.clearRect(0, 0, cssW, cssH);
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
       const esquema = ESQUEMA[schemeAhora];
-      pintarVidrio(
-        ctx,
-        {
-          layout,
-          scheme: schemeAhora,
-          rotation: est.angulo,
-          poseScale,
-          sombra: cantidadSombra(est.angulo) * (pose.activa ? pose.sombra : 1),
-          atras: loop.fotos?.atras ?? null,
-          delante: loop.fotos?.delante ?? null,
-          geo: loop.geo,
-          silueta: loop.fotos === null && (loop.fallo || now - loop.empezado >= ESPERA_FOTOS),
-          luz: SIN_LUZ,
-        },
-        (context, caja) => {
+      const escena = {
+        layout,
+        scheme: schemeAhora,
+        rotation: est.angulo,
+        poseScale,
+        sombra: cantidadSombra(est.angulo) * (pose.activa ? pose.sombra : 1),
+        atras: loop.fotos?.atras ?? null,
+        delante: loop.fotos?.delante ?? null,
+        geo: loop.geo,
+        silueta: loop.fotos === null && (loop.fallo || now - loop.empezado >= ESPERA_FOTOS),
+        luz: SIN_LUZ,
+      };
+      const pintarEn = (context: CanvasRenderingContext2D) => {
+        context.lineJoin = 'round';
+        context.lineCap = 'round';
+        pintarVidrio(context, escena, (context, caja) => {
           contenido.pintar(context, {
             caja,
             angulo: est.angulo,
             esquema,
             geo: loop.geo ?? geoVacia(),
           });
-        },
-      );
+        });
+      };
+      // La intro ya encoge el frasco para la columna. Fuera de ella, el
+      // bitmap de la columna recortaba el giro: se pinta en un lienzo del
+      // tamaño de la ventana, con el mismo centro y el mismo tamaño.
+      if (!pose.activa && paint && paintCtx) {
+        const vista = window.innerWidth;
+        const altoVista = window.innerHeight;
+        if (paint.style.width !== `${vista}px`) paint.style.width = `${vista}px`;
+        if (paint.style.height !== `${altoVista}px`) paint.style.height = `${altoVista}px`;
+        const cajaHit = canvas.getBoundingClientRect();
+        const cajaPaint = paint.getBoundingClientRect();
+        if (cajaPaint.width < vista * 0.9 || cajaPaint.height < altoVista * 0.9) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, cssW, cssH);
+          pintarEn(ctx);
+        } else {
+          const pw = Math.max(1, Math.round(cajaPaint.width * dpr));
+          const ph = Math.max(1, Math.round(cajaPaint.height * dpr));
+          if (paint.width !== pw || paint.height !== ph) {
+            paint.width = pw;
+            paint.height = ph;
+          }
+          const ox = cajaHit.left - cajaPaint.left;
+          const oy = cajaHit.top - cajaPaint.top;
+          paintCtx.setTransform(dpr, 0, 0, dpr, ox * dpr, oy * dpr);
+          paintCtx.clearRect(-ox, -oy, cajaPaint.width, cajaPaint.height);
+          pintarEn(paintCtx);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, cssW, cssH);
+        }
+      } else {
+        if (paintCtx && paint) {
+          paintCtx.setTransform(1, 0, 0, 1, 0, 0);
+          paintCtx.clearRect(0, 0, paint.width, paint.height);
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cssW, cssH);
+        pintarEn(ctx);
+      }
 
       const keep =
         snap.status === 'running' ||
@@ -217,6 +256,7 @@ export function Frasco({
 
   return (
     <div className="glass-frame">
+      <canvas ref={paintRef} className="glass-paint" aria-hidden="true" />
       <canvas
         ref={canvasRef}
         className="glass-canvas"

@@ -14,3 +14,16 @@
   border: 0;
   outline: none;
 }
+
+/* El frasco girado se pinta aquí, hasta el borde de la ventana.
+   El otro lienzo solo recibe el clic, en la columna de siempre. */
+.glass-paint {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 1;
+}
