@@ -58,6 +58,40 @@ const GANANCIA_RESBALAR = 6;
 const ASENTAR_ANGULO = 0.22;
 /** Empuje hacia el centro (rad) cuando el montón se quedó ladeado. */
 const ASENTAR_EMPUJE = 0.95;
+/** Fundido del reinicio, cuando el giro de 180° ya ha terminado. */
+const FUNDIDO_MS = 700;
+
+/** cubic-bezier(0.4, 0, 0.2, 1). t y el resultado van de 0 a 1. */
+function bezierFundido(t: number): number {
+  const x1 = 0.4;
+  const y1 = 0;
+  const x2 = 0.2;
+  const y2 = 1;
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+  let u = t;
+  for (let i = 0; i < 5; i++) {
+    const x = ((ax * u + bx) * u + cx) * u - t;
+    const dx = (3 * ax * u + 2 * bx) * u + cx;
+    if (Math.abs(dx) < 1e-6) break;
+    u = Math.min(1, Math.max(0, u - x / dx));
+  }
+  return ((ay * u + by) * u + cy) * u;
+}
+
+function copiarLienzo(src: HTMLCanvasElement): HTMLCanvasElement | null {
+  const copia = document.createElement('canvas');
+  copia.width = src.width;
+  copia.height = src.height;
+  const ctx = copia.getContext('2d');
+  if (!ctx) return null;
+  ctx.drawImage(src, 0, 0);
+  return copia;
+}
 
 /** Gravedad en el marco del frasco: de pie es (0, 1). */
 function gravedadDelAngulo(angulo: number, out: MutableVec2): void {
@@ -167,6 +201,8 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
   let runInitial = 0;
   let turns: number | null = null;
   let flipHold = false;
+  let reducirUltimo = false;
+  let fundido: { desde: number; queda: number; viejo: HTMLCanvasElement } | null = null;
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
@@ -208,6 +244,22 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (muerto || fallo) return false;
       if (!sim || !particles) return true;
       const snap = e.snap;
+      reducirUltimo = e.reducir;
+      if (fundido) {
+        const key = String(snap.durationMs);
+        if (snap.status !== 'idle' || idleKey !== key) fundido = null;
+        else {
+          if (fundido.desde === 0) fundido.desde = e.ahora;
+          const t = Math.min(1, Math.max(0, (e.ahora - fundido.desde) / FUNDIDO_MS));
+          fundido.queda = 1 - bezierFundido(t);
+          if (t >= 1) fundido = null;
+          else {
+            mode = snap.status;
+            ultimoAhora = e.ahora;
+            return true;
+          }
+        }
+      }
       const turning = e.fase === 'volteo';
       // El ángulo del volteo y el de la intro no son una inclinación: el
       // frasco gira entero y la arena va pegada. Solo el arrastre y la
@@ -323,6 +375,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         particles,
         lut,
         geo,
+        fundido: fundido ?? undefined,
       });
     },
     alVoltear(motivo: 'reinicio' | 'fase', snap: SessionSnapshot): void {
@@ -338,24 +391,28 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         return;
       }
       if (!flipHold) {
-        const level = nivel(sim, snap.durationMs);
-        sim.arrange(Math.max(0, sim.totalGrains - level), level, GRAVITY_DOWN, { crater: TOP_CRATER });
+        // El giro sigue con la arena pegada al vidrio. El fundido espera a que termine.
         flipHold = true;
-        dirty = true;
         particles.reset(7);
-        subir();
         return;
       }
       sim.rotateHalfTurn();
       lod.reset();
       ladeado = false;
-      runInitial = sim.topCount;
+      dirty = true;
+      subir();
+      const level = nivel(sim, snap.durationMs);
+      const viejo = !reducirUltimo && sandCanvas ? copiarLienzo(sandCanvas) : null;
+      sim.arrange(level, Math.max(0, sim.totalGrains - level), GRAVITY_DOWN, { crater: TOP_CRATER });
+      runInitial = level;
       idleKey = String(snap.durationMs);
+      mode = 'idle';
       populated = true;
       flipHold = false;
       dirty = true;
       particles.reset(3);
       subir();
+      fundido = viejo ? { desde: 0, queda: 1, viejo } : null;
     },
     destruir(): void {
       muerto = true;
