@@ -10,6 +10,7 @@ import {
 } from '@reloj/core';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
 import { useGiro } from '../comun/giro';
 import { SettingsSheet } from '../comun/menu';
 import { AndroidPromo } from '../comun/paneles/android';
@@ -27,9 +28,28 @@ import {
   useSettings,
   type SettingsPatch,
 } from '../comun/tiempo';
-import { barraPublicada, escenas } from './registro';
 import { useAvisos } from './useAvisos';
 import { useEntrada } from './useEntrada';
+import { escenas } from './registro';
+
+const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
+const CLAVE_ESCENA = 'hourglass-web/escena';
+
+function escenaInicial() {
+  let id: string | null = null;
+  try {
+    id = localStorage.getItem(CLAVE_ESCENA);
+  } catch {
+    id = null;
+  }
+  const hallada = escenas.find((item) => item.id === id);
+  if (hallada) return hallada;
+  const lluvia = escenas.find((item) => item.id === 'lluvia');
+  if (lluvia) return lluvia;
+  const primera = escenas[0];
+  if (primera) return primera;
+  throw new Error('El registro no tiene escenas.');
+}
 
 function allowAnalyticsEvent<E>(event: E): E {
   return event;
@@ -100,7 +120,8 @@ function Timer({
   const scheme = resolveScheme(settings.theme, systemDark);
   const lang = resolveLanguage(settings.language, navigator.language);
   const t = messagesFor(settings.language, navigator.language);
-  const escena = escenas[0];
+  const [escena, setEscena] = useState(escenaInicial);
+  const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, tick, view, state } = session;
@@ -120,8 +141,8 @@ function Timer({
     document.documentElement.lang = lang;
     document.documentElement.style.colorScheme = scheme;
     const theme = document.querySelector('meta[name="theme-color"]');
-    theme?.setAttribute('content', barraPublicada(scheme));
-  }, [lang, scheme]);
+    theme?.setAttribute('content', aspecto.barra);
+  }, [aspecto.barra, lang, scheme]);
 
   useEffect(() => {
     wake();
@@ -147,6 +168,7 @@ function Timer({
   const intro = usePageIntro(appRef, giro);
   const avisos = useAvisos({ menu, introLista: intro.settled });
   const stageRef = useRef<HTMLDivElement>(null);
+  const caja = useCajaFrasco(stageRef);
   const entrada = useEntrada({
     menu,
     setMenu,
@@ -191,6 +213,30 @@ function Timer({
     wake();
   }, [giro, wake]);
 
+  const alElegirEscena = useCallback((id: string) => {
+    const siguiente = escenas.find((item) => item.id === id);
+    if (!siguiente) return;
+    setEscena(siguiente);
+    try {
+      localStorage.setItem(CLAVE_ESCENA, siguiente.id);
+    } catch {
+      /* el navegador no guarda */
+    }
+  }, []);
+
+  useEffect(() => {
+    const propias = new Set(direccionesDePrecarga(aspecto));
+    const urls = [
+      ...new Set(
+        escenas
+          .flatMap((item) => [item.claro, item.oscuro])
+          .flatMap((item) => [...direccionesDePrecarga(item)])
+          .filter((url) => !propias.has(url)),
+      ),
+    ];
+    precargarFondos(urls);
+  }, [aspecto]);
+
   const sideRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const app = appRef.current;
@@ -204,6 +250,11 @@ function Timer({
       const sheet = app.querySelector('.sheet');
       const readout = side.querySelector('.readout');
       const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
+      const relojArriba = wide && escena.relojAlto ? caja : null;
+      if (relojArriba) {
+        const top = relojArriba.y + relojArriba.h * 0.06 - sideRect.top;
+        app.style.setProperty('--reloj-top', `${Math.round(top)}px`);
+      } else app.style.removeProperty('--reloj-top');
       if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
         app.style.setProperty('--clock-lift', '0px');
         app.style.removeProperty('--menu-pad');
@@ -220,11 +271,12 @@ function Timer({
       const readH = readout.getBoundingClientRect().height;
       const sideH = sideRect.height;
       const sheetInset = rem * 0.75;
-      const clockBottom = (sideH + readH) / 2;
+      const descanso = relojArriba ? relojArriba.y + relojArriba.h * 0.06 - sideRect.top : 0;
+      const clockBottom = relojArriba ? descanso + readH : (sideH + readH) / 2;
       const sheetTop = sideH - sheetInset - sheetH;
       const centeringLift = (sheetH + sheetInset) / 2;
       const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
-      const maxLift = Math.max(0, (sideH - readH) / 2 - rem * 0.5);
+      const maxLift = relojArriba ? Math.max(0, descanso) : Math.max(0, (sideH - readH) / 2 - rem * 0.5);
       const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift));
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
@@ -238,7 +290,7 @@ function Timer({
       observed.disconnect();
       window.removeEventListener('resize', apply);
     };
-  }, [menu, wide, settings]);
+  }, [caja, escena.relojAlto, menu, wide, settings]);
 
   const label = useMemo(() => {
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
@@ -269,9 +321,17 @@ function Timer({
       className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${vuelvePausa ? ' pausa-vuelve' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
+      data-reloj={escena.relojAlto ? 'alto' : 'centro'}
+      style={{
+        ['--time' as string]: aspecto.reloj.digitos,
+        ['--hint' as string]: aspecto.reloj.pista,
+        ['--footer' as string]: aspecto.tinta,
+        ['--menu' as string]: aspecto.tinta,
+      }}
     >
       {avisos.consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
+        <Fondo aspecto={aspecto} caja={caja} reducir={reduceMotion} angosta={!wide} />
         <div
           ref={stageRef}
           className="stage"
@@ -286,6 +346,8 @@ function Timer({
         >
           <Frasco
             crearContenido={escena.crearContenido}
+            generacion={escena.id}
+            luz={aspecto.luz}
             scheme={scheme}
             reducir={reduceMotion}
             getSnapshot={getSnapshot}
@@ -363,7 +425,7 @@ function Timer({
         escenas={escenas}
         escenaId={escena.id}
         idioma={lang}
-        onEscena={() => undefined}
+        onEscena={alElegirEscena}
         alReiniciar={alReiniciar}
         onChange={update}
         onClose={() => setMenu(false)}

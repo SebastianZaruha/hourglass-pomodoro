@@ -5,12 +5,12 @@ import type { MaquinaGiro } from '../giro';
 import type { Contenido, GeometriaFrasco, MedidaLienzo } from './contrato';
 import { fotosDelFrasco, geometriaDelFrasco, type FotosFrasco } from './geometria';
 import { golpe } from './golpe';
+import type { LuzEscena } from './luz';
 import { escalaDeIntro, layoutFor, pintarVidrio, type GlassLayout, type Scheme } from './pintarVidrio';
 import { cantidadSombra } from './sombra';
 
 const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
 const ESPERA_FOTOS = 2500;
-const SIN_LUZ = { direccion: 0, tinte: '#000000', fuerza: 0 } as const;
 
 function geoVacia(): GeometriaFrasco {
   const mascara = document.createElement('canvas');
@@ -28,6 +28,9 @@ function geoVacia(): GeometriaFrasco {
 
 interface Props {
   readonly crearContenido: (medida: MedidaLienzo, esquema: 'claro' | 'oscuro') => Contenido;
+  /** Cambia al pasar de escena: se suelta el contenido y se crea otro. */
+  readonly generacion: string;
+  readonly luz: LuzEscena;
   readonly scheme: Scheme;
   readonly reducir: boolean;
   readonly getSnapshot: () => SessionSnapshot;
@@ -40,6 +43,8 @@ interface Props {
 
 export function Frasco({
   crearContenido,
+  generacion,
+  luz,
   scheme,
   reducir,
   getSnapshot,
@@ -55,12 +60,14 @@ export function Frasco({
   const geoRef = useRef<GeometriaFrasco | null>(null);
   const crearRef = useRef(crearContenido);
   const schemeRef = useRef(scheme);
+  const luzRef = useRef(luz);
   const reducirRef = useRef(reducir);
   const snapRef = useRef(getSnapshot);
   const introRef = useRef(introPaso);
   const reinicioRef = useRef(onReinicio);
   crearRef.current = crearContenido;
   schemeRef.current = scheme;
+  luzRef.current = luz;
   reducirRef.current = reducir;
   snapRef.current = getSnapshot;
   introRef.current = introPaso;
@@ -167,7 +174,7 @@ export function Frasco({
         delante: loop.fotos?.delante ?? null,
         geo: loop.geo,
         silueta: loop.fotos === null && (loop.fallo || now - loop.empezado >= ESPERA_FOTOS),
-        luz: SIN_LUZ,
+        luz: luzRef.current,
       };
       const pintarEn = (context: CanvasRenderingContext2D) => {
         context.lineJoin = 'round';
@@ -247,7 +254,7 @@ export function Frasco({
       if (wakeRef.current === wake) wakeRef.current = null;
       contenido.destruir();
     };
-  }, [giro, wakeRef]);
+  }, [generacion, giro, wakeRef]);
 
   const localPoint = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
