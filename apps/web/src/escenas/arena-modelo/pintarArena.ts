@@ -1,6 +1,6 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
-import type { Scheme } from '../../comun/frasco';
+import type { GeometriaFrasco, Scheme } from '../../comun/frasco';
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
@@ -73,44 +73,75 @@ export interface ArenaPintada {
   readonly sim: SandSimulation;
   readonly particles: StreamParticles;
   readonly lut: Uint8ClampedArray;
+  readonly geo: GeometriaFrasco;
 }
 
-/** Rejilla, ruido y chorro. El contexto ya está girado y recortado al vidrio. */
+let hoja: HTMLCanvasElement | null = null;
+
+/**
+ * Rejilla, ruido y chorro en la ventana interior, recortados con la máscara.
+ * El contexto ya está girado con el frasco: la hoja se pega en ese marco.
+ */
 export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada): void {
-  const { caja } = scene;
-  const left = caja.x;
-  const top = caja.y;
-  const width = caja.w;
-  const height = caja.h;
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(scene.sand, left, top, width, height);
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.globalAlpha = RUIDO[scene.scheme];
-  const pattern = ctx.createPattern(scene.noise, 'repeat');
-  if (pattern) {
-    ctx.fillStyle = pattern;
-    ctx.fillRect(left, top, width, height);
+  const { caja, geo } = scene;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const pxW = Math.max(1, Math.round(caja.w * dpr));
+  const pxH = Math.max(1, Math.round(caja.h * dpr));
+  if (!hoja || hoja.width !== pxW || hoja.height !== pxH) {
+    hoja = document.createElement('canvas');
+    hoja.width = pxW;
+    hoja.height = pxH;
   }
-  ctx.restore();
+  const g = hoja.getContext('2d');
+  if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, caja.w, caja.h);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'source-over';
 
-  const cellW = width / scene.sim.cols;
-  const cellH = height / scene.sim.rows;
+  const vx = geo.ventana.x0 * caja.w;
+  const vy = geo.ventana.y0 * caja.h;
+  const vw = (geo.ventana.x1 - geo.ventana.x0) * caja.w;
+  const vh = (geo.ventana.y1 - geo.ventana.y0) * caja.h;
+
+  g.imageSmoothingEnabled = false;
+  g.drawImage(scene.sand, vx, vy, vw, vh);
+
+  g.save();
+  g.globalCompositeOperation = 'source-atop';
+  g.globalAlpha = RUIDO[scene.scheme];
+  const pattern = g.createPattern(scene.noise, 'repeat');
+  if (pattern) {
+    g.fillStyle = pattern;
+    g.fillRect(vx, vy, vw, vh);
+  }
+  g.restore();
+
+  const cellW = vw / scene.sim.cols;
+  const cellH = vh / scene.sim.rows;
   const count = scene.particles.count;
-  ctx.imageSmoothingEnabled = true;
+  g.imageSmoothingEnabled = true;
   for (let i = 0; i < count; i++) {
     const px = scene.particles.x[i] ?? 0;
     const py = scene.particles.y[i] ?? 0;
     const size = scene.particles.size[i] ?? 0.3;
     const tone = scene.particles.tone[i] ?? 1;
-    const x = left + (px / scene.sim.cols) * width;
-    const y = top + (py / scene.sim.rows) * height;
+    const x = vx + (px / scene.sim.cols) * vw;
+    const y = vy + (py / scene.sim.rows) * vh;
     const radius = Math.max(0.6, size * cellW * 1.15);
     const l = tone * 3;
-    ctx.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
-    ctx.beginPath();
-    ctx.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
-    ctx.fill();
+    g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
+    g.beginPath();
+    g.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
+    g.fill();
   }
+
+  g.globalCompositeOperation = 'destination-in';
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(geo.mascara, 0, 0, caja.w, caja.h);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(hoja, caja.x, caja.y, caja.w, caja.h);
 }
