@@ -9,14 +9,8 @@ export type {
   Pintura,
 } from './contrato';
 export { Frasco } from './Frasco';
+export { fotosDelFrasco, geometriaDelFrasco } from './geometria';
+export { golpe } from './golpe';
 export { usePageIntro } from './intro';
-export {
-  escalaDeIntro,
-  hitVessel,
-  layoutFor,
-  pintarVidrio,
-  type GlassLayout,
-  type Scheme,
-  type VidrioDibujado,
-} from './pintarVidrio';
+export { escalaDeIntro, layoutFor, pintarVidrio, type GlassLayout, type Scheme } from './pintarVidrio';
 export { cantidadSombra, pintarSombra } from './sombra';

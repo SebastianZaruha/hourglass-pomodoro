@@ -1,33 +1,18 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
-import { CLASSIC_MODEL, type SessionSnapshot } from '@reloj/core';
+import type { SessionSnapshot } from '@reloj/core';
 
 import type { MaquinaGiro } from '../giro';
 import type { Contenido, GeometriaFrasco, MedidaLienzo } from './contrato';
-import {
-  escalaDeIntro,
-  hitVessel,
-  layoutFor,
-  pintarVidrio,
-  type GlassLayout,
-  type Scheme,
-} from './pintarVidrio';
-import { cantidadSombra, pintarSombra } from './sombra';
+import { fotosDelFrasco, geometriaDelFrasco, type FotosFrasco } from './geometria';
+import { golpe } from './golpe';
+import { escalaDeIntro, layoutFor, pintarVidrio, type GlassLayout, type Scheme } from './pintarVidrio';
+import { cantidadSombra } from './sombra';
 
 const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
+const ESPERA_FOTOS = 2500;
+const SIN_LUZ = { direccion: 0, tinte: '#000000', fuerza: 0 } as const;
 
-interface Props {
-  readonly crearContenido: (medida: MedidaLienzo, esquema: 'claro' | 'oscuro') => Contenido;
-  readonly scheme: Scheme;
-  readonly reducir: boolean;
-  readonly getSnapshot: () => SessionSnapshot;
-  readonly giro: MaquinaGiro;
-  readonly introPaso: (now: number) => boolean;
-  readonly onReinicio: () => void;
-  readonly suppressClickRef: RefObject<boolean>;
-  readonly wakeRef: RefObject<(() => void) | null>;
-}
-
-function geometriaVacia(): GeometriaFrasco {
+function geoVacia(): GeometriaFrasco {
   const mascara = document.createElement('canvas');
   mascara.width = 1;
   mascara.height = 1;
@@ -39,6 +24,18 @@ function geometriaVacia(): GeometriaFrasco {
     puntos: { arriba: new Float32Array(0), abajo: new Float32Array(0) },
     cuelloY: 0.5,
   };
+}
+
+interface Props {
+  readonly crearContenido: (medida: MedidaLienzo, esquema: 'claro' | 'oscuro') => Contenido;
+  readonly scheme: Scheme;
+  readonly reducir: boolean;
+  readonly getSnapshot: () => SessionSnapshot;
+  readonly giro: MaquinaGiro;
+  readonly introPaso: (now: number) => boolean;
+  readonly onReinicio: () => void;
+  readonly suppressClickRef: RefObject<boolean>;
+  readonly wakeRef: RefObject<(() => void) | null>;
 }
 
 export function Frasco({
@@ -54,6 +51,7 @@ export function Frasco({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef<GlassLayout | null>(null);
+  const geoRef = useRef<GeometriaFrasco | null>(null);
   const crearRef = useRef(crearContenido);
   const schemeRef = useRef(scheme);
   const reducirRef = useRef(reducir);
@@ -71,8 +69,6 @@ export function Frasco({
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d', { alpha: true });
     if (!canvas || !ctx) return;
-    const profile = CLASSIC_MODEL.profile;
-    const geo = geometriaVacia();
     const contenido = crearRef.current(
       { ancho: Math.max(280, canvas.clientWidth || 480), alto: Math.max(360, canvas.clientHeight || 640) },
       ESQUEMA[schemeRef.current],
@@ -83,11 +79,36 @@ export function Frasco({
       last: 0,
       turns: null as number | null,
       populated: false,
+      fotos: null as FotosFrasco | null,
+      geo: null as GeometriaFrasco | null,
+      fallo: false,
+      empezado: performance.now(),
     };
+    void fotosDelFrasco().then(
+      (fotos) => {
+        if (!loop.alive) return;
+        loop.fotos = fotos;
+        loop.geo = fotos.geo;
+        geoRef.current = fotos.geo;
+        wake();
+      },
+      () => {
+        if (!loop.alive) return;
+        loop.fallo = true;
+        wake();
+      },
+    );
+    void geometriaDelFrasco().then((geo) => {
+      if (!loop.alive) return;
+      loop.geo = geo;
+      geoRef.current = geo;
+      wake();
+    });
 
     const frame = (now: number) => {
       if (!loop.alive) return;
-      const introSigue = introRef.current(now);
+      const fotosListas = loop.fotos !== null || loop.fallo || now - loop.empezado >= ESPERA_FOTOS;
+      const introSigue = fotosListas ? introRef.current(now) : true;
       const cssW = canvas.clientWidth;
       const cssH = canvas.clientHeight;
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -98,7 +119,7 @@ export function Frasco({
         canvas.height = pxH;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const layout = layoutFor(cssW, cssH, profile);
+      const layout = layoutFor(cssW, cssH);
       layoutRef.current = layout;
       const reducirAhora = reducirRef.current;
       const snap = snapRef.current();
@@ -135,24 +156,28 @@ export function Frasco({
       ctx.clearRect(0, 0, cssW, cssH);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      pintarSombra(
-        ctx,
-        layout,
-        schemeAhora,
-        cantidadSombra(est.angulo) * (pose.activa ? pose.sombra : 1),
-        poseScale,
-      );
-      const caja = {
-        x: layout.cx - layout.halfW,
-        y: layout.cy - layout.halfH,
-        w: layout.halfW * 2,
-        h: layout.halfH * 2,
-      };
+      const esquema = ESQUEMA[schemeAhora];
       pintarVidrio(
         ctx,
-        { profile, layout, scheme: schemeAhora, rotation: est.angulo, poseScale },
-        (context) => {
-          contenido.pintar(context, { caja, angulo: est.angulo, esquema: ESQUEMA[schemeAhora], geo });
+        {
+          layout,
+          scheme: schemeAhora,
+          rotation: est.angulo,
+          poseScale,
+          sombra: cantidadSombra(est.angulo) * (pose.activa ? pose.sombra : 1),
+          atras: loop.fotos?.atras ?? null,
+          delante: loop.fotos?.delante ?? null,
+          geo: loop.geo,
+          silueta: loop.fotos === null && (loop.fallo || now - loop.empezado >= ESPERA_FOTOS),
+          luz: SIN_LUZ,
+        },
+        (context, caja) => {
+          contenido.pintar(context, {
+            caja,
+            angulo: est.angulo,
+            esquema,
+            geo: loop.geo ?? geoVacia(),
+          });
         },
       );
 
@@ -201,7 +226,8 @@ export function Frasco({
           const layout = layoutRef.current;
           if (!layout) return;
           const p = localPoint(e);
-          if (!hitVessel(layout, p.x, p.y)) return;
+          const geo = geoRef.current;
+          if (!geo || !golpe(layout, geo, p.x, p.y, giro.estado().angulo)) return;
           const ang = Math.atan2(p.y - layout.cy, p.x - layout.cx);
           giro.ordenar({ tipo: 'agarrar', anguloPuntero: ang });
           e.currentTarget.setPointerCapture(e.pointerId);

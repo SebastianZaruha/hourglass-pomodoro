@@ -178,8 +178,6 @@ export function usePageIntro(
       return pasoRef.current(now);
     };
 
-    pasoRef.current(performance.now());
-
     return () => {
       alive = false;
       pasoRef.current = () => false;
