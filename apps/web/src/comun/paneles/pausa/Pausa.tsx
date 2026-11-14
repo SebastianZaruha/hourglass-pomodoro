@@ -8,12 +8,12 @@ interface Props {
 
 const PISTA = {
   es: {
-    raton: 'clic para seguir · doble clic para reiniciar',
-    tactil: 'toca para seguir · doble toque para reiniciar',
+    raton: 'clic para seguir',
+    tactil: 'toca para seguir',
   },
   en: {
-    raton: 'click to resume · double-click to restart',
-    tactil: 'tap to resume · double-tap to restart',
+    raton: 'click to resume',
+    tactil: 'tap to resume',
   },
 } as const;
 
