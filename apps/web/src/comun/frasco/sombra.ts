@@ -28,13 +28,21 @@ const BRILLO: Record<Scheme, string> = {
   dark: 'rgba(255, 220, 170, 0.12)',
 };
 
-/** Sombra quieta en el suelo. Se apaga mientras el vidrio gira y vuelve al reposo. */
+/**
+ * Sombra quieta en el suelo. Se apaga mientras el vidrio gira y vuelve al reposo.
+ * `escalaAncho` encoge solo el ancho, en la misma proporción que la foto.
+ * `baseOpaca` es la base del vidrio que se ve. El centro de la sombra
+ * de contacto queda 2 px por dentro de esa base, y el borde que se ve
+ * nace en el vidrio.
+ */
 export function pintarSombra(
   ctx: CanvasRenderingContext2D,
   layout: GlassLayout,
   scheme: Scheme,
   amount: number,
   poseScale: number,
+  escalaAncho: number,
+  baseOpaca: number,
 ) {
   const { cx, cy } = layout;
   if (poseScale !== 1) {
@@ -44,21 +52,24 @@ export function pintarSombra(
     ctx.translate(-cx, -cy);
   }
   if (amount >= 0.004) {
-    const { halfW, halfH } = layout;
-    const baseY = cy + halfH * 0.985;
-    const shift = halfW * 0.16;
+    const { halfW } = layout;
+    const ancho = halfW * escalaAncho;
+    const shift = ancho * 0.16;
+    // El centro de la sombra de contacto queda 2 px por dentro de la base,
+    // así el borde que se ve nace en el vidrio y el frasco no levita.
+    const baseY = baseOpaca - 2 - halfW * 0.01;
     ctx.save();
     ctx.globalAlpha = amount;
     ctx.filter = 'blur(22px)';
     ctx.fillStyle = LEJOS[scheme];
-    oval(ctx, cx + shift, baseY, halfW * 0.92, halfW * 0.15);
+    oval(ctx, cx + shift, baseY, ancho * 0.92, halfW * 0.15);
     ctx.filter = 'blur(5px)';
     ctx.fillStyle = CERCA[scheme];
-    oval(ctx, cx + shift * 0.25, baseY + halfW * 0.01, halfW * 0.34, halfW * 0.04);
+    oval(ctx, cx + shift * 0.25, baseY + halfW * 0.01, ancho * 0.34, halfW * 0.04);
     ctx.filter = 'blur(9px)';
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = BRILLO[scheme];
-    oval(ctx, cx + halfW * 0.38, baseY, halfW * 0.3, halfW * 0.055);
+    oval(ctx, cx + ancho * 0.38, baseY, ancho * 0.3, halfW * 0.055);
     ctx.restore();
   }
   if (poseScale !== 1) ctx.restore();

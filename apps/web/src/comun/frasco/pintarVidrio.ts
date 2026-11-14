@@ -82,10 +82,29 @@ function cajaDe(layout: GlassLayout): CajaVidrio {
   };
 }
 
-/** La foto, más ancha, para que el vidrio opaco coincida con la caja. */
+/**
+ * La foto se encoge, con el centro quieto, para que la base se apoye
+ * en la sombra. Alrededor de un 1 %: el valor es el que se ve apoyado.
+ */
+const ESCALA_FOTO = 0.99;
+
+/**
+ * Borde de abajo del vidrio que se ve, en la foto de 2048.
+ * El archivo sigue transparente por debajo; ese margen no es la base.
+ */
+const BASE_OPACA = 2013 / 2048;
+
+/** La foto, más ancha, para que el vidrio opaco coincida con la caja, y un poco más baja de escala. */
 function cajaFoto(caja: CajaVidrio): CajaVidrio {
-  const w = caja.w * RELLENO_ANCHO;
-  return { x: caja.x + (caja.w - w) / 2, y: caja.y, w, h: caja.h };
+  const cx = caja.x + caja.w / 2;
+  const cy = caja.y + caja.h / 2;
+  const w = caja.w * RELLENO_ANCHO * ESCALA_FOTO;
+  const h = caja.h * ESCALA_FOTO;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+function yBaseOpaca(caja: CajaVidrio): number {
+  return caja.y + caja.h * BASE_OPACA;
 }
 
 function conGiro(
@@ -140,7 +159,7 @@ export function pintarVidrio(
 ): void {
   const { layout, scheme } = scene;
   const caja = cajaFoto(cajaDe(layout));
-  pintarSombra(ctx, layout, scheme, scene.sombra, scene.poseScale);
+  pintarSombra(ctx, layout, scheme, scene.sombra, scene.poseScale, ESCALA_FOTO, yBaseOpaca(caja));
 
   const fotos = scene.atras && scene.delante;
   if (!fotos && !(scene.silueta && scene.geo)) return;
