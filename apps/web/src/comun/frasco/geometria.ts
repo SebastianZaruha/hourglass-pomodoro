@@ -58,6 +58,7 @@ function mascaraAlfa(img: HTMLImageElement): HTMLCanvasElement {
   if (!ctx) return lienzo;
   const foto = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
   const data = foto.data;
+  cuelloEnPunta(data, lienzo.width, lienzo.height);
   for (let i = 0; i < data.length; i += 4) {
     const dentro = luminancia(data, i) > 127;
     data[i] = 255;
@@ -67,6 +68,118 @@ function mascaraAlfa(img: HTMLImageElement): HTMLCanvasElement {
   }
   ctx.putImageData(foto, 0, 0);
   return lienzo;
+}
+
+function hermite(t: number, p0: number, m0: number, p1: number, m1: number): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * p0 + (t3 - 2 * t2 + t) * m0 + (-2 * t3 + 3 * t2) * p1 + (t3 - t2) * m1;
+}
+
+/**
+ * El canal del cuello es un rectángulo. La arena, recortada con él, acaba
+ * en un escalón. Aquí el hueco sigue la curva del cristal hasta una punta,
+ * por la que sale el chorro. El radio de la rejilla sale de la misma forma.
+ */
+function cuelloEnPunta(data: Uint8ClampedArray, ancho: number, alto: number): void {
+  const izquierda = new Int16Array(alto);
+  const derecha = new Int16Array(alto);
+  izquierda.fill(-1);
+  derecha.fill(-1);
+  for (let y = 0; y < alto; y++) {
+    const fila = y * ancho;
+    let i = -1;
+    let d = -1;
+    for (let x = 0; x < ancho; x++) {
+      if (luminancia(data, (fila + x) * 4) <= 127) continue;
+      if (i < 0) i = x;
+      d = x;
+    }
+    izquierda[y] = i;
+    derecha[y] = d;
+  }
+  const anchoEn = (y: number): number => {
+    const i = izquierda[y] ?? -1;
+    const d = derecha[y] ?? -1;
+    return i < 0 || d < 0 ? 0 : d - i + 1;
+  };
+  const centro = alto / 2;
+  const margen = alto * 0.1;
+  let mejorDesde = -1;
+  let mejorHasta = -1;
+  let y = 0;
+  while (y < alto) {
+    const w = anchoEn(y);
+    if (w < 4 || Math.abs(y - centro) > margen) {
+      y++;
+      continue;
+    }
+    const desde = y;
+    const base = w;
+    while (y < alto && Math.abs(anchoEn(y) - base) <= 2) y++;
+    if (y - desde >= alto * 0.02 && y - desde > mejorHasta - mejorDesde) {
+      mejorDesde = desde;
+      mejorHasta = y;
+    }
+  }
+  if (mejorDesde < 0) return;
+  let desde = mejorDesde;
+  let hasta = mejorHasta;
+  while (desde > 0 && anchoEn(desde - 1) === 0) desde--;
+  while (hasta < alto && anchoEn(hasta) === 0) hasta++;
+  const arriba = desde - 1;
+  const abajo = hasta;
+  if (arriba < 1 || abajo >= alto - 1) return;
+  if (anchoEn(arriba) < anchoEn(desde) * 2 || anchoEn(abajo) < anchoEn(hasta - 1) * 2) return;
+
+  const paso = Math.max(4, Math.round(alto * 0.008));
+  const previo = Math.max(0, arriba - paso);
+  const siguiente = Math.min(alto - 1, abajo + paso);
+  const tramoArriba = arriba - previo || 1;
+  const tramoAbajo = siguiente - abajo || 1;
+  const la = izquierda[arriba] ?? 0;
+  const ra = derecha[arriba] ?? 0;
+  const lb = izquierda[abajo] ?? 0;
+  const rb = derecha[abajo] ?? 0;
+  const pendienteL = ((izquierda[previo] ?? la) - la) / tramoArriba;
+  const pendienteR = ((derecha[previo] ?? ra) - ra) / tramoArriba;
+  const pendienteLb = ((izquierda[siguiente] ?? lb) - lb) / tramoAbajo;
+  const pendienteRb = ((derecha[siguiente] ?? rb) - rb) / tramoAbajo;
+  const bajaL = -pendienteL;
+  const bajaR = -pendienteR;
+  const cx = (la + ra) / 2;
+  const punta = Math.max(2, Math.round((8 * alto) / 2048)) / 2;
+  const cuello = (arriba + abajo) / 2;
+  const tope = Math.max((ra - la) / 2, (rb - lb) / 2);
+
+  for (let filaY = desde; filaY < hasta; filaY++) {
+    let medio: number;
+    if (filaY <= cuello) {
+      const dy = cuello - arriba || 1;
+      const t = (filaY - arriba) / dy;
+      const hw0 = (ra - la) / 2;
+      const dhw = (bajaR - bajaL) / 2;
+      medio = hermite(t, hw0, dhw * dy, punta, -1.1 * dy);
+    } else {
+      const dy = abajo - cuello || 1;
+      const t = (filaY - cuello) / dy;
+      const hw1 = (rb - lb) / 2;
+      const dhw = (pendienteRb - pendienteLb) / 2;
+      medio = hermite(t, punta, 1.1 * dy, hw1, dhw * dy);
+    }
+    medio = Math.min(tope, Math.max(punta, medio));
+    const izq = Math.round(cx - medio);
+    const der = Math.round(cx + medio);
+    const base = filaY * ancho * 4;
+    for (let x = 0; x < ancho; x++) {
+      const o = base + x * 4;
+      const dentro = x >= izq && x <= der;
+      const v = dentro ? 255 : 0;
+      data[o] = v;
+      data[o + 1] = v;
+      data[o + 2] = v;
+    }
+  }
 }
 
 /**
@@ -82,6 +195,7 @@ export function leerGeometria(img: HTMLImageElement): GeometriaFrasco {
   if (ctx) {
     const foto = ctx.getImageData(0, 0, FOTO_ANCHO, FOTO_ALTO);
     const data = foto.data;
+    cuelloEnPunta(data, FOTO_ANCHO, FOTO_ALTO);
     for (let y = 0; y < FOTO_ALTO; y++) {
       let extremo = 0;
       for (let x = 0; x < FOTO_ANCHO; x++) {
