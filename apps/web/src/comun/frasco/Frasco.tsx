@@ -179,6 +179,8 @@ export function Frasco({
       const pintarEn = (context: CanvasRenderingContext2D) => {
         context.lineJoin = 'round';
         context.lineCap = 'round';
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
         pintarVidrio(context, escena, (context, caja) => {
           contenido.pintar(context, {
             caja,
