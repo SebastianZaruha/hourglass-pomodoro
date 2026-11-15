@@ -23,8 +23,40 @@ function origenDe(el: HTMLElement): { x: number; y: number } {
 }
 
 /**
+ * La foto del vidrio no llena la caja de `layoutFor`. Mismos números que
+ * `pintarVidrio`: se centra al 0,99 y el último píxel del archivo está en
+ * la fila 2013/2048. En el centro esa fila es un reborde casi transparente.
+ * El bulbo que se ve termina en la máscara, fila 1955.
+ */
+const ESCALA_FOTO = 0.99;
+const BASE_OPACA = 2013 / 2048;
+const BASE_BULBO = 1955 / 2048;
+
+function yEnFoto(caja: Caja, fila: number): number {
+  const alto = caja.h * ESCALA_FOTO;
+  const arriba = caja.y + (caja.h - alto) / 2;
+  return arriba + alto * fila;
+}
+
+/**
+ * Y del último píxel del archivo, en los mismos px que `caja`. Equivale a
+ * `yBaseOpaca(cajaFoto(cajaDe(layoutFor(...))))`.
+ */
+export function yBaseOpaca(caja: Caja): number {
+  return yEnFoto(caja, BASE_OPACA);
+}
+
+/**
+ * Y del bulbo que se ve. La cresta de Arena apoya aquí: en la fila 2013
+ * el vidrio ya no tapa y la duna queda en el aire.
+ */
+export function yBaseBulbo(caja: Caja): number {
+  return yEnFoto(caja, BASE_BULBO);
+}
+
+/**
  * La caja del frasco en px de la ventana. Es la de `layoutFor` sobre el
- * lienzo de Frasco: el 0,978 de su alto cae en la base del vidrio.
+ * lienzo de Frasco.
  */
 export function useCajaFrasco(stageRef: RefObject<HTMLElement | null>): Caja | null {
   const [caja, setCaja] = useState<Caja | null>(null);

@@ -4,7 +4,13 @@ import { crearArena } from '../arena-modelo';
 /**
  * Arena. La arena es la de arena-modelo, sin cambios.
  * La luz viene de la lámpara de la foto. El reloj, en ancha, sube al bulbo.
+ *
+ * Cresta de la duna, fracción de cada foto. La x del ancla es la de la punta
+ * del frasco. Claro y estrecha miden las dos 0,75 y por eso comparten ancla;
+ * el vídeo oscuro usa la cresta del póster, 0,757.
  */
+const CRESTA = { claro: 0.75, oscuro: 0.757 } as const;
+
 const claro: Aspecto = {
   fondo: {
     tipo: 'foto',
@@ -12,8 +18,7 @@ const claro: Aspecto = {
     avif: '/fondos/arena-claro.avif',
     estrecho: { webp: '/fondos/arena-claro-estrecho.webp', avif: '/fondos/arena-claro-estrecho.avif' },
   },
-  // Sobre la ladera, para que la base y la sombra queden en la arena.
-  ancla: { x: 0.3, y: 0.78 },
+  ancla: { x: 0.3, y: CRESTA.claro },
   reserva: '#e4c7a4',
   barra: '#e6d7c4',
   reloj: { digitos: '#4A4541', pista: '#4A4541' },
@@ -30,7 +35,7 @@ const oscuro: Aspecto = {
     mp4: '/fondos/arena-oscuro.mp4',
     poster: '/fondos/arena-oscuro.webp',
   },
-  ancla: { x: 0.3, y: 0.78 },
+  ancla: { x: 0.3, y: CRESTA.oscuro },
   reserva: '#3a2618',
   barra: '#241910',
   reloj: { digitos: '#B7B1AA', pista: '#B7B1AA' },

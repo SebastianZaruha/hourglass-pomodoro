@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 
 import type { Aspecto } from '../frasco';
+import { yBaseBulbo, yBaseOpaca } from './caja';
 import { encuadreFondo, type Ancla, type Caja } from './encuadre';
 import { ahorraDatos } from './precarga';
 import './fondo.css';
@@ -34,6 +35,14 @@ interface Vista {
   readonly izquierda: number;
   readonly arriba: number;
   readonly estrecho: boolean;
+}
+
+/** La duna solo existe en Arena. El resto apoya en el borde del archivo. */
+function esArena(aspecto: Aspecto): boolean {
+  const fondo = aspecto.fondo;
+  if (fondo.tipo === 'foto') return fondo.webp.includes('/arena-');
+  if (fondo.tipo === 'video') return fondo.poster.includes('/arena-');
+  return false;
 }
 
 function claveDe(aspecto: Aspecto): string {
@@ -171,7 +180,10 @@ export function Fondo({ aspecto, caja, reducir, angosta }: Props) {
 
   const pie =
     caja && vista.ancho > 0
-      ? { x: caja.x + caja.w / 2 - vista.izquierda, y: caja.y + caja.h * 0.978 - vista.arriba }
+      ? {
+          x: caja.x + caja.w / 2 - vista.izquierda,
+          y: (esArena(aspecto) ? yBaseBulbo(caja) : yBaseOpaca(caja)) - vista.arriba,
+        }
       : null;
 
   return (
