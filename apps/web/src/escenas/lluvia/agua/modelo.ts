@@ -57,6 +57,14 @@ export interface VistaAgua {
   cuello: number;
   arriba: Superficie;
   abajo: Superficie;
+  /** Fracción de cada bulbo. Al empezar, abajo ya tiene agua. */
+  volArriba: number;
+  volAbajo: number;
+  /**
+   * Media vuelta del reinicio. `u` va de 0 a 1.
+   * arriba/abajo son la fracción al terminar (un temporizador nuevo).
+   */
+  fundido: { u: number; arriba: number; abajo: number } | null;
   /** Solo durante la media vuelta del reinicio. Si no, null. */
   cruce: CruceAgua | null;
 }
@@ -121,18 +129,14 @@ function puntosDe(fracciones: Float32Array, ancho: number, alto: number): NubePu
   return { n, px, py, alturas: new Float64Array(n) };
 }
 
-function objetivos(
-  snap: SessionSnapshot,
-  nArriba: number,
-  nAbajo: number,
-): { arriba: number; abajo: number } {
+function objetivos(snap: SessionSnapshot): { arriba: number; abajo: number } {
   const nivel = nivelDeDuracion(snap.durationMs);
   const resto = snap.durationMs > 0 ? Math.min(1, Math.max(0, snap.remainingMs / snap.durationMs)) : 0;
-  const ptsArriba = nivel * resto * nArriba;
-  const ptsAbajo = nivel * nArriba - ptsArriba;
+  // Igual que la arena: al empezar, arriba guarda la fracción de la duración
+  // y abajo ya tiene el resto. Lo que sale de arriba entra abajo. La suma es 1.
   return {
-    arriba: nArriba > 0 ? ptsArriba / nArriba : 0,
-    abajo: nAbajo > 0 ? ptsAbajo / nAbajo : 0,
+    arriba: nivel * resto,
+    abajo: 1 - nivel * resto,
   };
 }
 
@@ -177,6 +181,9 @@ export function crearModelo(): ModeloAgua {
     cuello: 0.5,
     arriba: superficie(yA),
     abajo: superficie(yB),
+    volArriba: 0,
+    volAbajo: 0,
+    fundido: null,
     cruce: null,
   };
 
@@ -393,9 +400,9 @@ export function crearModelo(): ModeloAgua {
         return;
       }
       intercambiar();
-      const nivel = nivelDeDuracion(snap.durationMs);
-      volArriba = nivel;
-      volAbajo = 0;
+      const fresco = objetivos(snap);
+      volArriba = fresco.arriba;
+      volAbajo = fresco.abajo;
       phi = 0;
       phiV = 0;
       yA.fill(0);
@@ -407,6 +414,7 @@ export function crearModelo(): ModeloAgua {
       sujetado = false;
       volteo = null;
       vista.cruce = null;
+      vista.fundido = null;
     },
     paso(e, ancho, alto) {
       if (muerto || fallo) return false;
@@ -425,7 +433,7 @@ export function crearModelo(): ModeloAgua {
         if (e.reducir) intercambiar();
       }
 
-      const obj = objetivos(snap, arriba.n, abajo.n);
+      const obj = objetivos(snap);
       if (!iniciado) {
         volArriba = obj.arriba;
         volAbajo = obj.abajo;
@@ -436,9 +444,11 @@ export function crearModelo(): ModeloAgua {
       const salto = saltar || enfriar > 0 || dtFrame <= 0;
       if (enfriar > 0) enfriar -= 1;
       const alpha = salto ? 0 : (e.velocidad - velPrevia) / dtFrame;
-      // La masa no gira con el cristal: se queda y la superficie se inclina.
-      // Solo el arrastre y la vuelta cuentan; el volteo salta el ángulo.
-      if (!salto && (e.fase === 'arrastre' || e.fase === 'volviendo')) {
+      // Mientras el dedo sujeta, la superficie se queda en el mundo.
+      // Al soltar NO se resta la velocidad: si se resta, phi cancela el
+      // ángulo y el agua vuelve pegada al frasco, sin mecerse. El muelle
+      // (reposo en phi = 0, que es la horizontal del mundo) es quien la trae.
+      if (!salto && e.fase === 'arrastre') {
         phi -= e.velocidad * dtFrame;
       }
       velPrevia = e.velocidad;
@@ -500,16 +510,15 @@ export function crearModelo(): ModeloAgua {
       if (fundiendo && volteo) {
         const t = Math.min(1, Math.max(0, (e.ahora - volteo.t0) / MS_MEDIA_VUELTA));
         const u = easeInOutCubic(t);
-        const destino =
-          abajo.n > 0 ? Math.min(1, (nivelDeDuracion(snap.durationMs) * arriba.n) / abajo.n) : 0;
+        const fresco = objetivos(snap);
         const extVA = proyectar(arriba, volteo.alfaViejo);
         const extVB = proyectar(abajo, volteo.alfaViejo);
         preparar(arriba, volteo.a0, volteo.alfaViejo, viejoArriba, extVA);
         preparar(abajo, volteo.b0, volteo.alfaViejo, viejoAbajo, extVB);
         const extNA = proyectar(arriba, 0);
         const extNB = proyectar(abajo, 0);
-        preparar(arriba, 0, 0, nuevoArriba, extNA);
-        preparar(abajo, destino, 0, nuevoAbajo, extNB);
+        preparar(arriba, fresco.arriba, 0, nuevoArriba, extNA);
+        preparar(abajo, fresco.abajo, 0, nuevoAbajo, extNB);
         vista.cruce = {
           u,
           alfaViejo: volteo.alfaViejo,
@@ -518,10 +527,14 @@ export function crearModelo(): ModeloAgua {
           nuevoArriba,
           nuevoAbajo,
         };
+        vista.fundido = { u, arriba: fresco.arriba, abajo: fresco.abajo };
       } else {
         vista.cruce = null;
+        vista.fundido = null;
       }
 
+      vista.volArriba = volArriba;
+      vista.volAbajo = volAbajo;
       const cerca = Math.abs(volArriba - obj.arriba) < 0.004 && Math.abs(volAbajo - obj.abajo) < 0.004;
       const quieto =
         e.fase === 'reposo' &&
