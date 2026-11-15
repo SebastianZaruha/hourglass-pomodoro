@@ -5,7 +5,7 @@
 
 .app[data-layout='wide'] .side {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   height: 100%;
 }
@@ -25,16 +25,9 @@
 
 .app[data-layout='wide'] .readout {
   transform: translateY(calc(-1 * var(--clock-lift, 0px)));
-  transition: transform 760ms cubic-bezier(0.45, 0.02, 0.12, 1);
-}
-
-/* Arena y Lluvia, en ancha: el borde de arriba del reloj va al bulbo. */
-.app[data-layout='wide'][data-reloj='alto'] .side {
-  align-items: flex-start;
-}
-
-.app[data-layout='wide'][data-reloj='alto'] .readout {
-  margin-top: var(--reloj-top, 0px);
+  transition:
+    margin-top 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    transform 760ms cubic-bezier(0.45, 0.02, 0.12, 1);
 }
 
 .time {

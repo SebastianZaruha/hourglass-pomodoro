@@ -1,6 +1,7 @@
 @media (prefers-reduced-motion: reduce) {
   .sheet,
   .readout,
+  .app[data-layout='wide'] .readout,
   .stage {
     transition: none;
   }
