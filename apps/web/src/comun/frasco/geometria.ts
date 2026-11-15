@@ -23,7 +23,7 @@ const CENTRO_X = 223.5;
 
 export interface FotosFrasco {
   readonly geo: GeometriaFrasco;
-  readonly atras: HTMLImageElement;
+  readonly atras: CanvasImageSource;
   readonly delante: CanvasImageSource;
 }
 
