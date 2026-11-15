@@ -3,7 +3,7 @@ import { crearAgua } from './agua';
 
 /**
  * Lluvia. El agua es su masa, sin gotas ni nube todavía.
- * La luz es la de la lámpara de la foto. El reloj, en ancha, sube al bulbo.
+ * La luz ambiente va a 0: no oscurece ni tiñe el vidrio. El reloj, en ancha, sube al bulbo.
  */
 const claro: Aspecto = {
   fondo: {
@@ -18,7 +18,7 @@ const claro: Aspecto = {
   reloj: { digitos: '#2E302F', pista: '#2E302F' },
   tinta: '#161816',
   vidrio: { velo: 'rgba(0, 0, 0, 0.12)', saturacion: 1.4 },
-  luz: { direccion: -102, tinte: '#ffe0b0', fuerza: 0.72 },
+  luz: { direccion: -102, tinte: '#ffe0b0', fuerza: 0 },
   sombra: { color: 'rgba(84, 64, 44, 0.28)', opacidad: 1 },
 };
 
@@ -35,7 +35,7 @@ const oscuro: Aspecto = {
   reloj: { digitos: '#8F8B86', pista: '#8F8B86' },
   tinta: '#F4F6F5',
   vidrio: { velo: 'rgba(0, 0, 0, 0.12)', saturacion: 1.4 },
-  luz: { direccion: -102, tinte: '#ff8a2a', fuerza: 0.9 },
+  luz: { direccion: -102, tinte: '#ff8a2a', fuerza: 0 },
   sombra: { color: 'rgba(0, 0, 0, 0.38)', opacidad: 1 },
 };
 

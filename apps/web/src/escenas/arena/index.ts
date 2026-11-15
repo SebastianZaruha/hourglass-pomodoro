@@ -3,7 +3,7 @@ import { crearArena } from '../arena-modelo';
 
 /**
  * Arena. La arena es la de arena-modelo, sin cambios.
- * La luz viene de la lámpara de la foto. El reloj, en ancha, sube al bulbo.
+ * La luz ambiente va a 0: no oscurece ni tiñe el vidrio. El reloj, en ancha, sube al bulbo.
  *
  * Cresta de la duna, fracción de cada foto. La x del ancla es la de la punta
  * del frasco. Claro y estrecha miden las dos 0,75 y por eso comparten ancla;
@@ -24,7 +24,7 @@ const claro: Aspecto = {
   reloj: { digitos: '#4A4541', pista: '#4A4541' },
   tinta: '#2A2623',
   vidrio: { velo: 'rgba(0, 0, 0, 0.08)', saturacion: 1.05 },
-  luz: { direccion: -104, tinte: '#ffc98a', fuerza: 0.7 },
+  luz: { direccion: -104, tinte: '#ffc98a', fuerza: 0 },
   sombra: { color: 'rgba(84, 64, 44, 0.28)', opacidad: 1 },
 };
 
@@ -41,7 +41,7 @@ const oscuro: Aspecto = {
   reloj: { digitos: '#B7B1AA', pista: '#B7B1AA' },
   tinta: '#FFFFFF',
   vidrio: { velo: 'rgba(0, 0, 0, 0.08)', saturacion: 1.05 },
-  luz: { direccion: -104, tinte: '#ff7a1a', fuerza: 0.92 },
+  luz: { direccion: -104, tinte: '#ff7a1a', fuerza: 0 },
   sombra: { color: 'rgba(0, 0, 0, 0.38)', opacidad: 1 },
 };
 
