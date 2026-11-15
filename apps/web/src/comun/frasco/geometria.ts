@@ -361,11 +361,58 @@ function desenfoque(luz: Float32Array, w: number, h: number, y0: number, y1: num
   return out;
 }
 
+/**
+ * Por encima de esto el píxel es un brillo de verdad y se queda.
+ * El relleno negro y el halo gris del borde interior quedan por debajo.
+ */
+const UMBRAL_BRILLO = 168;
+
+/**
+ * Dentro de la silueta, el relleno y el halo pasan a alfa 0.
+ * En `screen`, ese negro se vuelve un cuerpo opaco y el gris se ve como
+ * un anillo. Fuera de la silueta no se toca un píxel: ahí vive el color
+ * de la pared. Nada se repinta de blanco, así que no queda velo lechoso
+ * ni una copia del fondo metida en el vidrio.
+ */
+function vaciarInterior(
+  img: HTMLImageElement | HTMLCanvasElement,
+  mascara: CanvasImageSource,
+): HTMLCanvasElement {
+  const ancho = img instanceof HTMLImageElement ? img.naturalWidth : img.width;
+  const alto = img instanceof HTMLImageElement ? img.naturalHeight : img.height;
+  const lienzo = lienzoDe(img, ancho, alto, false);
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return lienzo;
+  const silueta = document.createElement('canvas');
+  silueta.width = ancho;
+  silueta.height = alto;
+  const sg = silueta.getContext('2d', { willReadFrequently: true });
+  if (!sg) return lienzo;
+  sg.imageSmoothingEnabled = true;
+  sg.imageSmoothingQuality = 'high';
+  sg.drawImage(mascara, 0, 0, ancho, alto);
+  const dentro = sg.getImageData(0, 0, ancho, alto).data;
+  const foto = ctx.getImageData(0, 0, ancho, alto);
+  const data = foto.data;
+  for (let i = 0; i < data.length; i += 4) {
+    if ((dentro[i + 3] ?? 0) < 128) continue;
+    if ((data[i + 3] ?? 0) < 8) continue;
+    if (luminancia(data, i) >= UMBRAL_BRILLO) continue;
+    data[i + 3] = 0;
+  }
+  ctx.putImageData(foto, 0, 0);
+  return lienzo;
+}
+
 /** Las tres imágenes. Una sola carga para el vidrio y para la arena. */
 export function fotosDelFrasco(): Promise<FotosFrasco> {
   if (!fotosCache) {
     fotosCache = Promise.all([geometriaDelFrasco(), imagen(ATRAS), imagen(DELANTE)]).then(
-      ([geo, atras, delante]) => ({ geo, atras, delante: afinarBrillos(delante) }),
+      ([geo, atras, delante]) => ({
+        geo,
+        atras: vaciarInterior(atras, geo.mascara),
+        delante: vaciarInterior(afinarBrillos(delante), geo.mascara),
+      }),
     );
   }
   return fotosCache;
