@@ -20,6 +20,19 @@
   gap: 5px;
 }
 
+/* El icono no crece. La zona, 60 px, cubre 20 px más allá de las barras
+   y sigue dentro de la pantalla en 390: el botón queda a 10 px del borde. */
+.menu-btn::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
 .app:hover .menu-btn,
 .menu-btn:focus-visible {
   opacity: 1;
