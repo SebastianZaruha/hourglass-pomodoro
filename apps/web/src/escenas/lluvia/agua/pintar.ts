@@ -3,26 +3,44 @@ import type { Superficie, VistaAgua } from './modelo';
 
 interface Tinte {
   readonly arriba: string;
-  readonly abajo: string;
   readonly menisco: string;
   readonly reflejo: string;
 }
 
-/** Frío y transparente. El matiz se queda entre el azul y el verde, nunca en el marrón. */
+/**
+ * Frío y transparente. El matiz se queda entre el azul y el verde, nunca en el marrón.
+ * Estos rgba son los que tienen que verse sobre el interior negro.
+ */
 const TINTES: Record<'claro' | 'oscuro', Tinte> = {
   claro: {
     arriba: 'rgba(214, 228, 234, 0.26)',
-    abajo: 'rgba(201, 214, 220, 0.26)',
     menisco: 'rgba(196, 222, 238, 0.72)',
     reflejo: 'rgba(214, 228, 234, 0.2)',
   },
   oscuro: {
     arriba: 'rgba(160, 178, 188, 0.20)',
-    abajo: 'rgba(150, 167, 177, 0.20)',
     menisco: 'rgba(176, 200, 214, 0.58)',
     reflejo: 'rgba(214, 228, 234, 0.2)',
   },
 };
+
+/**
+ * El frente del vidrio es negro opaco y luego cae en soft-light, que eleva
+ * el color al cuadrado. Sin este paso el agua sale a unos 12 de canal y el
+ * bulbo de abajo, sobre el negro, parece vacío.
+ */
+function queSeVea(css: string): string {
+  const m = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/.exec(css);
+  if (!m) return css;
+  const r = Number(m[1]);
+  const g = Number(m[2]);
+  const b = Number(m[3]);
+  const a = Number(m[4]);
+  const media = (r + g + b) / (3 * 255);
+  if (!(a > 0) || !(media > 0)) return css;
+  const alfa = Math.min(1, Math.sqrt(a * media) / media);
+  return `rgba(${r}, ${g}, ${b}, ${alfa.toFixed(3)})`;
+}
 
 interface Eje {
   readonly x: number;
@@ -185,22 +203,14 @@ export function crearPincel(): (ctx: CanvasRenderingContext2D, p: Pintura, vista
     g.globalCompositeOperation = 'source-over';
     g.clearRect(0, 0, w, h);
     const tinte = TINTES[p.esquema];
+    const cuerpo = queSeVea(tinte.arriba);
     const sen = Math.sin(vista.alfa);
     const cos = Math.cos(vista.alfa);
     const down = { x: sen, y: cos };
     const tangent = { x: cos, y: -sen };
-    const mundo = { x: Math.sin(vista.angulo), y: Math.cos(vista.angulo) };
     const cx = w / 2;
     const cy = h / 2;
     const alcance = Math.hypot(w, h);
-    const grad = g.createLinearGradient(
-      cx - mundo.x * alcance,
-      cy - mundo.y * alcance,
-      cx + mundo.x * alcance,
-      cy + mundo.y * alcance,
-    );
-    grad.addColorStop(0, tinte.arriba);
-    grad.addColorStop(1, tinte.abajo);
     const cajaS = sDeCaja(w, h, tangent);
     const cuello = vista.cuello * h;
     const pintarBulbo = (sup: Superficie, superior: boolean) => {
@@ -210,12 +220,12 @@ export function crearPincel(): (ctx: CanvasRenderingContext2D, p: Pintura, vista
       if (superior) g.rect(0, 0, w, cuello);
       else g.rect(0, cuello, w, h - cuello);
       g.clip();
-      g.fillStyle = grad;
+      g.fillStyle = cuerpo;
       if (sup.lleno) g.fillRect(0, 0, w, h);
       else {
         rellenar(g, sup, cx, cy, tangent, down, cajaS.s0, cajaS.s1, alcance);
-        reflejo(g, sup, cx, cy, tangent, down, tinte.reflejo);
-        menisco(g, sup, cx, cy, tangent, down, tinte.menisco);
+        reflejo(g, sup, cx, cy, tangent, down, queSeVea(tinte.reflejo));
+        menisco(g, sup, cx, cy, tangent, down, queSeVea(tinte.menisco));
       }
       g.restore();
     };
