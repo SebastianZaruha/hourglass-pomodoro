@@ -6,7 +6,6 @@ import {
   SAND,
   SandSimulation,
   StreamParticles,
-  TILT_LOD,
   TiltLod,
   flowBudget,
   quantizeDirection,
@@ -47,13 +46,11 @@ const STEPS_PER_FRAME = 2;
 const MAX_CATCH_UP = 3;
 /**
  * Escalón de la gravedad real, como el móvil (`MotionProcessor`, 3°).
- * `step` recibe (sin θ, cos θ) en esos escalones. Por debajo del ángulo
- * de reposo el montón casi no se mueve; boca abajo, los granos caen hacia
+ * `step` recibe (sin θ, cos θ) en esos escalones. Con cualquier inclinación
+ * la arena resbala hacia el lado bajo; boca abajo, los granos caen hacia
  * la tapa. El cuello solo lo abre el temporizador, con el ángulo real.
  */
 const PASO_SIM_GRADOS = 3;
-/** Por debajo de esto el frasco ya no gira y el montón puede asentarse. */
-const QUIETO = (TILT_LOD.restDegPerSec * Math.PI) / 180;
 /** El contenido saliente llega a 4 px de desenfoque; el entrante sale de ahí. */
 const BLUR_FUNDIDO = 4;
 
@@ -295,17 +292,6 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         for (let k = 0; k < ticks; k++) {
           if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
           for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(gs) > 0) moved = true;
-        }
-        // Quieto: más pasos hasta que el montón se apoya, también al volver
-        // a vertical. El tope es el de TiltLod; con el detalle bajado, no.
-        const quieto = Math.abs(e.velocidad) < QUIETO;
-        if (quieto && !lod.isActive && !sim.isSettled) {
-          const tope = simStart + TILT_LOD.heavyFrameMs - 4;
-          let n = 0;
-          while (n < 600 && performance.now() < tope && !sim.isSettled) {
-            n += 1;
-            if (sim.step(gs) > 0) moved = true;
-          }
         }
         simMs = performance.now() - simStart;
       }
