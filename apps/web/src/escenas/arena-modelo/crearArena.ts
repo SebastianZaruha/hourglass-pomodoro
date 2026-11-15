@@ -6,6 +6,7 @@ import {
   SAND,
   SandSimulation,
   StreamParticles,
+  TILT_LOD,
   TiltLod,
   flowBudget,
   quantizeDirection,
@@ -50,6 +51,8 @@ const MAX_CATCH_UP = 3;
  * la tapa. El cuello solo lo abre el temporizador, con el ángulo real.
  */
 const PASO_SIM_GRADOS = 3;
+/** Por debajo de esto el frasco ya no gira y el montón puede asentarse. */
+const QUIETO = (TILT_LOD.restDegPerSec * Math.PI) / 180;
 /** Fundido del reinicio, cuando el giro de 180° ya ha terminado. */
 const FUNDIDO_MS = 700;
 
@@ -286,6 +289,17 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         for (let k = 0; k < ticks; k++) {
           if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
           for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(gs) > 0) moved = true;
+        }
+        // Quieto: más pasos hasta que el montón se apoya, también al volver
+        // a vertical. El tope es el de TiltLod; con el detalle bajado, no.
+        const quieto = Math.abs(e.velocidad) < QUIETO;
+        if (quieto && !lod.isActive && !sim.isSettled) {
+          const tope = simStart + TILT_LOD.heavyFrameMs - 4;
+          let n = 0;
+          while (n < 600 && performance.now() < tope && !sim.isSettled) {
+            n += 1;
+            if (sim.step(gs) > 0) moved = true;
+          }
         }
         simMs = performance.now() - simStart;
       }
