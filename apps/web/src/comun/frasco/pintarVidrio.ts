@@ -150,7 +150,7 @@ function pintarSilueta(ctx: CanvasRenderingContext2D, mask: CanvasImageSource, c
 
 /**
  * Sombra, dorso, contenido, frente y luz.
- * El frente es el borde y los brillos. Su interior ya no es negro opaco.
+ * El frente es la lámina de brillos: el negro no tapa la arena.
  */
 export function pintarVidrio(
   ctx: CanvasRenderingContext2D,

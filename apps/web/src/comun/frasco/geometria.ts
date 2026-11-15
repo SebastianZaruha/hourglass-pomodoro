@@ -23,7 +23,7 @@ const CENTRO_X = 223.5;
 
 export interface FotosFrasco {
   readonly geo: GeometriaFrasco;
-  readonly atras: CanvasImageSource;
+  readonly atras: HTMLImageElement;
   readonly delante: CanvasImageSource;
 }
 
@@ -361,85 +361,11 @@ function desenfoque(luz: Float32Array, w: number, h: number, y0: number, y1: num
   return out;
 }
 
-/**
- * Por debajo de esto el píxel es relleno oscuro, no el borde ni un brillo.
- * El negro de la lámina de delante sigue fuera de la silueta del contenido,
- * en la cara interior del borde: por eso no basta con recortar esa silueta.
- */
-const UMBRAL_RELLENO = 64;
-/**
- * Velo blanco del interior vacío. La luz lo vuelve a pintar encima y el alfa
- * se suma, así que en pantalla queda cerca de 0,06, por debajo de 0,08.
- */
-const TINTE_VIDRIO = 0.03;
-/** Las tapas y la base quedan enteras. El relleno está en el cuerpo. */
-const FRANJA_TAPA = 0.07;
-
-function medidaDe(img: HTMLImageElement | HTMLCanvasElement): { ancho: number; alto: number } {
-  if (img instanceof HTMLImageElement) return { ancho: img.naturalWidth, alto: img.naturalHeight };
-  return { ancho: img.width, alto: img.height };
-}
-
-/**
- * Quita el relleno oscuro. Mezclado en `screen` sobre el lienzo transparente,
- * ese negro se vuelve un cuerpo opaco y tapa el fondo. Dentro de la silueta
- * el dorso desaparece y el frente deja los brillos más un velo blanco. Fuera,
- * el borde claro se queda y las tapas quedan enteras.
- */
-function abrirCuerpo(
-  img: HTMLImageElement | HTMLCanvasElement,
-  mascara: CanvasImageSource,
-  tinte: number,
-  dorso: boolean,
-): HTMLCanvasElement {
-  const { ancho, alto } = medidaDe(img);
-  const lienzo = lienzoDe(img, ancho, alto, false);
-  const ctx = lienzo.getContext('2d', { willReadFrequently: true });
-  if (!ctx) return lienzo;
-  const silueta = document.createElement('canvas');
-  silueta.width = ancho;
-  silueta.height = alto;
-  const sg = silueta.getContext('2d', { willReadFrequently: true });
-  if (!sg) return lienzo;
-  sg.drawImage(mascara, 0, 0, ancho, alto);
-  const dentro = sg.getImageData(0, 0, ancho, alto).data;
-  const foto = ctx.getImageData(0, 0, ancho, alto);
-  const data = foto.data;
-  const tapa = Math.round(alto * FRANJA_TAPA);
-  const base = alto - tapa;
-  const alfa = Math.round(tinte * 255);
-  for (let y = 0; y < alto; y++) {
-    const enCuerpo = y >= tapa && y < base;
-    const fila = y * ancho;
-    for (let x = 0; x < ancho; x++) {
-      const i = (fila + x) * 4;
-      if ((data[i + 3] ?? 0) < 8) continue;
-      const interior = (dentro[i + 3] ?? 0) >= 128;
-      if (interior && dorso) {
-        data[i + 3] = 0;
-        continue;
-      }
-      if (!interior && !enCuerpo) continue;
-      if (luminancia(data, i) >= UMBRAL_RELLENO) continue;
-      data[i] = 255;
-      data[i + 1] = 255;
-      data[i + 2] = 255;
-      data[i + 3] = alfa;
-    }
-  }
-  ctx.putImageData(foto, 0, 0);
-  return lienzo;
-}
-
 /** Las tres imágenes. Una sola carga para el vidrio y para la arena. */
 export function fotosDelFrasco(): Promise<FotosFrasco> {
   if (!fotosCache) {
     fotosCache = Promise.all([geometriaDelFrasco(), imagen(ATRAS), imagen(DELANTE)]).then(
-      ([geo, atras, delante]) => ({
-        geo,
-        atras: abrirCuerpo(atras, geo.mascara, 0, true),
-        delante: abrirCuerpo(afinarBrillos(delante), geo.mascara, TINTE_VIDRIO, false),
-      }),
+      ([geo, atras, delante]) => ({ geo, atras, delante: afinarBrillos(delante) }),
     );
   }
   return fotosCache;
