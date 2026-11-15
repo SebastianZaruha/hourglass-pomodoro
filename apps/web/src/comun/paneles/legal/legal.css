@@ -9,6 +9,22 @@
   background: rgba(24, 16, 10, 0.28);
 }
 
+/* El vidrio líquido es el fondo. El tamaño y el radio de la hoja no cambian. */
+.legal-dialog.vidrio {
+  position: relative;
+  border: 0;
+  border-radius: 18px;
+  color: inherit;
+  text-shadow: none;
+  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
+}
+
+.legal-dialog.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
+  background: var(--velo);
+  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+}
+
 .legal-dialog {
   width: min(44rem, 100%);
   height: min(86vh, 52rem);

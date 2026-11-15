@@ -24,6 +24,7 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
+import { useHojaVidrio } from '../estilo/vidrio-liquido';
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
@@ -106,13 +107,14 @@ export function SettingsSheet({
     aplicar({ sessionMode: 'cycles', cyclePreset: 'custom', customCycle: seed });
   };
 
+  useHojaVidrio(hoja);
   const tema = themeName(t, settings.theme);
   const idiomaNombre = languageName(t, settings.language);
 
   return (
     <div
       ref={hoja}
-      className={['sheet', 'vidrio', open ? 'open' : '', desborda ? 'desborda' : '']
+      className={['sheet', 'hoja', 'vidrio', 'vidrio-liquido', open ? 'open' : '', desborda ? 'desborda' : '']
         .filter(Boolean)
         .join(' ')}
       role="dialog"

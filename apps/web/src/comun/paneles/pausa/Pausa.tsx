@@ -1,5 +1,7 @@
 import type { Language } from '@reloj/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { useHojaVidrio } from '../../estilo/vidrio-liquido';
 
 interface Props {
   readonly word: string;
@@ -32,10 +34,12 @@ function useTactil() {
 
 /** La pausa publicada: la palabra y la pista de la web, sin tocar el frasco. */
 export function Pausa({ word, lang }: Props) {
+  const hoja = useRef<HTMLDivElement>(null);
+  useHojaVidrio(hoja);
   const tactil = useTactil();
   const pista = PISTA[lang][tactil ? 'tactil' : 'raton'];
   return (
-    <div className="pause-screen">
+    <div ref={hoja} className="pause-screen hoja vidrio vidrio-liquido">
       <span className="pause-word">{word}</span>
       <span className="pause-hint">{pista}</span>
     </div>

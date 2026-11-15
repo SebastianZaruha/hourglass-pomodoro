@@ -1,5 +1,7 @@
 import type { Language } from '@reloj/core';
+import { useRef } from 'react';
 
+import { useHojaVidrio } from '../../estilo/vidrio-liquido';
 import { androidPromoCopy } from '../../tiempo';
 import { ANDROID_APP } from './androidApp';
 
@@ -10,9 +12,11 @@ interface Props {
 
 /** Tira discreta, debajo del reloj. No es el banner de cookies. */
 export function AndroidPromo({ lang, onDismiss }: Props) {
+  const hoja = useRef<HTMLDivElement>(null);
+  useHojaVidrio(hoja);
   const copy = androidPromoCopy(lang, ANDROID_APP.distribution);
   return (
-    <div className="app-promo" onClick={(event) => event.stopPropagation()}>
+    <div ref={hoja} className="app-promo hoja vidrio vidrio-liquido" onClick={(event) => event.stopPropagation()}>
       <p className="app-promo-text">
         <span className="app-promo-title">{copy.title}</span>
         <span className="app-promo-pitch">{copy.pitch}</span>

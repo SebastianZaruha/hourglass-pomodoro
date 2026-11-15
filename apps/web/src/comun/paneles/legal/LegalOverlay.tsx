@@ -1,5 +1,7 @@
 import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 
+import { useHojaVidrio } from '../../estilo/vidrio-liquido';
+
 interface Props {
   readonly src: string;
   readonly title: string;
@@ -20,7 +22,9 @@ export function keepAppOnLegalClick(event: ReactMouseEvent<HTMLAnchorElement>): 
  * iframe para que el temporizador no se desmonte.
  */
 export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
+  const hoja = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  useHojaVidrio(hoja);
   const closeRef = useRef(onClose);
   const configureRef = useRef(onConfigure);
   closeRef.current = onClose;
@@ -52,7 +56,7 @@ export function LegalOverlay({ src, title, onClose, onConfigure }: Props) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="legal-dialog" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={hoja} className="legal-dialog hoja vidrio vidrio-liquido" role="dialog" aria-modal="true" aria-label={title}>
         <iframe ref={frameRef} src={src} title={title} />
       </div>
     </div>
@@ -77,6 +81,12 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   }
   if (doc.documentElement.dataset.legalBound === '1') return;
   doc.documentElement.dataset.legalBound = '1';
+  // El aviso trae su propio fondo opaco. Dentro de la hoja se quita,
+  // para que se vea el vidrio líquido. El texto y el botón no cambian.
+  const estilo = doc.createElement('style');
+  estilo.textContent =
+    'html,body{background:transparent!important}.card{background:transparent!important;border-color:transparent!important}';
+  doc.head.append(estilo);
 
   doc.addEventListener(
     'click',

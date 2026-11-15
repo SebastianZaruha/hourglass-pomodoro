@@ -3,6 +3,23 @@
   display: none;
 }
 
+/* El vidrio líquido solo cambia el fondo. La tira conserva su caja. */
+.app-promo.vidrio {
+  border: 1px solid var(--sheet-edge);
+  border-radius: 16px;
+  color: var(--ink);
+  text-shadow: none;
+  padding: 0.45rem 0.35rem 0.45rem 0.75rem;
+  width: min(28rem, calc(100% - 5.4rem));
+  gap: 0.45rem;
+}
+
+.app-promo.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
+  background: var(--velo);
+  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+}
+
 .app-promo {
   position: fixed;
   z-index: 23;

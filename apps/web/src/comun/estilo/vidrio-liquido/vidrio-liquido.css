@@ -1,0 +1,60 @@
+/*
+  Vidrio líquido: solo pinta el FONDO del elemento.
+  No toca position, tamaño, transform, filter ni opacity (la animación de la hoja es tuya).
+
+  El hook pone data-vl en el elemento:
+    data-vl="refraccion" → Chromium: borde que dobla el fondo + desenfoque + brillo
+    data-vl="desenfoque" → resto de navegadores: desenfoque + brillo, sin doblar el borde
+    data-vl="app"        → no hacemos nada: manda tu clase de siempre (p. ej. .vidrio)
+*/
+
+.vidrio-liquido {
+  /* ---- Valores para ajustar ---- */
+  --vl-blur: 3.11px; /* desenfoque del fondo */
+  --vl-brillo: 0.2; /* intensidad del brillo del bisel (0–1) */
+  --vl-tinte: transparent; /* color del vidrio, p. ej. rgba(120, 180, 255, 0.15) */
+  --vl-velo: rgba(0, 0, 0, 0.18); /* capa oscura para leer el texto blanco */
+  /* --vl-filtro lo rellena el hook con url(#…); no lo toques a mano. */
+}
+
+/* Aspecto común: tinte + velo + desenfoque */
+.vidrio-liquido[data-vl='refraccion'],
+.vidrio-liquido[data-vl='desenfoque'] {
+  background-color: var(--vl-tinte);
+  background-image: linear-gradient(var(--vl-velo), var(--vl-velo));
+  -webkit-backdrop-filter: blur(var(--vl-blur));
+  backdrop-filter: blur(var(--vl-blur));
+}
+
+/* Chromium: primero desplazamos (filtro SVG) y después desenfocamos.
+   Si aún no hay mapa (elemento oculto), el fallback vacío deja solo el blur. */
+.vidrio-liquido[data-vl='refraccion'] {
+  backdrop-filter: var(--vl-filtro, ) blur(var(--vl-blur));
+}
+
+/*
+  Brillo del bisel (luz arriba-izquierda, sombra abajo-derecha).
+  z-index: -1 lo deja debajo del texto pero encima del fondo, porque
+  backdrop-filter convierte al elemento en su propio contexto de apilamiento.
+  Requisito: el elemento no puede ser position: static (una hoja fixed ya vale).
+*/
+.vidrio-liquido[data-vl='refraccion']::before,
+.vidrio-liquido[data-vl='desenfoque']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--vl-brillo);
+  box-shadow:
+    inset 1.5px 1.5px 4px rgba(255, 255, 255, 0.7),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.28);
+}
+
+/* Si el sistema pide menos transparencias, oscurecemos el velo (el hook ya quita la refracción) */
+@media (prefers-reduced-transparency: reduce) {
+  .vidrio-liquido {
+    --vl-velo: rgba(0, 0, 0, 0.55);
+  }
+}

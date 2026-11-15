@@ -1,3 +1,20 @@
+/* El vidrio líquido solo cambia el fondo. La caja, el texto y el radio siguen aquí.
+   Sin refracción (Safari, Firefox) queda el vidrio de la app, no el color sólido. */
+.banner.vidrio {
+  border: 0;
+  border-radius: 18px;
+  color: var(--ink);
+  text-shadow: none;
+  padding: 16px 16px 14px;
+  width: min(40rem, calc(100% - 1.25rem));
+}
+
+.banner.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
+  background: var(--velo);
+  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+}
+
 .banner {
   position: fixed;
   z-index: 60;
