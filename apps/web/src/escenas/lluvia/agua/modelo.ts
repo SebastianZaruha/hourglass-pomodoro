@@ -1,6 +1,7 @@
 import type { SessionSnapshot } from '@reloj/core';
 
 import type { EntradaPaso, GeometriaFrasco } from '../../../comun/frasco';
+import { MS_MEDIA_VUELTA, easeInOutCubic } from '../../../comun/giro';
 import { nivelDeDuracion } from './nivel';
 
 /** 1,8 Hz. El vaivén cruza la horizontal y se apaga en menos de un segundo. */
@@ -35,6 +36,18 @@ export interface Superficie {
   readonly onda: Float64Array;
 }
 
+/** Dos masas del reinicio: la de antes y la de después, con todo arriba. */
+export interface CruceAgua {
+  /** 0 es el agua vieja. 1 es la nueva. */
+  u: number;
+  /** Inclinación de la superficie vieja, congelada en el marco del frasco. */
+  alfaViejo: number;
+  viejoArriba: Superficie;
+  viejoAbajo: Superficie;
+  nuevoArriba: Superficie;
+  nuevoAbajo: Superficie;
+}
+
 export interface VistaAgua {
   angulo: number;
   /** Ángulo del frasco más el vaivén. La línea queda horizontal cuando vale lo mismo que el frasco. */
@@ -44,6 +57,8 @@ export interface VistaAgua {
   cuello: number;
   arriba: Superficie;
   abajo: Superficie;
+  /** Solo durante la media vuelta del reinicio. Si no, null. */
+  cruce: CruceAgua | null;
 }
 
 export interface ModeloAgua {
@@ -62,10 +77,6 @@ interface NubePuntos {
   readonly px: Float64Array;
   readonly py: Float64Array;
   readonly alturas: Float64Array;
-}
-
-function suave(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 function superficie(onda: Float64Array): Superficie {
@@ -152,6 +163,12 @@ export function crearModelo(): ModeloAgua {
   const vA = new Float64Array(OLAS);
   const yB = new Float64Array(OLAS);
   const vB = new Float64Array(OLAS);
+  const ondaViejoA = new Float64Array(OLAS);
+  const ondaViejoB = new Float64Array(OLAS);
+  const viejoArriba = superficie(ondaViejoA);
+  const viejoAbajo = superficie(ondaViejoB);
+  const nuevoArriba = superficie(new Float64Array(OLAS));
+  const nuevoAbajo = superficie(new Float64Array(OLAS));
   const vista: VistaAgua = {
     angulo: 0,
     alfa: 0,
@@ -160,10 +177,19 @@ export function crearModelo(): ModeloAgua {
     cuello: 0.5,
     arriba: superficie(yA),
     abajo: superficie(yB),
+    cruce: null,
   };
 
-  let volteo: { tipo: 'reinicio' | 'fase'; t0: number; a0: number; b0: number } | null = null;
+  let volteo: {
+    tipo: 'reinicio' | 'fase';
+    t0: number;
+    a0: number;
+    b0: number;
+    alfaViejo: number;
+  } | null = null;
   let sujetado = false;
+  /** Fotogramas tras el cierre en los que el salto de ángulo no empuja el muelle. */
+  let enfriar = 0;
 
   const asegurar = (ancho: number, alto: number) => {
     if (!geo || (arriba && ancho === medidaAncho && alto === medidaAlto)) return;
@@ -370,8 +396,17 @@ export function crearModelo(): ModeloAgua {
       const nivel = nivelDeDuracion(snap.durationMs);
       volArriba = nivel;
       volAbajo = 0;
+      phi = 0;
+      phiV = 0;
+      yA.fill(0);
+      vA.fill(0);
+      yB.fill(0);
+      vB.fill(0);
+      saltar = true;
+      enfriar = 2;
       sujetado = false;
       volteo = null;
+      vista.cruce = null;
     },
     paso(e, ancho, alto) {
       if (muerto || fallo) return false;
@@ -398,7 +433,8 @@ export function crearModelo(): ModeloAgua {
       }
 
       const dtFrame = Math.min(0.1, Math.max(0, e.dt));
-      const salto = saltar || dtFrame <= 0;
+      const salto = saltar || enfriar > 0 || dtFrame <= 0;
+      if (enfriar > 0) enfriar -= 1;
       const alpha = salto ? 0 : (e.velocidad - velPrevia) / dtFrame;
       // La masa no gira con el cristal: se queda y la superficie se inclina.
       // Solo el arrastre y la vuelta cuentan; el volteo salta el ángulo.
@@ -415,22 +451,20 @@ export function crearModelo(): ModeloAgua {
             t0: e.ahora,
             a0: volArriba,
             b0: volAbajo,
+            alfaViejo: e.angulo + phi,
           };
           sujetado = false;
-        }
-        if (volteo.tipo === 'reinicio') {
-          const t = Math.min(1, Math.max(0, (e.ahora - volteo.t0) / 1000));
-          const u = t >= 0.6 ? 1 : suave(t / 0.6);
-          const destino =
-            abajo.n > 0 ? Math.min(1, (nivelDeDuracion(snap.durationMs) * arriba.n) / abajo.n) : 0;
-          volArriba = volteo.a0 * (1 - u);
-          volAbajo = volteo.b0 + (destino - volteo.b0) * u;
+          if (volteo.tipo === 'reinicio') {
+            ondaViejoA.set(yA);
+            ondaViejoB.set(yB);
+          }
         }
       } else if (volteo && e.fase === 'reposo') {
         volteo = null;
       }
 
-      if (!(e.fase === 'volteo' && volteo?.tipo === 'reinicio')) {
+      const fundiendo = e.fase === 'volteo' && volteo?.tipo === 'reinicio';
+      if (!fundiendo) {
         const k = 1 - Math.exp(-dtFrame / CONSTANTE_VOLUMEN);
         if (!(e.fase === 'volteo' && volteo?.tipo === 'fase')) {
           volArriba += (obj.arriba - volArriba) * k;
@@ -439,7 +473,7 @@ export function crearModelo(): ModeloAgua {
       }
 
       let queda = dtFrame;
-      while (queda > 1e-4) {
+      while (!fundiendo && queda > 1e-4) {
         const dt = Math.min(PASO, queda);
         queda -= dt;
         integrarMuelle(dt, alpha);
@@ -455,7 +489,7 @@ export function crearModelo(): ModeloAgua {
       const extA = proyectar(arriba, vista.alfa);
       const extB = proyectar(abajo, vista.alfa);
       queda = dtFrame;
-      while (queda > 1e-4) {
+      while (!fundiendo && queda > 1e-4) {
         const dt = Math.min(PASO, queda);
         queda -= dt;
         integrarOla(yA, vA, extA.s0, extA.s1, Math.max(1, extA.h1 - extA.h0), dt, e.velocidad);
@@ -463,6 +497,30 @@ export function crearModelo(): ModeloAgua {
       }
       preparar(arriba, volArriba, vista.alfa, vista.arriba, extA);
       preparar(abajo, volAbajo, vista.alfa, vista.abajo, extB);
+      if (fundiendo && volteo) {
+        const t = Math.min(1, Math.max(0, (e.ahora - volteo.t0) / MS_MEDIA_VUELTA));
+        const u = easeInOutCubic(t);
+        const destino =
+          abajo.n > 0 ? Math.min(1, (nivelDeDuracion(snap.durationMs) * arriba.n) / abajo.n) : 0;
+        const extVA = proyectar(arriba, volteo.alfaViejo);
+        const extVB = proyectar(abajo, volteo.alfaViejo);
+        preparar(arriba, volteo.a0, volteo.alfaViejo, viejoArriba, extVA);
+        preparar(abajo, volteo.b0, volteo.alfaViejo, viejoAbajo, extVB);
+        const extNA = proyectar(arriba, 0);
+        const extNB = proyectar(abajo, 0);
+        preparar(arriba, 0, 0, nuevoArriba, extNA);
+        preparar(abajo, destino, 0, nuevoAbajo, extNB);
+        vista.cruce = {
+          u,
+          alfaViejo: volteo.alfaViejo,
+          viejoArriba,
+          viejoAbajo,
+          nuevoArriba,
+          nuevoAbajo,
+        };
+      } else {
+        vista.cruce = null;
+      }
 
       const cerca = Math.abs(volArriba - obj.arriba) < 0.004 && Math.abs(volAbajo - obj.abajo) < 0.004;
       const quieto =

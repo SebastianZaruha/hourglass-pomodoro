@@ -1,6 +1,8 @@
 import type { FaseGiro } from '../frasco';
 
-const FLIP_MS = 1000;
+/** Media vuelta del reinicio. El fundido del contenido usa el mismo tiempo. */
+export const MS_MEDIA_VUELTA = 900;
+const FLIP_MS = MS_MEDIA_VUELTA;
 const TURN_MS = 950;
 
 export type OrdenGiro =
@@ -28,13 +30,13 @@ export type EventoGiro = 'reinicio-sujetar' | 'reinicio-cerrar' | 'fase-cerrar';
 
 export type ResultadoOrden = 'commit' | 'moved' | 'nada';
 
-function easeInOutCubic(t: number): number {
+export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 /**
  * Único sitio que escribe el ángulo. El arrastre, el muelle, el volteo de
- * 1000 ms, la media vuelta de fase de 950 ms y la intro salen de aquí.
+ * 900 ms, la media vuelta de fase de 950 ms y la intro salen de aquí.
  */
 export function crearGiro() {
   let gestureAngle = 0;

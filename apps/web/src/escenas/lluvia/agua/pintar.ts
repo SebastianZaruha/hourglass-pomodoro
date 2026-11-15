@@ -1,4 +1,4 @@
-import type { Pintura } from '../../../comun/frasco';
+import { opacidadFundido, type Pintura } from '../../../comun/frasco';
 import type { Superficie, VistaAgua } from './modelo';
 
 interface Tinte {
@@ -184,11 +184,77 @@ function sDeCaja(w: number, h: number, tangent: Eje): { s0: number; s1: number }
   return { s0, s1 };
 }
 
+/** El agua saliente llega a 4 px de desenfoque; la entrante sale de ahí. */
+const BLUR_FUNDIDO = 4;
+
+function filtro(px: number): string {
+  return px > 0.05 ? `blur(${px}px)` : 'none';
+}
+
+function pintarCapa(
+  g: CanvasRenderingContext2D,
+  dpr: number,
+  w: number,
+  h: number,
+  cuello: number,
+  alfa: number,
+  arriba: Superficie,
+  abajo: Superficie,
+  tinte: Tinte,
+): void {
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.filter = 'none';
+  g.clearRect(0, 0, w, h);
+  const cuerpo = queSeVea(tinte.arriba);
+  const sen = Math.sin(alfa);
+  const cos = Math.cos(alfa);
+  const down = { x: sen, y: cos };
+  const tangent = { x: cos, y: -sen };
+  const cx = w / 2;
+  const cy = h / 2;
+  const alcance = Math.hypot(w, h);
+  const cajaS = sDeCaja(w, h, tangent);
+  const pintarBulbo = (sup: Superficie, superior: boolean) => {
+    if (!sup.dibujar) return;
+    g.save();
+    g.beginPath();
+    if (superior) g.rect(0, 0, w, cuello);
+    else g.rect(0, cuello, w, h - cuello);
+    g.clip();
+    g.fillStyle = cuerpo;
+    if (sup.lleno) g.fillRect(0, 0, w, h);
+    else {
+      rellenar(g, sup, cx, cy, tangent, down, cajaS.s0, cajaS.s1, alcance);
+      reflejo(g, sup, cx, cy, tangent, down, queSeVea(tinte.reflejo));
+      menisco(g, sup, cx, cy, tangent, down, queSeVea(tinte.menisco));
+    }
+    g.restore();
+  };
+  pintarBulbo(arriba, true);
+  pintarBulbo(abajo, false);
+}
+
+function recortar(g: CanvasRenderingContext2D, mascara: CanvasImageSource, w: number, h: number): void {
+  g.filter = 'none';
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'destination-in';
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(mascara, 0, 0, w, h);
+  g.globalCompositeOperation = 'source-over';
+}
+
 export function crearPincel(): (ctx: CanvasRenderingContext2D, p: Pintura, vista: VistaAgua) => void {
   const hoja = document.createElement('canvas');
   const g = hoja.getContext('2d');
+  const capaSale = document.createElement('canvas');
+  const gSale = capaSale.getContext('2d');
+  const capaEntra = document.createElement('canvas');
+  const gEntra = capaEntra.getContext('2d');
   return (ctx, p, vista) => {
-    if (!g) return;
+    if (!g || !gSale || !gEntra) return;
     const w = p.caja.w;
     const h = p.caja.h;
     if (w < 2 || h < 2) return;
@@ -199,43 +265,43 @@ export function crearPincel(): (ctx: CanvasRenderingContext2D, p: Pintura, vista
       hoja.width = pxW;
       hoja.height = pxH;
     }
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.globalCompositeOperation = 'source-over';
-    g.clearRect(0, 0, w, h);
     const tinte = TINTES[p.esquema];
-    const cuerpo = queSeVea(tinte.arriba);
-    const sen = Math.sin(vista.alfa);
-    const cos = Math.cos(vista.alfa);
-    const down = { x: sen, y: cos };
-    const tangent = { x: cos, y: -sen };
-    const cx = w / 2;
-    const cy = h / 2;
-    const alcance = Math.hypot(w, h);
-    const cajaS = sDeCaja(w, h, tangent);
     const cuello = vista.cuello * h;
-    const pintarBulbo = (sup: Superficie, superior: boolean) => {
-      if (!sup.dibujar) return;
-      g.save();
-      g.beginPath();
-      if (superior) g.rect(0, 0, w, cuello);
-      else g.rect(0, cuello, w, h - cuello);
-      g.clip();
-      g.fillStyle = cuerpo;
-      if (sup.lleno) g.fillRect(0, 0, w, h);
-      else {
-        rellenar(g, sup, cx, cy, tangent, down, cajaS.s0, cajaS.s1, alcance);
-        reflejo(g, sup, cx, cy, tangent, down, queSeVea(tinte.reflejo));
-        menisco(g, sup, cx, cy, tangent, down, queSeVea(tinte.menisco));
+    const cruce = vista.cruce;
+    if (cruce) {
+      if (capaSale.width !== pxW || capaSale.height !== pxH) {
+        capaSale.width = pxW;
+        capaSale.height = pxH;
       }
-      g.restore();
-    };
-    pintarBulbo(vista.arriba, true);
-    pintarBulbo(vista.abajo, false);
-    g.globalCompositeOperation = 'destination-in';
-    g.imageSmoothingEnabled = true;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(p.geo.mascara, 0, 0, w, h);
-    g.globalCompositeOperation = 'source-over';
+      if (capaEntra.width !== pxW || capaEntra.height !== pxH) {
+        capaEntra.width = pxW;
+        capaEntra.height = pxH;
+      }
+      pintarCapa(gSale, dpr, w, h, cuello, cruce.alfaViejo, cruce.viejoArriba, cruce.viejoAbajo, tinte);
+      pintarCapa(gEntra, dpr, w, h, cuello, 0, cruce.nuevoArriba, cruce.nuevoAbajo, tinte);
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 1;
+      g.filter = 'none';
+      g.clearRect(0, 0, w, h);
+      g.imageSmoothingEnabled = true;
+      const sale = 1 - cruce.u;
+      const alfaViejo = opacidadFundido(sale);
+      const alfaNuevo = opacidadFundido(cruce.u);
+      if (alfaViejo > 0) {
+        g.filter = filtro(BLUR_FUNDIDO * cruce.u);
+        g.globalAlpha = alfaViejo;
+        g.drawImage(capaSale, 0, 0, w, h);
+      }
+      if (alfaNuevo > 0) {
+        g.filter = filtro(BLUR_FUNDIDO * sale);
+        g.globalAlpha = alfaNuevo;
+        g.drawImage(capaEntra, 0, 0, w, h);
+      }
+    } else {
+      pintarCapa(g, dpr, w, h, cuello, vista.alfa, vista.arriba, vista.abajo, tinte);
+    }
+    recortar(g, p.geo.mascara, w, h);
     ctx.drawImage(hoja, p.caja.x, p.caja.y, w, h);
   };
 }

@@ -1,6 +1,6 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
-import type { GeometriaFrasco, Scheme } from '../../comun/frasco';
+import { opacidadFundido, type GeometriaFrasco, type Scheme } from '../../comun/frasco';
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
@@ -74,8 +74,16 @@ export interface ArenaPintada {
   readonly particles: StreamParticles;
   readonly lut: Uint8ClampedArray;
   readonly geo: GeometriaFrasco;
-  /** Arena pegada al vidrio. `queda` es su opacidad; la nueva entra con el resto. */
-  readonly fundido?: { readonly viejo: HTMLCanvasElement; readonly queda: number };
+  /**
+   * Fundido del reinicio, en el lienzo de la arena. `queda` es la opacidad
+   * del montón viejo. El nuevo es el de ahora, dado la vuelta 180°.
+   */
+  readonly fundido?: {
+    readonly viejo: HTMLCanvasElement;
+    readonly queda: number;
+    readonly blurSale: number;
+    readonly blurEntra: number;
+  };
 }
 
 let hoja: HTMLCanvasElement | null = null;
@@ -108,15 +116,29 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
 
   g.imageSmoothingEnabled = false;
   if (scene.fundido) {
-    const queda = scene.fundido.queda;
-    // Suma, no source-over: a mitad las dos opacas tapan el vidrio, sin hueco blanco.
-    g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = queda;
-    g.drawImage(scene.fundido.viejo, vx, vy, vw, vh);
-    g.globalAlpha = 1 - queda;
-    g.drawImage(scene.sand, vx, vy, vw, vh);
-    g.globalAlpha = 1;
+    const { queda, viejo, blurSale, blurEntra } = scene.fundido;
+    // El mismo centro que el giro del vidrio: la caja, no la ventana.
+    const cx = caja.w / 2;
+    const cy = caja.h / 2;
+    g.save();
     g.globalCompositeOperation = 'source-over';
+    g.imageSmoothingEnabled = true;
+    const alfaViejo = opacidadFundido(queda);
+    const alfaNuevo = opacidadFundido(1 - queda);
+    if (alfaViejo > 0) {
+      g.filter = blurSale > 0.05 ? `blur(${blurSale}px)` : 'none';
+      g.globalAlpha = alfaViejo;
+      g.drawImage(viejo, vx, vy, vw, vh);
+    }
+    if (alfaNuevo > 0) {
+      g.filter = blurEntra > 0.05 ? `blur(${blurEntra}px)` : 'none';
+      g.globalAlpha = alfaNuevo;
+      g.translate(cx, cy);
+      g.rotate(Math.PI);
+      g.translate(-cx, -cy);
+      g.drawImage(scene.sand, vx, vy, vw, vh);
+    }
+    g.restore();
   } else {
     g.drawImage(scene.sand, vx, vy, vw, vh);
   }
