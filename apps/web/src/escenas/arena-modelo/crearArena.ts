@@ -43,21 +43,13 @@ const TOP_CRATER = 0.1;
  */
 const STEPS_PER_FRAME = 2;
 const MAX_CATCH_UP = 3;
-/** Escalón fino de la simulación en el móvil (`MotionProcessor`, 3°). */
-const PASO_SIM_GRADOS = 3;
 /**
- * El `step` del core no mueve un montón hasta unos 35°: por debajo, la
- * superficie se queda clavada al vidrio. `arrange` con la gravedad real
- * sí deja el montón en el lado bajo (a 15°, el centro de masa del de abajo
- * se corre unos 15 columnas). Esta ganancia lleva el ángulo del frasco a
- * ese escalón: 15° de ratón → unos 58° de simulación, y a 30° sigue
- * habiendo componente hacia abajo. El chorro y el cuello usan el ángulo real.
+ * Escalón de la gravedad real, como el móvil (`MotionProcessor`, 3°).
+ * `step` recibe (sin θ, cos θ) en esos escalones. Por debajo del ángulo
+ * de reposo el montón casi no se mueve; boca abajo, los granos caen hacia
+ * la tapa. El cuello solo lo abre el temporizador, con el ángulo real.
  */
-const GANANCIA_RESBALAR = 6;
-/** Por debajo de esto el frasco ya está casi derecho y el montón tiene que volver. */
-const ASENTAR_ANGULO = 0.22;
-/** Empuje hacia el centro (rad) cuando el montón se quedó ladeado. */
-const ASENTAR_EMPUJE = 0.95;
+const PASO_SIM_GRADOS = 3;
 /** Fundido del reinicio, cuando el giro de 180° ya ha terminado. */
 const FUNDIDO_MS = 700;
 
@@ -93,40 +85,12 @@ function copiarLienzo(src: HTMLCanvasElement): HTMLCanvasElement | null {
   return copia;
 }
 
-/** Gravedad en el marco del frasco: de pie es (0, 1). */
+/** Gravedad en el marco del frasco: de pie es (0, 1); boca abajo, (0, −1). */
 function gravedadDelAngulo(angulo: number, out: MutableVec2): void {
   out.x = Math.sin(angulo);
   out.y = Math.cos(angulo);
 }
 
-/** Ángulo con el que `step` sí resbala. Se satura antes de 90°. */
-function anguloDeResbalar(angulo: number): number {
-  const tope = Math.PI / 2 - 0.02;
-  const a = Math.max(-tope, Math.min(tope, angulo));
-  return Math.atan(GANANCIA_RESBALAR * Math.tan(a));
-}
-
-/**
- * Centro de masa horizontal, en columnas desde el eje. Positivo: más arena
- * a la derecha. Al soltar, el montón queda en una pendiente que `step`
- * con gravedad vertical ya no deshace; hay que empujarlo hacia el centro.
- */
-function descentre(sim: SandSimulation): number {
-  const mid = (sim.cols - 1) / 2;
-  let n = 0;
-  let sx = 0;
-  const { cells, cols, rows, gateRow } = sim;
-  for (let row = 0; row < rows; row++) {
-    if (row === gateRow) continue;
-    const base = row * cols;
-    for (let col = 0; col < cols; col++) {
-      if (cells[base + col] === 0) continue;
-      n++;
-      sx += col - mid;
-    }
-  }
-  return n ? sx / n : 0;
-}
 const SAND_CELL_PX = 2.15;
 /** Ventana interior de la foto: 961 de alto y 395 de ancho. */
 const PERFIL: HourglassProfile = {
@@ -206,13 +170,11 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
-  const gravedadPaso: MutableVec2 = { x: 0, y: 1 };
   const gravedadSim: MutableVec2 = { x: 0, y: 1 };
   const lod = new TiltLod();
   const presupuesto = { maxPerFrame: 8, teleportThreshold: 40, crater: TOP_CRATER };
   let simMs = 0;
   let ultimoAhora = 0;
-  let ladeado = false;
 
   void geometriaDelFrasco().then(
     (g) => {
@@ -268,9 +230,8 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       const inclinado = !turning && (e.fase === 'arrastre' || e.fase === 'volviendo');
       const angulo = inclinado ? e.angulo : 0;
       gravedadDelAngulo(angulo, gravedad);
-      gravedadDelAngulo(inclinado ? anguloDeResbalar(angulo) : 0, gravedadPaso);
-      quantizeDirection(gravedadPaso, PASO_SIM_GRADOS, gravedadSim);
-      const gs = turning ? gravedadSim : lod.update(e.ahora, gravedadPaso, gravedadSim, simMs);
+      quantizeDirection(gravedad, PASO_SIM_GRADOS, gravedadSim);
+      const gs = turning ? gravedadSim : lod.update(e.ahora, gravedad, gravedadSim, simMs);
       const frameDt = ultimoAhora > 0 ? (e.ahora - ultimoAhora) / 1000 : 1 / 60;
       ultimoAhora = e.ahora;
       const ticks = lod.isActive ? 1 : Math.min(MAX_CATCH_UP, Math.max(1, Math.round(frameDt * 60 - 0.2)));
@@ -321,20 +282,10 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
           presupuesto.teleportThreshold = budget.teleportThreshold;
         }
         const target = syncing ? targetSourceGrains(runInitial, snap.remainingMs, snap.durationMs) : 0;
-        let pasoG = gs;
-        if (inclinado && Math.abs(e.angulo) > 0.05) ladeado = true;
-        if (ladeado && e.fase !== 'arrastre' && Math.abs(angulo) < ASENTAR_ANGULO) {
-          const bias = descentre(sim);
-          if (Math.abs(bias) > 1) {
-            gravedadDelAngulo(-Math.sign(bias) * ASENTAR_EMPUJE, gravedadPaso);
-            quantizeDirection(gravedadPaso, PASO_SIM_GRADOS, gravedadSim);
-            pasoG = gravedadSim;
-          } else ladeado = false;
-        }
         const simStart = performance.now();
         for (let k = 0; k < ticks; k++) {
           if (budget && syncSandToTarget(sim, target, gravedad, presupuesto) !== 'idle') moved = true;
-          for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(pasoG) > 0) moved = true;
+          for (let s = 0; s < STEPS_PER_FRAME; s++) if (sim.step(gs) > 0) moved = true;
         }
         simMs = performance.now() - simStart;
       }
@@ -383,7 +334,6 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (motivo === 'fase') {
         sim.rotateHalfTurn();
         lod.reset();
-        ladeado = false;
         runInitial = sim.topCount;
         dirty = true;
         particles.reset(7);
@@ -398,7 +348,6 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       }
       sim.rotateHalfTurn();
       lod.reset();
-      ladeado = false;
       dirty = true;
       subir();
       const level = nivel(sim, snap.durationMs);
