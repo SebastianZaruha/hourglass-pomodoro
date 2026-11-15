@@ -175,8 +175,7 @@ export function pintarVidrio(
       ctx.globalCompositeOperation = 'screen';
       ctx.drawImage(scene.delante, caja.x, caja.y, caja.w, caja.h);
       ctx.restore();
+      pintarLuz(ctx, scene.delante, caja, scene.luz, scene.rotation);
     }
   });
-
-  if (fotos && scene.delante) pintarLuz(ctx, scene.delante, caja, scene.luz);
 }

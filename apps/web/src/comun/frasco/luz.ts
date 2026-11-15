@@ -11,6 +11,9 @@ let placa: HTMLCanvasElement | null = null;
 
 /**
  * Degradado en el mundo, solo encima del vidrio de delante.
+ * Se llama con el contexto ya girado: la hoja acompaña al vidrio y el
+ * degradado se contra-gira para seguir en el mundo. Si se pegara sin girar,
+ * la foto de delante (interior negro) dejaría un segundo frasco de pie.
  * Con fuerza 0 no pinta nada: Clásico sigue con su degradado publicado.
  */
 export function pintarLuz(
@@ -18,6 +21,7 @@ export function pintarLuz(
   frente: CanvasImageSource,
   caja: { readonly x: number; readonly y: number; readonly w: number; readonly h: number },
   luz: LuzEscena,
+  rotacion: number,
 ): void {
   if (!(luz.fuerza > 0) || caja.w < 2 || caja.h < 2) return;
   const w = Math.max(2, Math.round(caja.w));
@@ -35,7 +39,7 @@ export function pintarLuz(
   g.clearRect(0, 0, w, h);
   g.drawImage(frente, 0, 0, w, h);
 
-  const rad = (luz.direccion * Math.PI) / 180;
+  const rad = (luz.direccion * Math.PI) / 180 - rotacion;
   const sx = Math.cos(rad);
   const sy = Math.sin(rad);
   const grad = g.createLinearGradient(
