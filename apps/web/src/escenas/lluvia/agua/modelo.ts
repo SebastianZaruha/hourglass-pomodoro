@@ -16,6 +16,8 @@ const PASO = 1 / 60;
 const CONSTANTE_VOLUMEN = 0.6;
 /** Por debajo de esto el muelle ya está quieto y el bucle puede dormirse. */
 const PHI_QUIETO = (0.2 * Math.PI) / 180;
+/** El volteo y un puntero que cruza el corte no pueden tumbar la superficie. */
+const TOPE_PHI = 0.9;
 const PHI_VEL_QUIETA = 0.02;
 const OLA_QUIETA = 0.1;
 
@@ -125,8 +127,10 @@ function objetivos(
 
 /**
  * Masa de agua. La superficie sale del k-ésimo punto más bajo,
- * así que es horizontal en el mundo y el volumen no cambia al girar.
- * El muelle la mece; las 32 alturas son la ola, con media cero.
+ * así que el volumen no cambia al girar.
+ * En reposo queda horizontal. Al girar el frasco la masa se queda,
+ * la superficie se inclina y el muelle la mece hasta calmarla.
+ * Las 32 alturas son la ola, con media cero.
  */
 export function crearModelo(): ModeloAgua {
   let muerto = false;
@@ -394,7 +398,13 @@ export function crearModelo(): ModeloAgua {
       }
 
       const dtFrame = Math.min(0.1, Math.max(0, e.dt));
-      const alpha = saltar || dtFrame <= 0 ? 0 : (e.velocidad - velPrevia) / dtFrame;
+      const salto = saltar || dtFrame <= 0;
+      const alpha = salto ? 0 : (e.velocidad - velPrevia) / dtFrame;
+      // La masa no gira con el cristal: se queda y la superficie se inclina.
+      // Solo el arrastre y la vuelta cuentan; el volteo salta el ángulo.
+      if (!salto && (e.fase === 'arrastre' || e.fase === 'volviendo')) {
+        phi -= e.velocidad * dtFrame;
+      }
       velPrevia = e.velocidad;
       saltar = false;
 
@@ -433,6 +443,13 @@ export function crearModelo(): ModeloAgua {
         const dt = Math.min(PASO, queda);
         queda -= dt;
         integrarMuelle(dt, alpha);
+      }
+      if (phi > TOPE_PHI) {
+        phi = TOPE_PHI;
+        if (phiV > 0) phiV = 0;
+      } else if (phi < -TOPE_PHI) {
+        phi = -TOPE_PHI;
+        if (phiV < 0) phiV = 0;
       }
       vista.alfa = e.angulo + phi;
       const extA = proyectar(arriba, vista.alfa);
