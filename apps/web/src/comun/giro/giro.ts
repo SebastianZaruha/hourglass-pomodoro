@@ -1,7 +1,5 @@
 import type { FaseGiro } from '../frasco';
 
-/** A partir de aquí el suelte completa el medio giro (180°). */
-const FLIP_COMMIT = Math.PI * 0.45;
 const FLIP_MS = 1000;
 const TURN_MS = 950;
 
@@ -142,21 +140,13 @@ export function crearGiro() {
         return 'nada';
       }
       if (o.tipo === 'soltar') {
+        // Soltar no reinicia, ni a 170°. El muelle devuelve el ángulo a 0.
+        // El medio giro solo lo pide el doble clic.
         if (!dragOn) return 'nada';
-        if (quieto) {
-          dragOn = false;
-          gestureActive = false;
-          const moved = dragMoved;
-          dragMoved = false;
-          return moved ? 'moved' : 'nada';
-        }
         dragOn = false;
         gestureActive = false;
         const moved = dragMoved;
-        if (Math.abs(gestureAngle) >= FLIP_COMMIT) {
-          pedirReinicio();
-          return 'commit';
-        }
+        dragMoved = false;
         return moved ? 'moved' : 'nada';
       }
       if (o.tipo === 'reiniciar') {
