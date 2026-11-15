@@ -1,8 +1,10 @@
 import { arena } from '../escenas/arena';
 import { clasicoPublicado } from '../escenas/clasico';
+import { lluvia } from '../escenas/lluvia';
 
 export { arena } from '../escenas/arena';
 export { barraPublicada, clasicoPublicado } from '../escenas/clasico';
+export { lluvia } from '../escenas/lluvia';
 
-/** Clásico, la publicada, y Arena. Con dos, el menú muestra la fila. */
-export const escenas = [clasicoPublicado, arena] as const;
+/** Lluvia es la de por defecto. Con varias, el menú muestra la fila. */
+export const escenas = [lluvia, arena, clasicoPublicado] as const;
