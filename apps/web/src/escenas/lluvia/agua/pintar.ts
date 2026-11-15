@@ -1,307 +1,297 @@
-import { opacidadFundido, type Pintura } from '../../../comun/frasco';
-import type { Superficie, VistaAgua } from './modelo';
+import type { Pintura } from '../../../comun/frasco';
+import { crearAguaVidrio, matrizFrasco, type AguaVidrio, type EstadoBulbo, type Matriz2D } from './vidrio';
+import type { VistaAgua } from './modelo';
 
-interface Tinte {
-  readonly arriba: string;
-  readonly menisco: string;
-  readonly reflejo: string;
+const PASOS = 40;
+/** Lado derecho de arriba a abajo y lado izquierdo de vuelta. */
+const POLI = PASOS * 4;
+const OLAS = 32;
+
+function fondoVisible(): HTMLImageElement | HTMLVideoElement | null {
+  const capa = document.querySelector('.fondo-capa.se-ve');
+  if (!capa) return null;
+  const video = capa.querySelector('video.fondo-video');
+  if (video instanceof HTMLVideoElement && video.readyState >= 2 && video.videoWidth > 0 && !video.paused) {
+    return video;
+  }
+  const img = capa.querySelector('img.fondo-medio');
+  if (img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0) return img;
+  return null;
+}
+
+/** Área del polígono por debajo de y = nivel. y crece hacia abajo. */
+function areaBajo(p: Float32Array, nivel: number): number {
+  let primeroX = 0;
+  let primeroY = 0;
+  let ultimoX = 0;
+  let ultimoY = 0;
+  let hay = false;
+  let suma = 0;
+  const emitir = (x: number, y: number) => {
+    if (!hay) {
+      primeroX = x;
+      primeroY = y;
+      hay = true;
+    } else suma += ultimoX * y - x * ultimoY;
+    ultimoX = x;
+    ultimoY = y;
+  };
+  const n = p.length;
+  for (let i = 0; i < n; i += 2) {
+    const j = (i + 2) % n;
+    const px = p[i] ?? 0;
+    const py = p[i + 1] ?? 0;
+    const qx = p[j] ?? 0;
+    const qy = p[j + 1] ?? 0;
+    const pDentro = py >= nivel;
+    const qDentro = qy >= nivel;
+    if (pDentro !== qDentro && qy !== py) emitir(px + ((nivel - py) / (qy - py)) * (qx - px), nivel);
+    if (qDentro) emitir(qx, qy);
+  }
+  if (hay) suma += ultimoX * primeroY - primeroX * ultimoY;
+  return Math.abs(suma) / 2;
+}
+
+function nivelPorArea(p: Float32Array, yMin: number, yMax: number, area: number): number {
+  if (area <= 0) return yMax + 2;
+  let arriba = yMin;
+  let abajo = yMax;
+  for (let i = 0; i < 24; i++) {
+    const medio = (arriba + abajo) / 2;
+    if (areaBajo(p, medio) > area) arriba = medio;
+    else abajo = medio;
+  }
+  return (arriba + abajo) / 2;
+}
+
+function aMundo(origen: Float32Array, m: Matriz2D, destino: Float32Array): void {
+  for (let i = 0; i < origen.length; i += 2) {
+    const x = origen[i] ?? 0;
+    const y = origen[i + 1] ?? 0;
+    destino[i] = m.a * x + m.c * y + m.e;
+    destino[i + 1] = m.b * x + m.d * y + m.f;
+  }
+}
+
+function nivelDe(mundo: Float32Array, fraccion: number): number {
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (let i = 1; i < mundo.length; i += 2) {
+    const y = mundo[i] ?? 0;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  if (!(y1 > y0)) return y1;
+  if (fraccion <= 0.004) return y1 + 2;
+  if (fraccion >= 0.996) return y0 - 2;
+  return nivelPorArea(mundo, y0, y1, fraccion * areaBajo(mundo, y0 - 2));
+}
+
+function anchoDe(p: Float32Array): number {
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    const x = p[i] ?? 0;
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+  }
+  return x1 > x0 ? x1 - x0 : 1;
 }
 
 /**
- * Frío y transparente. El matiz se queda entre el azul y el verde, nunca en el marrón.
- * Estos rgba son los que tienen que verse sobre el interior negro.
+ * Silueta del bulbo en px del frasco, centrada en el cuello.
+ * Sale de los puntos interiores: pared con pared, sin un corte vertical.
  */
-const TINTES: Record<'claro' | 'oscuro', Tinte> = {
-  claro: {
-    arriba: 'rgba(214, 228, 234, 0.26)',
-    menisco: 'rgba(196, 222, 238, 0.72)',
-    reflejo: 'rgba(214, 228, 234, 0.2)',
-  },
-  oscuro: {
-    arriba: 'rgba(160, 178, 188, 0.20)',
-    menisco: 'rgba(176, 200, 214, 0.58)',
-    reflejo: 'rgba(214, 228, 234, 0.2)',
-  },
-};
+function escribirSilueta(fracciones: Float32Array, w: number, h: number, out: Float32Array): boolean {
+  const n = fracciones.length / 2;
+  if (n < 8) return false;
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const y = fracciones[i * 2 + 1] ?? 0.5;
+    if (y < yMin) yMin = y;
+    if (y > yMax) yMax = y;
+  }
+  const span = Math.max(1e-6, yMax - yMin);
+  const minX = new Float64Array(PASOS).fill(Infinity);
+  const maxX = new Float64Array(PASOS).fill(-Infinity);
+  for (let i = 0; i < n; i++) {
+    const x = fracciones[i * 2] ?? 0.5;
+    const y = fracciones[i * 2 + 1] ?? 0.5;
+    let b = Math.round(((y - yMin) / span) * (PASOS - 1));
+    if (b < 0) b = 0;
+    if (b > PASOS - 1) b = PASOS - 1;
+    if (x < (minX[b] ?? Infinity)) minX[b] = x;
+    if (x > (maxX[b] ?? -Infinity)) maxX[b] = x;
+  }
+  let visto = false;
+  let guardaMin = 0.5;
+  let guardaMax = 0.5;
+  for (let i = 0; i < PASOS; i++) {
+    if ((minX[i] ?? Infinity) !== Infinity) {
+      guardaMin = minX[i] ?? guardaMin;
+      guardaMax = maxX[i] ?? guardaMax;
+      visto = true;
+    } else if (visto) {
+      minX[i] = guardaMin;
+      maxX[i] = guardaMax;
+    }
+  }
+  visto = false;
+  for (let i = PASOS - 1; i >= 0; i--) {
+    if ((minX[i] ?? Infinity) !== Infinity) {
+      guardaMin = minX[i] ?? guardaMin;
+      guardaMax = maxX[i] ?? guardaMax;
+      visto = true;
+    } else if (visto) {
+      minX[i] = guardaMin;
+      maxX[i] = guardaMax;
+    }
+  }
+  for (let i = 0; i < PASOS; i++) {
+    const y = (yMin + (span * i) / (PASOS - 1) - 0.5) * h;
+    out[i * 2] = ((maxX[i] ?? 0.5) - 0.5) * w;
+    out[i * 2 + 1] = y;
+  }
+  for (let i = 0; i < PASOS; i++) {
+    const j = PASOS - 1 - i;
+    const y = (yMin + (span * j) / (PASOS - 1) - 0.5) * h;
+    const k = PASOS + i;
+    out[k * 2] = ((minX[j] ?? 0.5) - 0.5) * w;
+    out[k * 2 + 1] = y;
+  }
+  return true;
+}
+
+function poseDelContexto(ctx: CanvasRenderingContext2D): number {
+  const dpr = window.devicePixelRatio || 1;
+  const t = ctx.getTransform();
+  const det = t.a * t.d - t.b * t.c;
+  if (!(det > 0)) return 1;
+  const pose = Math.sqrt(det) / dpr;
+  return pose > 0.05 && pose < 4 ? pose : 1;
+}
+
+/** El vidrio nos llama ya girados. El agua se pinta en px de pantalla. */
+function ponerEnPantalla(ctx: CanvasRenderingContext2D): void {
+  const dpr = window.devicePixelRatio || 1;
+  const lienzo = ctx.canvas.getBoundingClientRect();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.translate(-lienzo.left, -lienzo.top);
+}
+
+function escribirAlturas(destino: Float32Array, phi: number, ancho: number, onda: ArrayLike<number>): void {
+  const n = destino.length;
+  const pendiente = Math.tan(Math.max(-1.1, Math.min(1.1, phi)));
+  for (let i = 0; i < n; i++) {
+    const u = n === 1 ? 0.5 : i / (n - 1);
+    destino[i] = (u - 0.5) * ancho * pendiente + (onda[Math.min(i, onda.length - 1)] ?? 0);
+  }
+}
+
+export interface PincelAgua {
+  pintar(ctx: CanvasRenderingContext2D, p: Pintura, vista: VistaAgua, caudal: number, dtMs: number): void;
+  destruir(): void;
+}
 
 /**
- * El frente del vidrio es negro opaco y luego cae en soft-light, que eleva
- * el color al cuadrado. Sin este paso el agua sale a unos 12 de canal y el
- * bulbo de abajo, sobre el negro, parece vacío.
+ * El agua de Picasso: vidrio un poco opaco, sin tinte azul, y el fondo de verdad
+ * doblado dentro. La horizontal es la de la pantalla, no la del frasco.
  */
-function queSeVea(css: string): string {
-  const m = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/.exec(css);
-  if (!m) return css;
-  const r = Number(m[1]);
-  const g = Number(m[2]);
-  const b = Number(m[3]);
-  const a = Number(m[4]);
-  const media = (r + g + b) / (3 * 255);
-  if (!(a > 0) || !(media > 0)) return css;
-  const alfa = Math.min(1, Math.sqrt(a * media) / media);
-  return `rgba(${r}, ${g}, ${b}, ${alfa.toFixed(3)})`;
-}
+export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => void): PincelAgua {
+  const poliA = new Float32Array(POLI);
+  const poliB = new Float32Array(POLI);
+  const mundoA = new Float32Array(POLI);
+  const mundoB = new Float32Array(POLI);
+  const alturasA = new Float32Array(OLAS);
+  const alturasB = new Float32Array(OLAS);
+  const cuello = { x: 0, y: 0 };
+  const matriz: Matriz2D = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+  let agua: AguaVidrio | null = null;
+  let firma = '';
+  let anchoVentana = 0;
+  let altoVentana = 0;
+  let vistaActual: VistaAgua | null = null;
 
-interface Eje {
-  readonly x: number;
-  readonly y: number;
-}
+  const asegurar = (p: Pintura): AguaVidrio | null => {
+    const clave = `${p.caja.w.toFixed(1)}x${p.caja.h.toFixed(1)}`;
+    if (clave !== firma || !agua) {
+      const listaA = escribirSilueta(p.geo.puntos.arriba, p.caja.w, p.caja.h, poliA);
+      const listaB = escribirSilueta(p.geo.puntos.abajo, p.caja.w, p.caja.h, poliB);
+      if (!listaA || !listaB) return null;
+      cuello.x = 0;
+      cuello.y = (p.geo.cuelloY - 0.5) * p.caja.h;
+      firma = clave;
+      if (!agua) {
+        agua = crearAguaVidrio({
+          bulbos: [poliA, poliB],
+          cuello,
+          alCaerGota(bulbo, u) {
+            const vista = vistaActual;
+            if (!vista) return;
+            const sup = bulbo === 0 ? vista.arriba : vista.abajo;
+            const s = sup.s0 + Math.min(1, Math.max(0, u)) * (sup.s1 - sup.s0);
+            pulso(bulbo === 0 ? 'arriba' : 'abajo', s);
+          },
+        });
+        anchoVentana = 0;
+      }
+    }
+    return agua;
+  };
 
-interface Punto {
-  readonly x: number;
-  readonly y: number;
-}
-
-function olaEn(sup: Superficie, s: number): number {
-  const ancho = sup.s1 - sup.s0;
-  if (!(ancho > 1)) return 0;
-  const t = ((s - sup.s0) / ancho) * (sup.onda.length - 1);
-  if (t <= 0) return sup.onda[0] ?? 0;
-  if (t >= sup.onda.length - 1) return sup.onda[sup.onda.length - 1] ?? 0;
-  const i = Math.floor(t);
-  const f = t - i;
-  return (sup.onda[i] ?? 0) * (1 - f) + (sup.onda[i + 1] ?? 0) * f;
-}
-
-function punto(cx: number, cy: number, tangent: Eje, down: Eje, s: number, h: number, ola: number): Punto {
   return {
-    x: cx + tangent.x * s + down.x * (h - ola),
-    y: cy + tangent.y * s + down.y * (h - ola),
-  };
-}
+    pintar(ctx, p, vista, caudal, dtMs) {
+      vistaActual = vista;
+      const vidrio = asegurar(p);
+      if (!vidrio) return;
+      const pose = poseDelContexto(ctx);
+      const vidrioEl = document.querySelector('.glass-canvas');
+      const origen = vidrioEl?.getBoundingClientRect();
+      const cx = (origen?.left ?? 0) + p.caja.x + p.caja.w / 2;
+      const cy = (origen?.top ?? 0) + p.caja.y + p.caja.h / 2;
 
-/**
- * Rellena el lado de abajo de la línea y lo recorta al bulbo.
- * La máscara, después, lo deja pared con pared.
- */
-function rellenar(
-  g: CanvasRenderingContext2D,
-  sup: Superficie,
-  cx: number,
-  cy: number,
-  tangent: Eje,
-  down: Eje,
-  sCaja0: number,
-  sCaja1: number,
-  lejos: number,
-) {
-  const n = 36;
-  g.beginPath();
-  for (let i = 0; i <= n; i++) {
-    const s = sCaja0 + ((sCaja1 - sCaja0) * i) / n;
-    const dentro = s >= sup.s0 && s <= sup.s1;
-    const p = punto(cx, cy, tangent, down, s, sup.h, dentro ? olaEn(sup, s) : 0);
-    if (i === 0) g.moveTo(p.x, p.y);
-    else g.lineTo(p.x, p.y);
-  }
-  const fin = punto(cx, cy, tangent, down, sCaja1, sup.h, 0);
-  const ini = punto(cx, cy, tangent, down, sCaja0, sup.h, 0);
-  g.lineTo(fin.x + down.x * lejos, fin.y + down.y * lejos);
-  g.lineTo(ini.x + down.x * lejos, ini.y + down.y * lejos);
-  g.closePath();
-  g.fill();
-}
+      ctx.save();
+      ponerEnPantalla(ctx);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-function reflejo(
-  g: CanvasRenderingContext2D,
-  sup: Superficie,
-  cx: number,
-  cy: number,
-  tangent: Eje,
-  down: Eje,
-  color: string,
-) {
-  const ancho = sup.s1 - sup.s0;
-  if (!(ancho > 4)) return;
-  const pasos = sup.onda.length;
-  const fondo = 10;
-  g.beginPath();
-  for (let i = 0; i < pasos; i++) {
-    const s = sup.s0 + (ancho * i) / (pasos - 1);
-    const p = punto(cx, cy, tangent, down, s, sup.h, olaEn(sup, s));
-    if (i === 0) g.moveTo(p.x, p.y);
-    else g.lineTo(p.x, p.y);
-  }
-  for (let i = pasos - 1; i >= 0; i--) {
-    const s = sup.s0 + (ancho * i) / (pasos - 1);
-    const p = punto(cx, cy, tangent, down, s, sup.h, olaEn(sup, s) - fondo);
-    g.lineTo(p.x, p.y);
-  }
-  g.closePath();
-  const origen = punto(cx, cy, tangent, down, (sup.s0 + sup.s1) / 2, sup.h, 0);
-  const destino = punto(cx, cy, tangent, down, (sup.s0 + sup.s1) / 2, sup.h, -fondo);
-  const grad = g.createLinearGradient(origen.x, origen.y, destino.x, destino.y);
-  grad.addColorStop(0, color);
-  grad.addColorStop(1, 'rgba(214, 228, 234, 0)');
-  g.fillStyle = grad;
-  g.fill();
-}
-
-/** 2 px, solo en los 6 px donde el agua toca el cristal. Sin línea de lado a lado. */
-function menisco(
-  g: CanvasRenderingContext2D,
-  sup: Superficie,
-  cx: number,
-  cy: number,
-  tangent: Eje,
-  down: Eje,
-  color: string,
-) {
-  const tramo = 6;
-  const ancho = sup.contacto1 - sup.contacto0;
-  if (!(ancho > tramo * 2)) return;
-  g.strokeStyle = color;
-  g.lineWidth = 2;
-  g.lineCap = 'round';
-  const extremo = (desde: number, hasta: number) => {
-    g.beginPath();
-    const a = punto(cx, cy, tangent, down, desde, sup.h, olaEn(sup, desde));
-    const b = punto(cx, cy, tangent, down, hasta, sup.h, olaEn(sup, hasta));
-    g.moveTo(a.x, a.y);
-    g.lineTo(b.x, b.y);
-    g.stroke();
-  };
-  extremo(sup.contacto0, sup.contacto0 + tramo);
-  extremo(sup.contacto1 - tramo, sup.contacto1);
-}
-
-function sDeCaja(w: number, h: number, tangent: Eje): { s0: number; s1: number } {
-  const cx = w / 2;
-  const cy = h / 2;
-  const esquinas = [
-    [-cx, -cy],
-    [cx, -cy],
-    [cx, cy],
-    [-cx, cy],
-  ];
-  let s0 = Infinity;
-  let s1 = -Infinity;
-  for (const [x, y] of esquinas) {
-    const s = (x ?? 0) * tangent.x + (y ?? 0) * tangent.y;
-    if (s < s0) s0 = s;
-    if (s > s1) s1 = s;
-  }
-  return { s0, s1 };
-}
-
-/** El agua saliente llega a 4 px de desenfoque; la entrante sale de ahí. */
-const BLUR_FUNDIDO = 4;
-
-function filtro(px: number): string {
-  return px > 0.05 ? `blur(${px}px)` : 'none';
-}
-
-function pintarCapa(
-  g: CanvasRenderingContext2D,
-  dpr: number,
-  w: number,
-  h: number,
-  cuello: number,
-  alfa: number,
-  arriba: Superficie,
-  abajo: Superficie,
-  tinte: Tinte,
-): void {
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.globalCompositeOperation = 'source-over';
-  g.globalAlpha = 1;
-  g.filter = 'none';
-  g.clearRect(0, 0, w, h);
-  const cuerpo = queSeVea(tinte.arriba);
-  const sen = Math.sin(alfa);
-  const cos = Math.cos(alfa);
-  const down = { x: sen, y: cos };
-  const tangent = { x: cos, y: -sen };
-  const cx = w / 2;
-  const cy = h / 2;
-  const alcance = Math.hypot(w, h);
-  const cajaS = sDeCaja(w, h, tangent);
-  const pintarBulbo = (sup: Superficie, superior: boolean) => {
-    if (!sup.dibujar) return;
-    g.save();
-    g.beginPath();
-    if (superior) g.rect(0, 0, w, cuello);
-    else g.rect(0, cuello, w, h - cuello);
-    g.clip();
-    g.fillStyle = cuerpo;
-    if (sup.lleno) g.fillRect(0, 0, w, h);
-    else {
-      rellenar(g, sup, cx, cy, tangent, down, cajaS.s0, cajaS.s1, alcance);
-      reflejo(g, sup, cx, cy, tangent, down, queSeVea(tinte.reflejo));
-      menisco(g, sup, cx, cy, tangent, down, queSeVea(tinte.menisco));
-    }
-    g.restore();
-  };
-  pintarBulbo(arriba, true);
-  pintarBulbo(abajo, false);
-}
-
-function recortar(g: CanvasRenderingContext2D, mascara: CanvasImageSource, w: number, h: number): void {
-  g.filter = 'none';
-  g.globalAlpha = 1;
-  g.globalCompositeOperation = 'destination-in';
-  g.imageSmoothingEnabled = true;
-  g.imageSmoothingQuality = 'high';
-  g.drawImage(mascara, 0, 0, w, h);
-  g.globalCompositeOperation = 'source-over';
-}
-
-export function crearPincel(): (ctx: CanvasRenderingContext2D, p: Pintura, vista: VistaAgua) => void {
-  const hoja = document.createElement('canvas');
-  const g = hoja.getContext('2d');
-  const capaSale = document.createElement('canvas');
-  const gSale = capaSale.getContext('2d');
-  const capaEntra = document.createElement('canvas');
-  const gEntra = capaEntra.getContext('2d');
-  return (ctx, p, vista) => {
-    if (!g || !gSale || !gEntra) return;
-    const w = p.caja.w;
-    const h = p.caja.h;
-    if (w < 2 || h < 2) return;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const pxW = Math.max(1, Math.round(w * dpr));
-    const pxH = Math.max(1, Math.round(h * dpr));
-    if (hoja.width !== pxW || hoja.height !== pxH) {
-      hoja.width = pxW;
-      hoja.height = pxH;
-    }
-    const tinte = TINTES[p.esquema];
-    const cuello = vista.cuello * h;
-    const cruce = vista.cruce;
-    if (cruce) {
-      if (capaSale.width !== pxW || capaSale.height !== pxH) {
-        capaSale.width = pxW;
-        capaSale.height = pxH;
+      const ancho = Math.max(1, window.innerWidth);
+      const alto = Math.max(1, window.innerHeight);
+      if (ancho !== anchoVentana || alto !== altoVentana) {
+        anchoVentana = ancho;
+        altoVentana = alto;
+        vidrio.redimensionar(ancho, alto);
       }
-      if (capaEntra.width !== pxW || capaEntra.height !== pxH) {
-        capaEntra.width = pxW;
-        capaEntra.height = pxH;
-      }
-      pintarCapa(gSale, dpr, w, h, cuello, cruce.alfaViejo, cruce.viejoArriba, cruce.viejoAbajo, tinte);
-      pintarCapa(gEntra, dpr, w, h, cuello, 0, cruce.nuevoArriba, cruce.nuevoAbajo, tinte);
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.globalCompositeOperation = 'source-over';
-      g.globalAlpha = 1;
-      g.filter = 'none';
-      g.clearRect(0, 0, w, h);
-      g.imageSmoothingEnabled = true;
-      const sale = 1 - cruce.u;
-      const alfaViejo = opacidadFundido(sale);
-      const alfaNuevo = opacidadFundido(cruce.u);
-      if (alfaViejo > 0) {
-        g.filter = filtro(BLUR_FUNDIDO * cruce.u);
-        g.globalAlpha = alfaViejo;
-        g.drawImage(capaSale, 0, 0, w, h);
-      }
-      if (alfaNuevo > 0) {
-        g.filter = filtro(BLUR_FUNDIDO * sale);
-        g.globalAlpha = alfaNuevo;
-        g.drawImage(capaEntra, 0, 0, w, h);
-      }
-    } else {
-      pintarCapa(g, dpr, w, h, cuello, vista.alfa, vista.arriba, vista.abajo, tinte);
-    }
-    recortar(g, p.geo.mascara, w, h);
-    ctx.drawImage(hoja, p.caja.x, p.caja.y, w, h);
+      const fondo = fondoVisible();
+      if (fondo) vidrio.actualizarFondo(fondo);
+
+      matrizFrasco(p.angulo, cx, cy, pose, matriz);
+      const fundido = vista.fundido;
+      const u = fundido?.u ?? 0;
+      const fracA = fundido ? vista.volArriba * (1 - u) + fundido.arriba * u : vista.volArriba;
+      const fracB = fundido ? vista.volAbajo * (1 - u) + fundido.abajo * u : vista.volAbajo;
+      const phi = (vista.alfa - vista.angulo) * (fundido ? 1 - u : 1);
+
+      aMundo(poliA, matriz, mundoA);
+      aMundo(poliB, matriz, mundoB);
+      escribirAlturas(alturasA, phi, anchoDe(mundoA), vista.arriba.onda);
+      escribirAlturas(alturasB, phi, anchoDe(mundoB), vista.abajo.onda);
+      const bulboA: EstadoBulbo = { nivel: nivelDe(mundoA, fracA), alturas: alturasA };
+      const bulboB: EstadoBulbo = { nivel: nivelDe(mundoB, fracB), alturas: alturasB };
+      vidrio.pintarAgua(ctx, {
+        matriz,
+        bulbos: [bulboA, bulboB],
+        opacidad: fundido ? 1 - 0.65 * Math.sin(Math.PI * u) : 1,
+        desenfoque: fundido ? 8 * Math.sin(Math.PI * u) : 0,
+      });
+      vidrio.pintarGotas(ctx, { caudal, dt: dtMs });
+      ctx.restore();
+    },
+    destruir() {
+      agua?.destruir();
+      agua = null;
+      firma = '';
+    },
   };
 }
