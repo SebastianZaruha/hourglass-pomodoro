@@ -12,7 +12,8 @@ const claro: Aspecto = {
     avif: '/fondos/arena-claro.avif',
     estrecho: { webp: '/fondos/arena-claro-estrecho.webp', avif: '/fondos/arena-claro-estrecho.avif' },
   },
-  ancla: { x: 0.3, y: 0.84 },
+  // Sobre la ladera, para que la base y la sombra queden en la arena.
+  ancla: { x: 0.3, y: 0.78 },
   reserva: '#e4c7a4',
   barra: '#e6d7c4',
   reloj: { digitos: '#4A4541', pista: '#4A4541' },
@@ -29,7 +30,7 @@ const oscuro: Aspecto = {
     mp4: '/fondos/arena-oscuro.mp4',
     poster: '/fondos/arena-oscuro.webp',
   },
-  ancla: { x: 0.3, y: 0.84 },
+  ancla: { x: 0.3, y: 0.78 },
   reserva: '#3a2618',
   barra: '#241910',
   reloj: { digitos: '#B7B1AA', pista: '#B7B1AA' },
