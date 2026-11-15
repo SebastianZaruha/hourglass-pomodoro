@@ -1,0 +1,31 @@
+/* La nube solo recibe opacidad. No gira ni se desplaza con el frasco. */
+.nube {
+  position: fixed;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.nube-velo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(to bottom, black 42%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 42%, transparent 100%);
+}
+
+.nube-oscura .nube-velo {
+  filter: brightness(0.72) saturate(0.85);
+}
+
+.nube-video,
+.nube-foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}

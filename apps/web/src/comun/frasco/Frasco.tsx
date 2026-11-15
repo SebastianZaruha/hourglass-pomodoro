@@ -39,6 +39,8 @@ interface Props {
   readonly onReinicio: () => void;
   readonly suppressClickRef: RefObject<boolean>;
   readonly wakeRef: RefObject<(() => void) | null>;
+  /** La nube lee solo este número. -1 es el doble clic, que se apaga al momento. */
+  readonly alFlotar?: RefObject<number>;
 }
 
 export function Frasco({
@@ -53,6 +55,7 @@ export function Frasco({
   onReinicio,
   suppressClickRef,
   wakeRef,
+  alFlotar,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const paintRef = useRef<HTMLCanvasElement>(null);
@@ -65,6 +68,8 @@ export function Frasco({
   const snapRef = useRef(getSnapshot);
   const introRef = useRef(introPaso);
   const reinicioRef = useRef(onReinicio);
+  const flotarRef = useRef(alFlotar);
+  flotarRef.current = alFlotar;
   crearRef.current = crearContenido;
   schemeRef.current = scheme;
   luzRef.current = luz;
@@ -149,6 +154,11 @@ export function Frasco({
       const dt = loop.last > 0 ? Math.min(0.1, (now - loop.last) / 1000) : 1 / 60;
       loop.last = now;
       const est = giro.estado();
+      const flotar = flotarRef.current;
+      if (flotar) {
+        const grados = (Math.abs(est.angulo) * 180) / Math.PI;
+        flotar.current = est.vuelta === 'reinicio' ? -1 : Math.max(0, 1 - grados / 50);
+      }
       const sigue = contenido.paso({
         ahora: now,
         dt,

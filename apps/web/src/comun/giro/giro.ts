@@ -17,6 +17,8 @@ export interface EstadoGiro {
   velocidad: number;
   fase: FaseGiro;
   ocupado: boolean;
+  /** El doble clic es reinicio. El cambio de fase del reloj es fase. */
+  vuelta: 'no' | 'reinicio' | 'fase';
 }
 
 export interface PoseIntro {
@@ -77,6 +79,12 @@ export function crearGiro() {
     return 'reposo';
   };
 
+  const vuelta = (): 'no' | 'reinicio' | 'fase' => {
+    if (flipStart !== null) return 'reinicio';
+    if (turnStart !== null) return 'fase';
+    return 'no';
+  };
+
   const pedirReinicio = () => {
     flipFrom = gestureAngle;
     gestureAngle = 0;
@@ -103,6 +111,7 @@ export function crearGiro() {
       velocidad,
       fase: fase(),
       ocupado: flipBusy,
+      vuelta: vuelta(),
     }),
     ordenar(o: OrdenGiro): ResultadoOrden {
       if (o.tipo === 'agarrar') {

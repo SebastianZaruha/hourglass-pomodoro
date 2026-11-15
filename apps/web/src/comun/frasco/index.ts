@@ -7,6 +7,7 @@ export type {
   GeometriaFrasco,
   MedidaLienzo,
   Pintura,
+  PropsEncima,
 } from './contrato';
 export { Frasco } from './Frasco';
 export { opacidadFundido } from './fundido';

@@ -238,6 +238,7 @@ function Timer({
   }, [aspecto]);
 
   const sideRef = useRef<HTMLDivElement>(null);
+  const nubeOpacidad = useRef(1);
   useLayoutEffect(() => {
     const app = appRef.current;
     const side = sideRef.current;
@@ -380,7 +381,11 @@ function Timer({
             onReinicio={entrada.onReinicio}
             suppressClickRef={entrada.suppressClickRef}
             wakeRef={wakeRef}
+            alFlotar={nubeOpacidad}
           />
+          {escena.Encima && caja ? (
+            <escena.Encima caja={caja} opacidad={nubeOpacidad} reducir={reduceMotion} oscuro={scheme === 'dark'} />
+          ) : null}
           <div className="side" ref={sideRef}>
             <TimeReadout
               getSnapshot={getSnapshot}

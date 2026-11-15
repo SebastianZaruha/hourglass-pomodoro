@@ -1,8 +1,9 @@
 import type { Aspecto, Escena } from '../../comun/frasco';
 import { crearAgua } from './agua';
+import { Nube } from './nube';
 
 /**
- * Lluvia. El agua es su masa, sin gotas ni nube todavía.
+ * Lluvia. El agua es su masa: se mece, refracta el fondo y suelta gotas.
  * La luz ambiente va a 0: no oscurece ni tiñe el vidrio. El reloj, en ancha, sube al bulbo.
  */
 const claro: Aspecto = {
@@ -45,5 +46,6 @@ export const lluvia: Escena = {
   relojAlto: true,
   claro,
   oscuro,
+  Encima: Nube,
   crearContenido: (medida, esquema) => crearAgua(medida, esquema),
 };

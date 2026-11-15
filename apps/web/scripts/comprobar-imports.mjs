@@ -74,7 +74,8 @@ for (const file of archivos(src)) {
         modelo ||
         drel.startsWith('comun/') ||
         spec === '@reloj/core' ||
-        spec.startsWith('@reloj/core/');
+        spec.startsWith('@reloj/core/') ||
+        spec === 'react';
       if (!ok) errores.push(`${rel} → ${spec} (escena)`);
       if (
         propia.startsWith('escenas/lluvia') &&

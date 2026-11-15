@@ -1,4 +1,5 @@
 import type { SessionSnapshot } from '@reloj/core';
+import type { ComponentType, RefObject } from 'react';
 
 /** Forma del hueco del frasco. La única. Sale de jar-mask.webp (vuelta 6). */
 export interface GeometriaFrasco {
@@ -77,11 +78,21 @@ export interface MedidaLienzo {
   readonly alto: number;
 }
 
+/** Lo que una escena puede poner encima del frasco. Solo recibe opacidad, nunca el ángulo. */
+export interface PropsEncima {
+  readonly caja: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
+  /** Lo escribe el frasco. -1 es el apagado inmediato del doble clic. */
+  readonly opacidad: RefObject<number>;
+  readonly reducir: boolean;
+  readonly oscuro: boolean;
+}
+
 export interface Escena {
   readonly id: 'lluvia' | 'arena' | 'clasico';
   readonly nombre: { readonly es: string; readonly en: string };
   readonly relojAlto: boolean;
   readonly claro: Aspecto;
   readonly oscuro: Aspecto;
+  readonly Encima?: ComponentType<PropsEncima>;
   crearContenido(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): Contenido;
 }
