@@ -3,7 +3,8 @@
   position: fixed;
   z-index: 3;
   pointer-events: none;
-  opacity: 1;
+  /* Arranca invisible: el bucle la funde al montarla, cuando el reloj ya está en su sitio. */
+  opacity: 0;
 }
 
 .nube-lienzo {

@@ -387,7 +387,7 @@ function Timer({
             alFlotar={nubeOpacidad}
             puente3d={puente3d}
           />
-          {escena.Encima && caja ? (
+          {escena.Encima && caja && !intro.blocksInput ? (
             <escena.Encima caja={caja} opacidad={nubeOpacidad} reducir={reduceMotion} oscuro={scheme === 'dark'} />
           ) : null}
           <div className="side" ref={sideRef}>
