@@ -82,7 +82,7 @@ export interface Aspecto {
         /** Cruce entre dos copias para que el bucle corto no muestre el corte. */
         readonly fundido?: boolean;
       };
-  readonly ancla: { readonly x: number; readonly y: number };
+  readonly ancla: { readonly x: number; readonly y: number; readonly tope?: number };
   readonly reserva: string;
   readonly barra: string;
   readonly reloj: { readonly digitos: string; readonly pista: string };

@@ -8,6 +8,8 @@ export interface Caja {
 export interface Ancla {
   readonly x: number;
   readonly y: number;
+  /** Zoom máximo respecto a cover. Sin él, se acerca lo que haga falta para apoyar. */
+  readonly tope?: number;
 }
 
 /**
@@ -30,9 +32,12 @@ export function encuadreFondo(
   const cubrir = Math.max(ancho / iw, alto / ih);
   // Cover a veces no deja margen vertical: el pie quedaría en el aire.
   // Se acerca lo justo para poder apoyar el ancla en el pie y seguir tapando la vista.
+  // Con tope, no se pasa de ese múltiplo de cover: lo que falte se resuelve desplazando.
   const paraY = Math.max(pie.y / (ay * ih), (alto - pie.y) / ((1 - ay) * ih));
   const paraX = Math.max(pie.x / (ax * iw), (ancho - pie.x) / ((1 - ax) * iw));
-  const escala = Math.max(cubrir, paraX, paraY);
+  const necesaria = Math.max(cubrir, paraX, paraY);
+  const tope = ancla.tope;
+  const escala = tope && tope > 0 ? Math.min(necesaria, cubrir * tope) : necesaria;
   const w = iw * escala;
   const h = ih * escala;
   let x = pie.x - ax * w;

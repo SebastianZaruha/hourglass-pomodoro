@@ -14,7 +14,8 @@ const claro: Aspecto = {
     poster: '/fondos/lluvia-claro-poster.jpg',
     fundido: true,
   },
-  ancla: { x: 0.58, y: 0.73 },
+  // Musgo de la orilla, no el centro de las rocas: con el tope el vídeo casi no se acerca.
+  ancla: { x: 0.34, y: 0.76, tope: 1.1 },
   reserva: '#d8d8d6',
   barra: '#c5d0cb',
   reloj: { digitos: '#2E302F', pista: '#2E302F' },
@@ -32,7 +33,7 @@ const oscuro: Aspecto = {
     poster: '/fondos/lluvia-oscuro-poster.jpg',
     fundido: true,
   },
-  ancla: { x: 0.58, y: 0.73 },
+  ancla: { x: 0.34, y: 0.76, tope: 1.1 },
   reserva: '#141414',
   barra: '#1a2422',
   reloj: { digitos: '#8F8B86', pista: '#8F8B86' },

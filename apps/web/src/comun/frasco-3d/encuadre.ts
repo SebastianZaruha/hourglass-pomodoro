@@ -6,7 +6,12 @@
 // Si cambian allí, cambian aquí. Todo en px CSS del lienzo.
 
 export interface Caja { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
-export interface Ancla { readonly x: number; readonly y: number }
+export interface Ancla {
+  readonly x: number;
+  readonly y: number;
+  /** Zoom máximo respecto a cover. Sin él, se acerca lo que haga falta para apoyar. */
+  readonly tope?: number;
+}
 export interface Punto { readonly x: number; readonly y: number }
 
 export const FOTO_ANCHO = 446;
@@ -55,7 +60,9 @@ export function encuadreFondo(ancho: number, alto: number, imgW: number, imgH: n
   const cubrir = Math.max(ancho / iw, alto / ih);
   const paraY = Math.max(pie.y / (ay * ih), (alto - pie.y) / ((1 - ay) * ih));
   const paraX = Math.max(pie.x / (ax * iw), (ancho - pie.x) / ((1 - ax) * iw));
-  const escala = Math.max(cubrir, paraX, paraY);
+  const necesaria = Math.max(cubrir, paraX, paraY);
+  const tope = ancla.tope;
+  const escala = tope && tope > 0 ? Math.min(necesaria, cubrir * tope) : necesaria;
   const w = iw * escala;
   const h = ih * escala;
   let x = pie.x - ax * w;
