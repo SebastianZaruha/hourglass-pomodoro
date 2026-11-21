@@ -228,7 +228,7 @@ export function Frasco({
         const angulo = est.angulo;
         const geo = loop.geo ?? geoVacia();
         pintor3D = (context, caja) => {
-          const pantalla = puenteRef.current?.pantalla?.(context, angulo);
+          const pantalla = puenteRef.current?.pantalla?.(context, est.fase === 'volteo' ? 0 : angulo);
           contenido.pintar(context, { caja, angulo, esquema, geo, pantalla });
         };
       } else if (loop.tresD) {

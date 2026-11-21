@@ -97,6 +97,8 @@ export interface ArenaPintada {
    * Fundido del reinicio, en el lienzo de la arena. `queda` es la opacidad
    * del montón viejo. El nuevo es el de ahora, dado la vuelta 180°.
    */
+  /** En la malla 3D el giro lo hace el vidrio. El lienzo 2D ya llega girado y sí necesita el extra. */
+  readonly enMalla?: boolean;
   readonly fundido?: {
     readonly viejo: HTMLCanvasElement;
     readonly queda: number;
@@ -152,9 +154,11 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     if (alfaNuevo > 0) {
       g.filter = blurEntra > 0.05 ? `blur(${blurEntra}px)` : 'none';
       g.globalAlpha = alfaNuevo;
-      g.translate(cx, cy);
-      g.rotate(Math.PI);
-      g.translate(-cx, -cy);
+      if (!scene.enMalla) {
+        g.translate(cx, cy);
+        g.rotate(Math.PI);
+        g.translate(-cx, -cy);
+      }
       g.drawImage(scene.sand, vx, vy, vw, vh);
       g.filter = 'none';
       g.globalAlpha = 1;

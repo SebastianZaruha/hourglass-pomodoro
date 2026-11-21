@@ -333,6 +333,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         lut,
         geo,
         fundido: fundido ?? undefined,
+        enMalla: Boolean(p.pantalla),
       });
     },
     alVoltear(motivo: 'reinicio' | 'fase', snap: SessionSnapshot): void {
