@@ -3,21 +3,41 @@
   display: none;
 }
 
-/* El vidrio líquido solo cambia el fondo. La tira conserva su caja. */
+/* El vidrio líquido es el fondo, también en Safari y Firefox. La tira conserva su caja.
+   Sin borde crema: el bisel del vidrio toma la luz de la escena. */
 .app-promo.vidrio {
-  border: 1px solid var(--sheet-edge);
+  border: 1px solid transparent;
   border-radius: 16px;
-  color: var(--ink);
-  text-shadow: none;
+  color: var(--vl-texto, #fff);
+  text-shadow: var(--vl-sombra-texto, none);
   padding: 0.45rem 0.35rem 0.45rem 0.75rem;
   width: min(28rem, calc(100% - 5.4rem));
   gap: 0.45rem;
 }
 
-.app-promo.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
-  background: var(--velo);
-  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
-  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+.app-promo.vidrio .app-promo-pitch {
+  color: var(--vl-texto-2, rgba(255, 255, 255, 0.92));
+  font-weight: 500;
+}
+
+/* La línea pequeña (0,68rem) y el × van con el color principal: en tan poco cuerpo el 92 % no llega a AA. */
+.app-promo.vidrio .app-promo-install {
+  color: var(--vl-texto, #fff);
+  font-weight: 500;
+}
+
+.app-promo.vidrio .app-promo-action {
+  text-shadow: none;
+}
+
+.app-promo.vidrio .app-promo-dismiss {
+  color: var(--vl-texto, #fff);
+  font-weight: 600;
+}
+
+.app-promo.vidrio .app-promo-dismiss:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--vl-texto, #fff);
 }
 
 .app-promo {

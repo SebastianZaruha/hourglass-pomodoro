@@ -3,58 +3,142 @@
   No toca position, tamaño, transform, filter ni opacity (la animación de la hoja es tuya).
 
   El hook pone data-vl en el elemento:
-    data-vl="refraccion" → Chromium: borde que dobla el fondo + desenfoque + brillo
-    data-vl="desenfoque" → resto de navegadores: desenfoque + brillo, sin doblar el borde
+    data-vl="refraccion" → Chromium: desenfoque fuerte + canto que dobla la luz + escarcha,
+                           grano y brillo del canto tomado del propio fondo (filtro.ts)
+    data-vl="desenfoque" → Safari / Firefox: el mismo desenfoque, saturación y brillo, sin url()
     data-vl="app"        → no hacemos nada: manda tu clase de siempre (p. ej. .vidrio)
+
+  Regla de esta vuelta: el vidrio NO tiene color propio. No hay velo, ni tinte, ni capa
+  negra, gris o blanca encima. Tapa con desenfoque fuerte, escarcha y la refracción del borde.
+  Ojo: nada de ::before/::after con mix-blend-mode para el grano o el brillo. Dentro de un
+  elemento con backdrop-filter los hijos no ven el fondo filtrado y se vuelven un velo gris
+  (medido: con grano y bisel en pseudo-elementos el fondo pasaba de rgb(99,61,22) a (147,130,112)).
 */
 
 .vidrio-liquido {
   /* ---- Valores para ajustar ---- */
-  --vl-blur: 10px; /* desenfoque del fondo */
-  --vl-brillo: 0.2; /* intensidad del brillo del bisel (0–1) */
-  --vl-tinte: transparent; /* color del vidrio, p. ej. rgba(120, 180, 255, 0.15) */
-  --vl-velo: rgba(0, 0, 0, 0.38); /* capa oscura para leer el texto blanco */
+  --vl-blur: 44px; /* desenfoque del fondo: lo que más tapa */
+  --vl-sat: 1.35; /* saturación: el color de la escena, no gris (más de 1,5 ya se ve teñido) */
+  --vl-luz: 0.9; /* brillo del desenfoque en oscuro: multiplica el fondo, no añade color */
+  --vl-tinta-oscura: #221d19; /* tinta oscura si la escena detrás es clara */
+  /* --vl-luz y data-vl-tinta los ajusta el hook según la escena (tinta.ts). */
   /* --vl-filtro lo rellena el hook con url(#…); no lo toques a mano. */
+  /* Compatibilidad: ya no se usan. El vidrio no lleva tinte ni velo. */
+  --vl-tinte: transparent;
+  --vl-velo: transparent;
+  --vl-brillo: 0;
 }
 
-/* Aspecto común: tinte + velo + desenfoque */
-.vidrio-liquido[data-vl='refraccion'],
-.vidrio-liquido[data-vl='desenfoque'] {
-  background-color: var(--vl-tinte);
-  background-image: linear-gradient(var(--vl-velo), var(--vl-velo));
-  -webkit-backdrop-filter: blur(var(--vl-blur));
-  backdrop-filter: blur(var(--vl-blur));
-}
-
-/* Chromium: primero desplazamos (filtro SVG) y después desenfocamos.
-   Si aún no hay mapa (elemento oculto), el fallback vacío deja solo el blur. */
-.vidrio-liquido[data-vl='refraccion'] {
-  backdrop-filter: var(--vl-filtro, ) blur(var(--vl-blur));
+.app[data-scheme='light'] .vidrio-liquido {
+  --vl-luz: 1; /* en claro el vidrio se queda con la luz de la escena */
+  --vl-tinta-oscura: var(--footer, #2a2623); /* la tinta que la app ya usa en cada escena */
 }
 
 /*
-  Brillo del bisel (luz arriba-izquierda, sombra abajo-derecha).
-  z-index: -1 lo deja debajo del texto pero encima del fondo, porque
-  backdrop-filter convierte al elemento en su propio contexto de apilamiento.
-  Requisito: el elemento no puede ser position: static (una hoja fixed ya vale).
+  Tinta del texto. Texto blanco puro sobre fondo oscuro; tinta oscura de la escena sobre
+  fondo claro. Por defecto la del modo; el hook la cambia (data-vl-tinta) según lo que
+  haya detrás de cada hoja, para que el peor punto llegue a AA sin velo.
 */
-.vidrio-liquido[data-vl='refraccion']::before,
-.vidrio-liquido[data-vl='desenfoque']::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: var(--vl-brillo);
-  box-shadow:
-    inset 1.5px 1.5px 4px rgba(255, 255, 255, 0.7),
-    inset -2px -2px 5px rgba(0, 0, 0, 0.28);
+.vidrio-liquido,
+.app .vidrio-liquido[data-vl-tinta='clara'] {
+  --vl-texto: #ffffff;
+  --vl-texto-2: rgba(255, 255, 255, 0.92); /* secundario: el mismo blanco al 92 % */
+  --vl-linea: rgba(255, 255, 255, 0.45); /* filo de botones y separadores */
+  --vl-relleno: rgba(255, 255, 255, 0.05); /* botón en reposo: casi solo el filo (el blanco aclara el fondo del texto) */
+  --vl-sombra-texto: 0 0 1px rgba(0, 0, 0, 0.6), 0 0 3px rgba(0, 0, 0, 0.5),
+    0 0 8px rgba(0, 0, 0, 0.34), 0 1px 18px rgba(0, 0, 0, 0.24);
 }
 
-/* Si el sistema pide menos transparencias, oscurecemos el velo (el hook ya quita la refracción) */
+.app[data-scheme='light'] .vidrio-liquido,
+.app .vidrio-liquido[data-vl-tinta='oscura'] {
+  --vl-texto: var(--vl-tinta-oscura);
+  --vl-texto-2: color-mix(in srgb, var(--vl-tinta-oscura) 90%, transparent);
+  --vl-linea: color-mix(in srgb, var(--vl-tinta-oscura) 32%, transparent);
+  --vl-relleno: rgba(255, 255, 255, 0.14);
+  --vl-sombra-texto: 0 0 1px rgba(255, 255, 255, 0.55), 0 0 4px rgba(255, 255, 255, 0.42),
+    0 0 12px rgba(255, 255, 255, 0.3), 0 0 26px rgba(255, 255, 255, 0.18);
+}
+
+.app[data-scheme='light'] .vidrio-liquido[data-vl-tinta='clara'] {
+  --vl-texto: #ffffff;
+  --vl-texto-2: rgba(255, 255, 255, 0.92);
+  --vl-linea: rgba(255, 255, 255, 0.45);
+  --vl-relleno: rgba(255, 255, 255, 0.05);
+  --vl-sombra-texto: 0 0 1px rgba(0, 0, 0, 0.6), 0 0 3px rgba(0, 0, 0, 0.5),
+    0 0 8px rgba(0, 0, 0, 0.34), 0 1px 18px rgba(0, 0, 0, 0.24);
+}
+
+.vidrio-liquido[data-vl='refraccion'],
+.vidrio-liquido[data-vl='desenfoque'] {
+  background: none;
+  border-color: transparent;
+  color: var(--vl-texto);
+  text-shadow: var(--vl-sombra-texto);
+  -webkit-backdrop-filter: blur(var(--vl-blur)) saturate(var(--vl-sat)) brightness(var(--vl-luz));
+  backdrop-filter: blur(var(--vl-blur)) saturate(var(--vl-sat)) brightness(var(--vl-luz));
+}
+
+/* Chromium: primero desenfoca, luego el filtro SVG (canto, escarcha, grano, brillo).
+   Si aún no hay mapa (elemento oculto), el fallback vacío deja el vidrio sin refracción. */
+.vidrio-liquido[data-vl='refraccion'] {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(var(--vl-blur)) var(--vl-filtro, ) saturate(var(--vl-sat))
+    brightness(var(--vl-luz));
+}
+
+/* Mientras entra o sale (data-vl-mov, lo pone el hook): sin el filtro SVG, que es lo caro.
+   Queda el mismo desenfoque, saturación y brillo, y el filo de 1 px del respaldo. */
+.vidrio-liquido[data-vl='refraccion'][data-vl-mov] {
+  backdrop-filter: blur(var(--vl-blur)) saturate(var(--vl-sat)) brightness(var(--vl-luz));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+/* Safari / Firefox: sin url() no hay canto tomado del fondo. Queda un filo de luz de 1 px. */
+.vidrio-liquido[data-vl='desenfoque'] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+/* Controles dentro del vidrio: luz translúcida y filo del color del texto, no manchas negras. */
+.vidrio-liquido[data-vl] .control {
+  background: var(--vl-relleno);
+  color: var(--vl-texto);
+  text-shadow: inherit;
+}
+
+.vidrio-liquido[data-vl] .control:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.vidrio-liquido[data-vl] .control[aria-checked='true'],
+.vidrio-liquido[data-vl] .control[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--vl-linea);
+  font-weight: 600;
+}
+
+.vidrio-liquido[data-vl] .control:focus-visible {
+  outline-color: var(--vl-texto);
+}
+
+.vidrio-liquido[data-vl] .secundario {
+  color: var(--vl-texto-2);
+}
+
+/* Iconos: con tinta oscura, sin la sombra negra del .vidrio. */
+.app .vidrio-liquido[data-vl-tinta='oscura'] svg,
+.app[data-scheme='light'] .vidrio-liquido:not([data-vl-tinta='clara']) svg {
+  filter: none;
+}
+
+/* Menos transparencias: más desenfoque (el hook ya quita la refracción). Sigue sin velo. */
 @media (prefers-reduced-transparency: reduce) {
   .vidrio-liquido {
-    --vl-velo: rgba(0, 0, 0, 0.55);
+    --vl-blur: 48px;
   }
 }

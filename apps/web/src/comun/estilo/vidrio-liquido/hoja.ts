@@ -1,16 +1,31 @@
 import { useVidrioLiquido, type OpcionesVidrioLiquido } from './useVidrioLiquido';
 import type { RefObject } from 'react';
 
-/** Los números del encargo. El respaldo deja el .vidrio de la app en Safari y Firefox. */
-const HOJA: OpcionesVidrioLiquido = {
-  respaldo: 'app',
-  profundidad: 15,
-  borde: 11,
-  suavizado: 11,
-  curvatura: 2.4,
+/**
+ * Los números de la vuelta «tapa más, sin color propio».
+ * Safari y Firefox usan el mismo vidrio sin refracción ('desenfoque'),
+ * no el .vidrio de la app: así tapan igual y el texto se lee igual.
+ */
+export const HOJA: OpcionesVidrioLiquido = {
+  respaldo: 'desenfoque',
+  profundidad: 30,
+  borde: 18,
+  suavizado: 16,
+  curvatura: 1.8,
+  escarcha: 7,
+  grano: 0.07,
+  bisel: 0.8,
 };
 
-/** El mismo vidrio líquido para todas las hojas. No copia el efecto en cada panel. */
-export function useHojaVidrio(ref: RefObject<HTMLElement | null>, activo = true) {
-  return useVidrioLiquido(ref, { ...HOJA, activo });
+/**
+ * El mismo vidrio líquido para todas las hojas. No copia el efecto en cada panel.
+ * `extra` cambia algún número para una hoja concreta (p. ej. la pausa, a pantalla
+ * completa, va sin canto).
+ */
+export function useHojaVidrio(
+  ref: RefObject<HTMLElement | null>,
+  activo = true,
+  extra: OpcionesVidrioLiquido = {},
+) {
+  return useVidrioLiquido(ref, { ...HOJA, ...extra, activo });
 }

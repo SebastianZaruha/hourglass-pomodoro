@@ -37,8 +37,10 @@
   }
 }
 
-/* El vidrio líquido es el fondo. La palabra y la pista no se mueven. */
+/* El vidrio líquido es el fondo, también en Safari y Firefox. La palabra y la pista no se mueven.
+   La escena ya va desenfocada debajo (.is-paused .scene), así que aquí basta menos blur. */
 .pause-screen.vidrio {
+  --vl-blur: 14px;
   border: 0;
   border-radius: 0;
   color: inherit;
@@ -46,10 +48,9 @@
   box-shadow: none;
 }
 
-.pause-screen.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
-  background: var(--velo);
-  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
-  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+/* Pantalla entera: sin filo en los bordes del navegador (Safari/Firefox). */
+.pause-screen.vidrio-liquido[data-vl='desenfoque'] {
+  box-shadow: none;
 }
 
 .pause-screen {
@@ -69,10 +70,8 @@
   font-size: clamp(3.4rem, 8vw, 6rem);
   letter-spacing: 0.01em;
   line-height: 1;
-  color: var(--pause);
-  text-shadow:
-    0 0 22px var(--pause-veil),
-    0 0 42px var(--bg-bottom);
+  color: var(--vl-texto, #fff);
+  text-shadow: var(--vl-sombra-texto, none);
 }
 
 .pause-hint {
@@ -84,16 +83,9 @@
   padding: 0 1.2rem;
   text-align: center;
   font-size: 1rem;
-  color: var(--hint);
-  text-shadow: none;
-}
-
-.app[data-scheme='dark'] .pause-word,
-.app[data-scheme='dark'] .pause-hint {
-  color: #ffffff;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.5),
-    0 0 10px rgba(0, 0, 0, 0.28);
+  font-weight: 500;
+  color: var(--vl-texto-2, rgba(255, 255, 255, 0.92));
+  text-shadow: var(--vl-sombra-texto, none);
 }
 
 @keyframes pausa-entra {

@@ -6,23 +6,19 @@
   align-items: center;
   justify-content: center;
   padding: clamp(0.75rem, 2vw, 1.5rem);
-  background: rgba(24, 16, 10, 0.28);
+  /* Sin velo marrón sobre la escena: tapa la hoja de vidrio, no la pantalla. */
+  background: transparent;
 }
 
-/* El vidrio líquido es el fondo. El tamaño y el radio de la hoja no cambian. */
+/* El vidrio líquido es el fondo, también en Safari y Firefox. El tamaño y el radio no cambian.
+   El color del texto lo pone el aviso dentro del iframe (LegalOverlay › estiloVidrio). */
 .legal-dialog.vidrio {
   position: relative;
   border: 0;
   border-radius: 18px;
   color: inherit;
   text-shadow: none;
-  box-shadow: 0 28px 70px rgba(24, 16, 10, 0.38);
-}
-
-.legal-dialog.vidrio:not([data-vl='refraccion']):not([data-vl='desenfoque']) {
-  background: var(--velo);
-  -webkit-backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
-  backdrop-filter: blur(32px) saturate(var(--vidrio-sat, 1.4));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.3);
 }
 
 .legal-dialog {
