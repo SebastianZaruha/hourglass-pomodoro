@@ -70,6 +70,21 @@ const RUIDO: Record<Scheme, number> = { light: 0.2, dark: 0.16 };
  */
 const BORDE_LLENADO = 0.08;
 const BORDE_MIN_PX = 4;
+/**
+ * El embudo acaba en el labio de arriba. El vidrio del cuello, entre los dos
+ * labios, no guarda arena: el vértice de antes pasaba el centro y el
+ * rectángulo de debajo conservaba el canal, y esas celdas, al filtrarse,
+ * eran la franja y la mancha.
+ * El canal de la máscara mide ~3.8% del alto (boca de 20 px en 891).
+ */
+const CUELLO_HUECO = 0.018;
+/** Alto del embudo, por encima del labio. La punta son los últimos granos. */
+const EMBUDO = 0.06;
+/**
+ * Ancho del borrado. La boca mide ~20 px de 891; el hombro, ~67.
+ * 0.04 cubre la boca y no muerde el hombro.
+ */
+const CUELLO_ANCHO = 0.04;
 
 /**
  * Dirección de la luz de noche, en grados, o null si este pintado no
@@ -154,6 +169,8 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const cellW = vw / scene.sim.cols;
   const cellH = vh / scene.sim.rows;
   const count = scene.particles.count;
+  const cuelloY = geo.cuelloY * caja.h;
+  const huecoY = caja.h * CUELLO_HUECO;
   g.imageSmoothingEnabled = true;
   for (let i = 0; i < count; i++) {
     const px = scene.particles.x[i] ?? 0;
@@ -162,12 +179,18 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     const tone = scene.particles.tone[i] ?? 1;
     const x = vx + (px / scene.sim.cols) * vw;
     const y = vy + (py / scene.sim.rows) * vh;
-    const radius = Math.max(0.6, size * cellW * 1.15);
     const l = tone * 3;
     g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
-    g.beginPath();
-    g.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
-    g.fill();
+    if (Math.abs(y - cuelloY) <= huecoY) {
+      // En el cuello, un grano cuadrado. La elipse suavizada era un bloque.
+      const lado = Math.max(0.45, size * cellW);
+      g.fillRect(x - lado / 2, y - lado / 2, lado, lado);
+    } else {
+      const radius = Math.max(0.6, size * cellW * 1.15);
+      g.beginPath();
+      g.ellipse(x, y, radius, Math.max(radius, size * cellH * 0.9), 0, 0, Math.PI * 2);
+      g.fill();
+    }
   }
 
   g.globalCompositeOperation = 'destination-in';
@@ -222,31 +245,37 @@ function revelarLlenado(
   g.restore();
 }
 
-/**
- * El montón de arriba no acaba en un tacón recto en el cuello.
- * Solo el pintado: la simulación y el chorro siguen igual.
- */
 function afilarCuello(
   g: CanvasRenderingContext2D,
   geo: GeometriaFrasco,
   caja: { readonly w: number; readonly h: number },
 ): void {
   const cuello = geo.cuelloY * caja.h;
-  const alto = caja.h * 0.08;
-  const y0 = cuello - alto;
-  if (!(y0 > 0) || !(cuello < caja.h)) return;
+  const hueco = caja.h * CUELLO_HUECO;
+  const yPunta = cuello - hueco;
+  const yAbajo = cuello + hueco;
+  const y0 = yPunta - caja.h * EMBUDO;
+  if (!(y0 > 0) || !(yAbajo < caja.h)) return;
   const cx = caja.w * 0.5;
   g.save();
   g.globalCompositeOperation = 'destination-in';
   g.fillStyle = '#000';
   g.beginPath();
   g.rect(0, 0, caja.w, y0);
-  g.moveTo(cx, cuello + caja.h * 0.012);
+  g.moveTo(cx, yPunta);
   g.lineTo(cx - caja.w, y0);
   g.lineTo(cx + caja.w, y0);
   g.closePath();
-  g.rect(0, cuello + caja.h * 0.012, caja.w, caja.h);
+  g.rect(0, yAbajo, caja.w, caja.h - yAbajo);
   g.fill();
+  g.restore();
+  // La punta antialias del cono dejaba una mancha dentro del cuello.
+  // Se borra el hueco; el chorro se pinta después y no entra en este corte.
+  g.save();
+  g.globalCompositeOperation = 'destination-out';
+  const ancho = caja.w * CUELLO_ANCHO;
+  const yHueco = yPunta + caja.h * 0.003;
+  g.fillRect(cx - ancho / 2, yHueco, ancho, Math.max(0, yAbajo - yHueco));
   g.restore();
 }
 
@@ -285,6 +314,11 @@ const VALOR_MAX = 1;
 const TINT_R = 255;
 const TINT_G = 246;
 const TINT_B = 232;
+/**
+ * Filas junto al cuello sin velo de brillo. Ahí una celda es toda la punta:
+ * el screen, al filtrarse, era el punto brillante y la mancha.
+ */
+const FILAS_SIN_BRILLO = 5;
 /** Screen. Sube la luz general sin quemar; la clave y el rim suman encima. */
 const BRILLO_BASE = 34;
 const BRILLO_CLAVE = 64;
@@ -395,10 +429,11 @@ function sombrearGranos(
       sd[o + 1] = Math.round(Math.min(255, valor * TINT_G));
       sd[o + 2] = Math.round(Math.min(255, valor * TINT_B));
       sd[o + 3] = 255;
-      let brillo = BRILLO_BASE;
-      if (cara && profundo === 0) brillo += BRILLO_CLAVE;
-      if (caraRim) brillo += BRILLO_RIM;
-      if (caraBaja) brillo += BRILLO_BAJO;
+      const enPunta = Math.abs(row - (rows - 1) / 2) <= FILAS_SIN_BRILLO;
+      let brillo = enPunta ? 0 : BRILLO_BASE;
+      if (!enPunta && cara && profundo === 0) brillo += BRILLO_CLAVE;
+      if (!enPunta && caraRim) brillo += BRILLO_RIM;
+      if (!enPunta && caraBaja) brillo += BRILLO_BAJO;
       brillo = Math.min(BRILLO_TOPE, brillo);
       bd[o] = BRILLO_R;
       bd[o + 1] = BRILLO_G;
