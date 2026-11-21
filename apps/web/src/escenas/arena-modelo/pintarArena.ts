@@ -71,20 +71,20 @@ const RUIDO: Record<Scheme, number> = { light: 0.2, dark: 0.16 };
 const BORDE_LLENADO = 0.08;
 const BORDE_MIN_PX = 4;
 /**
- * El embudo acaba en el labio de arriba. El vidrio del cuello, entre los dos
- * labios, no guarda arena: el vértice de antes pasaba el centro y el
- * rectángulo de debajo conservaba el canal, y esas celdas, al filtrarse,
- * eran la franja y la mancha.
- * El canal de la máscara mide ~3.8% del alto (boca de 20 px en 891).
+ * Franja del chorro, en fracción del alto del frasco. Solo cómo se pinta
+ * el grano ahí: la caída no cambia.
  */
 const CUELLO_HUECO = 0.018;
-/** Alto del embudo, por encima del labio. La punta son los últimos granos. */
-const EMBUDO = 0.06;
 /**
- * Ancho del borrado. La boca mide ~20 px de 891; el hombro, ~67.
- * 0.04 cubre la boca y no muerde el hombro.
+ * Zona del embudo, en la coordenada de la ventana (0 = cuello).
+ * Más arriba la pared ya es ancha y el peldaño de una celda no se ve.
  */
-const CUELLO_ANCHO = 0.04;
+const EMBUDO_Y = 0.35;
+/**
+ * Si la arena de la fila llega a esta distancia del vidrio, el hueco es el
+ * peldaño de la rejilla y se rellena. Un montón suelto queda más adentro.
+ */
+const PELDAÑO_CELDAS = 2.2;
 
 /**
  * Dirección de la luz de noche, en grados, o null si este pintado no
@@ -150,6 +150,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.drawImage(scene.sand, vx, vy, vw, vh);
   if (scene.llenado) {
     sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
+    perfilarEmbudo(g, scene, vx, vy, vw, vh);
     revelarLlenado(g, scene, vx, vy, vw, vh);
   }
 
@@ -163,8 +164,10 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   }
   g.restore();
 
-  if (!scene.llenado) sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
-  afilarCuello(g, geo, caja);
+  if (!scene.llenado) {
+    sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
+    perfilarEmbudo(g, scene, vx, vy, vw, vh);
+  }
 
   const cellW = vw / scene.sim.cols;
   const cellH = vh / scene.sim.rows;
@@ -245,37 +248,74 @@ function revelarLlenado(
   g.restore();
 }
 
-function afilarCuello(
+/**
+ * La rejilla pinta cada celda entera. Cuando el radio del vidrio cruza el
+ * centro de una columna, esa columna desaparece de golpe: un peldaño. Mientras
+ * el radio no llega a la columna de al lado, el ancho no cambia: la punta
+ * rectangular metida en el cuello. El cono anterior era más ancho que el
+ * vidrio y no lo cortaba.
+ *
+ * Aquí cada fila del embudo —el de arriba y el de abajo— sigue el radio del
+ * vidrio. Junto al cuello ese radio se cierra en punta; más arriba la arena
+ * sigue tocando el vidrio. Se recorta lo que sobra y, si la arena ya tocaba
+ * la pared, se rellena el peldaño. La simulación no se toca.
+ */
+/** En esta distancia al cuello el radio pasa de la pared a la punta. */
+const CIERRE_PUNTA = 0.08;
+function perfilarEmbudo(
   g: CanvasRenderingContext2D,
-  geo: GeometriaFrasco,
-  caja: { readonly w: number; readonly h: number },
+  scene: ArenaPintada,
+  vx: number,
+  vy: number,
+  vw: number,
+  vh: number,
 ): void {
-  const cuello = geo.cuelloY * caja.h;
-  const hueco = caja.h * CUELLO_HUECO;
-  const yPunta = cuello - hueco;
-  const yAbajo = cuello + hueco;
-  const y0 = yPunta - caja.h * EMBUDO;
-  if (!(y0 > 0) || !(yAbajo < caja.h)) return;
-  const cx = caja.w * 0.5;
+  const cols = scene.sim.cols;
+  const rows = scene.sim.rows;
+  const lectura = scene.sand.getContext('2d');
+  if (!lectura || cols < 3 || rows < 3) return;
+  const mapa = lectura.getImageData(0, 0, cols, rows).data;
+  const geo = scene.geo;
+  const cx = vx + vw / 2;
+  const altoFila = vh / rows;
+  const anchoCelda = vw / cols;
+  const margen = anchoCelda * PELDAÑO_CELDAS;
+  const boca = geo.radio(0);
   g.save();
-  g.globalCompositeOperation = 'destination-in';
+  g.imageSmoothingEnabled = false;
+  g.globalAlpha = 1;
   g.fillStyle = '#000';
-  g.beginPath();
-  g.rect(0, 0, caja.w, y0);
-  g.moveTo(cx, yPunta);
-  g.lineTo(cx - caja.w, y0);
-  g.lineTo(cx + caja.w, y0);
-  g.closePath();
-  g.rect(0, yAbajo, caja.w, caja.h - yAbajo);
-  g.fill();
-  g.restore();
-  // La punta antialias del cono dejaba una mancha dentro del cuello.
-  // Se borra el hueco; el chorro se pinta después y no entra en este corte.
-  g.save();
-  g.globalCompositeOperation = 'destination-out';
-  const ancho = caja.w * CUELLO_ANCHO;
-  const yHueco = yPunta + caja.h * 0.003;
-  g.fillRect(cx - ancho / 2, yHueco, ancho, Math.max(0, yAbajo - yHueco));
+  for (let row = 0; row < rows; row++) {
+    const yn = ((row + 0.5) / rows) * 2 - 1;
+    if (Math.abs(yn) > EMBUDO_Y) continue;
+    const fila = row * cols;
+    let izquierda = -1;
+    let derecha = -1;
+    for (let col = 0; col < cols; col++) {
+      if ((mapa[(fila + col) * 4 + 3] ?? 0) === 0) continue;
+      if (izquierda < 0) izquierda = col;
+      derecha = col;
+    }
+    if (izquierda < 0 || derecha < 0) continue;
+    const distancia = Math.abs(yn);
+    const holgura = distancia >= CIERRE_PUNTA ? 0 : boca * (1 - distancia / CIERRE_PUNTA);
+    const medio = Math.max(0, geo.radio(yn) - holgura) * (vw / 2);
+    const x0 = cx - medio;
+    const x1 = cx + medio;
+    const y = vy + (row / rows) * vh;
+    const pixL = vx + izquierda * anchoCelda;
+    const pixR = vx + (derecha + 1) * anchoCelda;
+    g.globalCompositeOperation = 'destination-out';
+    if (pixL < x0) g.fillRect(pixL, y, x0 - pixL, altoFila);
+    if (pixR > x1) g.fillRect(x1, y, pixR - x1, altoFila);
+    g.globalCompositeOperation = 'source-over';
+    if (x0 < pixL && pixL - x0 <= margen) {
+      g.drawImage(scene.sand, izquierda, row, 1, 1, x0, y, pixL - x0, altoFila);
+    }
+    if (pixR < x1 && x1 - pixR <= margen) {
+      g.drawImage(scene.sand, derecha, row, 1, 1, pixR, y, x1 - pixR, altoFila);
+    }
+  }
   g.restore();
 }
 
