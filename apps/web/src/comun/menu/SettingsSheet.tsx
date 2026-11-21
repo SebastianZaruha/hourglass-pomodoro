@@ -24,11 +24,11 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { TarroDia } from '../dia/TarroDia';
+import { HojaDia } from '../dia/HojaDia';
 import type { ArenaDia } from '../dia/dia';
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
 import { HojaGestos } from '../paneles/gestos/HojaGestos';
-import { GlobeIcon, HandIcon, SpeakerIcon, SunIcon } from './Icons';
+import { GlobeIcon, HandIcon, JarIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -114,8 +114,12 @@ export function SettingsSheet({
 
   useHojaVidrio(hoja);
   const [gestos, setGestos] = useState(false);
+  const [racha, setRacha] = useState(false);
   useEffect(() => {
-    if (!open) setGestos(false);
+    if (!open) {
+      setGestos(false);
+      setRacha(false);
+    }
   }, [open]);
   const tema = themeName(t, settings.theme);
   const idiomaNombre = languageName(t, settings.language);
@@ -172,8 +176,6 @@ export function SettingsSheet({
           ))}
         </div>
       ) : null}
-
-      {arenaDia ? <TarroDia arena={arenaDia} lang={idioma ?? 'es'} /> : null}
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
         <button
@@ -385,9 +387,27 @@ export function SettingsSheet({
         >
           <HandIcon />
         </button>
+        {arenaDia ? (
+          <button
+            type="button"
+            className="control redondo"
+            aria-label={(idioma ?? 'es') === 'es' ? 'Racha de hoy' : "Today's streak"}
+            onClick={() => setRacha(true)}
+          >
+            <JarIcon />
+          </button>
+        ) : null}
       </div>
     </div>
     <HojaGestos abierta={open && gestos} lang={idioma ?? 'es'} alCerrar={() => setGestos(false)} />
+    {arenaDia ? (
+      <HojaDia
+        abierta={open && racha}
+        arena={arenaDia}
+        lang={idioma ?? 'es'}
+        alCerrar={() => setRacha(false)}
+      />
+    ) : null}
     </>
   );
 }

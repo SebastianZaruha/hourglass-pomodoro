@@ -33,6 +33,22 @@ export function GlobeIcon({ size = 18 }: IconProps) {
   );
 }
 
+export function JarIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8.5 4.8h7M9.2 4.8v2c0 1.1-.6 1.9-1.4 2.4-.8.5-1.4 1.4-1.4 2.5v4.1c0 1.5 1.1 2.5 2.6 2.5h6c1.5 0 2.6-1 2.6-2.5v-4.1c0-1.1-.6-2-1.4-2.5-.8-.5-1.4-1.3-1.4-2.4v-2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8.4 15.6h7.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function HandIcon({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
