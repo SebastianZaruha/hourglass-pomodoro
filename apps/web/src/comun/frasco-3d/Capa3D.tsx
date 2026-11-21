@@ -142,14 +142,17 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
           puente.motor = motor;
           puente.pantalla = (ctx, angulo) => {
             // En el tipo 'frasco' el ctx llega con S(res) y el origen en cajaFoto.
-            const { pivote, cajaFoto } = motor.getCaja();
+            // Hito 2: con la intro, el cuello visible se mueve y el frasco escala (escalaDeIntro).
+            const { pivote, cajaFoto, pivoteVisible, escala, cajaFondo } = motor.getCaja();
             const r = canvas.getBoundingClientRect();
-            const cuello = { x: pivote.x + r.left, y: pivote.y + r.top };
+            const cuello = { x: pivoteVisible.x + r.left, y: pivoteVisible.y + r.top };
             const matriz = DOMMatrix.fromMatrix(ctx.getTransform())
               .translate(pivote.x - cajaFoto.x, pivote.y - cajaFoto.y)
               .rotate((-angulo * 180) / Math.PI)
+              .scale(1 / escala)
               .translate(-cuello.x, -cuello.y);
-            return { matriz, cuello };
+            const fondo = cajaFondo ? { x: cajaFondo.x + r.left, y: cajaFondo.y + r.top, w: cajaFondo.w, h: cajaFondo.h } : undefined;
+            return { matriz, cuello, fondo, escala };
           };
           aplicarFondo();
         },

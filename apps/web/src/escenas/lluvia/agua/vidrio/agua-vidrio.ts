@@ -8,6 +8,7 @@ export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
   const copias = crearCopiasFondo(opciones.reduccion ?? 4, opciones.fpsVideo ?? 15);
   const bulbos = [crearBulbo(opciones.bulbos[0]), crearBulbo(opciones.bulbos[1])] as const;
   const piscina = crearPiscina();
+  const refraccion = opciones.refraccion !== false;
   let gradientes: Gradientes | null = null;
   let ctxGradientes: CanvasRenderingContext2D | null = null;
   let fuente: FuenteFondo | null = null;
@@ -59,8 +60,8 @@ export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
       const alfa = estado.opacidad <= 0 ? 0 : estado.opacidad >= 1 ? 1 : estado.opacidad;
       const mezcla = Math.min(1, Math.max(0, estado.desenfoque / DESENFOQUE_MAX));
       if (alfa > 0) {
-        pintarBulbo(ctx, bulbos[0], estado.bulbos[0].alturas, copias, gradientes!, mezcla, alfa);
-        pintarBulbo(ctx, bulbos[1], estado.bulbos[1].alturas, copias, gradientes!, mezcla, alfa);
+        pintarBulbo(ctx, bulbos[0], estado.bulbos[0].alturas, copias, gradientes!, mezcla, alfa, refraccion);
+        pintarBulbo(ctx, bulbos[1], estado.bulbos[1].alturas, copias, gradientes!, mezcla, alfa, refraccion);
       }
 
       // Para las gotas: cuello en el mundo y bulbo que queda abajo (gravedad del mundo).

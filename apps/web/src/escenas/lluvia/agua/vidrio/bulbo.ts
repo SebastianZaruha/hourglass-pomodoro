@@ -163,10 +163,10 @@ function trazarSuperficie(ctx: CanvasRenderingContext2D, b: BulboMundo, dy: numb
  */
 export function pintarBulbo(
   ctx: CanvasRenderingContext2D, b: BulboMundo, alturas: ArrayLike<number>,
-  fondo: CopiasFondo, g: Gradientes, mezcla: number, alfa: number,
+  fondo: CopiasFondo, g: Gradientes, mezcla: number, alfa: number, refraccion = true,
 ): void {
   if (!b.visible) return;
-  pintarCapa(b, fondo, g, mezcla);
+  pintarCapa(b, fondo, g, mezcla, refraccion);
 
   ctx.save();
   trazarPoligono(ctx, b.pts);
@@ -223,7 +223,7 @@ export function pintarBulbo(
 }
 
 /** Lo borroso del agua, en la capa pequeña: fondo refractado en tiras, velo y borde interior. Sin recortes. */
-function pintarCapa(b: BulboMundo, fondo: CopiasFondo, g: Gradientes, mezcla: number): void {
+function pintarCapa(b: BulboMundo, fondo: CopiasFondo, g: Gradientes, mezcla: number, refraccion: boolean): void {
   const c = b.capaCtx;
   const paso = (b.xMax - b.xMin) / TIRAS;
   const yFin = b.yMax + 1;
@@ -235,6 +235,8 @@ function pintarCapa(b: BulboMundo, fondo: CopiasFondo, g: Gradientes, mezcla: nu
   if (fondo.listo) {
     const cx = (b.xMin + b.xMax) / 2;
     const eb = fondo.escalaBajo, em = fondo.escalaMuyBajo;
+    // Sin refracción: misma copia borrosa, recta (sin lupa, sin desvío, sin seguir la ola).
+    const aumento = refraccion ? AUMENTO : 1, desvio = refraccion ? REFRACCION : 0, sigue = refraccion ? SIGUE_OLA : 0;
     let xa = Math.round(b.xMin * k) / k;
     for (let i = 0; i < TIRAS; i++) {
       // Bordes en px enteros de la capa: tiras pegadas sin solaparse, así no se ven costuras.
@@ -248,9 +250,9 @@ function pintarCapa(b: BulboMundo, fondo: CopiasFondo, g: Gradientes, mezcla: nu
         const pendiente = (s1 - s0) / paso;
         const ola = b.nivel - (s0 + s1) / 2; // > 0 en la cresta
         // Lupa centrada en (cx, nivel) + desvío por pendiente + el fondo acompaña a la ola.
-        const sx = cx + (xa - cx) * AUMENTO + pendiente * REFRACCION;
-        const sy = b.nivel + (arriba - b.nivel) * AUMENTO + ola * SIGUE_OLA;
-        const sw = w * AUMENTO, sh = alto * AUMENTO;
+        const sx = cx + (xa - cx) * aumento + pendiente * desvio;
+        const sy = b.nivel + (arriba - b.nivel) * aumento + ola * sigue;
+        const sw = w * aumento, sh = alto * aumento;
         if (mezcla < 1) {
           c.globalAlpha = 1;
           c.drawImage(fondo.bajo, sx / eb, sy / eb, sw / eb, sh / eb, xa, arriba, w, alto);

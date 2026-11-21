@@ -42,6 +42,10 @@ export interface Pintura {
   readonly pantalla?: {
     readonly matriz: DOMMatrixReadOnly;
     readonly cuello: { readonly x: number; readonly y: number };
+    /** Caja del fondo (cover anclado) en px de la ventana: el mundo del agua. Hito 2. */
+    readonly fondo?: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
+    /** Escala de la pose (intro). 1 de pie. Hito 2. */
+    readonly escala?: number;
   };
 }
 

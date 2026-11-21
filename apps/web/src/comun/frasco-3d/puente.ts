@@ -19,6 +19,8 @@ export interface Puente3D {
   pantalla: ((ctx: CanvasRenderingContext2D, angulo: number) => {
     matriz: DOMMatrix;
     cuello: { x: number; y: number };
+    fondo?: { x: number; y: number; w: number; h: number };
+    escala?: number;
   }) | null;
 }
 

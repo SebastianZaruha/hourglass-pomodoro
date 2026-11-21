@@ -12,6 +12,8 @@ export async function exportarGLB(altoMetros = 0.22, segmentos = 128): Promise<A
   const k = altoMetros / altoPx;
   const g = crearGeometriaFrasco(segmentos);
   g.scale(k, k, k);
+  // Hito 2: sin UV (el vidrio no lleva texturas): −25 % de peso, misma forma.
+  g.deleteAttribute('uv');
   const material = new MeshPhysicalMaterial({
     name: 'Vidrio', color: 0xffffff, roughness: 0.015, metalness: 0, transmission: 1, ior: 1.5,
     thickness: 16 * k, attenuationColor: 0xeef5f7, attenuationDistance: 0.06, specularIntensity: 1,

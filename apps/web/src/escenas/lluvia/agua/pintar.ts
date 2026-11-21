@@ -262,6 +262,9 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
         agua = crearAguaVidrio({
           bulbos: [poliA, poliB],
           cuello,
+          // Frasco 3D: refracta el vidrio de verdad. El agua solo pone su fondo borroso, recto
+          // (sin lupa ni desvío): no se suman dos refracciones. Velo y color, iguales.
+          refraccion: !p.pantalla,
           alCaerGota(bulbo, u) {
             const vista = vistaActual;
             if (!vista) return;
@@ -281,11 +284,13 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       vistaActual = vista;
       const vidrio = asegurar(p);
       if (!vidrio) return;
-      const pose = p.pantalla ? 1 : poseDelContexto(ctx);
+      const pose = p.pantalla ? (p.pantalla.escala ?? 1) : poseDelContexto(ctx);
       const vidrioEl = document.querySelector('.glass-canvas');
       const origen = vidrioEl?.getBoundingClientRect();
       const nx = (CUELLO_X / FOTO_ANCHO - 0.5) * p.caja.w;
       const ny = (CUELLO_FILA / FOTO_ALTO - 0.5) * p.caja.h;
+      // El mundo del agua sigue siendo la ventana: su copia del fondo se coloca con el
+      // rectángulo de la foto del DOM, que tiene el mismo encuadre que el fondo WebGL.
       const cuelloX = p.pantalla?.cuello.x ?? (origen?.left ?? 0) + p.caja.x + p.caja.w * (CUELLO_X / FOTO_ANCHO);
       const cuelloY = p.pantalla?.cuello.y ?? (origen?.top ?? 0) + p.caja.y + p.caja.h * (CUELLO_FILA / FOTO_ALTO);
 

@@ -28,6 +28,12 @@ export interface OpcionesAgua {
   reduccion?: number;
   /** Si el fondo es un vídeo, cuántas veces por segundo como mucho se copia (15 por defecto). Copiar un frame es lo más caro del módulo. */
   fpsVideo?: number;
+  /**
+   * Refracción 2D del fondo dentro del agua (lupa y desvío por la ola). true por defecto.
+   * false: el fondo borroso va recto, sin lupa ni desvío. Para cuando ya refracta otro vidrio
+   * (el frasco 3D): así no se suman dos refracciones. Velo, borde, brillos y gotas no cambian.
+   */
+  refraccion?: boolean;
 }
 
 /** Estado de un bulbo en este frame. Lo calcula el modelo de la app. */

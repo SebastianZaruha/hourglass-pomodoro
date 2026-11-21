@@ -7,9 +7,10 @@ import {
   Vector2, Vector4, WebGLRenderer, type WebGLRenderTarget, FrontSide,
 } from 'three';
 import { BASE_BULBO, BASE_OPACA, CUELLO_FILA, FOTO_ALTO, FOTO_ANCHO, cajaFoto, encuadreFondo, layoutFor, yEnFoto, type Caja } from './encuadre';
-import { crearEntorno, type Modo } from './entorno';
+import { crearEntorno, type AjusteEntorno, type Modo } from './entorno';
 import { crearGeometriaFrasco } from './geometria';
-import type { Calidad, Contenido, Fondo, Frasco3D, OpcionesFrasco3D } from './tipos';
+import { escalaDeIntro, poseIntroEn, POSE_QUIETA, type PoseIntro } from './intro';
+import type { Calidad, Contenido, FaseGiro, Fondo, Frasco3D, OpcionesFrasco3D } from './tipos';
 
 // transmision: resolución de la pasada de refracción en px CSS (no en px físicos). Lo que se ve
 // a través del vidrio (arena, agua) sale de esa pasada: por debajo de ~0,7 px CSS se emborrona.
@@ -26,9 +27,10 @@ const MAX_INCLINACION = (8 * Math.PI) / 180;
 // Vidrio por modo. Sin color encima: el blanco es identidad; el color sale de attenuation,
 // Fresnel (ior) y el entorno.
 // distancia: en múltiplos del grosor de pared (así el tinte no depende del tamaño en pantalla).
-const VIDRIO: Record<Modo, { env: number; atenuacion: string; distancia: number; especular: number }> = {
-  claro: { env: 1.0, atenuacion: '#dde6e8', distancia: 14, especular: 1 },
-  oscuro: { env: 1.3, atenuacion: '#e2e9ea', distancia: 16, especular: 1 },
+// Hito 2: en claro el tinte del borde va algo más cargado (14 → 11; estudio 9): borde más marcado, centro igual.
+const VIDRIO: Record<Modo, { env: number; atenuacion: string; distancia: number; distanciaEstudio: number; especular: number }> = {
+  claro: { env: 1.0, atenuacion: '#dde6e8', distancia: 11, distanciaEstudio: 9, especular: 1 },
+  oscuro: { env: 1.3, atenuacion: '#e2e9ea', distancia: 16, distanciaEstudio: 16, especular: 1 },
 };
 const GROSOR = 16; // px de la foto (≈ la pared real: 211−196 a 446)
 const SOMBRA: Record<Modo, { r: number; g: number; b: number; a: number }> = {
@@ -69,7 +71,7 @@ function fuenteLista(f: HTMLImageElement | HTMLVideoElement): boolean {
 }
 
 export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasco3D): Frasco3D {
-  const o = { calidad: 'auto' as Calidad | 'auto', modo: 'claro' as Modo, reposo: 'libre' as 'libre' | 'vertical', balanceo: true, mediaVueltaMs: 900, fpsVideo: 30, interaccion: true, ...opciones };
+  const o = { calidad: 'auto' as Calidad | 'auto', modo: 'claro' as Modo, reposo: 'libre' as 'libre' | 'vertical', balanceo: true, mediaVueltaMs: 900, fpsVideo: 30, interaccion: true, volteo: 'quedarse' as 'quedarse' | 'reiniciar', ...opciones };
   const consulta = matchMedia('(prefers-reduced-motion: reduce)');
   let reducido = consulta.matches;
   const alMovimiento = () => { reducido = consulta.matches; };
@@ -127,19 +129,19 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   texHoja.generateMipmaps = false;
   texHoja.minFilter = LinearFilter;
   const texMascara = new TextureLoader().load(o.mascara);
-  const UH = { ...U, uHoja: { value: texHoja as Texture }, uMascara: { value: texMascara }, uHayHoja: { value: 0 } };
+  const UH = { ...U, uHoja: { value: texHoja as Texture }, uMascara: { value: texMascara }, uHayHoja: { value: 0 }, uOpacidad: { value: 1 } };
   const matHoja = new ShaderMaterial({
     uniforms: UH,
     vertexShader: `varying vec2 vUv; varying vec3 vClip;
       void main(){ vUv = uv; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); vClip = p.xyw; gl_Position = p; }`,
     fragmentShader: `${GLSL_FONDO}
-      uniform sampler2D uHoja; uniform sampler2D uMascara; uniform float uHayHoja;
+      uniform sampler2D uHoja; uniform sampler2D uMascara; uniform float uHayHoja; uniform float uOpacidad;
       varying vec2 vUv; varying vec3 vClip;
       void main(){
         if (texture2D(uMascara, vUv).g < 0.5) discard;
         vec3 f = fondoEn(pxDeNdc(vClip.xy / vClip.z));
         vec4 h = texture2D(uHoja, vUv);
-        gl_FragColor = vec4(mix(f, h.rgb, h.a * uHayHoja), 1.0);
+        gl_FragColor = vec4(mix(f, h.rgb, h.a * uHayHoja * uOpacidad), 1.0);
         #include <colorspace_fragment>
       }`,
   });
@@ -180,13 +182,22 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   const pivote = { x: 0, y: 0 };
   let angulo = 0, omega = 0, inclX = 0, inclY = 0, vInclX = 0, vInclY = 0;
   let arrastre: { id: number; phi: number; t: number } | null = null;
-  let vuelta: { t0: number; desde: number; hasta: number; dur: number } | null = null;
+  let vuelta: { t0: number; desde: number; hasta: number; dur: number; reinicio?: boolean; sujeto?: boolean } | null = null;
+  // Intro: la propia (intro()) o la que llega de fuera (setPoseIntro). Pose y escala visibles de este frame.
+  let introT0: number | null = null, introFin: (() => void) | undefined;
+  let poseFuera: PoseIntro | null = null;
+  let pose: PoseIntro = POSE_QUIETA;
+  let escalaPose = 1, anguloVisible = 0, velocidad = 0;
+  // Ángulo llevado desde fuera (girar cada frame, p. ej. con crearGiro): su velocidad solo mueve el balanceo.
+  let omegaFuera = 0, tFuera = 0;
+  const pivoteVisible = { x: 0, y: 0 };
   let modo: Modo = o.modo;
   let fondo: Fondo | null = null;
   let fondoPrevio: Fondo | null = null;
   let mezclaT0 = 0;
   let contenido: Contenido | null = null;
   let entornoRT: WebGLRenderTarget | null = null;
+  let ajusteEntorno: Partial<AjusteEntorno> = {};
   let listo = false, vivo = true, raf = 0, previo = performance.now();
   // Hourglass: el frasco se oculta mientras la intro 2D lo pinta (sin vidrio, contenido ni sombra).
   let frascoVisible = true;
@@ -231,7 +242,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     pivote.x = foto.x + foto.w / 2;
     pivote.y = foto.y + CUELLO_FILA * sy;
     escala.scale.set(sx, sy, sx);
-    raiz.position.set(pivote.x - vw / 2, vh / 2 - pivote.y, 0);
+    colocarRaiz();
     const d = vh / 2 / Math.tan((FOV * Math.PI) / 360);
     camara.aspect = vw / vh;
     camara.position.set(0, 0, d);
@@ -239,14 +250,33 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     camara.far = d + 4000;
     camara.updateProjectionMatrix();
     vidrio.thickness = GROSOR; // px de la foto; three lo escala con la malla
-    vidrio.attenuationDistance = GROSOR * sx * VIDRIO[modo].distancia;
+    vidrio.attenuationDistance = distanciaAtenuacion();
     U.uVista.value.set(vw, vh);
-    // Sombra de contacto: donde apoya la base opaca.
-    U.uSombraPos.value.set(caja.x + caja.w / 2, yEnFoto(caja, BASE_OPACA) - caja.h * 0.004);
-    U.uSombraRad.value.set(caja.w * 0.47, caja.h * 0.03);
     encuadrar();
     redimensionarHoja();
     o.alCaja?.(caja, foto);
+  }
+
+  /** Pivote, escala y sombra con la pose de la intro (centrado y escalaDeIntro como en Hourglass). */
+  function colocarRaiz() {
+    const c = pose.centrado ?? 0;
+    const dx = c ? (vw / 2 - (caja.x + caja.w / 2)) * c : 0;
+    const dy = c ? (vh / 2 - (caja.y + caja.h * 0.48)) * c : 0;
+    escalaPose = pose.activa ? escalaDeIntro(pose.escala, { halfW: caja.w / 2, halfH: caja.h / 2 }, pose.angulo, vw, vh) : 1;
+    pivoteVisible.x = pivote.x + dx; pivoteVisible.y = pivote.y + dy;
+    raiz.position.set(pivoteVisible.x - vw / 2, vh / 2 - pivoteVisible.y, 0);
+    raiz.scale.setScalar(escalaPose);
+    // Sombra de contacto: donde apoya la base opaca (se escala con el frasco alrededor del cuello).
+    const by = yEnFoto(caja, BASE_OPACA) - caja.h * 0.004;
+    U.uSombraPos.value.set(pivoteVisible.x, pivoteVisible.y + (by - pivote.y) * escalaPose);
+    U.uSombraRad.value.set(caja.w * 0.47 * escalaPose, caja.h * 0.03 * escalaPose);
+    const op = pose.activa ? pose.opacidad ?? 1 : 1;
+    UH.uOpacidad.value = op;
+    // Toda la intro en transparente: un solo cambio de shader al empezar y otro al acabar (no a los 300 ms, en pleno giro).
+    const transparente = pose.activa && (op < 1 || vidrio.transparent);
+    if (vidrio.transparent !== transparente) { vidrio.transparent = transparente; vidrio.needsUpdate = true; }
+    vidrio.opacity = op;
+    malla.visible = op > 0.002;
   }
 
   /** Lo que se pinta: el vídeo si ya corre; si no, su póster. */
@@ -296,16 +326,21 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     const fuente = fondo.poster ?? (fondo.fuente instanceof HTMLImageElement ? fondo.fuente : null);
     if (fuente && !(fuente.complete && fuente.naturalWidth > 0)) return;
     const viejo = entornoRT;
-    entornoRT = crearEntorno(renderer, pmrem, { fuente, modo, estudio: !!fondo.estudio, tinte: fondo.tinte });
+    entornoRT = crearEntorno(renderer, pmrem, { fuente, modo, estudio: !!fondo.estudio, tinte: fondo.tinte, ajuste: ajusteEntorno });
     escena.environment = entornoRT.texture;
     viejo?.dispose();
+  }
+
+  function distanciaAtenuacion() {
+    const v = VIDRIO[modo];
+    return GROSOR * (foto.w / FOTO_ANCHO) * (fondo?.estudio ? v.distanciaEstudio : v.distancia);
   }
 
   function aplicarModo() {
     const v = VIDRIO[modo];
     vidrio.envMapIntensity = v.env;
     vidrio.attenuationColor.set(v.atenuacion);
-    vidrio.attenuationDistance = GROSOR * (foto.w / FOTO_ANCHO) * v.distancia;
+    vidrio.attenuationDistance = distanciaAtenuacion();
     vidrio.specularIntensity = v.especular;
     luz.intensity = modo === 'oscuro' ? 0.5 : 1.2;
     const s = fondo?.sombra ?? SOMBRA[modo];
@@ -334,6 +369,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   }
   let ultimoToque = { t: 0, x: 0, y: 0 };
   const bajar = (e: PointerEvent) => {
+    if (pose.activa) return; // como blocksInput de la intro
     const p = local(e);
     if (!tocaFrasco(p)) return;
     // Doble toque (táctil y lápiz). El ratón usa dblclick.
@@ -370,6 +406,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     arrastre = null;
   };
   const dobleClic = (e: MouseEvent) => {
+    if (pose.activa) return;
     const r = canvas.getBoundingClientRect();
     if (tocaFrasco({ x: e.clientX - r.left, y: e.clientY - r.top })) mediaVuelta();
   };
@@ -383,9 +420,16 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
 
   function mediaVuelta() {
     if (vuelta) return;
+    arrastre = null;
+    if (o.volteo === 'reiniciar') {
+      // Como crearGiro: de donde esté hasta ±180° (hacia el lado al que ya estaba girado), y luego a 0.
+      const hasta = angulo < 0 ? -Math.PI : Math.PI;
+      if (reducido) { angulo = 0; omega = 0; o.alVoltear?.('sujetar'); o.alVoltear?.('cerrar'); o.alGirar?.(angulo); return; }
+      vuelta = { t0: performance.now(), desde: angulo, hasta, dur: o.mediaVueltaMs, reinicio: true };
+      return;
+    }
     const base = Math.round(angulo / Math.PI) * Math.PI;
     const hasta = base + Math.PI;
-    arrastre = null;
     if (reducido) { angulo = hasta; omega = 0; o.alGirar?.(angulo); return; }
     vuelta = { t0: performance.now(), desde: angulo, hasta, dur: o.mediaVueltaMs };
   }
@@ -394,7 +438,14 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // (rad/s) solo alimenta el balanceo 3D, nunca mueve el ángulo por su cuenta.
   function girar(a: number, animado = false, velocidad = 0) {
     arrastre = null;
-    if (!animado || reducido) { angulo = a; omega = reducido ? 0 : velocidad; vuelta = null; o.alGirar?.(angulo); return; }
+    if (!animado || reducido) {
+      const t = performance.now(), d = a - angulo, dt = (t - tFuera) / 1000;
+      tFuera = t;
+      // Hito 2: si la app no pasa la velocidad, se estima entre llamadas seguidas (solo para el balanceo).
+      // Saltos (el 180°→0 del reinicio) y llamadas sueltas no cuentan como giro.
+      omegaFuera = velocidad || reducido ? 0 : dt > 0 && dt < 0.1 && Math.abs(d) < Math.PI / 2 ? Math.max(-14, Math.min(14, d / dt)) : 0;
+      angulo = a; omega = reducido ? 0 : velocidad; vuelta = null; o.alGirar?.(angulo); return;
+    }
     vuelta = { t0: performance.now(), desde: angulo, hasta: a, dur: o.mediaVueltaMs };
   }
 
@@ -404,12 +455,21 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     const dt = Math.min(1 / 30, Math.max(0.001, dtReal));
     previo = ahora;
 
-    if (vuelta) {
+    const anguloAntes = anguloVisible;
+    if (vuelta?.sujeto) {
+      // Segundo fotograma del reinicio: el ángulo vuelve a 0 (el contenido ya se dio la vuelta).
+      angulo = 0; omega = 0; vuelta = null;
+      o.alVoltear?.('cerrar');
+      o.alGirar?.(angulo);
+    } else if (vuelta) {
       const p = Math.min(1, (ahora - vuelta.t0) / vuelta.dur);
       const a = vuelta.desde + (vuelta.hasta - vuelta.desde) * suave3(p);
       omega = (a - angulo) / dt;
       angulo = a;
-      if (p >= 1) { angulo = vuelta.hasta; omega = 0; vuelta = null; }
+      if (p >= 1) {
+        angulo = vuelta.hasta; omega = 0;
+        if (vuelta.reinicio) { vuelta.sujeto = true; o.alVoltear?.('sujetar'); } else vuelta = null;
+      }
       o.alGirar?.(angulo);
     } else if (!o.interaccion) {
       // Hourglass manda el ángulo: aquí solo se apaga la velocidad que alimenta el balanceo.
@@ -436,19 +496,33 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
 
     // Balanceo 3D: muelle algo subamortiguado que sigue a la velocidad de giro.
     const conBalanceo = o.balanceo && !reducido;
-    const metaY = conBalanceo ? Math.max(-MAX_INCLINACION, Math.min(MAX_INCLINACION, -omega * 0.05)) : 0;
-    const metaX = conBalanceo ? Math.min(MAX_INCLINACION * 0.4, Math.abs(omega) * 0.015) : 0;
+    if (ahora - tFuera > 50) omegaFuera = 0;
+    const w = omega || omegaFuera;
+    const metaY = conBalanceo ? Math.max(-MAX_INCLINACION, Math.min(MAX_INCLINACION, -w * 0.05)) : 0;
+    const metaX = conBalanceo ? Math.min(MAX_INCLINACION * 0.4, Math.abs(w) * 0.015) : 0;
     const kI = 70, cI = 2 * Math.sqrt(kI) * 0.55;
     vInclY += (kI * (metaY - inclY) - cI * vInclY) * dt; inclY += vInclY * dt;
     vInclX += (kI * (metaX - inclX) - cI * vInclX) * dt; inclX += vInclX * dt;
     if (!conBalanceo) { inclX = inclY = vInclX = vInclY = 0; }
     inclina.rotation.set(inclX, inclY, 0);
-    giro.rotation.z = -angulo;
+    // Intro: la propia o la de fuera. Se suma al ángulo, escala y centra (colocarRaiz).
+    if (introT0 === -1 && listo) introT0 = ahora; // la intro empieza con el primer fotograma con fondo
+    if (introT0 !== null) {
+      pose = poseIntroEn(introT0 === -1 ? 0 : ahora - introT0, reducido);
+      if (!pose.activa) { introT0 = null; pose = POSE_QUIETA; const f = introFin; introFin = undefined; f?.(); }
+    } else pose = poseFuera ?? POSE_QUIETA;
+    colocarRaiz();
+    // La pose de fuera (setPoseIntro) no suma ángulo: quien la manda ya lo pone con girar()
+    // (crearGiro.estado().angulo incluye la intro). La intro propia sí lo suma.
+    anguloVisible = angulo + (pose.activa && introT0 !== null ? pose.angulo : 0);
+    // Como crearGiro: diferencia de ángulos visibles entre fotogramas.
+    velocidad = (anguloVisible - anguloAntes) / dt;
+    giro.rotation.z = -anguloVisible;
 
     // Sombra: se apaga al tumbarse (a 180° vuelve: el frasco apoya en la otra base).
-    const cs = Math.cos(angulo);
+    const cs = Math.cos(anguloVisible);
     const s = fondo?.sombra ?? SOMBRA[modo];
-    U.uSombraCol.value.w = frascoVisible ? s.a * Math.max(0, (Math.abs(cs) - 0.6) / 0.4) ** 1.5 : 0;
+    U.uSombraCol.value.w = frascoVisible ? s.a * Math.max(0, (Math.abs(cs) - 0.6) / 0.4) ** 1.5 * (pose.activa ? pose.sombra : 1) : 0;
 
     // Fondo: carga, fundido y vídeo con tope de fps.
     if (fondo) {
@@ -490,15 +564,16 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       ctxHoja.setTransform(res, 0, 0, res, 0, 0);
       c.pintar(ctxHoja, { x: 0, y: 0, w: foto.w, h: foto.h }, dt * 1000);
     } else {
-      // mundo → hoja: hoja = S(res)·T(pivote en la hoja)·R(−ángulo)·T(−pivote)
-      const co = Math.cos(-angulo), si = Math.sin(-angulo);
+      // mundo → hoja: hoja = S(res)·T(pivote en la hoja)·R(−ángulo)·S(1/escala)·T(−pivote visible)
+      const co = Math.cos(-anguloVisible), si = Math.sin(-anguloVisible), k = res / escalaPose;
       const px = foto.w / 2, py = pivote.y - foto.y;
-      const a = res * co, b = res * si, cc = -res * si, d = res * co;
-      const e = res * (px - (co * pivote.x - si * pivote.y));
-      const f = res * (py - (si * pivote.x + co * pivote.y));
+      const pvx = pivoteVisible.x, pvy = pivoteVisible.y;
+      const a = k * co, b = k * si, cc = -k * si, d = k * co;
+      const e = res * px - k * (co * pvx - si * pvy);
+      const f = res * py - k * (si * pvx + co * pvy);
       ctxHoja.setTransform(a, b, cc, d, e, f);
       const cf = fondo ? cajaFondoDe(fondo) : null;
-      c.pintar(ctxHoja, { angulo, pivote: { ...pivote }, cajaFoto: foto, cajaFondo: cf ?? { x: 0, y: 0, w: vw, h: vh }, dt: dt * 1000 });
+      c.pintar(ctxHoja, { angulo: anguloVisible, pivote: { ...pivoteVisible }, cajaFoto: foto, cajaFondo: cf ?? { x: 0, y: 0, w: vw, h: vh }, dt: dt * 1000, escala: escalaPose });
     }
     texHoja.needsUpdate = true;
   }
@@ -554,10 +629,23 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     setModo(m) { modo = m; aplicarModo(); },
     setFrascoVisible(v) { frascoVisible = v; raiz.visible = v; },
     setCaja(c) { o.caja = c; recolocar(); },
-    getCaja() { return { caja, cajaFoto: foto, pivote: { ...pivote } }; },
+    getCaja() {
+      const cf = fondo ? cajaFondoDe(fondo) : null;
+      return { caja, cajaFoto: foto, pivote: { ...pivote }, pivoteVisible: { ...pivoteVisible }, escala: escalaPose, cajaFondo: cf };
+    },
     girar,
     getAngulo: () => angulo,
     mediaVuelta,
+    getEstado() {
+      const fase: FaseGiro = vuelta ? 'volteo' : arrastre ? 'arrastre' : omega !== 0 ? 'volviendo' : 'reposo';
+      return { angulo: anguloVisible, velocidad, fase };
+    },
+    intro(alTerminar) {
+      arrastre = null; omega = 0;
+      introFin = alTerminar;
+      introT0 = listo ? performance.now() : -1;
+    },
+    setPoseIntro(p) { poseFuera = p && p.activa ? p : null; },
     setCalidad(c) {
       auto = c === 'auto';
       calidad = c === 'auto' ? 'alto' : c;
@@ -566,7 +654,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     },
     redimensionar,
     /** Solo para afinar/verificar: material y luz. No es API estable. */
-    depurar: () => ({ vidrio, luz, malla, rehacerEntorno }),
+    depurar: () => ({ vidrio, luz, malla, rehacerEntorno, ajustarEntorno: (aj: Partial<AjusteEntorno>) => { ajusteEntorno = aj; rehacerEntorno(); } }),
     medidas() {
       const n = Math.min(nTiempos, tiempos.length);
       const v = Array.from(tiempos.subarray(0, n)).sort((a, b) => a - b);

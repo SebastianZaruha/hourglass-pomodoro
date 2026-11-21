@@ -13,7 +13,32 @@ export interface OpcionesEntorno {
   estudio: boolean;
   /** Tinte de la luz (#rrggbb). Si falta, se saca de los píxeles más claros de la foto. */
   tinte?: string;
+  /** Solo para afinar (depurar): pisa valores de AJUSTES. */
+  ajuste?: Partial<AjusteEntorno>;
 }
+
+/** Lo que marca el borde y los brillos. Elegido con capturas (verificacion/variantes-h2.mjs). */
+export interface AjusteEntorno {
+  /** Banderas negras: centro y medio ancho de la banda (rad desde «justo detrás»), cuánto oscurecen y ganancia. */
+  banderaCentro: number; banderaAncho: number; banderaFuerza: number; banderaGanancia: number;
+  /** Multiplica la fuerza de los softboxes. */
+  softbox: number;
+  /** Borde del softbox: 0 = difuso (hito 1), 1 = recortado (estudio de producto). */
+  softboxCorte: number;
+  /** Brillo de la foto reflejada (estudio: fondo de papel). */
+  base: number;
+  /** Línea de luz fina por detrás (contraluz): perfila la silueta por dentro. */
+  contraluz: number;
+}
+
+// Hito 1: claro { 0.95, 0.42, 0.85, 1.6, 1, 0, 1, 0 }, oscuro { 0.95, 0.42, 0.75, 1.6, 1, 0, 1, 0 },
+// estudio igual con softboxes ×1.5 y base 0.9.
+const AJUSTES: Record<'claro' | 'oscuro' | 'estudioClaro' | 'estudioOscuro', AjusteEntorno> = {
+  claro: { banderaCentro: 0.7, banderaAncho: 0.38, banderaFuerza: 0.97, banderaGanancia: 2.3, softbox: 1, softboxCorte: 0, base: 1, contraluz: 0 },
+  oscuro: { banderaCentro: 0.95, banderaAncho: 0.42, banderaFuerza: 0.75, banderaGanancia: 1.6, softbox: 1, softboxCorte: 0, base: 1, contraluz: 0 },
+  estudioClaro: { banderaCentro: 0.72, banderaAncho: 0.4, banderaFuerza: 0.98, banderaGanancia: 2.5, softbox: 1.25, softboxCorte: 0.75, base: 0.92, contraluz: 1.0 },
+  estudioOscuro: { banderaCentro: 0.95, banderaAncho: 0.4, banderaFuerza: 0.8, banderaGanancia: 1.8, softbox: 1.2, softboxCorte: 0.75, base: 0.85, contraluz: 1.8 },
+};
 
 const W = 256, H = 128;
 const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -60,11 +85,23 @@ function hex(h: string): [number, number, number] {
   return [lin(((n >> 16) & 255) / 255), lin(((n >> 8) & 255) / 255), lin((n & 255) / 255)];
 }
 
-interface Luz { dir: [number, number, number]; ancho: number; alto: number; fuerza: number }
+type V3 = [number, number, number];
+interface Luz { dir: V3; ancho: number; alto: number; fuerza: number; derecha: V3; arriba: V3 }
+
+/** Ejes del softbox: derecha = horizontal del mundo ⟂ a la luz; arriba = lo que queda. */
+function luz(dir: V3, ancho: number, alto: number, fuerza: number): Luz {
+  const n = Math.hypot(...dir); const d: V3 = [dir[0] / n, dir[1] / n, dir[2] / n];
+  // derecha = (0,1,0) × d, normalizado
+  let r: V3 = [d[2], 0, -d[0]]; const m = Math.hypot(...r) || 1; r = [r[0] / m, r[1] / m, r[2] / m];
+  // arriba = d × derecha
+  const u: V3 = [d[1] * r[2] - d[2] * r[1], d[2] * r[0] - d[0] * r[2], d[0] * r[1] - d[1] * r[0]];
+  return { dir: d, ancho, alto, fuerza, derecha: r, arriba: u };
+}
 
 export function crearEntorno(renderer: WebGLRenderer, pmrem: PMREMGenerator, o: OpcionesEntorno): WebGLRenderTarget {
   const s = muestras(o.fuente);
   const oscuro = o.modo === 'oscuro';
+  const a: AjusteEntorno = { ...AJUSTES[o.estudio ? (oscuro ? 'estudioOscuro' : 'estudioClaro') : oscuro ? 'oscuro' : 'claro'], ...o.ajuste };
   let tinte = o.tinte ? hex(o.tinte) : s.claro;
   // En claro la luz es casi blanca con un poco de la escena; en oscuro, el color de la escena.
   const mezcla = oscuro ? 0.85 : 0.35;
@@ -72,13 +109,15 @@ export function crearEntorno(renderer: WebGLRenderer, pmrem: PMREMGenerator, o: 
   const k = oscuro ? 0.55 : 1;
   // Softboxes: vistas por reflejo desde la cámara. Atrás del espectador (+z), a los lados.
   const luces: Luz[] = [
-    { dir: [-0.62, 0.38, 0.68], ancho: 0.22, alto: 0.62, fuerza: (o.estudio ? 9 : 6) * k },
-    { dir: [0.74, 0.12, 0.66], ancho: 0.08, alto: 0.8, fuerza: (o.estudio ? 5 : 3.2) * k },
-    { dir: [0.0, 0.97, 0.24], ancho: 0.5, alto: 0.25, fuerza: 1.4 * k },
+    luz([-0.62, 0.38, 0.68], 0.22, 0.62, (o.estudio ? 9 : 6) * k * a.softbox),
+    luz([0.74, 0.12, 0.66], 0.08, 0.8, (o.estudio ? 5 : 3.2) * k * a.softbox),
+    luz([0.0, 0.97, 0.24], 0.5, 0.25, 1.4 * k),
   ];
   const datos = new Float32Array(W * H * 4);
   const c = [0, 0, 0];
-  const base = o.estudio ? 0.9 : 1;
+  const base = a.base;
+  // Caída del borde del softbox: de 0,85→1,25 (difuso) a 0,97→1,03 (recortado).
+  const e0 = 0.85 + 0.12 * a.softboxCorte, e1 = 1.25 - 0.22 * a.softboxCorte;
   for (let j = 0; j < H; j++) {
     const th = ((j + 0.5) / H - 0.5) * Math.PI;
     for (let i = 0; i < W; i++) {
@@ -95,20 +134,27 @@ export function crearEntorno(renderer: WebGLRenderer, pmrem: PMREMGenerator, o: 
       // fino junto a la silueta (reflejo a 55-75° de incidencia), como en una foto de producto.
       if (dz < 0) {
         const lado = Math.atan2(Math.abs(dx), -dz); // 0 = justo detrás
-        const enBanda = Math.max(0, 1 - Math.abs(lado - 0.95) / 0.42) * Math.max(0, 1 - Math.abs(dy) / 0.8);
-        const f = 1 - Math.min(1, enBanda * 1.6) * (oscuro ? 0.75 : 0.85);
+        const enBanda = Math.max(0, 1 - Math.abs(lado - a.banderaCentro) / a.banderaAncho) * Math.max(0, 1 - Math.abs(dy) / 0.8);
+        const f = 1 - Math.min(1, enBanda * a.banderaGanancia) * a.banderaFuerza;
         r *= f; g *= f; b *= f;
+        // Contraluz: dos tiras de luz finas justo detrás, a los lados (perfilan la silueta por dentro).
+        if (a.contraluz > 0) {
+          const t = Math.max(0, 1 - Math.abs(lado - 0.32) / 0.07) * Math.max(0, 1 - Math.abs(dy) / 0.7);
+          if (t > 0) { const q = a.contraluz * t * t; r += q * tinte[0]; g += q * tinte[1]; b += q * tinte[2]; }
+        }
       }
       for (const l of luces) {
         const [lx, ly, lz] = l.dir;
         const dot = dx * lx + dy * ly + dz * lz;
         if (dot <= 0.5) continue;
-        // Distancias angulares aproximadas en horizontal y vertical respecto a la luz.
-        const h = Math.atan2(dx * lz - dz * lx, dx * lx + dz * lz);
-        const vv = Math.asin(Math.max(-1, Math.min(1, dy))) - Math.asin(ly);
+        // Distancias angulares en el plano tangente de la luz (hito 1 usaba longitud/latitud:
+        // cerca del polo el softbox de arriba salía como un triángulo en la cúpula).
+        const [rx, ry, rz] = l.derecha, [ux, uy, uz] = l.arriba;
+        const h = Math.atan2(dx * rx + dy * ry + dz * rz, dot);
+        const vv = Math.atan2(dx * ux + dy * uy + dz * uz, dot);
         const e = Math.max(Math.abs(h) / l.ancho, Math.abs(vv) / l.alto);
-        if (e >= 1.25) continue;
-        const f = l.fuerza * (e <= 0.85 ? 1 : 1 - (e - 0.85) / 0.4);
+        if (e >= e1) continue;
+        const f = l.fuerza * (e <= e0 ? 1 : 1 - (e - e0) / (e1 - e0));
         r += f * tinte[0]; g += f * tinte[1]; b += f * tinte[2];
       }
       const p = (j * W + i) * 4;

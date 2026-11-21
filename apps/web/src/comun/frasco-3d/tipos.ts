@@ -1,6 +1,10 @@
 import type { Ancla, Caja } from './encuadre';
 import type { Modo } from './entorno';
-export type { Ancla, Caja, Modo };
+import type { PoseIntro } from './intro';
+export type { Ancla, Caja, Modo, PoseIntro };
+
+/** Igual que FaseGiro de Hourglass. */
+export type FaseGiro = 'reposo' | 'arrastre' | 'volviendo' | 'volteo';
 
 export type Calidad = 'alto' | 'medio' | 'bajo';
 
@@ -36,6 +40,8 @@ export interface InfoMundo {
   cajaFondo: Caja;
   /** ms desde el frame anterior. */
   dt: number;
+  /** Hito 2. Escala de la pose (intro, escalaDeIntro). 1 de pie. */
+  escala: number;
 }
 
 /**
@@ -73,6 +79,15 @@ export interface OpcionesFrasco3D {
   alCalidad?: (c: Calidad) => void;
   alListo?: () => void;
   alGirar?: (anguloRad: number) => void;
+  /**
+   * Hito 2. Qué hace la media vuelta al llegar a 180°.
+   *  - 'quedarse' (por defecto, como el hito 1): se queda a 180°.
+   *  - 'reiniciar': como el reinicio de Hourglass. Un fotograma a 180° (alVoltear('sujetar')),
+   *    y al siguiente el ángulo vuelve a 0 (alVoltear('cerrar')). Ahí llama a contenido.alVoltear.
+   */
+  volteo?: 'quedarse' | 'reiniciar';
+  /** Hito 2. Eventos del volteo con volteo: 'reiniciar' (los de crearGiro: reinicio-sujetar / reinicio-cerrar). */
+  alVoltear?: (evento: 'sujetar' | 'cerrar') => void;
 }
 
 export interface Frasco3D {
@@ -80,13 +95,27 @@ export interface Frasco3D {
   setContenido(c: Contenido | null): void;
   setModo(m: Modo): void;
   setCaja(c: Caja | null): void;
-  getCaja(): { caja: Caja; cajaFoto: Caja; pivote: { x: number; y: number } };
+  /**
+   * caja, cajaFoto y pivote como en el hito 1. Hito 2 (añadidos): pivoteVisible y escala (con la intro;
+   * fuera de ella, iguales a pivote y 1) y cajaFondo (cover anclado del fondo, null si aún no ha cargado).
+   */
+  getCaja(): { caja: Caja; cajaFoto: Caja; pivote: { x: number; y: number }; pivoteVisible: { x: number; y: number }; escala: number; cajaFondo: Caja | null };
   /** Pone el ángulo (rad). animado: con easing. velocidad (rad/s): solo para el balanceo. */
   girar(angulo: number, animado?: boolean, velocidad?: number): void;
   /** Oculta o muestra el vidrio, su contenido y su sombra. El fondo se sigue pintando. Hourglass. */
   setFrascoVisible(visible: boolean): void;
   getAngulo(): number;
   mediaVuelta(): void;
+  /** Hito 2. Ángulo visible (con la intro), velocidad (rad/s) y fase, para EntradaPaso del contenido. */
+  getEstado(): { angulo: number; velocidad: number; fase: FaseGiro };
+  /** Hito 2. Reproduce la intro de Hourglass (≈1,35 s). Con reduced-motion, un fundido. */
+  intro(alTerminar?: () => void): void;
+  /**
+   * Hito 2. Pose de intro llevada desde fuera (p. ej. giro.poseIntro() de Hourglass). null = quieta.
+   * Su ángulo NO se suma (girar() ya lo trae: crearGiro.estado().angulo incluye la intro); solo
+   * sirve para escalaDeIntro. Escala, sombra, centrado y opacidad sí se aplican.
+   */
+  setPoseIntro(pose: PoseIntro | null): void;
   setCalidad(c: Calidad | 'auto'): void;
   redimensionar(): void;
   /** Solo para afinar/verificar. */
