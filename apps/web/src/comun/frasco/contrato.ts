@@ -70,6 +70,16 @@ export interface Aspecto {
   readonly vidrio: { readonly velo: string; readonly saturacion: number };
   readonly luz: { readonly direccion: number; readonly tinte: string; readonly fuerza: number };
   readonly sombra: { readonly color: string; readonly opacidad: number };
+  /**
+   * Solo para el frasco 3D. `pie`: dónde apoya el ancla del fondo ('bulbo' en la
+   * duna de Arena; si falta, la base). `estudio`: reflejos de estudio en vez de la
+   * foto (Clásico). `tinte`: color de la luz de la escena (#rrggbb).
+   */
+  readonly frasco3d?: {
+    readonly pie?: 'bulbo' | 'base';
+    readonly estudio?: boolean;
+    readonly tinte?: string;
+  };
 }
 
 /** Lienzo al montar el frasco dibujado. La geometría de la foto llega en la vuelta 6. */

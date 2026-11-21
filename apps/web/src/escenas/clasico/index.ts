@@ -20,6 +20,7 @@ const claro: Aspecto = {
   vidrio: { velo: 'rgba(0, 0, 0, 0.12)', saturacion: 1 },
   luz: { direccion: -42, tinte: '#f3e4d0', fuerza: 0 },
   sombra: { color: 'rgba(84, 64, 44, 0.28)', opacidad: 1 },
+  frasco3d: { estudio: true, tinte: '#f3e4d0' },
 };
 
 const oscuro: Aspecto = {
@@ -36,6 +37,7 @@ const oscuro: Aspecto = {
   vidrio: { velo: 'rgba(0, 0, 0, 0.12)', saturacion: 1 },
   luz: { direccion: -48, tinte: '#e8a86a', fuerza: 0 },
   sombra: { color: 'rgba(0, 0, 0, 0.38)', opacidad: 1 },
+  frasco3d: { estudio: true, tinte: '#e8a86a' },
 };
 
 export const clasico: Escena = {

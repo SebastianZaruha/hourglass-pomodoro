@@ -27,6 +27,7 @@ const claro: Aspecto = {
   vidrio: { velo: 'rgba(0, 0, 0, 0.08)', saturacion: 1.05 },
   luz: { direccion: -104, tinte: '#ffc98a', fuerza: 0 },
   sombra: { color: 'rgba(84, 64, 44, 0.28)', opacidad: 1 },
+  frasco3d: { pie: 'bulbo' },
 };
 
 const oscuro: Aspecto = {
@@ -44,6 +45,7 @@ const oscuro: Aspecto = {
   vidrio: { velo: 'rgba(0, 0, 0, 0.08)', saturacion: 1.05 },
   luz: { direccion: -104, tinte: '#ff7a1a', fuerza: 0 },
   sombra: { color: 'rgba(0, 0, 0, 0.38)', opacidad: 1 },
+  frasco3d: { pie: 'bulbo' },
 };
 
 export const arena: Escena = {

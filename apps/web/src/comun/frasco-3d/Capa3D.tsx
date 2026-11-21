@@ -1,0 +1,196 @@
+import { useEffect, useRef } from 'react';
+
+import type { Aspecto } from '../frasco';
+import { ahorraDatos, type Caja } from '../fondo';
+import type { Puente3D } from './puente';
+import type { Fondo, Frasco3D, Modo } from './tipos';
+import './frasco-3d.css';
+
+const MASCARA = '/frasco/jar-mask.webp';
+
+interface Props {
+  readonly aspecto: Aspecto;
+  readonly modo: Modo;
+  /** La de useCajaFrasco, en px de documento. */
+  readonly caja: Caja | null;
+  readonly puente: Puente3D;
+}
+
+/** Sin WebGL no se descarga nada: se queda el frasco de foto. */
+function hayWebGL(): boolean {
+  try {
+    const prueba = document.createElement('canvas');
+    const gl = prueba.getContext('webgl2') ?? prueba.getContext('webgl');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * La foto o el vídeo que ya pinta Fondo: la capa más nueva de la pila.
+ * El WebGL usa los mismos elementos, así no se descarga ni decodifica dos veces.
+ */
+function mediosDelFondo(canvas: HTMLCanvasElement): { fuente: HTMLImageElement | HTMLVideoElement; poster?: HTMLImageElement } | null {
+  const pila = canvas.parentElement?.querySelector('.fondo-pila');
+  const capas = pila?.querySelectorAll('.fondo-capa');
+  const capa = capas && capas.length > 0 ? capas[capas.length - 1] : null;
+  if (!capa) return null;
+  const video = capa.querySelector('video.fondo-video');
+  const img = capa.querySelector('img.fondo-medio');
+  const foto = img instanceof HTMLImageElement ? img : undefined;
+  if (video instanceof HTMLVideoElement) return { fuente: video, poster: foto };
+  return foto ? { fuente: foto } : null;
+}
+
+/**
+ * Lienzo WebGL detrás del escenario: el fondo y, cuando Frasco lo pide, el frasco 3D.
+ * three llega en diferido. Si falla o se pierde el contexto, el lienzo se quita
+ * y Frasco vuelve al vidrio de foto.
+ */
+export function Capa3D({ aspecto, modo, caja, puente }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const motorRef = useRef<Frasco3D | null>(null);
+  const aspectoRef = useRef(aspecto);
+  const modoRef = useRef(modo);
+  const cajaRef = useRef(caja);
+  const aplicarRef = useRef<() => void>(() => {});
+  aspectoRef.current = aspecto;
+  modoRef.current = modo;
+  cajaRef.current = caja;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || ahorraDatos() || !hayWebGL()) return;
+    let vivo = true;
+    let ultimo: Fondo | null = null;
+
+    const cajaLocal = (): Caja | null => {
+      const c = cajaRef.current;
+      if (!c) return null;
+      const r = canvas.getBoundingClientRect();
+      return { x: c.x - r.left, y: c.y - r.top, w: c.w, h: c.h };
+    };
+
+    const aplicarFondo = () => {
+      const motor = motorRef.current;
+      if (!motor) return;
+      const medios = mediosDelFondo(canvas);
+      if (!medios) return;
+      const a = aspectoRef.current;
+      const extra = a.frasco3d;
+      const f: Fondo = {
+        fuente: medios.fuente,
+        poster: medios.poster,
+        ancla: a.ancla,
+        pie: extra?.pie ?? 'base',
+        estudio: extra?.estudio,
+        tinte: extra?.tinte,
+        reserva: a.reserva,
+      };
+      if (
+        ultimo &&
+        ultimo.fuente === f.fuente &&
+        ultimo.poster === f.poster &&
+        ultimo.ancla === f.ancla &&
+        ultimo.reserva === f.reserva
+      )
+        return;
+      ultimo = f;
+      motor.setFondo(f);
+    };
+    aplicarRef.current = aplicarFondo;
+
+    const fallar = () => {
+      if (!vivo) return;
+      vivo = false;
+      puente.listo = false;
+      puente.motor = null;
+      motorRef.current?.destruir();
+      motorRef.current = null;
+      canvas.style.display = 'none';
+      puente.despertar?.();
+    };
+
+    const empezar = () => {
+      if (!vivo) return;
+      void import('./motor').then(
+        ({ crearFrasco3D }) => {
+          if (!vivo) return;
+          let motor: Frasco3D;
+          try {
+            motor = crearFrasco3D(canvas, {
+              mascara: MASCARA,
+              modo: modoRef.current,
+              caja: cajaLocal(),
+              interaccion: false,
+              alListo: () => {
+                if (!vivo) return;
+                puente.listo = true;
+                puente.despertar?.();
+              },
+            });
+          } catch {
+            fallar();
+            return;
+          }
+          motor.setFrascoVisible(false);
+          motorRef.current = motor;
+          puente.motor = motor;
+          aplicarFondo();
+        },
+        () => {
+          /* Sin el chunk: se queda el frasco de foto. */
+        },
+      );
+    };
+
+    const alPerder = (e: Event) => {
+      e.preventDefault();
+      fallar();
+    };
+    canvas.addEventListener('webglcontextlost', alPerder);
+
+    const pila = canvas.parentElement?.querySelector('.fondo-pila');
+    const obs = new MutationObserver(() => aplicarFondo());
+    if (pila) obs.observe(pila, { childList: true, subtree: true });
+
+    const conIdle = 'requestIdleCallback' in window;
+    const espera = conIdle
+      ? window.requestIdleCallback(empezar, { timeout: 2000 })
+      : window.setTimeout(empezar, 800);
+
+    return () => {
+      vivo = false;
+      obs.disconnect();
+      canvas.removeEventListener('webglcontextlost', alPerder);
+      if (conIdle) window.cancelIdleCallback(espera);
+      else window.clearTimeout(espera);
+      aplicarRef.current = () => {};
+      puente.listo = false;
+      puente.motor = null;
+      motorRef.current?.destruir();
+      motorRef.current = null;
+    };
+  }, [puente]);
+
+  useEffect(() => {
+    aplicarRef.current();
+  }, [aspecto]);
+
+  useEffect(() => {
+    motorRef.current?.setModo(modo);
+  }, [modo]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const motor = motorRef.current;
+    if (!canvas || !motor || !caja) return;
+    const r = canvas.getBoundingClientRect();
+    motor.setCaja({ x: caja.x - r.left, y: caja.y - r.top, w: caja.w, h: caja.h });
+  }, [caja]);
+
+  return <canvas ref={canvasRef} className="frasco-3d" aria-hidden="true" />;
+}

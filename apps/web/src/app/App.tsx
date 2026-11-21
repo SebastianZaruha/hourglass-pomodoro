@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
+import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
 import { SettingsSheet } from '../comun/menu';
 import { AndroidPromo } from '../comun/paneles/android';
@@ -169,6 +170,7 @@ function Timer({
   const avisos = useAvisos({ menu, introLista: intro.settled });
   const stageRef = useRef<HTMLDivElement>(null);
   const caja = useCajaFrasco(stageRef);
+  const [puente3d] = useState(crearPuente3D);
   const entrada = useEntrada({
     menu,
     setMenu,
@@ -357,6 +359,7 @@ function Timer({
       {avisos.consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
         <Fondo aspecto={aspecto} caja={caja} reducir={reduceMotion} angosta={!wide} />
+        <Capa3D aspecto={aspecto} modo={ESQUEMA[scheme]} caja={caja} puente={puente3d} />
         <div
           ref={stageRef}
           className="stage"
