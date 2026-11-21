@@ -1,0 +1,56 @@
+.gestos-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.gestos-hoja {
+  width: min(28rem, 100%);
+  max-height: min(70vh, 34rem);
+  overflow: auto;
+  padding: 1rem 1.15rem 1.2rem;
+  color: #fff;
+}
+
+.gestos-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.gestos-cabeza h2 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1.15rem;
+}
+
+.gestos-hoja ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.gestos-hoja li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.gestos-hoja strong {
+  font-weight: 500;
+}
+
+@media (min-width: 900px) {
+  .gestos-velo {
+    align-items: center;
+  }
+}

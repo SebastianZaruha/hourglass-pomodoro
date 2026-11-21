@@ -25,6 +25,7 @@ import {
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
+import { HojaGestos } from '../paneles/gestos/HojaGestos';
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
@@ -108,10 +109,15 @@ export function SettingsSheet({
   };
 
   useHojaVidrio(hoja);
+  const [gestos, setGestos] = useState(false);
+  useEffect(() => {
+    if (!open) setGestos(false);
+  }, [open]);
   const tema = themeName(t, settings.theme);
   const idiomaNombre = languageName(t, settings.language);
 
   return (
+    <>
     <div
       ref={hoja}
       className={['sheet', 'hoja', 'vidrio', 'vidrio-liquido', open ? 'open' : '', desborda ? 'desborda' : '']
@@ -162,6 +168,10 @@ export function SettingsSheet({
           ))}
         </div>
       ) : null}
+
+      <button type="button" className="control gestos-abrir" onClick={() => setGestos(true)}>
+        {(idioma ?? 'es') === 'es' ? 'Gestos' : 'Gestures'}
+      </button>
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
         <button
@@ -367,6 +377,8 @@ export function SettingsSheet({
         </button>
       </div>
     </div>
+    <HojaGestos abierta={open && gestos} lang={idioma ?? 'es'} alCerrar={() => setGestos(false)} />
+    </>
   );
 }
 

@@ -195,6 +195,11 @@
   grid-template-columns: repeat(var(--escenas, 3), minmax(0, 1fr));
 }
 
+.gestos-abrir {
+  width: 100%;
+  margin: 0.15rem 0 0.35rem;
+}
+
 .mode-row > .control,
 .pref-row > .control,
 .scene-row > .control {
