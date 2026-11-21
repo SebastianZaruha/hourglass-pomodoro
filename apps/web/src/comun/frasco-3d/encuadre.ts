@@ -11,6 +11,8 @@ export interface Ancla {
   readonly y: number;
   /** Zoom máximo respecto a cover. Sin él, se acerca lo que haga falta para apoyar. */
   readonly tope?: number;
+  /** Cover exacto y centrado. No se amplía para apoyar el pie. */
+  readonly cover?: boolean;
 }
 export interface Punto { readonly x: number; readonly y: number }
 
@@ -58,6 +60,11 @@ export function encuadreFondo(ancho: number, alto: number, imgW: number, imgH: n
   const ax = Math.min(0.94, Math.max(0.06, ancla.x));
   const ay = Math.min(0.94, Math.max(0.06, ancla.y));
   const cubrir = Math.max(ancho / iw, alto / ih);
+  if (ancla.cover) {
+    const w = iw * cubrir;
+    const h = ih * cubrir;
+    return { x: (ancho - w) / 2, y: (alto - h) / 2, w, h };
+  }
   const paraY = Math.max(pie.y / (ay * ih), (alto - pie.y) / ((1 - ay) * ih));
   const paraX = Math.max(pie.x / (ax * iw), (ancho - pie.x) / ((1 - ax) * iw));
   const necesaria = Math.max(cubrir, paraX, paraY);

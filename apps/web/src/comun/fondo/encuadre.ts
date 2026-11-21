@@ -10,6 +10,8 @@ export interface Ancla {
   readonly y: number;
   /** Zoom máximo respecto a cover. Sin él, se acerca lo que haga falta para apoyar. */
   readonly tope?: number;
+  /** Cover exacto y centrado. No se amplía para apoyar el pie. */
+  readonly cover?: boolean;
 }
 
 /**
@@ -30,6 +32,11 @@ export function encuadreFondo(
   const ax = Math.min(0.94, Math.max(0.06, ancla.x));
   const ay = Math.min(0.94, Math.max(0.06, ancla.y));
   const cubrir = Math.max(ancho / iw, alto / ih);
+  if (ancla.cover) {
+    const w = iw * cubrir;
+    const h = ih * cubrir;
+    return { x: (ancho - w) / 2, y: (alto - h) / 2, w, h };
+  }
   // Cover a veces no deja margen vertical: el pie quedaría en el aire.
   // Se acerca lo justo para poder apoyar el ancla en el pie y seguir tapando la vista.
   // Con tope, no se pasa de ese múltiplo de cover: lo que falte se resuelve desplazando.

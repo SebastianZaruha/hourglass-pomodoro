@@ -12,8 +12,8 @@ const claro: Aspecto = {
     webp: '/fondos/lluvia-claro.webp',
     jpg: '/fondos/lluvia-claro.jpg',
   },
-  // Césped plano entre la charca y las rocas. El tope impide acercar más de 1,1× cover.
-  ancla: { x: 0.46, y: 0.72, tope: 1.1 },
+  // Cover exacto y centrado. El frasco no se mueve para buscar la isla.
+  ancla: { x: 0.5, y: 0.5, cover: true },
   reserva: '#d8d8d6',
   barra: '#c5d0cb',
   reloj: { digitos: '#2E302F', pista: '#2E302F' },
@@ -29,7 +29,7 @@ const oscuro: Aspecto = {
     webp: '/fondos/lluvia-oscuro.webp',
     jpg: '/fondos/lluvia-oscuro.jpg',
   },
-  ancla: { x: 0.46, y: 0.72, tope: 1.1 },
+  ancla: { x: 0.5, y: 0.5, cover: true },
   reserva: '#141414',
   barra: '#1a2422',
   reloj: { digitos: '#8F8B86', pista: '#8F8B86' },
