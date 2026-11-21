@@ -199,9 +199,9 @@ export function elegirTinta(L: Float32Array, o: OpcionesTinta, previa?: Tinta): 
  * fondo que pinta es el mismo <img>/<video> de .fondo-pila, que sigue debajo y sí se mira.
  */
 export const CAPAS_ESCENA = '.scene img, .scene video, .scene canvas:not(.frasco-3d)';
-const LUZ_MARGEN = 0.42; // hacia abajo, hasta −42 % del brillo del modo (vidrio ahumado, sin gris: ver README)
+const LUZ_MARGEN = 0.55; // hacia abajo, hasta −55 % del brillo del modo (vidrio ahumado, sin gris: ver README)
 const LUZ_MARGEN_ARRIBA = 0.15; // hacia arriba, solo +15 %: más es un caramelo naranja en Arena
-const PREFERENCIA_BLANCO = 0.9; // el blanco gana si llega al 90 % del objetivo del modelo
+const PREFERENCIA_BLANCO = 0; // el blanco gana siempre: el umbral de preferencia es 0
 // WCAG AA es 4,5. El modelo (escena sin el canto, el grano ni la saturación) se queda
 // algo corto frente a lo medido en capturas, así que apunta a 5,2 para llegar a 4,5 real.
 const OBJETIVO = 5.5; // el modelo no ve el relleno de los botones ni el grano: margen sobre 4,5
