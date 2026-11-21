@@ -5,13 +5,8 @@ import { crearArena, fijarLuzGrano } from '../arena-modelo';
  * Arena. El movimiento de la arena es el de arena-modelo, sin cambios.
  * En oscuro, el pintado sombrea los granos con la luz de la escena.
  * La luz ambiente del vidrio va a 0. El reloj, en ancha, sube al bulbo.
- *
- * Cresta de la duna, fracción de cada foto. La x del ancla es la de la punta
- * del frasco. Claro y estrecha miden las dos 0,75 y por eso comparten ancla;
- * el vídeo oscuro usa la cresta del póster, 0,757.
+ * El fondo va a cover, centrado: no se amplía para apoyar el frasco en la duna.
  */
-const CRESTA = { claro: 0.75, oscuro: 0.757 } as const;
-
 const claro: Aspecto = {
   fondo: {
     tipo: 'foto',
@@ -19,7 +14,7 @@ const claro: Aspecto = {
     avif: '/fondos/arena-claro.avif',
     estrecho: { webp: '/fondos/arena-claro-estrecho.webp', avif: '/fondos/arena-claro-estrecho.avif' },
   },
-  ancla: { x: 0.3, y: CRESTA.claro },
+  ancla: { x: 0.5, y: 0.5, cover: true },
   reserva: '#e4c7a4',
   barra: '#e6d7c4',
   reloj: { digitos: '#4A4541', pista: '#4A4541' },
@@ -37,7 +32,7 @@ const oscuro: Aspecto = {
     mp4: '/fondos/arena-oscuro.mp4',
     poster: '/fondos/arena-oscuro.webp',
   },
-  ancla: { x: 0.3, y: CRESTA.oscuro },
+  ancla: { x: 0.5, y: 0.5, cover: true },
   reserva: '#3a2618',
   barra: '#241910',
   reloj: { digitos: '#B7B1AA', pista: '#B7B1AA' },
