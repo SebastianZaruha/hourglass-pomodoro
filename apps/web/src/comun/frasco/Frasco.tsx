@@ -214,7 +214,9 @@ export function Frasco({
           motor.setContenido(contenido3D);
           motor.setFrascoVisible(true);
         }
-        motor.girar(est.angulo);
+        // El giro sigue siendo el de comun/giro (arrastre, 81°, doble clic, fases).
+        // El 3D solo lo copia, sobre el cuello; la velocidad le da el balanceo de ±8°.
+        motor.girar(est.angulo, false, reducirAhora ? 0 : est.velocidad);
         const angulo = est.angulo;
         const geo = loop.geo ?? geoVacia();
         pintor3D = (context, caja) => {
