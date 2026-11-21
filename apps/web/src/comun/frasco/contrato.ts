@@ -71,8 +71,11 @@ export interface Aspecto {
     | {
         readonly tipo: 'foto';
         readonly webp: string;
-        readonly avif: string;
-        readonly estrecho?: { readonly webp: string; readonly avif: string };
+        /** Arena y Clásico. Si falta, el navegador usa el WebP. */
+        readonly avif?: string;
+        /** Reserva de Lluvia cuando no hay AVIF. */
+        readonly jpg?: string;
+        readonly estrecho?: { readonly webp: string; readonly avif?: string; readonly jpg?: string };
       }
     | {
         readonly tipo: 'video';

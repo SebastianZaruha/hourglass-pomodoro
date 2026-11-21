@@ -13,13 +13,9 @@ function capaDeFondo(): Element | null {
   return capas.length > 0 ? (capas[capas.length - 1] ?? null) : null;
 }
 
-function fondoVisible(): HTMLImageElement | HTMLVideoElement | null {
+function fondoVisible(): HTMLImageElement | null {
   const capa = capaDeFondo();
   if (!capa) return null;
-  const video = capa.querySelector('video.fondo-video');
-  if (video instanceof HTMLVideoElement && video.readyState >= 2 && video.videoWidth > 0 && !video.paused) {
-    return video;
-  }
   const img = capa.querySelector('img.fondo-medio');
   if (img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0) return img;
   return null;
@@ -28,8 +24,7 @@ function fondoVisible(): HTMLImageElement | HTMLVideoElement | null {
 /**
  * El bucle del frasco se duerme en reposo. Si el primer fotograma copió
  * el fondo de la escena anterior, esa copia se queda hasta el próximo clic.
- * Hay que seguir pintando mientras el fundido no ha dejado un solo fondo
- * listo, y mientras ese fondo es un vídeo que sigue avanzando.
+ * Hay que seguir pintando mientras el fundido no ha dejado un solo fondo listo.
  */
 export function fondoPendiente(nacido: number): boolean {
   if (performance.now() - nacido < 720) return true;
@@ -37,11 +32,6 @@ export function fondoPendiente(nacido: number): boolean {
   if (capas.length !== 1) return capas.length > 1;
   const capa = capas[0];
   if (!capa) return false;
-  const video = capa.querySelector('video.fondo-video');
-  if (video instanceof HTMLVideoElement) {
-    if (video.readyState < 2 || video.videoWidth === 0) return true;
-    if (!video.paused && !video.ended) return true;
-  }
   const img = capa.querySelector('img.fondo-medio');
   if (!(img instanceof HTMLImageElement)) return false;
   if (!img.complete || img.naturalWidth < 2) return true;

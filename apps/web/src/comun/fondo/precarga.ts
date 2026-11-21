@@ -15,14 +15,15 @@ export function ahorraDatos(): boolean {
 }
 
 /**
- * Un solo formato por fondo: AVIF en las fotos, póster y WebM en el vídeo.
- * El MP4 y el WebP ancho no se piden por adelantado.
+ * Un solo formato por fondo: AVIF en las fotos que lo tienen, WebP si no
+ * (Lluvia), póster y WebM en el vídeo. El JPEG, el MP4 y el WebP de reserva
+ * no se piden por adelantado.
  */
 export function direccionesDePrecarga(aspecto: Aspecto): readonly string[] {
   const fondo = aspecto.fondo;
   if (fondo.tipo === 'foto') {
-    const urls = [fondo.avif];
-    if (fondo.estrecho) urls.push(fondo.estrecho.avif);
+    const urls = [fondo.avif ?? fondo.webp];
+    if (fondo.estrecho) urls.push(fondo.estrecho.avif ?? fondo.estrecho.webp);
     return urls;
   }
   if (fondo.tipo === 'video') return [fondo.poster, fondo.webm];

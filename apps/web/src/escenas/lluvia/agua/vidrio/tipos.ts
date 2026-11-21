@@ -14,8 +14,8 @@ export interface Matriz2D {
   a: number; b: number; c: number; d: number; e: number; f: number;
 }
 
-/** Imagen o vídeo de fondo, el mismo que ves detrás del canvas. */
-export type FuenteFondo = HTMLImageElement | HTMLVideoElement;
+/** Foto de fondo, la misma que se ve detrás del canvas. */
+export type FuenteFondo = HTMLImageElement;
 
 export interface OpcionesAgua {
   /** Interior del vidrio de cada bulbo, en coordenadas del frasco. [0] = arriba (de pie), [1] = abajo. */
@@ -26,8 +26,6 @@ export interface OpcionesAgua {
   alCaerGota?: (bulbo: 0 | 1, u: number, fuerza: number) => void;
   /** Cuánto se reduce el fondo antes de desenfocarlo (4 = un cuarto). Más alto = más borroso y más barato. */
   reduccion?: number;
-  /** Si el fondo es un vídeo, cuántas veces por segundo como mucho se copia (15 por defecto). Copiar un frame es lo más caro del módulo. */
-  fpsVideo?: number;
   /**
    * Refracción 2D del fondo dentro del agua (lupa y desvío por la ola). true por defecto.
    * false: el fondo borroso va recto, sin lupa ni desvío. Para cuando ya refracta otro vidrio

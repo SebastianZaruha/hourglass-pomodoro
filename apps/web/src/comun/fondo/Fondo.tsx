@@ -49,7 +49,7 @@ function esArena(aspecto: Aspecto): boolean {
 function claveDe(aspecto: Aspecto): string {
   const fondo = aspecto.fondo;
   if (fondo.tipo === 'degradado') return `degradado:${fondo.css}`;
-  if (fondo.tipo === 'foto') return `foto:${fondo.avif}:${fondo.estrecho?.avif ?? ''}`;
+  if (fondo.tipo === 'foto') return `foto:${fondo.avif ?? fondo.webp}:${fondo.jpg ?? ''}:${fondo.estrecho?.avif ?? fondo.estrecho?.webp ?? ''}`;
   return `video:${fondo.webm}`;
 }
 
@@ -285,11 +285,12 @@ function Foto({
   if (!marco) return null;
   return (
     <picture>
-      <source srcSet={elegida.avif} type="image/avif" />
+      {elegida.avif ? <source srcSet={elegida.avif} type="image/avif" /> : null}
+      {elegida.jpg ? <source srcSet={elegida.webp} type="image/webp" /> : null}
       <img
         ref={imgRef}
         className={listo ? 'fondo-medio listo' : 'fondo-medio'}
-        src={elegida.webp}
+        src={elegida.jpg ?? elegida.webp}
         alt=""
         style={marco}
         onLoad={() => setListo(true)}

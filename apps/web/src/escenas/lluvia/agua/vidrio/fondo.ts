@@ -18,20 +18,17 @@ export interface CopiasFondo {
   /** Cuántos px del mundo mide un px de `bajo` / de `muyBajo`. */
   escalaBajo: number;
   escalaMuyBajo: number;
-  /** Máximo de copias por segundo de un fondo de vídeo. */
-  fpsVideo: number;
   /** Si está, la copia se dibuja ahí. Si no, cover centrado. */
   encaje: EncajeFondo | null;
   listo: boolean;
 }
 
-export function crearCopiasFondo(reduccion: number, fpsVideo: number): CopiasFondo {
+export function crearCopiasFondo(reduccion: number): CopiasFondo {
   return {
     bajo: document.createElement('canvas'),
     muyBajo: document.createElement('canvas'),
     escalaBajo: reduccion,
     escalaMuyBajo: reduccion * 4,
-    fpsVideo,
     encaje: null,
     listo: false,
   };
@@ -84,8 +81,8 @@ function dibujarFondo(
   ctx.clearRect(0, 0, ancho, alto);
   const encaje = c.encaje;
   if (!encaje) {
-    const fw = fuente instanceof HTMLVideoElement ? fuente.videoWidth : fuente.naturalWidth;
-    const fh = fuente instanceof HTMLVideoElement ? fuente.videoHeight : fuente.naturalHeight;
+    const fw = fuente.naturalWidth;
+    const fh = fuente.naturalHeight;
     if (fw < 1 || fh < 1) return;
     const s = Math.max(ancho / fw, alto / fh);
     const w = fw * s;
@@ -134,23 +131,4 @@ export function prepararFoto(c: CopiasFondo, foto: HTMLImageElement): void {
   ctx.filter = 'none';
   rehacerMuyBajo(c);
   c.listo = true;
-}
-
-/**
- * Vídeo: copia el frame actual a 1/4. Se salta el trabajo si el vídeo no ha avanzado
- * (un vídeo de 30 fps solo cambia uno de cada dos frames a 60 Hz).
- * Devuelve el currentTime copiado para que el llamador lo recuerde.
- */
-export function copiarFrameVideo(c: CopiasFondo, video: HTMLVideoElement, ultimoTiempo: number): number {
-  sincronizarEncaje(c, video);
-  if (video.readyState < 2 || video.videoWidth === 0) return ultimoTiempo;
-  if (c.listo && video.currentTime === ultimoTiempo) return ultimoTiempo;
-  // El vídeo se ve muy borroso a través del agua: no hace falta copiarlo más de `fpsVideo` veces por segundo.
-  if (c.listo && Math.abs(video.currentTime - ultimoTiempo) < 1 / c.fpsVideo) return ultimoTiempo;
-  const ctx = c.bajo.getContext('2d')!;
-  ctx.imageSmoothingQuality = 'medium';
-  dibujarFondo(ctx, video, c, 1 / c.escalaBajo);
-  rehacerMuyBajo(c);
-  c.listo = true;
-  return video.currentTime;
 }

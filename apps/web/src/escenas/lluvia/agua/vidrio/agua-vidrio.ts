@@ -1,18 +1,17 @@
 // La fábrica: crea los buffers una vez y devuelve las funciones de cada frame.
 import { crearBulbo, crearGradientes, DESENFOQUE_MAX, pintarBulbo, prepararBulbo, type Gradientes } from './bulbo';
-import { copiarFrameVideo, crearCopiasFondo, prepararFoto, redimensionarCopias, sincronizarEncaje } from './fondo';
+import { crearCopiasFondo, prepararFoto, redimensionarCopias, sincronizarEncaje } from './fondo';
 import { crearPiscina, moverYPintarGotas, type ContextoGotas } from './gotas';
 import type { AguaVidrio, EstadoAgua, EstadoGotas, FuenteFondo, OpcionesAgua } from './tipos';
 
 export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
-  const copias = crearCopiasFondo(opciones.reduccion ?? 4, opciones.fpsVideo ?? 15);
+  const copias = crearCopiasFondo(opciones.reduccion ?? 4);
   const bulbos = [crearBulbo(opciones.bulbos[0]), crearBulbo(opciones.bulbos[1])] as const;
   const piscina = crearPiscina();
   const refraccion = opciones.refraccion !== false;
   let gradientes: Gradientes | null = null;
   let ctxGradientes: CanvasRenderingContext2D | null = null;
   let fuente: FuenteFondo | null = null;
-  let ultimoTiempoVideo = -1;
 
   // El cuello en el mundo y el bulbo de abajo: los calcula pintarAgua y los usa pintarGotas.
   const gotas: ContextoGotas = {
@@ -26,29 +25,24 @@ export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
   consulta?.addEventListener('change', alCambiarMovimiento);
 
   // Si nos pasan una foto aún sin cargar, la preparamos en cuanto llegue.
-  const alCargarFoto = () => { if (fuente instanceof HTMLImageElement) prepararFoto(copias, fuente); };
+  const alCargarFoto = () => { if (fuente) prepararFoto(copias, fuente); };
 
   return {
     redimensionar(ancho, alto) {
       redimensionarCopias(copias, ancho, alto);
-      ultimoTiempoVideo = -1;
-      if (fuente instanceof HTMLImageElement) prepararFoto(copias, fuente);
+      if (fuente) prepararFoto(copias, fuente);
     },
 
     actualizarFondo(nueva) {
       if (nueva !== fuente) {
-        if (fuente instanceof HTMLImageElement) fuente.removeEventListener('load', alCargarFoto);
+        fuente?.removeEventListener('load', alCargarFoto);
         fuente = nueva;
         copias.listo = false;
-        ultimoTiempoVideo = -1;
-        if (nueva instanceof HTMLImageElement) {
-          nueva.addEventListener('load', alCargarFoto);
-          prepararFoto(copias, nueva);
-        }
+        nueva.addEventListener('load', alCargarFoto);
+        prepararFoto(copias, nueva);
       }
       sincronizarEncaje(copias, nueva);
-      if (nueva instanceof HTMLImageElement && !copias.listo) prepararFoto(copias, nueva);
-      if (nueva instanceof HTMLVideoElement) ultimoTiempoVideo = copiarFrameVideo(copias, nueva, ultimoTiempoVideo);
+      if (!copias.listo) prepararFoto(copias, nueva);
     },
 
     pintarAgua(ctx, estado: EstadoAgua) {
@@ -81,7 +75,7 @@ export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
 
     destruir() {
       consulta?.removeEventListener('change', alCambiarMovimiento);
-      if (fuente instanceof HTMLImageElement) fuente.removeEventListener('load', alCargarFoto);
+      fuente?.removeEventListener('load', alCargarFoto);
       fuente = null;
       copias.bajo.width = copias.bajo.height = 0;
       copias.muyBajo.width = copias.muyBajo.height = 0;

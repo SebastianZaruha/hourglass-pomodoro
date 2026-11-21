@@ -8,14 +8,12 @@ import { Nube } from './nube';
  */
 const claro: Aspecto = {
   fondo: {
-    tipo: 'video',
-    webm: '/fondos/lluvia-claro.webm',
-    mp4: '/fondos/lluvia-claro.mp4',
-    poster: '/fondos/lluvia-claro-poster.jpg',
-    fundido: true,
+    tipo: 'foto',
+    webp: '/fondos/lluvia-claro.webp',
+    jpg: '/fondos/lluvia-claro.jpg',
   },
-  // Musgo de la orilla, no el centro de las rocas: con el tope el vídeo casi no se acerca.
-  ancla: { x: 0.34, y: 0.76, tope: 1.1 },
+  // Césped plano entre la charca y las rocas. El tope impide acercar más de 1,1× cover.
+  ancla: { x: 0.46, y: 0.72, tope: 1.1 },
   reserva: '#d8d8d6',
   barra: '#c5d0cb',
   reloj: { digitos: '#2E302F', pista: '#2E302F' },
@@ -27,13 +25,11 @@ const claro: Aspecto = {
 
 const oscuro: Aspecto = {
   fondo: {
-    tipo: 'video',
-    webm: '/fondos/lluvia-oscuro.webm',
-    mp4: '/fondos/lluvia-oscuro.mp4',
-    poster: '/fondos/lluvia-oscuro-poster.jpg',
-    fundido: true,
+    tipo: 'foto',
+    webp: '/fondos/lluvia-oscuro.webp',
+    jpg: '/fondos/lluvia-oscuro.jpg',
   },
-  ancla: { x: 0.34, y: 0.76, tope: 1.1 },
+  ancla: { x: 0.46, y: 0.72, tope: 1.1 },
   reserva: '#141414',
   barra: '#1a2422',
   reloj: { digitos: '#8F8B86', pista: '#8F8B86' },
