@@ -322,11 +322,13 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       escribirAlturas(alturasB, phi, anchoDe(mundoB), vista.abajo.onda);
       const bulboA: EstadoBulbo = { nivel: nivelDe(mundoA, fracA), alturas: alturasA };
       const bulboB: EstadoBulbo = { nivel: nivelDe(mundoB, fracB), alturas: alturasB };
+      // El reinicio cruza solo las cantidades. El vidrio no se apaga ni se desenfoca:
+      // bajar el alfa aquí fundía el agua entera y se leía como un segundo frasco.
       vidrio.pintarAgua(ctx, {
         matriz,
         bulbos: [bulboA, bulboB],
-        opacidad: fundido ? 1 - 0.65 * Math.sin(Math.PI * u) : 1,
-        desenfoque: fundido ? 8 * Math.sin(Math.PI * u) : 0,
+        opacidad: 1,
+        desenfoque: 0,
       });
       vidrio.pintarGotas(ctx, { caudal, dt: dtMs });
       ctx.restore();

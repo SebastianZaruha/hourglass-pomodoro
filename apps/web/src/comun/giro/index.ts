@@ -2,6 +2,7 @@ export {
   crearGiro,
   easeInOutCubic,
   MS_MEDIA_VUELTA,
+  MS_VUELTA_SOLTAR,
   type EstadoGiro,
   type EventoGiro,
   type MaquinaGiro,

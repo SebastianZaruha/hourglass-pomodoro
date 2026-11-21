@@ -5,7 +5,6 @@ import {
   CUELLO_X,
   FOTO_ALTO,
   FOTO_ANCHO,
-  opacidadFundido,
   type GeometriaFrasco,
   type Scheme,
 } from '../../comun/frasco';
@@ -104,6 +103,8 @@ export interface ArenaPintada {
     readonly queda: number;
     readonly blurSale: number;
     readonly blurEntra: number;
+    /** Soltar: sin giro extra. El reinicio sí da la vuelta al montón nuevo. */
+    readonly plano?: boolean;
   };
 }
 
@@ -136,24 +137,40 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const vh = (geo.ventana.y1 - geo.ventana.y0) * caja.h;
 
   g.imageSmoothingEnabled = false;
-  if (scene.fundido) {
+  if (scene.fundido?.plano) {
+    // Solo el contenido, dentro del mismo frasco. El viejo queda debajo y el
+    // de pie entra encima: no hay dos frascos ni los dos montones a alfa 1.
+    const { queda, viejo } = scene.fundido;
+    g.save();
+    g.globalCompositeOperation = 'source-over';
+    g.imageSmoothingEnabled = true;
+    g.globalAlpha = 1;
+    g.drawImage(viejo, vx, vy, vw, vh);
+    const entra = 1 - queda;
+    if (entra > 0.004) {
+      g.globalAlpha = entra;
+      g.drawImage(scene.sand, vx, vy, vw, vh);
+    }
+    g.globalAlpha = 1;
+    g.restore();
+    sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
+  } else if (scene.fundido) {
     const { queda, viejo, blurSale, blurEntra } = scene.fundido;
+    // La misma ruta que al soltar: un frasco, el viejo debajo y el nuevo encima.
+    // Antes los dos iban a alfa 1 en el centro del fundido y se veía un fantasma doble.
     // El 2D gira sobre el cuello. El 3D, sobre el centro del perfil (filas 5 y 1007.5).
     const cx = (caja.w * CUELLO_X) / FOTO_ANCHO;
     const cy = (caja.h * (scene.enMalla ? (5 + 1007.5) / 2 : CUELLO_FILA)) / FOTO_ALTO;
     g.save();
     g.globalCompositeOperation = 'source-over';
     g.imageSmoothingEnabled = true;
-    const alfaViejo = opacidadFundido(queda);
-    const alfaNuevo = opacidadFundido(1 - queda);
-    if (alfaViejo > 0) {
-      g.filter = blurSale > 0.05 ? `blur(${blurSale}px)` : 'none';
-      g.globalAlpha = alfaViejo;
-      g.drawImage(viejo, vx, vy, vw, vh);
-    }
-    if (alfaNuevo > 0) {
+    g.filter = blurSale > 0.05 ? `blur(${blurSale}px)` : 'none';
+    g.globalAlpha = 1;
+    g.drawImage(viejo, vx, vy, vw, vh);
+    const entra = 1 - queda;
+    if (entra > 0.004) {
       g.filter = blurEntra > 0.05 ? `blur(${blurEntra}px)` : 'none';
-      g.globalAlpha = alfaNuevo;
+      g.globalAlpha = entra;
       // La arena nueva va dada la vuelta: el giro la trae arriba y, al acabar, coincide
       // con el reposo. No se queda fija en lo alto de la pantalla.
       g.translate(cx, cy);

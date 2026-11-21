@@ -18,7 +18,7 @@ import {
   type StreamInput,
 } from '@reloj/core';
 
-import { MS_MEDIA_VUELTA, easeInOutCubic } from '../../comun/giro';
+import { MS_MEDIA_VUELTA, MS_VUELTA_SOLTAR, easeInOutCubic } from '../../comun/giro';
 import {
   RELLENO_ANCHO,
   geometriaDelFrasco,
@@ -150,9 +150,16 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
     viejo: HTMLCanvasElement;
     blurSale: number;
     blurEntra: number;
+    /** Soltar: el montón nuevo ya está de pie. El reinicio lo gira 180°. */
+    plano?: boolean;
   } | null = null;
   /** El montón nuevo ya está colocado: el cierre del giro no lo vuelve a armar. */
   let preparado = false;
+  /**
+   * Soltar con el reloj parado: el montón de pie ya está colocado y se funde
+   * el bitmap. Mientras dura, no se simula, para que los granos no caigan.
+   */
+  let asentado = false;
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
@@ -224,6 +231,41 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
           fundido.queda = 1 - u;
           fundido.blurSale = BLUR_FUNDIDO * u;
           fundido.blurEntra = BLUR_FUNDIDO * (1 - u);
+          ultimoAhora = e.ahora;
+          return true;
+        }
+      }
+      // Soltar: el vidrio sigue en giro.ts (ease-out, el mismo frasco). Aquí solo
+      // se cruza el bitmap de la arena, de pie, para no resimular la caída.
+      // En marcha no: el chorro y el resbalar siguen como estaban.
+      if (e.fase !== 'volviendo') asentado = false;
+      const soltarQuieto = e.fase === 'volviendo' && snap.status !== 'running' && !e.reducir && !preparado;
+      if (soltarQuieto && sandCanvas) {
+        if (!asentado && !fundido) {
+          subir();
+          const viejo = copiarLienzo(sandCanvas);
+          if (viejo) {
+            const level = nivel(sim, snap.durationMs);
+            sim.arrange(level, Math.max(0, sim.totalGrains - level), GRAVITY_DOWN, { crater: TOP_CRATER });
+            runInitial = level;
+            idleKey = String(snap.durationMs);
+            mode = 'idle';
+            populated = true;
+            dirty = true;
+            subir();
+            particles.reset(3);
+            lod.reset();
+            fundido = { desde: e.ahora, queda: 1, viejo, blurSale: 0, blurEntra: 0, plano: true };
+            asentado = true;
+          }
+        }
+        if (asentado && fundido?.plano) {
+          const t = Math.min(1, Math.max(0, (e.ahora - fundido.desde) / MS_VUELTA_SOLTAR));
+          const u = 1 - (1 - t) * (1 - t) * (1 - t);
+          fundido.queda = 1 - u;
+          if (t >= 1) fundido = null;
+        }
+        if (asentado) {
           ultimoAhora = e.ahora;
           return true;
         }

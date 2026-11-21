@@ -2,6 +2,11 @@ import type { FaseGiro } from '../frasco';
 
 /** Media vuelta del reinicio. El fundido del contenido usa el mismo tiempo. */
 export const MS_MEDIA_VUELTA = 900;
+/**
+ * Vuelta al soltar. Ease-out de un solo frasco, siempre el mismo.
+ * No hay fundido del vidrio: si el montón no puede caer, se cruza solo el contenido.
+ */
+export const MS_VUELTA_SOLTAR = 360;
 const FLIP_MS = MS_MEDIA_VUELTA;
 const TURN_MS = 950;
 
@@ -201,9 +206,11 @@ export function crearGiro() {
         }
       }
 
-      // La vuelta a cero sale con velocidad nula. El recorte del muelle
-      // ×0,84 dejaba un escalón en el último tramo, y con el pivote
-      // desplazado ese escalón se veía como un salto de sitio.
+      // Un solo ángulo, el del mismo frasco. Ease-out cúbico: sale y se posa.
+      // Antes la duración crecía con el ángulo (hasta ~440 ms a 150°) y el
+      // cubo gastaba casi todo el giro en los primeros fotogramas. En esos
+      // mismos fotogramas la arena se resimulaba con la gravedad ya vertical,
+      // así que el montón inclinado desaparecía y aparecía otro de pie.
       if (gestureActive || flipBusy || flipStart !== null) {
         vueltaT0 = null;
       } else if (Math.abs(gestureAngle) > 1e-5) {
@@ -211,8 +218,7 @@ export function crearGiro() {
           vueltaT0 = now;
           vueltaDesde = gestureAngle;
         }
-        const duracion = 160 + Math.min(280, Math.abs(vueltaDesde) * 320);
-        const t = Math.min(1, (now - vueltaT0) / duracion);
+        const t = Math.min(1, (now - vueltaT0) / MS_VUELTA_SOLTAR);
         const queda = (1 - t) * (1 - t) * (1 - t);
         gestureAngle = t >= 1 ? 0 : vueltaDesde * queda;
       } else {
