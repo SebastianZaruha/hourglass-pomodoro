@@ -7,6 +7,8 @@
 }
 
 .nube-lienzo {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -19,13 +21,16 @@
   filter: brightness(0.72) saturate(0.85);
 }
 
-/* Fuera de la pantalla, pero vivos: opacity 0 impide que algunos móviles decodifiquen. */
+/*
+ * En el mismo recuadro que la nube, casi invisibles. Fuera de pantalla
+ * o con opacity 0, varios móviles no decodifican y el lienzo se queda vacío.
+ * 0,001 no llega a pintar el negro del archivo.
+ */
 .nube-fuente {
-  position: fixed;
-  left: -16px;
-  top: 0;
-  width: 8px;
-  height: 8px;
-  opacity: 0.02;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.001;
   pointer-events: none;
 }
