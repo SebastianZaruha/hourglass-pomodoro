@@ -1,13 +1,19 @@
 .side {
+  grid-area: reloj;
   min-width: 0;
   min-height: 0;
 }
 
 .app[data-layout='wide'] .side {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   height: 100%;
+}
+
+.app[data-layout='wide'][data-reloj='alto'] .side {
+  align-items: flex-start;
+  padding-top: clamp(3.5rem, 12vh, 8rem);
 }
 
 .app[data-layout='narrow'] .side {

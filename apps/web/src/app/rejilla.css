@@ -34,6 +34,7 @@
 
 .app[data-layout='wide'] .stage {
   grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-areas: 'frasco reloj';
   align-items: stretch;
   padding: clamp(0.75rem, 2.2vh, 1.6rem) clamp(1rem, 3vw, 2.6rem) clamp(2.6rem, 7vh, 4.2rem)
     clamp(0.75rem, 2.2vw, 1.8rem);
@@ -41,6 +42,7 @@
 
 .app[data-layout='narrow'] .stage {
   grid-template-rows: minmax(min(36vh, 70%), 1fr) auto;
+  grid-template-areas: 'frasco' 'reloj';
   justify-items: center;
   align-items: center;
   padding: clamp(0.5rem, 1.6vh, 1rem) clamp(0.75rem, 4vw, 1.25rem) 4.75rem;

@@ -290,58 +290,16 @@ function Timer({
       app.style.setProperty('--side-bottom', `${Math.round(window.innerHeight - sideRect.bottom)}px`);
       const sheet = app.querySelector('.sheet');
       const readout = side.querySelector('.readout');
-      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
-      const readH = readout instanceof HTMLElement ? readout.getBoundingClientRect().height : 0;
-      const sideH = sideRect.height;
-      const centrado = Math.max(0, (sideH - readH) / 2);
-      const enAlto = Boolean(wide && escena.relojAlto && caja);
-      const descanso = enAlto && caja ? caja.y + caja.h * 0.06 - sideRect.top : centrado;
-      // En el nodo, con la curva del fundido. Si el menú está abierto, su
-      // levantado acompaña esos 360 ms: si no, el reloj se adelanta y vuelve.
-      if (readout instanceof HTMLElement) {
-        if (wide) {
-          const primero = readout.dataset.puesto !== '1';
-          const altoAhora = enAlto ? '1' : '0';
-          const cambia = !primero && readout.dataset.alto !== altoAhora;
-          if (primero) readout.style.transition = 'none';
-          else if (cambia && !reduceMotion) {
-            readout.style.transition =
-              'margin-top 360ms cubic-bezier(0.33, 0, 0.2, 1), transform 360ms cubic-bezier(0.33, 0, 0.2, 1)';
-            window.setTimeout(() => {
-              if (readout.dataset.alto === altoAhora) readout.style.transition = '';
-            }, 380);
-          }
-          readout.style.marginTop = `${Math.round(descanso)}px`;
-          readout.dataset.alto = altoAhora;
-          if (primero) {
-            readout.getBoundingClientRect();
-            readout.style.transition = '';
-            readout.dataset.puesto = '1';
-          }
-        } else if (readout.dataset.puesto === '1') {
-          readout.style.marginTop = '';
-          readout.dataset.alto = '';
-        }
-      }
-      if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
-        app.style.setProperty('--clock-lift', '0px');
-        app.style.removeProperty('--menu-pad');
-        return;
-      }
-      const sheetH = sheet.getBoundingClientRect().height;
-      const gap = rem * 1.15;
-      if (!wide) {
-        app.style.setProperty('--clock-lift', '0px');
-        app.style.removeProperty('--menu-pad');
-        return;
-      }
       app.style.removeProperty('--menu-pad');
-      const sheetInset = rem * 0.75;
-      const clockBottom = descanso + readH;
-      const sheetTop = sideH - sheetInset - sheetH;
-      const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
-      const maxLift = enAlto ? Math.max(0, descanso) : Math.max(0, centrado - rem * 0.5);
-      const lift = Math.min(maxLift, collisionLift);
+      if (!menu || !wide || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
+        app.style.setProperty('--clock-lift', '0px');
+        return;
+      }
+      const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
+      const gap = rem * 1.15;
+      const clock = readout.getBoundingClientRect();
+      const hoja = sheet.getBoundingClientRect();
+      const lift = Math.max(0, clock.bottom - (hoja.top - gap));
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
     apply();
@@ -354,7 +312,7 @@ function Timer({
       observed.disconnect();
       window.removeEventListener('resize', apply);
     };
-  }, [caja, escena.relojAlto, menu, reduceMotion, wide, settings]);
+  }, [menu, wide]);
 
   const label = useMemo(() => {
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : lang === 'es' ? 'Hecho' : 'Done';
