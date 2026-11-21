@@ -21,7 +21,13 @@ import {
   type Messages,
   type Settings,
 } from '@reloj/core';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 import { HojaDia } from '../dia/HojaDia';
 import type { ArenaDia } from '../dia/dia';
@@ -74,12 +80,26 @@ export function SettingsSheet({
   const onPreset = (QUICK_TIMES_MIN as readonly number[]).includes(lastMin);
   const [singleCustom, setSingleCustom] = useState(() => !onPreset);
   const customOn = singleCustom || !onPreset;
+  /** Minutos del control personalizado mientras se arrastra o se mantiene una tecla. Aún no es el plan. */
+  const [borrador, setBorrador] = useState<number | null>(null);
+  const indiceDuracion = borrador ?? nearestStepIndex(settings.lastDurationMs);
   const hoja = useRef<HTMLDivElement>(null);
   const [desborda, setDesborda] = useState(false);
 
   useEffect(() => {
     if (!onPreset) setSingleCustom(true);
   }, [onPreset]);
+
+  useEffect(() => {
+    if (!open || !customOn) setBorrador(null);
+  }, [open, customOn]);
+
+  const cerrarBorrador = (index: number) => {
+    setBorrador(null);
+    const ms = stepToDuration(index);
+    if (ms === settings.lastDurationMs) return;
+    aplicar({ sessionMode: 'single', lastDurationMs: ms });
+  };
 
   useEffect(() => {
     const el = hoja.current;
@@ -321,26 +341,23 @@ export function SettingsSheet({
             <div className="stepper-row">
               <Stepper
                 label={t.session}
-                value={`${DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)]} min`}
-                spoken={t.minutes(DURATION_STEPS_MIN[nearestStepIndex(settings.lastDurationMs)] ?? lastMin)}
+                value={`${DURATION_STEPS_MIN[indiceDuracion] ?? lastMin} min`}
+                spoken={t.minutes(DURATION_STEPS_MIN[indiceDuracion] ?? lastMin)}
                 decLabel={t.less}
                 incLabel={t.more}
-                canDec={nearestStepIndex(settings.lastDurationMs) > 0}
-                canInc={nearestStepIndex(settings.lastDurationMs) < DURATION_STEPS_MIN.length - 1}
-                scrubIndex={nearestStepIndex(settings.lastDurationMs)}
+                canDec={indiceDuracion > 0}
+                canInc={indiceDuracion < DURATION_STEPS_MIN.length - 1}
+                scrubIndex={indiceDuracion}
                 scrubMax={DURATION_STEPS_MIN.length - 1}
-                onStep={(d) =>
+                onStep={(d) => {
+                  setBorrador(null);
                   aplicar((current) => ({
                     sessionMode: 'single',
                     lastDurationMs: stepToDuration(nearestStepIndex(current.lastDurationMs) + d),
-                  }))
-                }
-                onScrubIndex={(index) =>
-                  aplicar({
-                    sessionMode: 'single',
-                    lastDurationMs: stepToDuration(index),
-                  })
-                }
+                  }));
+                }}
+                onScrubIndex={setBorrador}
+                onScrubEnd={cerrarBorrador}
               />
             </div>
           ) : null}
@@ -422,6 +439,17 @@ function IconoTema({ theme }: { readonly theme: Settings['theme'] }) {
 
 const SCRUB_PX = 18;
 
+/** Flechas, o Enter/Espacio sobre − y +. El clic del ratón no pasa por aquí. */
+function pasoDeTecla(event: ReactKeyboardEvent<HTMLDivElement>): number | null {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowUp') return 1;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') return -1;
+  if (event.key !== 'Enter' && event.key !== ' ') return null;
+  const el = event.target instanceof Element ? event.target.closest('button') : null;
+  const paso = el?.getAttribute('data-paso');
+  if (paso === '1' || paso === '-1') return Number(paso);
+  return null;
+}
+
 function Stepper({
   label,
   value,
@@ -434,6 +462,7 @@ function Stepper({
   scrubIndex,
   scrubMax,
   onScrubIndex,
+  onScrubEnd,
 }: {
   label: string;
   value: string;
@@ -445,9 +474,12 @@ function Stepper({
   onStep: (delta: number) => void;
   scrubIndex?: number;
   scrubMax?: number;
+  /** Cada paso del arrastre o de una tecla mantenida. Solo el número. */
   onScrubIndex?: (index: number) => void;
+  /** Al soltar el puntero o la tecla. Una sola vez. */
+  onScrubEnd?: (index: number) => void;
 }) {
-  const scrub = onScrubIndex != null && scrubIndex != null && scrubMax != null;
+  const scrub = onScrubIndex != null && onScrubEnd != null && scrubIndex != null && scrubMax != null;
   const drag = useRef<{
     pointerId: number;
     startX: number;
@@ -456,6 +488,9 @@ function Stepper({
     sent: number;
   } | null>(null);
   const swallowClick = useRef(false);
+  const teclas = useRef(new Set<string>());
+  const mostrado = useRef(scrubIndex ?? 0);
+  if (drag.current == null && teclas.current.size === 0) mostrado.current = scrubIndex ?? 0;
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!scrub || scrubIndex == null || event.button !== 0) return;
@@ -466,19 +501,12 @@ function Stepper({
       moved: false,
       sent: scrubIndex,
     };
+    mostrado.current = scrubIndex;
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const gesture = drag.current;
-    if (
-      !scrub ||
-      !gesture ||
-      gesture.pointerId !== event.pointerId ||
-      onScrubIndex == null ||
-      scrubMax == null
-    ) {
-      return;
-    }
+    if (!scrub || !gesture || gesture.pointerId !== event.pointerId || scrubMax == null) return;
     const dx = event.clientX - gesture.startX;
     if (!gesture.moved && Math.abs(dx) < 5) return;
     if (!gesture.moved && !event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -488,13 +516,16 @@ function Stepper({
     const index = Math.min(scrubMax, Math.max(0, gesture.startIndex + Math.trunc(dx / SCRUB_PX)));
     if (index === gesture.sent) return;
     gesture.sent = index;
-    onScrubIndex(index);
+    mostrado.current = index;
+    onScrubIndex?.(index);
   };
 
   const endScrub = (event: ReactPointerEvent<HTMLDivElement>) => {
     const gesture = drag.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
-    if (gesture.moved) {
+    const aplicar = gesture.moved;
+    const index = gesture.sent;
+    if (aplicar) {
       swallowClick.current = true;
       window.setTimeout(() => {
         swallowClick.current = false;
@@ -504,6 +535,39 @@ function Stepper({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (aplicar) onScrubEnd?.(index);
+  };
+
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!scrub || scrubMax == null) return;
+    const delta = pasoDeTecla(event);
+    if (delta == null) return;
+    event.preventDefault();
+    // El Enter/Espacio del botón no debe disparar el clic: el plan se aplica al soltar.
+    swallowClick.current = true;
+    teclas.current.add(event.key);
+    const index = Math.min(scrubMax, Math.max(0, mostrado.current + delta));
+    if (index === mostrado.current) return;
+    mostrado.current = index;
+    onScrubIndex?.(index);
+  };
+
+  const onKeyUp = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!teclas.current.has(event.key)) return;
+    event.preventDefault();
+    teclas.current.delete(event.key);
+    if (teclas.current.size > 0 || !scrub) return;
+    onScrubEnd?.(mostrado.current);
+    window.setTimeout(() => {
+      swallowClick.current = false;
+    }, 0);
+  };
+
+  const onBlur = () => {
+    if (teclas.current.size === 0 || !scrub) return;
+    teclas.current.clear();
+    swallowClick.current = false;
+    onScrubEnd?.(mostrado.current);
   };
 
   return (
@@ -514,6 +578,9 @@ function Stepper({
         onPointerMove={scrub ? onPointerMove : undefined}
         onPointerUp={scrub ? endScrub : undefined}
         onPointerCancel={scrub ? endScrub : undefined}
+        onKeyDown={scrub ? onKeyDown : undefined}
+        onKeyUp={scrub ? onKeyUp : undefined}
+        onBlur={scrub ? onBlur : undefined}
         onClickCapture={(event) => {
           if (!swallowClick.current) return;
           swallowClick.current = false;
@@ -524,6 +591,7 @@ function Stepper({
         <button
           type="button"
           className="control redondo"
+          data-paso="-1"
           aria-label={`${decLabel} ${label}`}
           disabled={!canDec}
           onClick={() => onStep(-1)}
@@ -540,6 +608,7 @@ function Stepper({
         <button
           type="button"
           className="control redondo"
+          data-paso="1"
           aria-label={`${incLabel} ${label}`}
           disabled={!canInc}
           onClick={() => onStep(1)}
