@@ -10,6 +10,7 @@ import {
 } from '@reloj/core';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useTactil } from '../comun/entrada/tactil';
 import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
 import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
@@ -122,6 +123,7 @@ function Timer({
   const systemDark = useSystemDark();
   const reduceMotion = useReducedMotion();
   const wide = useWideLayout();
+  const tactil = useTactil();
   const scheme = resolveScheme(settings.theme, systemDark);
   const lang = resolveLanguage(settings.language, navigator.language);
   const t = messagesFor(settings.language, navigator.language);
@@ -341,7 +343,7 @@ function Timer({
     if (view.isCycle) return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
   }, [t, view]);
-  const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished');
+  const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished', tactil);
   const describe = useCallback(
     (remainingMs: number) => {
       const duration = t.duration(remainingMs);

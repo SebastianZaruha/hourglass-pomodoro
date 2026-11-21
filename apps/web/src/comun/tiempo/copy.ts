@@ -2,11 +2,21 @@ import type { Language, TimerStatus } from '@reloj/core';
 
 import type { AndroidDistribution } from '../paneles/android';
 
-/** Pistas de ratón (la app móvil habla de gestos táctiles; aquí no). */
-export function hintFor(lang: Language, status: TimerStatus, cyclesFinished: boolean): string | null {
+/** Pistas. `tactil` usa la misma detección que la pausa. */
+export function hintFor(
+  lang: Language,
+  status: TimerStatus,
+  cyclesFinished: boolean,
+  tactil = false,
+): string | null {
   const es = lang === 'es';
   if (status === 'idle') {
-    return es ? 'clic para empezar · rueda para el tiempo' : 'click to start · scroll to set the time';
+    if (tactil) {
+      return es
+        ? 'toca para empezar · desliza arriba o abajo para ajustar el tiempo'
+        : 'tap to start · swipe up or down to set the time';
+    }
+    return es ? 'clic para empezar · rueda para ajustar el tiempo' : 'click to start · scroll to set the time';
   }
   if (status === 'paused') {
     return es

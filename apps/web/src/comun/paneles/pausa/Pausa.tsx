@@ -1,6 +1,7 @@
 import type { Language } from '@reloj/core';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 
+import { useTactil } from '../../entrada/tactil';
 import { useHojaVidrio } from '../../estilo/vidrio-liquido';
 
 interface Props {
@@ -18,19 +19,6 @@ const PISTA = {
     tactil: 'tap to resume',
   },
 } as const;
-
-const TACTIL = '(hover: none) and (pointer: coarse)';
-
-function useTactil() {
-  const [tactil, setTactil] = useState(() => window.matchMedia(TACTIL).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(TACTIL);
-    const alCambiar = () => setTactil(mq.matches);
-    mq.addEventListener('change', alCambiar);
-    return () => mq.removeEventListener('change', alCambiar);
-  }, []);
-  return tactil;
-}
 
 /** La pausa publicada: la palabra y la pista de la web, sin tocar el frasco. */
 export function Pausa({ word, lang }: Props) {
