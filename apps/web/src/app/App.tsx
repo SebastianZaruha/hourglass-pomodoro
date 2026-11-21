@@ -332,7 +332,7 @@ function Timer({
       const gap = rem * 1.15;
       if (!wide) {
         app.style.setProperty('--clock-lift', '0px');
-        app.style.setProperty('--menu-pad', `${Math.round(sheetH + gap)}px`);
+        app.style.removeProperty('--menu-pad');
         return;
       }
       app.style.removeProperty('--menu-pad');
