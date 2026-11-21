@@ -1,5 +1,5 @@
 export type { AndroidPromoCopy } from './copy';
-export { androidInstallNote, androidPromoCopy, bannerCopy, footerCopy, hintFor, legalHrefs } from './copy';
+export { androidInstallNote, androidPromoCopy, bannerCopy, footerCopy, hintFor, legalHrefs, panelCookiesCopy } from './copy';
 export {
   documentTitle,
   ensureNotificationPermission,

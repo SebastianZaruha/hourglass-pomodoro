@@ -149,6 +149,32 @@ function androidActionHint(lang: Language, distribution: AndroidDistribution): s
   }
 }
 
+/** Panel de preferencias. Los interruptores nacen apagados. */
+export function panelCookiesCopy(lang: Language) {
+  if (lang === 'es') {
+    return {
+      label: 'Preferencias de cookies',
+      google: 'Google Analytics',
+      vercel: 'Vercel Analytics',
+      save: 'Guardar',
+      acceptAll: 'Aceptar todo',
+      rejectAll: 'Rechazar todo',
+      policy: 'Política de cookies',
+      close: 'Cerrar',
+    };
+  }
+  return {
+    label: 'Cookie preferences',
+    google: 'Google Analytics',
+    vercel: 'Vercel Analytics',
+    save: 'Save',
+    acceptAll: 'Accept all',
+    rejectAll: 'Reject all',
+    policy: 'Cookie policy',
+    close: 'Close',
+  };
+}
+
 /** Texto del banner, tal como lo dejó el abogado (banner-cookies-copy.md). */
 export function bannerCopy(lang: Language) {
   if (lang === 'es') {

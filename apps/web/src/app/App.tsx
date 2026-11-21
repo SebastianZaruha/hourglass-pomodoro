@@ -18,7 +18,7 @@ import { useGiro } from '../comun/giro';
 import { SettingsSheet } from '../comun/menu';
 import { AndroidPromo, readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
 import { AvisoSesion } from '../comun/paneles/aviso/AvisoSesion';
-import { CookieBanner } from '../comun/paneles/cookies';
+import { CookieBanner, PanelCookies } from '../comun/paneles/cookies';
 import { LegalOverlay } from '../comun/paneles/legal';
 import { Mano } from '../comun/paneles/mano/Mano';
 import { Pausa } from '../comun/paneles/pausa';
@@ -358,7 +358,7 @@ function Timer({
         ['--menu' as string]: aspecto.tinta,
       }}
     >
-      {avisos.consentChoice === 'accepted' ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
+      {avisos.vercel ? <Analytics beforeSend={allowAnalyticsEvent} /> : null}
       <div className="scene">
         <Fondo aspecto={aspecto} caja={caja} reducir={reduceMotion} angosta={!wide} />
         <Capa3D aspecto={aspecto} modo={ESQUEMA[scheme]} caja={caja} puente={puente3d} />
@@ -407,27 +407,34 @@ function Timer({
       <div inert={paused || undefined}>
         <SiteFooter
           lang={lang}
-          onCookies={() => avisos.setBannerOpen(true)}
+          onCookies={avisos.abrirPanel}
           onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
         />
       </div>
       {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} /> : null}
       <CookieBanner
-        open={avisos.bannerOpen}
+        open={avisos.bannerOpen && !avisos.panelOpen}
         lang={lang}
         onChoose={avisos.chooseCookies}
         onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
+      />
+      <PanelCookies
+        open={avisos.panelOpen}
+        lang={lang}
+        inicial={avisos.inicialCookies}
+        onGuardar={avisos.guardarCookies}
+        onCerrar={avisos.cerrarPanel}
       />
       {avisos.legal ? (
         <LegalOverlay
           src={avisos.legal.href}
           title={avisos.legal.title}
           onClose={() => avisos.setLegal(null)}
-          onConfigure={() => avisos.setBannerOpen(true)}
+          onConfigure={avisos.abrirPanel}
         />
       ) : null}
       <AvisoSesion
-        abierta={pedirAviso && !paused && !menu && !avisos.bannerOpen && avisos.legal === null}
+        abierta={pedirAviso && !paused && !menu && !avisos.cookiesAbiertas && avisos.legal === null}
         lang={lang}
         alAceptar={() => {
           setPedirAviso(false);
@@ -440,7 +447,7 @@ function Timer({
         }}
       />
       {paused ? <Pausa word={t.paused} lang={lang} /> : null}
-      <Mano visible={intro.settled && !avisos.bannerOpen && !menu && !paused && avisos.legal === null} />
+      <Mano visible={intro.settled && !avisos.cookiesAbiertas && !menu && !paused && avisos.legal === null} />
       <button
         type="button"
         id="menu-button"
