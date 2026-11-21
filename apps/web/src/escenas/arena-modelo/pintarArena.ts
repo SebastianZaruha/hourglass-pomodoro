@@ -138,9 +138,9 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.imageSmoothingEnabled = false;
   if (scene.fundido) {
     const { queda, viejo, blurSale, blurEntra } = scene.fundido;
-    // El mismo centro que el giro del vidrio: el cuello, no el centro del bitmap.
+    // El 2D gira sobre el cuello. El 3D, sobre el centro del perfil (filas 5 y 1007.5).
     const cx = (caja.w * CUELLO_X) / FOTO_ANCHO;
-    const cy = (caja.h * CUELLO_FILA) / FOTO_ALTO;
+    const cy = (caja.h * (scene.enMalla ? (5 + 1007.5) / 2 : CUELLO_FILA)) / FOTO_ALTO;
     g.save();
     g.globalCompositeOperation = 'source-over';
     g.imageSmoothingEnabled = true;
@@ -154,11 +154,11 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     if (alfaNuevo > 0) {
       g.filter = blurEntra > 0.05 ? `blur(${blurEntra}px)` : 'none';
       g.globalAlpha = alfaNuevo;
-      if (!scene.enMalla) {
-        g.translate(cx, cy);
-        g.rotate(Math.PI);
-        g.translate(-cx, -cy);
-      }
+      // La arena nueva va dada la vuelta: el giro la trae arriba y, al acabar, coincide
+      // con el reposo. No se queda fija en lo alto de la pantalla.
+      g.translate(cx, cy);
+      g.rotate(Math.PI);
+      g.translate(-cx, -cy);
       g.drawImage(scene.sand, vx, vy, vw, vh);
       g.filter = 'none';
       g.globalAlpha = 1;

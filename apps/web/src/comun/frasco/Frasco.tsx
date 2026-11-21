@@ -228,7 +228,9 @@ export function Frasco({
         const angulo = est.angulo;
         const geo = loop.geo ?? geoVacia();
         pintor3D = (context, caja) => {
-          const pantalla = puenteRef.current?.pantalla?.(context, est.fase === 'volteo' ? 0 : angulo);
+          // El doble clic también: el mismo ángulo que el arrastre. Con 0 la hoja
+          // se queda en reposo y la malla se lleva esa foto, opaca, hasta el salto a 0.
+          const pantalla = puenteRef.current?.pantalla?.(context, angulo);
           contenido.pintar(context, { caja, angulo, esquema, geo, pantalla });
         };
       } else if (loop.tresD) {

@@ -8,7 +8,7 @@ import {
 } from 'three';
 import { BASE_BULBO, BASE_OPACA, CUELLO_FILA, FOTO_ALTO, FOTO_ANCHO, cajaFoto, encuadreFondo, layoutFor, yEnFoto, type Caja } from './encuadre';
 import { crearEntorno, type AjusteEntorno, type Modo } from './entorno';
-import { CENTRO_FILA, CENTRO_LOCAL_Y, crearGeometriaFrasco } from './geometria';
+import { CENTRO_LOCAL_Y, crearGeometriaFrasco } from './geometria';
 import { escalaDeIntro, poseIntroEn, POSE_QUIETA, type PoseIntro } from './intro';
 import type { Calidad, Contenido, FaseGiro, Fondo, Frasco3D, OpcionesFrasco3D } from './tipos';
 
@@ -203,7 +203,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   let poseFuera: PoseIntro | null = null;
   let pose: PoseIntro = POSE_QUIETA;
   let escalaPose = 1, anguloVisible = 0, velocidad = 0;
-  let fundidoGiro: { lienzo: HTMLCanvasElement; desde: number; delta: number } | null = null;
   // Ángulo llevado desde fuera (girar cada frame, p. ej. con crearGiro): su velocidad solo mueve el balanceo.
   let omegaFuera = 0, tFuera = 0;
   const pivoteVisible = { x: 0, y: 0 };
@@ -600,15 +599,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     // La pose de fuera (setPoseIntro) no suma ángulo: quien la manda ya lo pone con girar()
     // (crearGiro.estado().angulo incluye la intro). La intro propia sí lo suma.
     anguloVisible = angulo + (pose.activa && introT0 !== null ? pose.angulo : 0);
-    // Como crearGiro: diferencia de ángulos visibles entre fotogramas.
-    const salto = anguloVisible - anguloAntes;
-    if (Math.abs(salto) > 1.2 && hoja.width > 0) {
-      const copia = document.createElement('canvas');
-      copia.width = hoja.width;
-      copia.height = hoja.height;
-      copia.getContext('2d')?.drawImage(hoja, 0, 0);
-      fundidoGiro = { lienzo: copia, desde: ahora, delta: -salto };
-    }
     velocidad = (anguloVisible - anguloAntes) / dt;
     giro.rotation.z = -anguloVisible;
 
@@ -667,22 +657,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       ctxHoja.setTransform(a, b, cc, d, e, f);
       const cf = fondo ? cajaFondoDe(fondo) : null;
       c.pintar(ctxHoja, { angulo: anguloVisible, pivote: { ...pivoteVisible }, cajaFoto: foto, cajaFondo: cf ?? { x: 0, y: 0, w: vw, h: vh }, dt: dt * 1000, escala: escalaPose });
-    }
-    if (fundidoGiro) {
-      const u = (performance.now() - fundidoGiro.desde) / 220;
-      if (u >= 1) fundidoGiro = null;
-      else {
-        ctxHoja.save();
-        ctxHoja.setTransform(1, 0, 0, 1, 0, 0);
-        ctxHoja.globalAlpha = 1 - u;
-        const cx = hoja.width / 2;
-        const cy = (CENTRO_FILA / FOTO_ALTO) * hoja.height;
-        ctxHoja.translate(cx, cy);
-        ctxHoja.rotate(fundidoGiro.delta);
-        ctxHoja.translate(-cx, -cy);
-        ctxHoja.drawImage(fundidoGiro.lienzo, 0, 0);
-        ctxHoja.restore();
-      }
     }
     texHoja.needsUpdate = true;
   }

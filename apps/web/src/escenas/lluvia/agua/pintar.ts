@@ -310,8 +310,10 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       matriz.f = ejeY - matriz.b * nx - matriz.d * (ny + dy);
       const fundido = vista.fundido;
       const u = fundido?.u ?? 0;
-      const fracA = fundido ? vista.volArriba * (1 - u) + fundido.arriba * u : vista.volArriba;
-      const fracB = fundido ? vista.volAbajo * (1 - u) + fundido.abajo * u : vista.volAbajo;
+      // El reinicio funde hacia la carga limpia en el bulbo que el giro deja arriba.
+      // Así, al volver el ángulo a 0, el agua ya está ahí y no cae desde el otro bulbo.
+      const fracA = fundido ? vista.volArriba * (1 - u) + fundido.abajo * u : vista.volArriba;
+      const fracB = fundido ? vista.volAbajo * (1 - u) + fundido.arriba * u : vista.volAbajo;
       const phi = (vista.alfa - vista.angulo) * (fundido ? 1 - u : 1);
 
       aMundo(poliA, matriz, mundoA);
