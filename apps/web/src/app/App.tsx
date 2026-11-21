@@ -416,6 +416,7 @@ function Timer({
         open={avisos.bannerOpen && !avisos.panelOpen}
         lang={lang}
         onChoose={avisos.chooseCookies}
+        onConfigure={avisos.abrirPanel}
         onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
       />
       <PanelCookies
@@ -424,6 +425,7 @@ function Timer({
         inicial={avisos.inicialCookies}
         onGuardar={avisos.guardarCookies}
         onCerrar={avisos.cerrarPanel}
+        onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
       />
       {avisos.legal ? (
         <LegalOverlay

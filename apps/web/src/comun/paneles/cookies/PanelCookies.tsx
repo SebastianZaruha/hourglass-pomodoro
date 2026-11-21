@@ -2,7 +2,8 @@ import type { Language } from '@reloj/core';
 import { useEffect, useRef, useState } from 'react';
 
 import { useHojaVidrio } from '../../estilo/vidrio-liquido';
-import { panelCookiesCopy } from '../../tiempo';
+import { legalHrefs, panelCookiesCopy } from '../../tiempo';
+import { keepAppOnLegalClick } from '../legal';
 import type { AnalyticsPrefs } from './cookies';
 
 interface Props {
@@ -11,12 +12,13 @@ interface Props {
   readonly inicial: AnalyticsPrefs;
   readonly onGuardar: (prefs: AnalyticsPrefs) => void;
   readonly onCerrar: () => void;
+  readonly onOpenLegal: (href: string, title: string) => void;
 }
 
 const APAGADO: AnalyticsPrefs = { google: false, vercel: false };
 
 /** Preferencias. Los dos interruptores salen apagados si aún no hay elección. */
-export function PanelCookies({ open, lang, inicial, onGuardar, onCerrar }: Props) {
+export function PanelCookies({ open, lang, inicial, onGuardar, onCerrar, onOpenLegal }: Props) {
   const hoja = useRef<HTMLDivElement>(null);
   useHojaVidrio(hoja, open);
   const [google, setGoogle] = useState(inicial.google);
@@ -36,6 +38,7 @@ export function PanelCookies({ open, lang, inicial, onGuardar, onCerrar }: Props
   }, [open, onCerrar]);
   if (!open) return null;
   const copy = panelCookiesCopy(lang);
+  const hrefs = legalHrefs(lang);
   const guardar = (prefs: AnalyticsPrefs) => onGuardar(prefs);
   return (
     <>
@@ -47,6 +50,15 @@ export function PanelCookies({ open, lang, inicial, onGuardar, onCerrar }: Props
         aria-modal="true"
         aria-label={copy.label}
       >
+        <a
+          className="cookie-policy"
+          href={hrefs.cookies}
+          onClick={(event) => {
+            if (keepAppOnLegalClick(event)) onOpenLegal(hrefs.cookies, copy.policy);
+          }}
+        >
+          {copy.policy}
+        </a>
         <div className="cookie-switches">
           <Interruptor label={copy.google} checked={google} onToggle={() => setGoogle((value) => !value)} />
           <Interruptor label={copy.vercel} checked={vercel} onToggle={() => setVercel((value) => !value)} />
