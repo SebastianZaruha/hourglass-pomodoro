@@ -110,10 +110,15 @@
 }
 
 .app[data-layout='wide'] .sheet {
-  left: calc(var(--side-left, 52%) + clamp(0.75rem, 1.6vw, 1.5rem));
-  width: min(calc(var(--side-width, 42vw) - clamp(1.5rem, 3vw, 3rem)), 46vw);
-  max-width: calc(100vw - 2rem);
-  right: auto;
+  /* A la derecha de la columna. En una ventana de ~1000 px el ancho sale del
+     hueco de siempre; en una grande no pasa de 32,5 rem. */
+  left: auto;
+  right: calc(
+    100vw - var(--side-left, 52%) - var(--side-width, 42vw) +
+      max(0px, clamp(1.5rem, 3vw, 3rem) - clamp(0.75rem, 1.6vw, 1.5rem))
+  );
+  width: min(calc(var(--side-width, 42vw) - clamp(1.5rem, 3vw, 3rem)), 32.5rem);
+  max-width: min(32.5rem, calc(100vw - 2rem));
   top: auto;
   bottom: calc(var(--side-bottom, 1rem) + 0.75rem);
   max-height: calc(100dvh - 6rem);

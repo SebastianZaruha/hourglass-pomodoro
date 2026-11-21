@@ -299,7 +299,14 @@ function Timer({
       const gap = rem * 1.15;
       const clock = readout.getBoundingClientRect();
       const hoja = sheet.getBoundingClientRect();
-      const lift = Math.max(0, clock.bottom - (hoja.top - gap));
+      // En una ventana grande la hoja tiene tope y queda a la derecha: no tapa el reloj.
+      const hojaConTope = sideRect.width > 36 * rem;
+      const tapa =
+        !hojaConTope &&
+        clock.bottom > hoja.top - gap &&
+        clock.right > hoja.left &&
+        clock.left < hoja.right;
+      const lift = tapa ? Math.max(0, clock.bottom - (hoja.top - gap)) : 0;
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
     apply();
