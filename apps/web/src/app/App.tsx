@@ -131,6 +131,7 @@ function Timer({
   const [sesionTerminada, setSesionTerminada] = useState(() => readPrimeraSesion());
   const [pedirAviso, setPedirAviso] = useState(false);
   const [pulso, setPulso] = useState(false);
+  const [brillo, setBrillo] = useState(false);
   const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
@@ -178,6 +179,10 @@ function Timer({
     if (cue === 'finished') {
       writePrimeraSesion();
       setSesionTerminada(true);
+      if (!reduceMotion) {
+        setBrillo(true);
+        window.setTimeout(() => setBrillo(false), 900);
+      }
       if (
         notificationSupported() &&
         Notification.permission === 'default' &&
@@ -186,7 +191,7 @@ function Timer({
         setPedirAviso(true);
       }
     }
-  }, [view, settings.sound, settings.alertsPermissionAsked, t, lang]);
+  }, [reduceMotion, view, settings.sound, settings.alertsPermissionAsked, t, lang]);
 
   useEffect(() => {
     if (state.timer.status !== 'running') return;
@@ -350,16 +355,16 @@ function Timer({
   }, [caja, escena.relojAlto, menu, reduceMotion, wide, settings]);
 
   const label = useMemo(() => {
-    if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
+    if (view.status === 'finished') return view.isCycle ? t.cyclesDone : lang === 'es' ? 'Hecho' : 'Done';
     if (view.isCycle) return t.phaseLabel(view.kind, view.round, view.rounds);
     return null;
-  }, [t, view]);
+  }, [lang, t, view]);
   const hint = hintFor(lang, view.status, view.isCycle && view.status === 'finished', tactil);
   const describe = useCallback(
     (remainingMs: number) => {
       const duration = t.duration(remainingMs);
       if (view.status === 'paused') return t.pausedRemaining(duration);
-      if (view.status === 'finished') return view.isCycle ? t.cyclesDone : t.timeUp;
+      if (view.status === 'finished') return view.isCycle ? t.cyclesDone : lang === 'es' ? 'Hecho' : 'Done';
       if (view.status === 'running') {
         const phase = view.isCycle ? `${t.phaseSpoken(view.kind, view.round, view.rounds)}. ` : '';
         return `${phase}${t.remaining(duration)}`;
@@ -367,7 +372,7 @@ function Timer({
       const ready = t.readyToStart(t.duration(view.durationMs));
       return view.isCycle ? `${t.phaseSpoken(view.kind, view.round, view.rounds)}. ${ready}` : ready;
     },
-    [t, view],
+    [lang, t, view],
   );
   const action = view.status === 'running' ? t.pause : view.status === 'paused' ? t.notifResume : t.start;
   const showAndroidPromo = avisos.showAndroidPromo;
@@ -375,7 +380,7 @@ function Timer({
   return (
     <div
       ref={appRef}
-      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${vuelvePausa ? ' pausa-vuelve' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${intro.className ? ` ${intro.className}` : ''}`}
+      className={`app${menu ? ' menu-open' : ''}${paused ? ' is-paused' : ''}${vuelvePausa ? ' pausa-vuelve' : ''}${showAndroidPromo ? ' has-android-promo' : ''}${brillo ? ' sesion-hecha' : ''}${intro.className ? ` ${intro.className}` : ''}`}
       data-scheme={scheme}
       data-layout={wide ? 'wide' : 'narrow'}
       data-reloj={escena.relojAlto ? 'alto' : 'centro'}

@@ -57,5 +57,37 @@
 }
 
 .scene {
+  position: relative;
   height: 100%;
+}
+
+.app[data-layout='wide'].sesion-hecha .scene::after {
+  left: 27%;
+}
+
+.app.sesion-hecha .scene::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: min(46vh, 18rem);
+  height: min(46vh, 18rem);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 68%);
+  animation: brillo-fin 900ms ease-out forwards;
+  z-index: 4;
+}
+
+@keyframes brillo-fin {
+  0% {
+    opacity: 0;
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
