@@ -48,6 +48,10 @@
   opacity: 1;
 }
 
+.fondo-video.fondo-eco {
+  opacity: 0;
+}
+
 /* La tinta, el reloj y la barra cambian con la escena. El vidrio no. */
 @property --time {
   syntax: '<color>';

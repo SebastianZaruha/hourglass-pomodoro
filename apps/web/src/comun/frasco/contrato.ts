@@ -74,7 +74,14 @@ export interface Aspecto {
         readonly avif: string;
         readonly estrecho?: { readonly webp: string; readonly avif: string };
       }
-    | { readonly tipo: 'video'; readonly webm: string; readonly mp4: string; readonly poster: string };
+    | {
+        readonly tipo: 'video';
+        readonly webm: string;
+        readonly mp4: string;
+        readonly poster: string;
+        /** Cruce entre dos copias para que el bucle corto no muestre el corte. */
+        readonly fundido?: boolean;
+      };
   readonly ancla: { readonly x: number; readonly y: number };
   readonly reserva: string;
   readonly barra: string;

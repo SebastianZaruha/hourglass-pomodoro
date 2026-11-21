@@ -4,7 +4,7 @@ import type { Aspecto } from '../frasco';
 import { yBaseBulbo, yBaseOpaca } from './caja';
 import { encuadreFondo, type Ancla, type Caja } from './encuadre';
 import { ahorraDatos } from './precarga';
-import { engancharReproduccion, fuenteDeVideo } from './reproducir';
+import { engancharFundido, engancharReproduccion, fuenteDeVideo } from './reproducir';
 import './fondo.css';
 
 /** El degradado estrecho publicado. El ancho vive en el aspecto. */
@@ -322,8 +322,10 @@ function Video({
   const [fallo, setFallo] = useState(false);
   const posterRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ecoRef = useRef<HTMLVideoElement>(null);
   const reproduce = !reducir && !ahorro && !fallo;
   const src = fuenteDeVideo(fondo.webm, fondo.mp4);
+  const fundido = fondo.fundido === true;
   useEffect(() => {
     const img = posterRef.current;
     setPosterListo(Boolean(img && img.complete && img.naturalWidth > 0));
@@ -333,7 +335,9 @@ function Video({
     if (!video || !reproduce) return;
     setVideoListo(false);
     video.src = src;
-    const soltar = engancharReproduccion(video);
+    const eco = ecoRef.current;
+    if (fundido && eco) eco.src = src;
+    const soltar = fundido && eco ? engancharFundido(video, eco) : engancharReproduccion(video);
     const alError = () => {
       if (video.src.endsWith(fondo.mp4) || src === fondo.mp4) {
         setFallo(true);
@@ -347,7 +351,7 @@ function Video({
       video.removeEventListener('error', alError);
       soltar();
     };
-  }, [fondo.mp4, fondo.webm, reproduce, src]);
+  }, [fondo.mp4, fondo.webm, fundido, reproduce, src]);
   if (!marco) return null;
   return (
     <>
@@ -366,12 +370,24 @@ function Video({
           className={videoListo ? 'fondo-video listo' : 'fondo-video'}
           style={marco}
           muted
-          loop
+          loop={!fundido}
           playsInline
           autoPlay
           preload="auto"
           poster={fondo.poster}
           onPlaying={() => setVideoListo(true)}
+        />
+      ) : null}
+      {reproduce && fundido ? (
+        <video
+          key={`${fondo.webm}-eco`}
+          ref={ecoRef}
+          className="fondo-video fondo-eco"
+          style={marco}
+          muted
+          playsInline
+          preload="auto"
+          poster={fondo.poster}
         />
       ) : null}
     </>

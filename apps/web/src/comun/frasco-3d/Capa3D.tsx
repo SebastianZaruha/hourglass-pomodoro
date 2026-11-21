@@ -43,7 +43,11 @@ function mediosDelFondo(canvas: HTMLCanvasElement): { fuente: HTMLImageElement |
   const capas = pila?.querySelectorAll('.fondo-capa');
   const capa = capas && capas.length > 0 ? capas[capas.length - 1] : null;
   if (!capa) return null;
-  const video = capa.querySelector('video.fondo-video');
+  const videos = capa.querySelectorAll('video.fondo-video');
+  let video: Element | null = videos.length > 0 ? videos[0] ?? null : null;
+  for (const candidato of videos) {
+    if (candidato.getAttribute('data-fuente') === '1') video = candidato;
+  }
   const img = capa.querySelector('img.fondo-medio');
   const foto = img instanceof HTMLImageElement ? img : undefined;
   if (video instanceof HTMLVideoElement) return { fuente: video, poster: foto };
