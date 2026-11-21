@@ -39,7 +39,7 @@ interface Props {
   readonly onReinicio: () => void;
   readonly suppressClickRef: RefObject<boolean>;
   readonly wakeRef: RefObject<(() => void) | null>;
-  /** La nube lee solo este número. -1 es el doble clic, que se apaga al momento. */
+  /** La nube lee solo este número: 1 de pie, 0 a partir de 50°. */
   readonly alFlotar?: RefObject<number>;
 }
 
@@ -156,8 +156,11 @@ export function Frasco({
       const est = giro.estado();
       const flotar = flotarRef.current;
       if (flotar) {
-        const grados = (Math.abs(est.angulo) * 180) / Math.PI;
-        flotar.current = est.vuelta === 'reinicio' ? -1 : Math.max(0, 1 - grados / 50);
+        // 180° también es estar de pie: la media vuelta se apaga al pasar
+        // de 50° y vuelve a encenderse al acercarse al final, sin un corte.
+        let grados = (Math.abs(est.angulo) * 180) / Math.PI;
+        grados = Math.min(grados, Math.abs(grados - 180), Math.abs(grados - 360));
+        flotar.current = Math.max(0, 1 - grados / 50);
       }
       const sigue = contenido.paso({
         ahora: now,

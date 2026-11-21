@@ -81,7 +81,7 @@ export interface MedidaLienzo {
 /** Lo que una escena puede poner encima del frasco. Solo recibe opacidad, nunca el ángulo. */
 export interface PropsEncima {
   readonly caja: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
-  /** Lo escribe el frasco. -1 es el apagado inmediato del doble clic. */
+  /** Lo escribe el frasco. 1 de pie, 0 a partir de 50°, también en la media vuelta. */
   readonly opacidad: RefObject<number>;
   readonly reducir: boolean;
   readonly oscuro: boolean;
