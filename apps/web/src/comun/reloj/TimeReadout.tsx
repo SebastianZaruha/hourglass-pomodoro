@@ -6,10 +6,11 @@ interface Props {
   readonly running: boolean;
   readonly label: string | null;
   readonly hint: string | null;
+  readonly pulso?: boolean;
   readonly describe: (remainingMs: number) => string;
 }
 
-export function TimeReadout({ getSnapshot, running, label, hint, describe }: Props) {
+export function TimeReadout({ getSnapshot, running, label, hint, describe, pulso = false }: Props) {
   const [text, setText] = useState(() => formatDuration(getSnapshot().remainingMs));
   const [live, setLive] = useState(() => describe(getSnapshot().remainingMs));
 
@@ -38,7 +39,7 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe }: Pro
         {label ? `${label}. ` : ''}
         {live}
       </p>
-      <div className="time" aria-hidden="true">
+      <div className={pulso ? 'time pulso' : 'time'} aria-hidden="true">
         {text}
       </div>
       {label ? (

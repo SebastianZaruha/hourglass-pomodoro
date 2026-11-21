@@ -130,10 +130,12 @@ function Timer({
   const [escena, setEscena] = useState(escenaInicial);
   const [sesionTerminada, setSesionTerminada] = useState(() => readPrimeraSesion());
   const [pedirAviso, setPedirAviso] = useState(false);
+  const [pulso, setPulso] = useState(false);
   const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
   const { replaceIfChanged, getSnapshot, toggle, restart, tick, view, state } = session;
+  const estadoPrevio = useRef(view.status);
 
   useEffect(() => {
     replaceIfChanged(sessionPlanFor(settings));
@@ -156,6 +158,15 @@ function Timer({
   useEffect(() => {
     wake();
   }, [view.status, view.durationMs, view.transitions, scheme, reduceMotion, wake]);
+
+  useEffect(() => {
+    const antes = estadoPrevio.current;
+    estadoPrevio.current = view.status;
+    if (antes === 'running' || view.status !== 'running' || reduceMotion) return;
+    setPulso(true);
+    const id = window.setTimeout(() => setPulso(false), 700);
+    return () => window.clearTimeout(id);
+  }, [reduceMotion, view.status]);
 
   const prevCue = useRef(view);
   useEffect(() => {
@@ -415,6 +426,7 @@ function Timer({
               running={view.status === 'running'}
               label={label}
               hint={paused ? null : hint}
+              pulso={pulso}
               describe={describe}
             />
           </div>
