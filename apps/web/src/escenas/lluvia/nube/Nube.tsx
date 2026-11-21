@@ -47,7 +47,7 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
       <canvas ref={lienzo} className="nube-lienzo" />
       {soloFoto ? null : (
         <>
-          <video ref={videoA} className="nube-fuente" muted playsInline preload="auto" poster={POSTER}>
+          <video ref={videoA} className="nube-fuente" muted autoPlay playsInline preload="auto">
             <source src={WEBM} type="video/webm" />
             <source src={MP4} type="video/mp4" />
           </video>

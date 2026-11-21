@@ -94,24 +94,31 @@ export function engancharBucle(
   let par: Par = { activo: a, espera: b };
   silenciar(a);
   silenciar(b);
+  b.pause();
   const soltarA = engancharReproduccion(a);
+  let raf = 0;
 
-  const pedir = (video: HTMLVideoElement, siguiente: () => void) => {
-    if (!vivo) return;
-    const conMarco = video as HTMLVideoElement & {
-      requestVideoFrameCallback?: (cb: () => void) => number;
-    };
-    if (typeof conMarco.requestVideoFrameCallback === 'function') conMarco.requestVideoFrameCallback(siguiente);
-    else requestAnimationFrame(siguiente);
+  // La nube nace con opacity 0 y el ciclo la vuelve a apagar. Con el padre
+  // invisible, Chrome, Firefox y Safari dejan de entregar
+  // requestVideoFrameCallback y a veces pausan el vídeo. El callback no se
+  // rearma y el lienzo se queda en el póster o en el primer fotograma.
+  // El rAF sigue, y si está pausado se le vuelve a pedir play() mudo.
+  const reanudar = (video: HTMLVideoElement) => {
+    if (document.hidden || !video.paused || video.ended) return;
+    silenciar(video);
+    void video.play().catch(() => undefined);
   };
 
   const cuadro = () => {
     if (!vivo) return;
     const { activo, espera } = par;
+    reanudar(activo);
     const ctx = lienzo.getContext('2d', { willReadFrequently: true });
     const caja = ctx ? tamano(lienzo) : null;
     const duracion = activo.duration;
-    if (ctx && caja && activo.readyState >= 2) {
+    // currentTime 0 y en pausa es el póster. No se copia: se vería una foto fija.
+    const marco = activo.readyState >= 2 && (activo.currentTime > 0 || !activo.paused);
+    if (ctx && caja && marco) {
       const queda = duracion > 0 ? duracion - activo.currentTime : CRUCE_S;
       if (!cruzando && duracion > 0 && queda < CRUCE_S && queda > 0) {
         cruzando = true;
@@ -119,8 +126,9 @@ export function engancharBucle(
         silenciar(espera);
         void espera.play().catch(() => undefined);
       }
+      if (cruzando) reanudar(espera);
       const base = leer(ctx, activo, caja.w, caja.h);
-      if (base && cruzando && espera.readyState >= 2) {
+      if (base && cruzando && espera.readyState >= 2 && (espera.currentTime > 0 || !espera.paused)) {
         const encima = leer(ctx, espera, caja.w, caja.h);
         const t = Math.min(1, Math.max(0, 1 - queda / CRUCE_S));
         if (encima) ctx.putImageData(fundir(base, encima, t), 0, 0);
@@ -133,12 +141,13 @@ export function engancharBucle(
         cruzando = false;
       }
     }
-    pedir(par.activo, cuadro);
+    raf = requestAnimationFrame(cuadro);
   };
 
-  pedir(a, cuadro);
+  raf = requestAnimationFrame(cuadro);
   return () => {
     vivo = false;
+    cancelAnimationFrame(raf);
     soltarA();
     a.pause();
     b.pause();
