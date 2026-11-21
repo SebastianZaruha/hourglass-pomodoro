@@ -180,6 +180,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.restore();
 
   if (!scene.fundido) sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
+  afilarCuello(g, geo, caja);
 
   const cellW = vw / scene.sim.cols;
   const cellH = vh / scene.sim.rows;
@@ -208,6 +209,34 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(hoja, caja.x, caja.y, caja.w, caja.h);
+}
+
+/**
+ * El montón de arriba no acaba en un tacón recto en el cuello.
+ * Solo el pintado: la simulación y el chorro siguen igual.
+ */
+function afilarCuello(
+  g: CanvasRenderingContext2D,
+  geo: GeometriaFrasco,
+  caja: { readonly w: number; readonly h: number },
+): void {
+  const cuello = geo.cuelloY * caja.h;
+  const alto = caja.h * 0.08;
+  const y0 = cuello - alto;
+  if (!(y0 > 0) || !(cuello < caja.h)) return;
+  const cx = caja.w * 0.5;
+  g.save();
+  g.globalCompositeOperation = 'destination-in';
+  g.fillStyle = '#000';
+  g.beginPath();
+  g.rect(0, 0, caja.w, y0);
+  g.moveTo(cx, cuello + caja.h * 0.012);
+  g.lineTo(cx - caja.w, y0);
+  g.lineTo(cx + caja.w, y0);
+  g.closePath();
+  g.rect(0, cuello + caja.h * 0.012, caja.w, caja.h);
+  g.fill();
+  g.restore();
 }
 
 let telaSombra: HTMLCanvasElement | null = null;
