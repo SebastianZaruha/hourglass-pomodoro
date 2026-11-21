@@ -293,19 +293,86 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   }
 
   const texturas = new WeakMap<object, Texture>();
-  function texturaDe(f: Fondo): Texture {
-    const m = medioDe(f);
-    let t = texturas.get(m);
+  const copiasVideo = new WeakMap<HTMLVideoElement, { lienzo: HTMLCanvasElement; ctx: CanvasRenderingContext2D; mala: boolean; cuadro: number }>();
+
+  /** Firefox Android a veces sube el vídeo a WebGL en magenta. El lienzo 2D no. */
+  function planaMagenta(data: Uint8ClampedArray): boolean {
+    let malas = 0;
+    let n = 0;
+    const paso = Math.max(16, Math.floor(data.length / 64) * 4);
+    for (let i = 0; i < data.length; i += paso) {
+      const r = data[i] ?? 0;
+      const g = data[i + 1] ?? 0;
+      const b = data[i + 2] ?? 0;
+      n += 1;
+      if (r > 170 && b > 120 && g < 90 && r > g + 70) malas += 1;
+    }
+    return n > 6 && malas / n > 0.8;
+  }
+
+  function copiaDeVideo(video: HTMLVideoElement): HTMLCanvasElement | null {
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) return null;
+    let copia = copiasVideo.get(video);
+    if (!copia || copia.lienzo.width !== w || copia.lienzo.height !== h) {
+      const lienzo = document.createElement('canvas');
+      lienzo.width = w;
+      lienzo.height = h;
+      const ctx = lienzo.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+      copia = { lienzo, ctx, mala: true, cuadro: 0 };
+      copiasVideo.set(video, copia);
+    }
+    try {
+      copia.ctx.drawImage(video, 0, 0, w, h);
+    } catch {
+      copia.mala = true;
+      return null;
+    }
+    copia.cuadro += 1;
+    if (copia.mala || copia.cuadro % 20 === 1) {
+      const muestra = copia.ctx.getImageData(0, 0, Math.min(w, 48), Math.min(h, 48));
+      copia.mala = planaMagenta(muestra.data);
+    }
+    return copia.mala ? null : copia.lienzo;
+  }
+
+  function texturaDeImagen(imagen: TexImageSource): Texture {
+    let t = texturas.get(imagen);
     if (!t) {
-      // three mide un vídeo por width/height (atributos, 0 por defecto): se los damos.
-      if (m instanceof HTMLVideoElement) { m.width = m.videoWidth; m.height = m.videoHeight; }
-      t = new Texture(m);
+      t = new Texture(imagen);
       t.colorSpace = SRGBColorSpace;
       t.generateMipmaps = false;
       t.minFilter = LinearFilter;
-      texturas.set(m, t);
+      texturas.set(imagen, t);
     }
     return t;
+  }
+
+  function texturaDe(f: Fondo): Texture {
+    const m = medioDe(f);
+    if (m instanceof HTMLVideoElement) {
+      const lienzo = copiaDeVideo(m);
+      if (lienzo) return texturaDeImagen(lienzo);
+      if (f.poster && fuenteLista(f.poster)) return texturaDeImagen(f.poster);
+      return texturaDeImagen(lienzoNeutro());
+    }
+    return texturaDeImagen(m);
+  }
+
+  let neutro: HTMLCanvasElement | null = null;
+  function lienzoNeutro(): HTMLCanvasElement {
+    if (neutro) return neutro;
+    neutro = document.createElement('canvas');
+    neutro.width = 2;
+    neutro.height = 2;
+    const ctx = neutro.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#2a2826';
+      ctx.fillRect(0, 0, 2, 2);
+    }
+    return neutro;
   }
 
   function encuadrar() {
