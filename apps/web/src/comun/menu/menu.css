@@ -193,16 +193,12 @@
 }
 
 .pref-row {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
 }
 
 .scene-row {
   grid-template-columns: repeat(var(--escenas, 3), minmax(0, 1fr));
-}
-
-.gestos-abrir {
-  width: 100%;
-  margin: 0.15rem 0 0.35rem;
 }
 
 .mode-row > .control,
@@ -210,6 +206,19 @@
 .scene-row > .control {
   width: 100%;
   min-width: 0;
+}
+
+.pref-row > .control {
+  flex: 1 1 0;
+  width: auto;
+}
+
+.pref-row > .control.redondo {
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
 }
 
 .chip-row {

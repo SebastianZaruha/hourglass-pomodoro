@@ -28,7 +28,7 @@ import { TarroDia } from '../dia/TarroDia';
 import type { ArenaDia } from '../dia/dia';
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
 import { HojaGestos } from '../paneles/gestos/HojaGestos';
-import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
+import { GlobeIcon, HandIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -174,10 +174,6 @@ export function SettingsSheet({
       ) : null}
 
       {arenaDia ? <TarroDia arena={arenaDia} lang={idioma ?? 'es'} /> : null}
-
-      <button type="button" className="control gestos-abrir" onClick={() => setGestos(true)}>
-        {(idioma ?? 'es') === 'es' ? 'Gestos' : 'Gestures'}
-      </button>
 
       <div className="mode-row" role="radiogroup" aria-label={t.sessionType}>
         <button
@@ -380,6 +376,14 @@ export function SettingsSheet({
         >
           <SpeakerIcon off={!settings.sound} />
           <span>{t.sound}</span>
+        </button>
+        <button
+          type="button"
+          className="control redondo"
+          aria-label={t.showGestures}
+          onClick={() => setGestos(true)}
+        >
+          <HandIcon />
         </button>
       </div>
     </div>
