@@ -1,0 +1,92 @@
+/* Detrás del frasco. La escena, encima, sigue recibiendo el clic. */
+.fondo-pila {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene > .stage {
+  position: relative;
+  z-index: 1;
+}
+
+.fondo-capa {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: var(--reserva-fondo, transparent);
+}
+
+.fondo-capa.se-ve {
+  opacity: 1;
+  transition: opacity 360ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.fondo-medio {
+  position: absolute;
+  display: block;
+  max-width: none;
+  opacity: 0;
+  transition: opacity 160ms linear;
+}
+
+.fondo-medio.listo {
+  opacity: 1;
+}
+
+.fondo-video {
+  position: absolute;
+  display: block;
+  max-width: none;
+  opacity: 0;
+  transition: opacity 160ms linear;
+}
+
+.fondo-video.listo {
+  opacity: 1;
+}
+
+/* La tinta, el reloj y la barra cambian con la escena. El vidrio no. */
+@property --time {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #b3a698;
+}
+
+@property --hint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #c4b8ab;
+}
+
+@property --footer {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #b3a698;
+}
+
+@property --menu {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8f8272;
+}
+
+.app {
+  transition:
+    color 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    background-color 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    border-color 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    --time 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    --hint 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    --footer 360ms cubic-bezier(0.33, 0, 0.2, 1),
+    --menu 360ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fondo-capa.se-ve,
+  .app {
+    transition: none;
+  }
+}

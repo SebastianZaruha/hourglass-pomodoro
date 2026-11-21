@@ -1,0 +1,36 @@
+/* La nube solo recibe opacidad. No gira ni se desplaza con el frasco. */
+.nube {
+  position: fixed;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.nube-lienzo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* La base se disuelve. El negro ya no está: el lienzo trae el alfa. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
+}
+
+.nube-oscura .nube-lienzo {
+  filter: brightness(0.72) saturate(0.85);
+}
+
+/*
+ * En el mismo recuadro que la nube, casi invisibles. Fuera de pantalla
+ * o con opacity 0, varios móviles no decodifican y el lienzo se queda vacío.
+ * 0,001 no llega a pintar el negro del archivo.
+ */
+.nube-fuente {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.001;
+  pointer-events: none;
+}

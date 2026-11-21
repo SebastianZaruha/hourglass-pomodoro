@@ -54,6 +54,12 @@ export interface SandSimulationOptions {
    * valores bajos = avalanchas más lentas y "a trompicones".
    */
   readonly staticFriction?: number;
+  /**
+   * Radio interior (0..1 del semiancho) a la altura y ∈ [-1, 1].
+   * Si se pasa, sustituye a `innerRadiusAt` y al grosor de pared.
+   * Si no se pasa, la máscara se construye como siempre.
+   */
+  readonly radioInterior?: (y: number) => number;
 }
 
 export interface ArrangeOptions {
@@ -108,6 +114,8 @@ export class SandSimulation {
   private readonly arrangeCache = new Map<string, Int32Array>();
   private counts = { top: 0, bottom: 0 };
   private lastMoves = 0;
+  /** Fila de la superficie de cada columna, para el deslizamiento. */
+  private readonly slumpRow: Int16Array;
 
   constructor(options: SandSimulationOptions) {
     const { profile } = options;
@@ -121,6 +129,7 @@ export class SandSimulation {
     this.staticFriction = Math.min(1, Math.max(0.01, options.staticFriction ?? 0.3));
 
     const size = this.cols * this.rows;
+    this.slumpRow = new Int16Array(this.cols);
     this.mask = new Uint8Array(size);
     this.cells = new Uint8Array(size);
     this.stamp = new Uint16Array(size);
@@ -131,7 +140,9 @@ export class SandSimulation {
     this.listNext = new Int32Array(size);
 
     // Construimos la máscara evaluando el perfil en el centro de cada celda.
-    const wallY = profile.wallThickness / profile.halfHeightRatio;
+    // `radioInterior` sustituye al perfil y al grosor. Sin ella, el cálculo es el de siempre.
+    const radioInterior = options.radioInterior;
+    const wallY = radioInterior ? 0 : profile.wallThickness / profile.halfHeightRatio;
     const cellW = 2 / this.cols;
     let top = 0;
     let bottom = 0;
@@ -140,7 +151,7 @@ export class SandSimulation {
       const y = ((row + 0.5) / this.rows) * 2 - 1;
       if (Math.abs(y) > 1 - wallY) continue;
       // Garantizamos al menos media celda de hueco en el cuello.
-      const r = Math.max(innerRadiusAt(profile, y), cellW * 0.5);
+      const r = Math.max(radioInterior ? radioInterior(y) : innerRadiusAt(profile, y), cellW * 0.5);
       for (let col = 0; col < this.cols; col++) {
         const x = ((col + 0.5) / this.cols) * 2 - 1;
         if (Math.abs(x) > r) continue;
@@ -261,8 +272,13 @@ export class SandSimulation {
     this.listCur = curList;
 
     if (curCount === 0) {
-      this.lastMoves = 0;
-      return 0;
+      let quiet = 0;
+      if (this.slumpOne(g, 'top')) quiet++;
+      if (this.slumpOne(g, 'top')) quiet++;
+      if (this.slumpOne(g, 'bottom')) quiet++;
+      if (this.slumpOne(g, 'bottom')) quiet++;
+      this.lastMoves = quiet;
+      return quiet;
     }
 
     // Elegimos las dos direcciones discretas más cercanas a la gravedad y un
@@ -346,6 +362,15 @@ export class SandSimulation {
       list.sort((u, v) => (rank[u] as number) - (rank[v] as number));
       for (let i = 0; i < curCount; i++) process(list[i] as number);
     }
+    // La rejilla de 8 direcciones no tiene hueco cuesta abajo en una
+    // superficie plana hasta unos 40°. Un giro de 10-20° no movía ningún
+    // grano y la superficie se quedaba la recta que dejó arrange, pegada
+    // al frasco. Un grano de lo alto da un paso corto hacia el lado bajo.
+    // Dos granos por bulbo: con uno solo, un giro de 15° tarda en verse.
+    if (this.slumpOne(g, 'top')) moves++;
+    if (this.slumpOne(g, 'top')) moves++;
+    if (this.slumpOne(g, 'bottom')) moves++;
+    if (this.slumpOne(g, 'bottom')) moves++;
     this.lastMoves = moves;
     return moves;
   }
@@ -490,6 +515,99 @@ export class SandSimulation {
 
   // ───────────────────────── privados ─────────────────────────
 
+  /**
+   * Un grano de la superficie da un paso corto hacia el lado bajo, dentro
+   * de su bulbo. La rejilla de 8 direcciones no puede: en una superficie
+   * plana, el primer hueco cuesta abajo está varias celdas más allá, y solo
+   * aparece a partir de unos 40°. Para en una pendiente de unos 6-11° respecto
+   * a la horizontal de la gravedad, distinta según la columna.
+   * En vertical no hace nada. No cruza el cuello.
+   */
+  private slumpOne(g: Vec2, bulb: Bulb): boolean {
+    // De lado la superficie ya no es una fila por columna: lo resuelve la rejilla.
+    if (Math.abs(g.x) < 0.02 || Math.abs(g.y) < 0.2) return false;
+    const { cols, rows, cells, mask, gateRow } = this;
+    const fila = this.slumpRow;
+    fila.fill(-1);
+    const y0 = bulb === 'top' ? 0 : gateRow + 1;
+    const y1 = bulb === 'top' ? gateRow - 1 : rows - 1;
+    for (let y = y0; y <= y1; y++) {
+      const base = y * cols;
+      for (let x = 0; x < cols; x++) {
+        if (cells[base + x] === 0) continue;
+        const prev = fila[x] as number;
+        // La superficie es el grano más alto del montón (contra la gravedad).
+        if (prev < 0 || (y - prev) * g.y < 0) fila[x] = y;
+      }
+    }
+    // Entre 6° y 11°, distinto en cada columna. Uno solo, igual para todas,
+    // lima el montón hasta una recta casi horizontal. 18 columnas: a 10°
+    // el grano llega al lado bajo sin cruzar el bulbo.
+    const R = 18;
+    const signo = g.x > 0 ? 1 : -1;
+    const sube = g.y > 0 ? -1 : 1;
+    let suelo = -Infinity;
+    for (let n = 0; n < cols; n++) {
+      let x = -1;
+      let p0 = Infinity;
+      for (let c = 0; c < cols; c++) {
+        const hy = fila[c] as number;
+        if (hy < 0) continue;
+        const p = c * g.x + hy * g.y;
+        if (p <= suelo || p >= p0) continue;
+        x = c;
+        p0 = p;
+      }
+      if (x < 0) return false;
+      suelo = p0;
+      const y = fila[x] as number;
+      const reposo = Math.sin((((hash32(x) % 6) + 6) * Math.PI) / 180);
+      let dst = -1;
+      for (let paso = 1; paso <= R; paso++) {
+        const nx = x + signo * paso;
+        if (nx < 0 || nx >= cols) break;
+        const hy = fila[nx] as number;
+        if (hy < 0) continue;
+        const ny = hy + sube;
+        if (ny < y0 || ny > y1 || ny === gateRow) continue;
+        const j = ny * cols + nx;
+        if (mask[j] !== 1 || cells[j] !== 0) continue;
+        const dp = nx * g.x + ny * g.y - p0;
+        if (dp / Math.hypot(nx - x, ny - y) <= reposo) continue;
+        if (!this.apoyado(nx, ny, g)) continue;
+        dst = j;
+        break;
+      }
+      if (dst < 0) continue;
+      const i = y * cols + x;
+      cells[dst] = cells[i] as number;
+      cells[i] = 0;
+      this.wakeAround(i, 2);
+      this.wakeAround(dst, 2);
+      return true;
+    }
+    return false;
+  }
+
+  /** Hueco cuyo vecino cuesta abajo es arena o vidrio: el grano se apoya. */
+  private apoyado(x: number, y: number, g: Vec2): boolean {
+    const { cols, rows, cells, mask } = this;
+    let best = 0;
+    let bestDot = -Infinity;
+    for (let k = 0; k < 8; k++) {
+      const dot = dx(k) * g.x + dy(k) * g.y;
+      if (dot > bestDot) {
+        bestDot = dot;
+        best = k;
+      }
+    }
+    const nx = x + dx(best);
+    const ny = y + dy(best);
+    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) return true;
+    const j = ny * cols + nx;
+    return mask[j] !== 1 || cells[j] !== 0;
+  }
+
   /** ¿Tiene el grano (x, y) algún hueco hacia el que rodar (diagonal o deslizamiento)? */
   private couldRoll(x: number, y: number, p: number): boolean {
     return (
@@ -548,6 +666,11 @@ export class SandSimulation {
   /** Mueve el grano de `from` a (x, y) si está libre, y despierta la zona. */
   private moveTo(from: number, x: number, y: number, s: number): boolean {
     if (!this.isFree(x, y)) return false;
+    // El deslizamiento de dos celdas puede saltar la fila cerrada del cuello
+    // (de dos filas antes a una fila después). Ese salto no es el temporizador.
+    const fromX = from % this.cols;
+    const fromY = (from - fromX) / this.cols;
+    if ((fromY - this.gateRow) * (y - this.gateRow) < 0) return false;
     const to = y * this.cols + x;
     this.cells[to] = this.cells[from] as number;
     this.cells[from] = 0;

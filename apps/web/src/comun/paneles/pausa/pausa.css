@@ -1,0 +1,102 @@
+.scene {
+  transition: filter 360ms var(--suave);
+}
+
+.app.is-paused .scene {
+  filter: blur(18px);
+}
+
+/* promo.css, más abajo, pone display:none. El selector duplicado lo deja en su sitio para poder fundirlo. */
+.app.is-paused .site-footer.site-footer,
+.app.is-paused .menu-btn.menu-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 360ms var(--suave),
+    visibility 0s linear 360ms;
+}
+
+.app.is-paused .site-footer.site-footer {
+  display: flex;
+}
+
+.app.is-paused .site-footer.site-footer :is(a, button),
+.app.is-paused .menu-btn.menu-btn * {
+  pointer-events: none;
+}
+
+.app.pausa-vuelve .site-footer,
+.app.pausa-vuelve .menu-btn {
+  animation: pausa-vuelve 360ms var(--suave) both;
+}
+
+@keyframes pausa-vuelve {
+  from {
+    opacity: 0;
+  }
+}
+
+/* El vidrio liso es el fondo, también en Safari y Firefox. La palabra y la pista no se mueven.
+   La escena ya va desenfocada debajo (.is-paused .scene). Texto blanco sobre humo local. */
+.pause-screen.vidrio {
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+/* Pantalla entera: sin canto en los bordes del navegador. */
+.pause-screen.vidrio-liquido[data-vl] {
+  box-shadow: none;
+}
+
+/* Pantalla entera: tampoco dobla el fondo en los bordes del navegador (solo desenfoque). */
+.pause-screen.vidrio-liquido[data-vl='refraccion'] {
+  backdrop-filter: blur(var(--vl-blur));
+}
+
+.pause-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  animation: pausa-entra 360ms var(--suave) both;
+}
+
+.pause-word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 8vw, 6rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--vl-texto, #fff);
+  text-shadow: var(--vl-sombra-texto, none);
+}
+
+.pause-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4.2rem);
+  transform: translateX(-50%);
+  max-width: 32rem;
+  padding: 0 1.2rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--vl-texto-2, #fff);
+  text-shadow: var(--vl-sombra-texto, none);
+}
+
+@keyframes pausa-entra {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,30 @@
+.site-footer {
+  position: fixed;
+  z-index: 22;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  padding: 0.5rem max(4.5rem, 6vw) calc(0.5rem + env(safe-area-inset-bottom));
+  font-size: 0.75rem;
+  color: var(--footer);
+}
+
+.site-footer a,
+.site-footer button {
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.site-footer a:hover,
+.site-footer button:hover {
+  text-decoration: underline;
+}
