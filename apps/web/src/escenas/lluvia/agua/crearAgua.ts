@@ -1,6 +1,6 @@
 import { geometriaDelFrasco, layoutFor, type Contenido, type MedidaLienzo } from '../../../comun/frasco';
 import { crearModelo } from './modelo';
-import { crearPincel } from './pintar';
+import { crearPincel, fondoPendiente } from './pintar';
 
 /** A partir de aquí el chorro se apaga. */
 const CORTE_GOTAS = (35 * Math.PI) / 180;
@@ -18,6 +18,7 @@ export function crearAgua(medida: MedidaLienzo, _esquema: 'claro' | 'oscuro'): C
   let ancho = layout.halfW * 2;
   let alto = layout.halfH * 2;
   let muerto = false;
+  const nacido = performance.now();
   let caudal = 0;
   let dtMs = 16;
 
@@ -37,7 +38,7 @@ export function crearAgua(medida: MedidaLienzo, _esquema: 'claro' | 'oscuro'): C
       if (!corriendo && e.snap.status !== 'paused') caudal = 0;
       else if (quiere) caudal = Math.min(1, caudal + dt / (MS_CORTE / 1000));
       else caudal = Math.max(0, caudal - dt / (MS_CORTE / 1000));
-      return modelo.paso(e, ancho, alto);
+      return modelo.paso(e, ancho, alto) || fondoPendiente(nacido);
     },
     pintar(ctx, p) {
       ancho = p.caja.w;

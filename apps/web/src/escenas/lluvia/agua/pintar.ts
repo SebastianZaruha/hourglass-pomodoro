@@ -7,8 +7,14 @@ const PASOS = 40;
 const POLI = PASOS * 4;
 const OLAS = 32;
 
+/** La capa de encima. Durante el fundido hay dos, y la vieja es la primera. */
+function capaDeFondo(): Element | null {
+  const capas = document.querySelectorAll('.fondo-capa.se-ve');
+  return capas.length > 0 ? (capas[capas.length - 1] ?? null) : null;
+}
+
 function fondoVisible(): HTMLImageElement | HTMLVideoElement | null {
-  const capa = document.querySelector('.fondo-capa.se-ve');
+  const capa = capaDeFondo();
   if (!capa) return null;
   const video = capa.querySelector('video.fondo-video');
   if (video instanceof HTMLVideoElement && video.readyState >= 2 && video.videoWidth > 0 && !video.paused) {
@@ -17,6 +23,29 @@ function fondoVisible(): HTMLImageElement | HTMLVideoElement | null {
   const img = capa.querySelector('img.fondo-medio');
   if (img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0) return img;
   return null;
+}
+
+/**
+ * El bucle del frasco se duerme en reposo. Si el primer fotograma copió
+ * el fondo de la escena anterior, esa copia se queda hasta el próximo clic.
+ * Hay que seguir pintando mientras el fundido no ha dejado un solo fondo
+ * listo, y mientras ese fondo es un vídeo que sigue avanzando.
+ */
+export function fondoPendiente(nacido: number): boolean {
+  if (performance.now() - nacido < 720) return true;
+  const capas = document.querySelectorAll('.fondo-capa.se-ve');
+  if (capas.length !== 1) return capas.length > 1;
+  const capa = capas[0];
+  if (!capa) return false;
+  const video = capa.querySelector('video.fondo-video');
+  if (video instanceof HTMLVideoElement) {
+    if (video.readyState < 2 || video.videoWidth === 0) return true;
+    if (!video.paused && !video.ended) return true;
+  }
+  const img = capa.querySelector('img.fondo-medio');
+  if (!(img instanceof HTMLImageElement)) return false;
+  if (!img.complete || img.naturalWidth < 2) return true;
+  return img.getBoundingClientRect().width < 2;
 }
 
 /** Área del polígono por debajo de y = nivel. y crece hacia abajo. */
