@@ -193,8 +193,12 @@ export function elegirTinta(L: Float32Array, o: OpcionesTinta, previa?: Tinta): 
   return actual && actual.contraste * 1.08 >= mejor.contraste ? actual : mejor;
 }
 
-/** Capas de la escena que se miran para elegir la tinta. */
-export const CAPAS_ESCENA = '.scene img, .scene video, .scene canvas';
+/**
+ * Capas de la escena que se miran para elegir la tinta. Sin el lienzo WebGL del frasco 3D:
+ * su búfer no se conserva entre fotogramas y, leído con drawImage, sale negro o vacío. El
+ * fondo que pinta es el mismo <img>/<video> de .fondo-pila, que sigue debajo y sí se mira.
+ */
+export const CAPAS_ESCENA = '.scene img, .scene video, .scene canvas:not(.frasco-3d)';
 const LUZ_MARGEN = 0.42; // hacia abajo, hasta −42 % del brillo del modo (vidrio ahumado, sin gris: ver README)
 const LUZ_MARGEN_ARRIBA = 0.15; // hacia arriba, solo +15 %: más es un caramelo naranja en Arena
 const PREFERENCIA_BLANCO = 0.9; // el blanco gana si llega al 90 % del objetivo del modelo
