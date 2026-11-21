@@ -36,12 +36,14 @@ export interface Pintura {
   readonly geo: GeometriaFrasco;
   /**
    * Solo con el frasco 3D: `matriz` lleva de px de la ventana a la hoja del vidrio
-   * (que gira con él) y `cuello` es el pivote en px de la ventana. Lo usa quien
-   * pinta en el mundo, como el agua, para que su superficie siga horizontal.
+   * (que gira con él). `cuello` es el cuello en px de la ventana y `centro` el
+   * eje del giro (el centro del perfil). En reposo el cuello no se mueve.
+   * Lo usa quien pinta en el mundo, como el agua, para que su superficie siga horizontal.
    */
   readonly pantalla?: {
     readonly matriz: DOMMatrixReadOnly;
     readonly cuello: { readonly x: number; readonly y: number };
+    readonly centro?: { readonly x: number; readonly y: number };
     /** Caja del fondo (cover anclado) en px de la ventana: el mundo del agua. Hito 2. */
     readonly fondo?: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
     /** Escala de la pose (intro). 1 de pie. Hito 2. */

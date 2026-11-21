@@ -3,12 +3,12 @@
 // de contacto, la hoja del contenido (arena/agua) dentro del vidrio y el vidrio encima.
 import {
   Color, DirectionalLight, Group, LinearFilter, Mesh, MeshPhysicalMaterial, NoToneMapping, PerspectiveCamera,
-  PlaneGeometry, PMREMGenerator, SRGBColorSpace, Scene, ShaderMaterial, Texture, CanvasTexture, TextureLoader,
+  PlaneGeometry, PMREMGenerator, SRGBColorSpace, Scene, ShaderChunk, ShaderMaterial, Texture, CanvasTexture, TextureLoader,
   Vector2, Vector4, WebGLRenderer, type WebGLRenderTarget, FrontSide,
 } from 'three';
 import { BASE_BULBO, BASE_OPACA, CUELLO_FILA, FOTO_ALTO, FOTO_ANCHO, cajaFoto, encuadreFondo, layoutFor, yEnFoto, type Caja } from './encuadre';
 import { crearEntorno, type AjusteEntorno, type Modo } from './entorno';
-import { crearGeometriaFrasco } from './geometria';
+import { CENTRO_FILA, CENTRO_LOCAL_Y, crearGeometriaFrasco } from './geometria';
 import { escalaDeIntro, poseIntroEn, POSE_QUIETA, type PoseIntro } from './intro';
 import type { Calidad, Contenido, FaseGiro, Fondo, Frasco3D, OpcionesFrasco3D } from './tipos';
 
@@ -158,6 +158,16 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // crece hacia la silueta (1/cos). Eso da más refracción y más tinte (attenuation) en los
   // bordes y casi nada en el centro: el color sale del grosor, no de una capa encima.
   vidrio.onBeforeCompile = (sh) => {
+    // El include aún no está expandido. El rayo de three sigue la normal de la malla,
+    // así que el fondo gira con el frasco y salta al volver a 0°. Se muestra el píxel
+    // de pantalla que hay detrás del fragmento.
+    sh.fragmentShader = sh.fragmentShader.replace(
+      '#include <transmission_pars_fragment>',
+      ShaderChunk.transmission_pars_fragment.replaceAll(
+        'vec3 refractedRayExit = position + transmissionRay;',
+        'vec3 refractedRayExit = position;',
+      ),
+    );
     sh.fragmentShader = sh.fragmentShader.replace(
       'vec3 n = transformNormalByInverseViewMatrix( normal, viewMatrix );',
       'vec3 n = transformNormalByInverseViewMatrix( normal, viewMatrix );\n\tmaterial.thickness = thickness / max( abs( dot( n, v ) ), 0.16 );',
@@ -168,11 +178,16 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
 
   const raiz = new Group(); // en el cuello, en px del lienzo
   const inclina = new Group(); // balanceo 3D
-  const giro = new Group(); // rotación z
+  const ancla = new Group(); // baja el eje de giro al centro del perfil
+  const giro = new Group(); // rotación z, sobre el centro del perfil
   const escala = new Group(); // px de la foto → px CSS
-  escala.add(plano, malla);
+  const cuerpo = new Group();
+  cuerpo.position.y = -CENTRO_LOCAL_Y;
+  cuerpo.add(plano, malla);
+  escala.add(cuerpo);
   giro.add(escala);
-  inclina.add(giro);
+  ancla.add(giro);
+  inclina.add(ancla);
   raiz.add(inclina);
   escena.add(raiz);
 
@@ -243,6 +258,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     pivote.x = foto.x + foto.w / 2;
     pivote.y = foto.y + CUELLO_FILA * sy;
     escala.scale.set(sx, sy, sx);
+    ancla.position.y = sy * CENTRO_LOCAL_Y;
     colocarRaiz();
     const d = vh / 2 / Math.tan((FOV * Math.PI) / 360);
     camara.aspect = vw / vh;
@@ -660,7 +676,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
         ctxHoja.setTransform(1, 0, 0, 1, 0, 0);
         ctxHoja.globalAlpha = 1 - u;
         const cx = hoja.width / 2;
-        const cy = (CUELLO_FILA / FOTO_ALTO) * hoja.height;
+        const cy = (CENTRO_FILA / FOTO_ALTO) * hoja.height;
         ctxHoja.translate(cx, cy);
         ctxHoja.rotate(fundidoGiro.delta);
         ctxHoja.translate(-cx, -cy);

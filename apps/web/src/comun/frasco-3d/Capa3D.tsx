@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 
 import type { Aspecto } from '../frasco';
 import { ahorraDatos, type Caja } from '../fondo';
+import { FOTO_ALTO, CUELLO_FILA } from './encuadre';
+import { CENTRO_FILA } from './geometria';
 import type { Puente3D } from './puente';
 import type { Fondo, Frasco3D, Modo } from './tipos';
 import './frasco-3d.css';
@@ -164,13 +166,16 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
             const { pivote, cajaFoto, pivoteVisible, escala, cajaFondo } = motor.getCaja();
             const r = canvas.getBoundingClientRect();
             const cuello = { x: pivoteVisible.x + r.left, y: pivoteVisible.y + r.top };
+            // El vidrio gira sobre el centro del perfil. En reposo el cuello sigue en su sitio.
+            const dy = ((CENTRO_FILA - CUELLO_FILA) * cajaFoto.h) / FOTO_ALTO;
+            const centro = { x: cuello.x, y: cuello.y + dy * escala };
             const matriz = DOMMatrix.fromMatrix(ctx.getTransform())
-              .translate(pivote.x - cajaFoto.x, pivote.y - cajaFoto.y)
+              .translate(pivote.x - cajaFoto.x, pivote.y - cajaFoto.y + dy)
               .rotate((-angulo * 180) / Math.PI)
               .scale(1 / escala)
-              .translate(-cuello.x, -cuello.y);
+              .translate(-centro.x, -centro.y);
             const fondo = cajaFondo ? { x: cajaFondo.x + r.left, y: cajaFondo.y + r.top, w: cajaFondo.w, h: cajaFondo.h } : undefined;
-            return { matriz, cuello, fondo, escala };
+            return { matriz, cuello, centro, fondo, escala };
           };
           aplicarFondo();
         },

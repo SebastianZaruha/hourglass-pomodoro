@@ -299,11 +299,15 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       const fondo = fondoVisible();
       if (fondo) vidrio.actualizarFondo(fondo);
 
-      // Los polígonos están medidos desde el centro de la caja. El pivote
-      // es el cuello, el mismo que el del vidrio, para que no orbiten.
+      // Los polígonos están medidos desde el centro de la caja. El eje es el
+      // del vidrio (el centro del perfil; si no llega, el cuello) para que no orbiten.
+      // En reposo el cuello sigue en su sitio: el agua no se desplaza.
+      const ejeX = p.pantalla?.centro?.x ?? cuelloX;
+      const ejeY = p.pantalla?.centro?.y ?? cuelloY;
+      const dy = pose > 0 ? (ejeY - cuelloY) / pose : 0;
       matrizFrasco(p.angulo, 0, 0, pose, matriz);
-      matriz.e = cuelloX - matriz.a * nx + matriz.b * ny;
-      matriz.f = cuelloY - matriz.b * nx - matriz.a * ny;
+      matriz.e = ejeX - matriz.a * nx - matriz.c * (ny + dy);
+      matriz.f = ejeY - matriz.b * nx - matriz.d * (ny + dy);
       const fundido = vista.fundido;
       const u = fundido?.u ?? 0;
       const fracA = fundido ? vista.volArriba * (1 - u) + fundido.arriba * u : vista.volArriba;

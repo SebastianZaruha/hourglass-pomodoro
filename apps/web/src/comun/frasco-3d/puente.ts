@@ -16,11 +16,13 @@ export interface Puente3D {
   despertar: (() => void) | null;
   /**
    * Para quien pinta en el mundo (el agua): de px de la ventana a la hoja que
-   * recibe `ctx` (tipo 'frasco'), girada `angulo`, y el cuello en px de la ventana.
+   * recibe `ctx` (tipo 'frasco'), girada `angulo`. `cuello` es el cuello y
+   * `centro` el eje del giro, ambos en px de la ventana.
    */
   pantalla: ((ctx: CanvasRenderingContext2D, angulo: number) => {
     matriz: DOMMatrix;
     cuello: { x: number; y: number };
+    centro: { x: number; y: number };
     fondo?: { x: number; y: number; w: number; h: number };
     escala?: number;
   }) | null;

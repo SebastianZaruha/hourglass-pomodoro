@@ -223,7 +223,7 @@ export function Frasco({
         // El ángulo de la intro ya va en est.angulo: la pose solo pone escala, sombra, centrado y opacidad.
         motor.setPoseIntro(pose.activa ? pose : null);
         // El giro sigue siendo el de comun/giro (arrastre, 81°, doble clic, fases).
-        // El 3D solo lo copia, sobre el cuello; la velocidad le da el balanceo de ±8°.
+        // El 3D solo lo copia, sobre el centro del perfil; la velocidad le da el balanceo de ±8°.
         motor.girar(est.angulo, false, reducirAhora ? 0 : est.velocidad);
         const angulo = est.angulo;
         const geo = loop.geo ?? geoVacia();
