@@ -10,10 +10,10 @@
 
 .vidrio-liquido {
   /* ---- Valores para ajustar ---- */
-  --vl-blur: 3.11px; /* desenfoque del fondo */
+  --vl-blur: 10px; /* desenfoque del fondo */
   --vl-brillo: 0.2; /* intensidad del brillo del bisel (0–1) */
   --vl-tinte: transparent; /* color del vidrio, p. ej. rgba(120, 180, 255, 0.15) */
-  --vl-velo: rgba(0, 0, 0, 0.18); /* capa oscura para leer el texto blanco */
+  --vl-velo: rgba(0, 0, 0, 0.38); /* capa oscura para leer el texto blanco */
   /* --vl-filtro lo rellena el hook con url(#…); no lo toques a mano. */
 }
 
