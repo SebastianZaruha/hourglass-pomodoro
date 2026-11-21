@@ -15,11 +15,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["vite/client"],
-    "baseUrl": ".",
-    "paths": {
-      "@reloj/core": ["../../packages/core/src/index.ts"]
-    }
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }
