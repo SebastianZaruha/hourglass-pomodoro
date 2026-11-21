@@ -1,4 +1,4 @@
-/* La nube solo recibe opacidad. No gira ni se desplaza con el frasco. */
+/* La nube no gira con el frasco. El desvío es suyo, lento, y no sigue el tarro. */
 .nube {
   position: fixed;
   z-index: 3;

@@ -21,7 +21,7 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
   const videoA = useRef<HTMLVideoElement>(null);
   const videoB = useRef<HTMLVideoElement>(null);
   const soloFoto = reducir || ahorraDatos();
-  useOpacidad(raiz, opacidad);
+  useOpacidad(raiz, opacidad, reducir);
   useEffect(() => {
     const tela = lienzo.current;
     if (!tela) return;
@@ -61,18 +61,35 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
   );
 }
 
-function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject<number>) {
+/** Visible un rato, se apaga y vuelve. No depende del ángulo del frasco. */
+function cicloNube(ahora: number): number {
+  const u = (ahora % 26000) / 26000;
+  const suave = (t: number) => t * t * (3 - 2 * t);
+  if (u < 0.42) return 1;
+  if (u < 0.58) return 1 - suave((u - 0.42) / 0.16);
+  if (u < 0.74) return 0;
+  return suave((u - 0.74) / 0.26);
+}
+
+function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject<number>, reducir: boolean) {
   useEffect(() => {
     const el = raiz.current;
     if (!el) return;
     let raf = 0;
     el.style.transition = 'opacity 620ms var(--suave)';
-    const cuadro = () => {
+    const cuadro = (ahora: number) => {
       const valor = opacidad.current ?? 1;
-      el.style.opacity = String(Math.max(0, Math.min(1, valor)));
+      const ciclo = reducir ? 1 : cicloNube(ahora);
+      el.style.opacity = String(Math.max(0, Math.min(1, valor * ciclo)));
+      if (!reducir) {
+        const t = ahora / 1000;
+        const x = Math.sin(t * 0.07) * 8;
+        const y = Math.cos(t * 0.05) * 5;
+        el.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      }
       raf = requestAnimationFrame(cuadro);
     };
     raf = requestAnimationFrame(cuadro);
     return () => cancelAnimationFrame(raf);
-  }, [opacidad, raiz]);
+  }, [opacidad, raiz, reducir]);
 }
