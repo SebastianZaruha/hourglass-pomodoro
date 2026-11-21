@@ -4,7 +4,7 @@ import {
   DURATION_STEPS_MIN,
   MINUTE_MS,
   activeCycleConfig,
-  languageName,
+  languageShort,
   languageSpoken,
   nearestStepIndex,
   nextInCycle,
@@ -13,7 +13,6 @@ import {
   stepMinutes,
   stepRounds,
   stepToDuration,
-  themeName,
   themeSpoken,
   LANGUAGE_CYCLE,
   THEME_CYCLE,
@@ -28,7 +27,7 @@ import { HojaDia } from '../dia/HojaDia';
 import type { ArenaDia } from '../dia/dia';
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
 import { HojaGestos } from '../paneles/gestos/HojaGestos';
-import { GlobeIcon, HandIcon, JarIcon, SpeakerIcon, SunIcon } from './Icons';
+import { AutoThemeIcon, HandIcon, JarIcon, MoonIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
 
@@ -121,8 +120,11 @@ export function SettingsSheet({
       setRacha(false);
     }
   }, [open]);
-  const tema = themeName(t, settings.theme);
-  const idiomaNombre = languageName(t, settings.language);
+  const esMenu = (idioma ?? 'es') === 'es';
+  const temaTxt = themeSpoken(t, settings.theme);
+  const idiomaTxt = languageSpoken(t, settings.language);
+  const sonidoTxt = settings.sound ? t.sound : esMenu ? 'Sonido apagado' : 'Sound off';
+  const rachaTxt = esMenu ? 'Racha de hoy' : "Today's streak";
 
   return (
     <>
@@ -348,53 +350,53 @@ export function SettingsSheet({
       <div className="pref-row">
         <button
           type="button"
-          className="control"
-          aria-pressed="true"
-          aria-label={themeSpoken(t, settings.theme)}
-          title={tema === t.automatic ? tema : t.tapToChange}
+          className="control redondo"
+          aria-label={temaTxt}
+          title={temaTxt}
           onClick={() => aplicar((current) => ({ theme: nextInCycle(THEME_CYCLE, current.theme) }))}
         >
-          <SunIcon />
-          <span>{tema === t.automatic ? t.automaticShort : tema}</span>
+          <IconoTema theme={settings.theme} />
         </button>
         <button
           type="button"
-          className="control"
-          aria-pressed="true"
-          aria-label={languageSpoken(t, settings.language)}
-          title={idiomaNombre === t.automatic ? idiomaNombre : t.tapToChange}
+          className="control redondo"
+          aria-label={idiomaTxt}
+          title={idiomaTxt}
           onClick={() => aplicar((current) => ({ language: nextInCycle(LANGUAGE_CYCLE, current.language) }))}
         >
-          <GlobeIcon />
-          <span>{idiomaNombre === t.automatic ? t.automaticShort : idiomaNombre}</span>
+          <span className="pref-marca" aria-hidden="true">
+            {languageShort(t, settings.language)}
+          </span>
         </button>
         <button
           type="button"
-          className="control"
+          className="control redondo"
           role="switch"
           aria-checked={settings.sound}
-          aria-label={t.sound}
+          aria-label={sonidoTxt}
+          title={sonidoTxt}
           onClick={() => aplicar((current) => ({ sound: !current.sound }))}
         >
-          <SpeakerIcon off={!settings.sound} />
-          <span>{t.sound}</span>
+          <SpeakerIcon size={20} off={!settings.sound} />
         </button>
         <button
           type="button"
           className="control redondo"
           aria-label={t.showGestures}
+          title={t.gestures}
           onClick={() => setGestos(true)}
         >
-          <HandIcon />
+          <HandIcon size={20} />
         </button>
         {arenaDia ? (
           <button
             type="button"
             className="control redondo"
-            aria-label={(idioma ?? 'es') === 'es' ? 'Racha de hoy' : "Today's streak"}
+            aria-label={rachaTxt}
+            title={rachaTxt}
             onClick={() => setRacha(true)}
           >
-            <JarIcon />
+            <JarIcon size={20} />
           </button>
         ) : null}
       </div>
@@ -410,6 +412,12 @@ export function SettingsSheet({
     ) : null}
     </>
   );
+}
+
+function IconoTema({ theme }: { readonly theme: Settings['theme'] }) {
+  if (theme === 'dark') return <MoonIcon size={20} />;
+  if (theme === 'system') return <AutoThemeIcon size={20} />;
+  return <SunIcon size={20} />;
 }
 
 const SCRUB_PX = 18;

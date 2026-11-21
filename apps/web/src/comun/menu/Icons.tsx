@@ -17,6 +17,30 @@ export function SunIcon({ size = 18 }: IconProps) {
   );
 }
 
+export function MoonIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M16 4.6A7.4 7.4 0 1 0 19.4 15 5.8 5.8 0 0 1 16 4.6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Claro y oscuro a la vez: el tema sigue al sistema. */
+export function AutoThemeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 4.8v14.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GlobeIcon({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
@@ -26,7 +50,7 @@ export function GlobeIcon({ size = 18 }: IconProps) {
         d="M4.2 12h15.6M6 8h12M6 16h12"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.4"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
     </svg>
