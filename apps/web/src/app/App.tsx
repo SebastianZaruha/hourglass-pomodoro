@@ -385,6 +385,7 @@ function Timer({
             suppressClickRef={entrada.suppressClickRef}
             wakeRef={wakeRef}
             alFlotar={nubeOpacidad}
+            puente3d={puente3d}
           />
           {escena.Encima && caja ? (
             <escena.Encima caja={caja} opacidad={nubeOpacidad} reducir={reduceMotion} oscuro={scheme === 'dark'} />

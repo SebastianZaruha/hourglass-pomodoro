@@ -9,7 +9,7 @@ import type { Frasco3D } from './tipos';
 export interface Puente3D {
   /** El WebGL ya pinta la escena y no ha fallado. */
   listo: boolean;
-  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible'> | null;
+  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido'> | null;
   /** Despierta el bucle de Frasco (se duerme en reposo). */
   despertar: (() => void) | null;
 }

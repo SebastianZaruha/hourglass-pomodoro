@@ -59,7 +59,13 @@ export const arena: Escena = {
     return {
       ...contenido,
       pintar(ctx, p) {
-        if (p.esquema === 'oscuro') fijarLuzGrano(oscuro.luz.direccion);
+        if (p.esquema === 'oscuro') {
+          // La luz de los granos lee el giro del contexto. El vidrio de foto lo trae
+          // girado; la hoja del frasco 3D no, y ahí se descuenta el ángulo aquí.
+          const t = ctx.getTransform();
+          const girado = Math.atan2(t.b, t.a);
+          fijarLuzGrano(oscuro.luz.direccion + ((girado - p.angulo) * 180) / Math.PI);
+        }
         try {
           contenido.pintar(ctx, p);
         } finally {

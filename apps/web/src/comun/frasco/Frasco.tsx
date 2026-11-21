@@ -1,6 +1,7 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import type { SessionSnapshot } from '@reloj/core';
 
+import type { Puente3D } from '../frasco-3d';
 import type { MaquinaGiro } from '../giro';
 import type { Contenido, GeometriaFrasco, MedidaLienzo } from './contrato';
 import { fotosDelFrasco, geometriaDelFrasco, type FotosFrasco } from './geometria';
@@ -11,6 +12,8 @@ import { cantidadSombra } from './sombra';
 
 const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
 const ESPERA_FOTOS = 2500;
+/** Al pasar al frasco 3D, el de foto se funde encima durante este tiempo. */
+const RELEVO_MS = 320;
 
 function geoVacia(): GeometriaFrasco {
   const mascara = document.createElement('canvas');
@@ -41,6 +44,11 @@ interface Props {
   readonly wakeRef: RefObject<(() => void) | null>;
   /** La nube lee solo este número: 1 de pie, 0 a partir de 50°. */
   readonly alFlotar?: RefObject<number>;
+  /**
+   * Frasco 3D. Cuando está listo y no hay intro, pinta él el vidrio y el contenido;
+   * aquí siguen el giro, la física y los gestos. Si no, el vidrio de foto de siempre.
+   */
+  readonly puente3d?: Puente3D;
 }
 
 export function Frasco({
@@ -56,6 +64,7 @@ export function Frasco({
   suppressClickRef,
   wakeRef,
   alFlotar,
+  puente3d,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const paintRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +78,8 @@ export function Frasco({
   const introRef = useRef(introPaso);
   const reinicioRef = useRef(onReinicio);
   const flotarRef = useRef(alFlotar);
+  const puenteRef = useRef(puente3d);
+  puenteRef.current = puente3d;
   flotarRef.current = alFlotar;
   crearRef.current = crearContenido;
   schemeRef.current = scheme;
@@ -98,6 +109,21 @@ export function Frasco({
       geo: null as GeometriaFrasco | null,
       fallo: false,
       empezado: performance.now(),
+      /** El frasco 3D pinta el vidrio y el contenido. */
+      tresD: false,
+      relevo: 0,
+      /** Al cambiar de escena con el 3D ya listo, el relevo es inmediato: sin fundido del de foto. */
+      relevoInmediato: puenteRef.current?.listo === true,
+    };
+    if (paint && !loop.relevoInmediato) paint.style.opacity = '';
+    /** Lo que pinta el 3D en su hoja. Cambia cada fotograma con el ángulo. */
+    let pintor3D: ((ctx: CanvasRenderingContext2D, caja: { x: number; y: number; w: number; h: number }) => void) | null =
+      null;
+    const contenido3D = {
+      tipo: 'frasco' as const,
+      pintar: (ctx: CanvasRenderingContext2D, caja: { x: number; y: number; w: number; h: number }) => {
+        if (loop.alive) pintor3D?.(ctx, caja);
+      },
     };
     void fotosDelFrasco().then(
       (fotos) => {
@@ -177,6 +203,32 @@ export function Frasco({
       const pose = giro.poseIntro();
       const poseScale = pose.activa ? escalaDeIntro(pose.escala, layout, pose.angulo, cssW, cssH) : 1;
       const esquema = ESQUEMA[schemeAhora];
+
+      // Frasco 3D: después de la intro y solo si el WebGL ya pinta.
+      const puente = puenteRef.current;
+      const motor = puente && puente.listo && !pose.activa ? puente.motor : null;
+      if (motor) {
+        if (!loop.tresD) {
+          loop.tresD = true;
+          loop.relevo = loop.relevoInmediato ? now - RELEVO_MS : now;
+          motor.setContenido(contenido3D);
+          motor.setFrascoVisible(true);
+        }
+        motor.girar(est.angulo);
+        const angulo = est.angulo;
+        const geo = loop.geo ?? geoVacia();
+        pintor3D = (context, caja) => {
+          contenido.pintar(context, { caja, angulo, esquema, geo });
+        };
+      } else if (loop.tresD) {
+        loop.tresD = false;
+        pintor3D = null;
+        puente?.motor?.setFrascoVisible(false);
+        if (paint) paint.style.opacity = '';
+      }
+      const relevo = loop.tresD ? Math.min(1, (now - loop.relevo) / RELEVO_MS) : 0;
+      if (loop.tresD && paint) paint.style.opacity = relevo < 1 ? String(1 - relevo) : '0';
+
       const escena = {
         layout,
         scheme: schemeAhora,
@@ -206,7 +258,14 @@ export function Frasco({
       // La intro ya encoge el frasco para la columna. Fuera de ella, el
       // bitmap de la columna recortaba el giro: se pinta en un lienzo del
       // tamaño de la ventana, con el mismo centro y el mismo tamaño.
-      if (!pose.activa && paint && paintCtx) {
+      if (loop.tresD && relevo >= 1) {
+        if (paintCtx && paint) {
+          paintCtx.setTransform(1, 0, 0, 1, 0, 0);
+          paintCtx.clearRect(0, 0, paint.width, paint.height);
+        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } else if (!pose.activa && paint && paintCtx) {
         const vista = window.innerWidth;
         const altoVista = window.innerHeight;
         if (paint.style.width !== `${vista}px`) paint.style.width = `${vista}px`;
@@ -248,7 +307,8 @@ export function Frasco({
         est.fase !== 'reposo' ||
         est.ocupado ||
         introSigue ||
-        pose.activa;
+        pose.activa ||
+        (loop.tresD && relevo < 1);
       if (keep && loop.alive) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };
@@ -259,6 +319,8 @@ export function Frasco({
       loop.raf = requestAnimationFrame(frame);
     };
     wakeRef.current = wake;
+    const puenteMontado = puenteRef.current;
+    if (puenteMontado) puenteMontado.despertar = wake;
     const observer = new ResizeObserver(() => wake());
     observer.observe(canvas);
     wake();
@@ -267,6 +329,9 @@ export function Frasco({
       observer.disconnect();
       if (loop.raf) cancelAnimationFrame(loop.raf);
       if (wakeRef.current === wake) wakeRef.current = null;
+      if (puenteMontado?.despertar === wake) puenteMontado.despertar = null;
+      pintor3D = null;
+      if (loop.tresD) puenteMontado?.motor?.setContenido(null);
       contenido.destruir();
     };
   }, [generacion, giro, wakeRef]);
