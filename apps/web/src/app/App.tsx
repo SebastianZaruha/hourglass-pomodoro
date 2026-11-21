@@ -290,13 +290,20 @@ function Timer({
       app.style.setProperty('--side-bottom', `${Math.round(window.innerHeight - sideRect.bottom)}px`);
       const sheet = app.querySelector('.sheet');
       const readout = side.querySelector('.readout');
-      app.style.removeProperty('--menu-pad');
-      if (!menu || !wide || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
+      if (!menu || !(sheet instanceof HTMLElement) || !(readout instanceof HTMLElement)) {
         app.style.setProperty('--clock-lift', '0px');
+        app.style.removeProperty('--menu-pad');
         return;
       }
       const rem = parseFloat(getComputedStyle(app).fontSize) || 16;
       const gap = rem * 1.15;
+      if (!wide) {
+        app.style.setProperty('--clock-lift', '0px');
+        const sheetH = sheet.getBoundingClientRect().height;
+        app.style.setProperty('--menu-pad', `${Math.round(sheetH + gap)}px`);
+        return;
+      }
+      app.style.removeProperty('--menu-pad');
       const clock = readout.getBoundingClientRect();
       const hoja = sheet.getBoundingClientRect();
       // En una ventana grande la hoja tiene tope y queda a la derecha: no tapa el reloj.
