@@ -1,0 +1,98 @@
+.mano {
+  position: fixed;
+  left: 50%;
+  top: 46%;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.mano-dibujo {
+  position: relative;
+  width: 2.4rem;
+  height: 3.2rem;
+  opacity: 0.82;
+}
+
+.mano-palma {
+  position: absolute;
+  left: 0.35rem;
+  top: 0.7rem;
+  width: 1.35rem;
+  height: 1.7rem;
+  border-radius: 0.7rem 0.7rem 0.55rem 0.55rem;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.mano-dedo {
+  position: absolute;
+  left: 0.72rem;
+  top: 0.15rem;
+  width: 0.42rem;
+  height: 0.85rem;
+  border-radius: 0.3rem;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.mano-clic,
+.mano-toque {
+  animation: mano-pulso 1.6s ease-in-out infinite;
+}
+
+.mano-rueda,
+.mano-deslizar {
+  animation: mano-sube 1.8s ease-in-out infinite;
+}
+
+.mano-arrastrar {
+  animation: mano-ladea 1.8s ease-in-out infinite;
+}
+
+.mano-texto {
+  margin: 0;
+  font-weight: 400;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+@keyframes mano-pulso {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(6px) scale(0.94);
+  }
+}
+
+@keyframes mano-sube {
+  0%,
+  100% {
+    transform: translateY(8px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes mano-ladea {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mano-dibujo {
+    animation: none;
+  }
+}

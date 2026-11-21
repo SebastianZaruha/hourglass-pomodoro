@@ -17,6 +17,7 @@ import { SettingsSheet } from '../comun/menu';
 import { AndroidPromo, readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
 import { CookieBanner } from '../comun/paneles/cookies';
 import { LegalOverlay } from '../comun/paneles/legal';
+import { Mano } from '../comun/paneles/mano/Mano';
 import { Pausa } from '../comun/paneles/pausa';
 import { SiteFooter } from '../comun/paneles/pie';
 import { TimeReadout } from '../comun/reloj';
@@ -429,6 +430,7 @@ function Timer({
         />
       ) : null}
       {paused ? <Pausa word={t.paused} lang={lang} /> : null}
+      <Mano visible={intro.settled && !avisos.bannerOpen && !menu && !paused && avisos.legal === null} />
       <button
         type="button"
         id="menu-button"
