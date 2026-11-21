@@ -339,10 +339,9 @@ function Timer({
       const sheetInset = rem * 0.75;
       const clockBottom = descanso + readH;
       const sheetTop = sideH - sheetInset - sheetH;
-      const centeringLift = (sheetH + sheetInset) / 2;
       const collisionLift = Math.max(0, clockBottom - (sheetTop - gap));
       const maxLift = enAlto ? Math.max(0, descanso) : Math.max(0, centrado - rem * 0.5);
-      const lift = Math.min(maxLift, Math.max(centeringLift, collisionLift));
+      const lift = Math.min(maxLift, collisionLift);
       app.style.setProperty('--clock-lift', `${Math.round(lift)}px`);
     };
     apply();
