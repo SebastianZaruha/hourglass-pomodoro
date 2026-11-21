@@ -4,6 +4,7 @@ import type { Aspecto } from '../frasco';
 import { yBaseBulbo, yBaseOpaca } from './caja';
 import { encuadreFondo, type Ancla, type Caja } from './encuadre';
 import { ahorraDatos } from './precarga';
+import { engancharReproduccion, fuenteDeVideo } from './reproducir';
 import './fondo.css';
 
 /** El degradado estrecho publicado. El ancho vive en el aspecto. */
@@ -322,20 +323,31 @@ function Video({
   const posterRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const reproduce = !reducir && !ahorro && !fallo;
+  const src = fuenteDeVideo(fondo.webm, fondo.mp4);
   useEffect(() => {
     const img = posterRef.current;
     setPosterListo(Boolean(img && img.complete && img.naturalWidth > 0));
   }, [fondo.poster]);
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    const alVer = () => {
-      if (document.hidden) video.pause();
-      else void video.play().catch(() => setFallo(true));
+    if (!video || !reproduce) return;
+    setVideoListo(false);
+    video.src = src;
+    const soltar = engancharReproduccion(video);
+    const alError = () => {
+      if (video.src.endsWith(fondo.mp4) || src === fondo.mp4) {
+        setFallo(true);
+        return;
+      }
+      video.src = fondo.mp4;
+      video.load();
     };
-    document.addEventListener('visibilitychange', alVer);
-    return () => document.removeEventListener('visibilitychange', alVer);
-  }, [fondo.webm, reproduce]);
+    video.addEventListener('error', alError);
+    return () => {
+      video.removeEventListener('error', alError);
+      soltar();
+    };
+  }, [fondo.mp4, fondo.webm, reproduce, src]);
   if (!marco) return null;
   return (
     <>
@@ -360,11 +372,7 @@ function Video({
           preload="auto"
           poster={fondo.poster}
           onPlaying={() => setVideoListo(true)}
-          onError={() => setFallo(true)}
-        >
-          <source src={fondo.webm} type="video/webm" />
-          <source src={fondo.mp4} type="video/mp4" />
-        </video>
+        />
       ) : null}
     </>
   );
