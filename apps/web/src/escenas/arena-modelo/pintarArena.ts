@@ -1,13 +1,6 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
-import {
-  CUELLO_FILA,
-  CUELLO_X,
-  FOTO_ALTO,
-  FOTO_ANCHO,
-  type GeometriaFrasco,
-  type Scheme,
-} from '../../comun/frasco';
+import { type GeometriaFrasco, type Scheme } from '../../comun/frasco';
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
@@ -71,6 +64,12 @@ export function makeGrainNoise(size = 160): HTMLCanvasElement {
 }
 
 const RUIDO: Record<Scheme, number> = { light: 0.2, dark: 0.16 };
+/**
+ * Grosor del borde del revelado, fracción del alto del montón.
+ * Por debajo de BORDE_MIN_PX el corte se vería un grano suelto.
+ */
+const BORDE_LLENADO = 0.08;
+const BORDE_MIN_PX = 4;
 
 /**
  * Dirección de la luz de noche, en grados, o null si este pintado no
@@ -93,18 +92,14 @@ export interface ArenaPintada {
   readonly lut: Uint8ClampedArray;
   readonly geo: GeometriaFrasco;
   /**
-   * Fundido del reinicio, en el lienzo de la arena. `queda` es la opacidad
-   * del montón viejo. El nuevo es el de ahora, dado la vuelta 180°.
+   * Revelado tras el giro. `p` va de 0 a 1 con ease-out. Cada bulbo se llena
+   * desde su base hasta la superficie. No mueve granos.
    */
-  /** En la malla 3D el giro lo hace el vidrio. El lienzo 2D ya llega girado y sí necesita el extra. */
-  readonly enMalla?: boolean;
-  readonly fundido?: {
-    readonly viejo: HTMLCanvasElement;
-    readonly queda: number;
-    readonly blurSale: number;
-    readonly blurEntra: number;
-    /** Soltar: sin giro extra. El reinicio sí da la vuelta al montón nuevo. */
-    readonly plano?: boolean;
+  readonly llenado?: {
+    readonly p: number;
+    /** Fila de la superficie. `gateRow` / `rows` = bulbo vacío. */
+    readonly supArriba: number;
+    readonly supAbajo: number;
   };
 }
 
@@ -137,53 +132,10 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const vh = (geo.ventana.y1 - geo.ventana.y0) * caja.h;
 
   g.imageSmoothingEnabled = false;
-  if (scene.fundido?.plano) {
-    // Solo el contenido, dentro del mismo frasco. El viejo queda debajo y el
-    // de pie entra encima: no hay dos frascos ni los dos montones a alfa 1.
-    const { queda, viejo } = scene.fundido;
-    g.save();
-    g.globalCompositeOperation = 'source-over';
-    g.imageSmoothingEnabled = true;
-    g.globalAlpha = 1;
-    g.drawImage(viejo, vx, vy, vw, vh);
-    const entra = 1 - queda;
-    if (entra > 0.004) {
-      g.globalAlpha = entra;
-      g.drawImage(scene.sand, vx, vy, vw, vh);
-    }
-    g.globalAlpha = 1;
-    g.restore();
+  g.drawImage(scene.sand, vx, vy, vw, vh);
+  if (scene.llenado) {
     sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
-  } else if (scene.fundido) {
-    const { queda, viejo, blurSale, blurEntra } = scene.fundido;
-    // La misma ruta que al soltar: un frasco, el viejo debajo y el nuevo encima.
-    // Antes los dos iban a alfa 1 en el centro del fundido y se veía un fantasma doble.
-    // El 2D gira sobre el cuello. El 3D, sobre el centro del perfil (filas 5 y 1007.5).
-    const cx = (caja.w * CUELLO_X) / FOTO_ANCHO;
-    const cy = (caja.h * (scene.enMalla ? (5 + 1007.5) / 2 : CUELLO_FILA)) / FOTO_ALTO;
-    g.save();
-    g.globalCompositeOperation = 'source-over';
-    g.imageSmoothingEnabled = true;
-    g.filter = blurSale > 0.05 ? `blur(${blurSale}px)` : 'none';
-    g.globalAlpha = 1;
-    g.drawImage(viejo, vx, vy, vw, vh);
-    const entra = 1 - queda;
-    if (entra > 0.004) {
-      g.filter = blurEntra > 0.05 ? `blur(${blurEntra}px)` : 'none';
-      g.globalAlpha = entra;
-      // La arena nueva va dada la vuelta: el giro la trae arriba y, al acabar, coincide
-      // con el reposo. No se queda fija en lo alto de la pantalla.
-      g.translate(cx, cy);
-      g.rotate(Math.PI);
-      g.translate(-cx, -cy);
-      g.drawImage(scene.sand, vx, vy, vw, vh);
-      g.filter = 'none';
-      g.globalAlpha = 1;
-      sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
-    }
-    g.restore();
-  } else {
-    g.drawImage(scene.sand, vx, vy, vw, vh);
+    revelarLlenado(g, scene, vx, vy, vw, vh);
   }
 
   g.save();
@@ -196,7 +148,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   }
   g.restore();
 
-  if (!scene.fundido) sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
+  if (!scene.llenado) sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
   afilarCuello(g, geo, caja);
 
   const cellW = vw / scene.sim.cols;
@@ -226,6 +178,48 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(hoja, caja.x, caja.y, caja.w, caja.h);
+}
+
+/**
+ * Máscara que sube desde la base de cada bulbo hasta su superficie.
+ * y del lienzo crece hacia abajo: lo visible queda por debajo de la línea.
+ */
+function revelarLlenado(
+  g: CanvasRenderingContext2D,
+  scene: ArenaPintada,
+  vx: number,
+  vy: number,
+  vw: number,
+  vh: number,
+): void {
+  const llenado = scene.llenado;
+  if (!llenado) return;
+  const rows = scene.sim.rows;
+  const gate = scene.sim.gateRow;
+  if (rows < 3) return;
+  const yDe = (fila: number) => vy + ((fila + 0.5) / rows) * vh;
+  const yCuello = yDe(gate);
+  g.save();
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'destination-in';
+  const pintarBulbo = (yTecho: number, ySuelo: number, yBase: number, ySup: number) => {
+    const alto = yBase - ySup;
+    if (!(alto > 0.5) || !(ySuelo > yTecho)) return;
+    const suave = Math.max(BORDE_MIN_PX, alto * BORDE_LLENADO);
+    const yLinea = yBase - (alto + suave) * llenado.p;
+    const grad = g.createLinearGradient(0, yLinea - suave, 0, yLinea + suave);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    grad.addColorStop(1, '#000');
+    g.fillStyle = grad;
+    g.fillRect(vx, yTecho, vw, ySuelo - yTecho);
+  };
+  if (llenado.supArriba < gate) {
+    pintarBulbo(vy, yCuello, yDe(gate - 1), yDe(llenado.supArriba));
+  }
+  if (llenado.supAbajo < rows) {
+    pintarBulbo(yCuello, vy + vh, yDe(rows - 1), yDe(llenado.supAbajo));
+  }
+  g.restore();
 }
 
 /**

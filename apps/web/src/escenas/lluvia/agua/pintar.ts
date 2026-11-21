@@ -308,13 +308,12 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       matrizFrasco(p.angulo, 0, 0, pose, matriz);
       matriz.e = ejeX - matriz.a * nx - matriz.c * (ny + dy);
       matriz.f = ejeY - matriz.b * nx - matriz.d * (ny + dy);
-      const fundido = vista.fundido;
-      const u = fundido?.u ?? 0;
-      // El reinicio funde hacia la carga limpia en el bulbo que el giro deja arriba.
-      // Así, al volver el ángulo a 0, el agua ya está ahí y no cae desde el otro bulbo.
-      const fracA = fundido ? vista.volArriba * (1 - u) + fundido.abajo * u : vista.volArriba;
-      const fracB = fundido ? vista.volAbajo * (1 - u) + fundido.arriba * u : vista.volAbajo;
-      const phi = (vista.alfa - vista.angulo) * (fundido ? 1 - u : 1);
+      // Tras el giro el agua sube desde la base de cada bulbo hasta su cantidad.
+      // Durante el giro se queda la de antes, pegada al frasco: no se cruza.
+      const sube = vista.llenado;
+      const fracA = sube == null ? vista.volArriba : vista.volArriba * sube;
+      const fracB = sube == null ? vista.volAbajo : vista.volAbajo * sube;
+      const phi = vista.alfa - vista.angulo;
 
       aMundo(poliA, matriz, mundoA);
       aMundo(poliB, matriz, mundoB);
@@ -322,8 +321,6 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       escribirAlturas(alturasB, phi, anchoDe(mundoB), vista.abajo.onda);
       const bulboA: EstadoBulbo = { nivel: nivelDe(mundoA, fracA), alturas: alturasA };
       const bulboB: EstadoBulbo = { nivel: nivelDe(mundoB, fracB), alturas: alturasB };
-      // El reinicio cruza solo las cantidades. El vidrio no se apaga ni se desenfoca:
-      // bajar el alfa aquí fundía el agua entera y se leía como un segundo frasco.
       vidrio.pintarAgua(ctx, {
         matriz,
         bulbos: [bulboA, bulboB],

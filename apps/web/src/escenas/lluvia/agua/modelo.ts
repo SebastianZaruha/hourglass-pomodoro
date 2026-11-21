@@ -1,7 +1,7 @@
 import type { SessionSnapshot } from '@reloj/core';
 
 import type { EntradaPaso, GeometriaFrasco } from '../../../comun/frasco';
-import { MS_MEDIA_VUELTA, easeInOutCubic } from '../../../comun/giro';
+import { MS_LLENADO, MS_MEDIA_VUELTA, easeInOutCubic } from '../../../comun/giro';
 import { nivelDeDuracion } from './nivel';
 
 /** 1,8 Hz. El vaivén cruza la horizontal y se apaga en menos de un segundo. */
@@ -65,6 +65,11 @@ export interface VistaAgua {
    * arriba/abajo son la fracción al terminar (un temporizador nuevo).
    */
   fundido: { u: number; arriba: number; abajo: number } | null;
+  /**
+   * Tras el giro, 0..1. La fracción pintada es la final por este valor:
+   * el agua sube desde la base de cada bulbo. null si no se está llenando.
+   */
+  llenado: number | null;
   /** Solo durante la media vuelta del reinicio. Si no, null. */
   cruce: CruceAgua | null;
 }
@@ -185,6 +190,7 @@ export function crearModelo(): ModeloAgua {
     volAbajo: 0,
     fundido: null,
     cruce: null,
+    llenado: null,
   };
 
   let volteo: {
@@ -195,6 +201,8 @@ export function crearModelo(): ModeloAgua {
     alfaViejo: number;
   } | null = null;
   let sujetado = false;
+  /** El agua nueva sube desde la base cuando el frasco ya está de pie. */
+  let llenadoT0: number | null = null;
   /** Fotogramas tras el cierre en los que el salto de ángulo no empuja el muelle. */
   let enfriar = 0;
 
@@ -415,6 +423,8 @@ export function crearModelo(): ModeloAgua {
       volteo = null;
       vista.cruce = null;
       vista.fundido = null;
+      llenadoT0 = performance.now();
+      vista.llenado = 0;
     },
     paso(e, ancho, alto) {
       if (muerto || fallo) return false;
@@ -473,8 +483,20 @@ export function crearModelo(): ModeloAgua {
         volteo = null;
       }
 
+      let llenando = false;
+      if (llenadoT0 !== null) {
+        const t = Math.min(1, Math.max(0, (e.ahora - llenadoT0) / MS_LLENADO));
+        if (t >= 1) {
+          llenadoT0 = null;
+          vista.llenado = null;
+        } else {
+          llenando = true;
+          vista.llenado = 1 - (1 - t) * (1 - t) * (1 - t);
+        }
+      }
+
       const fundiendo = e.fase === 'volteo' && volteo?.tipo === 'reinicio';
-      if (!fundiendo) {
+      if (!fundiendo && !llenando) {
         const k = 1 - Math.exp(-dtFrame / CONSTANTE_VOLUMEN);
         if (!(e.fase === 'volteo' && volteo?.tipo === 'fase')) {
           volArriba += (obj.arriba - volArriba) * k;
@@ -483,7 +505,7 @@ export function crearModelo(): ModeloAgua {
       }
 
       let queda = dtFrame;
-      while (!fundiendo && queda > 1e-4) {
+      while (!fundiendo && !llenando && queda > 1e-4) {
         const dt = Math.min(PASO, queda);
         queda -= dt;
         integrarMuelle(dt, alpha);
@@ -499,7 +521,7 @@ export function crearModelo(): ModeloAgua {
       const extA = proyectar(arriba, vista.alfa);
       const extB = proyectar(abajo, vista.alfa);
       queda = dtFrame;
-      while (!fundiendo && queda > 1e-4) {
+      while (!fundiendo && !llenando && queda > 1e-4) {
         const dt = Math.min(PASO, queda);
         queda -= dt;
         integrarOla(yA, vA, extA.s0, extA.s1, Math.max(1, extA.h1 - extA.h0), dt, e.velocidad);
@@ -545,7 +567,7 @@ export function crearModelo(): ModeloAgua {
         olasQuietas(yB, vB) &&
         cerca &&
         !volteo;
-      return !quieto;
+      return llenando || !quieto;
     },
   };
 }
