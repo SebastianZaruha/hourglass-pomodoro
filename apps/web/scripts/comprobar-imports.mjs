@@ -8,6 +8,7 @@ const carpetas = [
   'comun/tiempo',
   'comun/giro',
   'comun/frasco',
+  'comun/frasco-3d',
   'comun/reloj',
   'comun/menu',
   'comun/estilo',
