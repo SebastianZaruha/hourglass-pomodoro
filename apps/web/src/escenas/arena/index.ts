@@ -1,9 +1,10 @@
 import type { Aspecto, Escena } from '../../comun/frasco';
-import { crearArena } from '../arena-modelo';
+import { crearArena, fijarLuzGrano } from '../arena-modelo';
 
 /**
- * Arena. La arena es la de arena-modelo, sin cambios.
- * La luz ambiente va a 0: no oscurece ni tiñe el vidrio. El reloj, en ancha, sube al bulbo.
+ * Arena. El movimiento de la arena es el de arena-modelo, sin cambios.
+ * En oscuro, el pintado sombrea los granos con la luz de la escena.
+ * La luz ambiente del vidrio va a 0. El reloj, en ancha, sube al bulbo.
  *
  * Cresta de la duna, fracción de cada foto. La x del ancla es la de la punta
  * del frasco. Claro y estrecha miden las dos 0,75 y por eso comparten ancla;
@@ -51,5 +52,22 @@ export const arena: Escena = {
   relojAlto: true,
   claro,
   oscuro,
-  crearContenido: (medida, esquema) => crearArena(medida, esquema),
+  crearContenido: (medida, esquema) => {
+    const contenido = crearArena(medida, esquema);
+    return {
+      ...contenido,
+      pintar(ctx, p) {
+        if (p.esquema === 'oscuro') fijarLuzGrano(oscuro.luz.direccion);
+        try {
+          contenido.pintar(ctx, p);
+        } finally {
+          fijarLuzGrano(null);
+        }
+      },
+      destruir() {
+        fijarLuzGrano(null);
+        contenido.destruir();
+      },
+    };
+  },
 };
