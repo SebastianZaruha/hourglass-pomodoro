@@ -20,7 +20,6 @@ import type { MaquinaGiro } from '../comun/giro';
 import {
   decideStageClick,
   decideStageDoubleClick,
-  ensureNotificationPermission,
   primeAudio,
   type SettingsPatch,
 } from '../comun/tiempo';
@@ -58,11 +57,9 @@ export function useEntrada(e: Entrada) {
 
   const doToggle = useCallback(() => {
     primeAudio();
-    const status = e.state.timer.status;
-    if (status === 'idle' || status === 'finished') void ensureNotificationPermission();
     e.toggle();
     wakeRef.current();
-  }, [e.state.timer.status, e.toggle]);
+  }, [e.toggle]);
 
   const doRestart = useCallback(() => {
     if (giroRef.current.ordenar({ tipo: 'reiniciar' }) !== 'commit') return;

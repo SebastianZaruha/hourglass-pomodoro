@@ -23,6 +23,7 @@ export function useAvisos(abierto: {
   readonly menu: boolean;
   readonly introLista: boolean;
   readonly sesionTerminada: boolean;
+  readonly cubierto?: boolean;
 }) {
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
@@ -76,6 +77,7 @@ export function useAvisos(abierto: {
     bannerOpen,
     menuOpen: abierto.menu,
     legalOpen: legal !== null,
+    cubierto: abierto.cubierto,
   });
 
   return {

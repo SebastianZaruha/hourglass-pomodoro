@@ -1,0 +1,23 @@
+.aviso-sesion {
+  position: fixed;
+  left: 50%;
+  bottom: 5.5rem;
+  z-index: 8;
+  transform: translateX(-50%);
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1rem 1.1rem;
+  color: #fff;
+}
+
+.aviso-sesion p {
+  margin: 0 0 0.85rem;
+}
+
+.aviso-sesion-acciones {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.aviso-sesion-acciones .choice {
+  flex: 1;
+}

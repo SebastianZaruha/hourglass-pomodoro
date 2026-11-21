@@ -94,6 +94,7 @@ export function androidPromoOpen(input: {
   readonly bannerOpen: boolean;
   readonly menuOpen: boolean;
   readonly legalOpen: boolean;
+  readonly cubierto?: boolean;
 }): boolean {
   return (
     input.settled &&
@@ -101,6 +102,7 @@ export function androidPromoOpen(input: {
     !input.dismissed &&
     !input.bannerOpen &&
     !input.menuOpen &&
-    !input.legalOpen
+    !input.legalOpen &&
+    !input.cubierto
   );
 }

@@ -15,6 +15,7 @@ import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
 import { SettingsSheet } from '../comun/menu';
 import { AndroidPromo, readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
+import { AvisoSesion } from '../comun/paneles/aviso/AvisoSesion';
 import { CookieBanner } from '../comun/paneles/cookies';
 import { LegalOverlay } from '../comun/paneles/legal';
 import { Mano } from '../comun/paneles/mano/Mano';
@@ -25,6 +26,8 @@ import { Frasco, usePageIntro } from '../comun/frasco';
 import {
   hintFor,
   playCue,
+  ensureNotificationPermission,
+  notificationSupported,
   showPhaseNotification,
   useSession,
   useSettings,
@@ -124,6 +127,7 @@ function Timer({
   const t = messagesFor(settings.language, navigator.language);
   const [escena, setEscena] = useState(escenaInicial);
   const [sesionTerminada, setSesionTerminada] = useState(() => readPrimeraSesion());
+  const [pedirAviso, setPedirAviso] = useState(false);
   const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
@@ -161,8 +165,15 @@ function Timer({
     if (cue === 'finished') {
       writePrimeraSesion();
       setSesionTerminada(true);
+      if (
+        notificationSupported() &&
+        Notification.permission === 'default' &&
+        !settings.alertsPermissionAsked
+      ) {
+        setPedirAviso(true);
+      }
     }
-  }, [view, settings.sound, t, lang]);
+  }, [view, settings.sound, settings.alertsPermissionAsked, t, lang]);
 
   useEffect(() => {
     if (state.timer.status !== 'running') return;
@@ -173,7 +184,7 @@ function Timer({
 
   const appRef = useRef<HTMLDivElement>(null);
   const intro = usePageIntro(appRef, giro);
-  const avisos = useAvisos({ menu, introLista: intro.settled, sesionTerminada });
+  const avisos = useAvisos({ menu, introLista: intro.settled, sesionTerminada, cubierto: pedirAviso });
   const stageRef = useRef<HTMLDivElement>(null);
   const caja = useCajaFrasco(stageRef);
   const [puente3d] = useState(crearPuente3D);
@@ -429,6 +440,19 @@ function Timer({
           onConfigure={() => avisos.setBannerOpen(true)}
         />
       ) : null}
+      <AvisoSesion
+        abierta={pedirAviso && !paused && !menu && !avisos.bannerOpen && avisos.legal === null}
+        lang={lang}
+        alAceptar={() => {
+          setPedirAviso(false);
+          update({ alertsPermissionAsked: true });
+          void ensureNotificationPermission();
+        }}
+        alRechazar={() => {
+          setPedirAviso(false);
+          update({ alertsPermissionAsked: true });
+        }}
+      />
       {paused ? <Pausa word={t.paused} lang={lang} /> : null}
       <Mano visible={intro.settled && !avisos.bannerOpen && !menu && !paused && avisos.legal === null} />
       <button
