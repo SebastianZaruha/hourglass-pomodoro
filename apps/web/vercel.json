@@ -1,0 +1,20 @@
+{
+  "redirects": [
+    { "source": "/aviso-legal", "destination": "/legal#aviso-legal", "permanent": true },
+    { "source": "/aviso-legal.html", "destination": "/legal#aviso-legal", "permanent": true },
+    { "source": "/privacidad", "destination": "/legal#privacidad", "permanent": true },
+    { "source": "/privacidad.html", "destination": "/legal#privacidad", "permanent": true },
+    { "source": "/cookies", "destination": "/legal#cookies", "permanent": true },
+    { "source": "/cookies.html", "destination": "/legal#cookies", "permanent": true },
+    { "source": "/legal-notice", "destination": "/legal-en#aviso-legal", "permanent": true },
+    { "source": "/legal-notice.html", "destination": "/legal-en#aviso-legal", "permanent": true },
+    { "source": "/privacy", "destination": "/legal-en#privacidad", "permanent": true },
+    { "source": "/privacy.html", "destination": "/legal-en#privacidad", "permanent": true },
+    { "source": "/cookies-en", "destination": "/legal-en#cookies", "permanent": true },
+    { "source": "/cookies-en.html", "destination": "/legal-en#cookies", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/legal", "destination": "/legal.html" },
+    { "source": "/legal-en", "destination": "/legal-en.html" }
+  ]
+}

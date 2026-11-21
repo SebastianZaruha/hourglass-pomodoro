@@ -21,12 +21,6 @@ export function SiteFooter({ lang, onCookies, onOpenLegal }: Props) {
       <a href={hrefs.legal} onClick={open(hrefs.legal, labels.legal)}>
         {labels.legal}
       </a>
-      <a href={hrefs.privacy} onClick={open(hrefs.privacy, labels.privacy)}>
-        {labels.privacy}
-      </a>
-      <a href={hrefs.cookies} onClick={open(hrefs.cookies, labels.cookies)}>
-        {labels.cookies}
-      </a>
       <a href={hrefs.app} onClick={open(hrefs.app, labels.app)}>
         {labels.app}
       </a>

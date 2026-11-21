@@ -44,7 +44,7 @@ export function apartarSecciones(doc: Document): void {
   if (!card || card.querySelector('.vl-apartado')) return;
   let actual: HTMLElement | null = null;
   for (const hijo of Array.from(card.children)) {
-    if (!actual || hijo.tagName === 'H2') {
+    if (!actual || hijo.tagName === 'H1' || hijo.tagName === 'H2') {
       actual = doc.createElement('section');
       actual.className = 'vl-apartado';
       card.insertBefore(actual, hijo);

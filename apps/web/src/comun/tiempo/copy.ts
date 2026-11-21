@@ -38,7 +38,7 @@ export function hintFor(
 export function footerCopy(lang: Language) {
   if (lang === 'es') {
     return {
-      legal: 'Aviso legal',
+      legal: 'Legal y privacidad',
       privacy: 'Privacidad',
       cookies: 'Cookies',
       app: 'App móvil',
@@ -46,7 +46,7 @@ export function footerCopy(lang: Language) {
     };
   }
   return {
-    legal: 'Legal notice',
+    legal: 'Legal and privacy',
     privacy: 'Privacy',
     cookies: 'Cookies',
     app: 'Mobile app',
@@ -57,16 +57,16 @@ export function footerCopy(lang: Language) {
 export function legalHrefs(lang: Language) {
   if (lang === 'es') {
     return {
-      legal: '/aviso-legal.html',
-      privacy: '/privacidad.html',
-      cookies: '/cookies.html',
+      legal: '/legal#aviso-legal',
+      privacy: '/legal#privacidad',
+      cookies: '/legal#cookies',
       app: '/app-movil.html',
     };
   }
   return {
-    legal: '/legal-notice.html',
-    privacy: '/privacy.html',
-    cookies: '/cookies-en.html',
+    legal: '/legal-en#aviso-legal',
+    privacy: '/legal-en#privacidad',
+    cookies: '/legal-en#cookies',
     app: '/mobile-app.html',
   };
 }
