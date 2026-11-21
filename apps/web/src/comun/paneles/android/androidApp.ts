@@ -46,6 +46,25 @@ export const ANDROID_APP: {
 /** Aviso cerrado. Un solo flag; no es consentimiento de cookies. */
 export const ANDROID_PROMO_KEY = 'hourglass-web/android-promo';
 
+/** La primera sesión de esta visita ya terminó. El aviso de la app espera a eso. */
+export const PRIMERA_SESION_KEY = 'hourglass-web/primera-sesion';
+
+export function readPrimeraSesion(storage: Pick<Storage, 'getItem'> = localStorage): boolean {
+  try {
+    return storage.getItem(PRIMERA_SESION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function writePrimeraSesion(storage: Pick<Storage, 'setItem'> = localStorage): void {
+  try {
+    storage.setItem(PRIMERA_SESION_KEY, '1');
+  } catch {
+    // Sin almacenamiento, el aviso puede esperar a la siguiente sesión de esta pestaña.
+  }
+}
+
 export function readAndroidPromoDismissed(storage: Pick<Storage, 'getItem'> = localStorage): boolean {
   try {
     return storage.getItem(ANDROID_PROMO_KEY) === '1';
@@ -70,10 +89,18 @@ export function writeAndroidPromoDismissed(storage: Pick<Storage, 'setItem'> = l
  */
 export function androidPromoOpen(input: {
   readonly settled: boolean;
+  readonly sesionTerminada: boolean;
   readonly dismissed: boolean;
   readonly bannerOpen: boolean;
   readonly menuOpen: boolean;
   readonly legalOpen: boolean;
 }): boolean {
-  return input.settled && !input.dismissed && !input.bannerOpen && !input.menuOpen && !input.legalOpen;
+  return (
+    input.settled &&
+    input.sesionTerminada &&
+    !input.dismissed &&
+    !input.bannerOpen &&
+    !input.menuOpen &&
+    !input.legalOpen
+  );
 }

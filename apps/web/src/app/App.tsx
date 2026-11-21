@@ -14,7 +14,7 @@ import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '..
 import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
 import { SettingsSheet } from '../comun/menu';
-import { AndroidPromo } from '../comun/paneles/android';
+import { AndroidPromo, readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
 import { CookieBanner } from '../comun/paneles/cookies';
 import { LegalOverlay } from '../comun/paneles/legal';
 import { Pausa } from '../comun/paneles/pausa';
@@ -122,6 +122,7 @@ function Timer({
   const lang = resolveLanguage(settings.language, navigator.language);
   const t = messagesFor(settings.language, navigator.language);
   const [escena, setEscena] = useState(escenaInicial);
+  const [sesionTerminada, setSesionTerminada] = useState(() => readPrimeraSesion());
   const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
@@ -156,6 +157,10 @@ function Timer({
     if (!cue) return;
     if (settings.sound) playCue(cue);
     showPhaseNotification(t, cue, view, lang);
+    if (cue === 'finished') {
+      writePrimeraSesion();
+      setSesionTerminada(true);
+    }
   }, [view, settings.sound, t, lang]);
 
   useEffect(() => {
@@ -167,7 +172,7 @@ function Timer({
 
   const appRef = useRef<HTMLDivElement>(null);
   const intro = usePageIntro(appRef, giro);
-  const avisos = useAvisos({ menu, introLista: intro.settled });
+  const avisos = useAvisos({ menu, introLista: intro.settled, sesionTerminada });
   const stageRef = useRef<HTMLDivElement>(null);
   const caja = useCajaFrasco(stageRef);
   const [puente3d] = useState(crearPuente3D);

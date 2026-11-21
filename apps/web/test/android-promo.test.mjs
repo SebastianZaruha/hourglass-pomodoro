@@ -146,12 +146,14 @@ test('la tira espera a la intro y no tapa cookies, menú ni legales', async () =
     const open = mod.androidPromoOpen;
     const ready = {
       settled: true,
+      sesionTerminada: true,
       dismissed: false,
       bannerOpen: false,
       menuOpen: false,
       legalOpen: false,
     };
     assert.equal(open(ready), true);
+    assert.equal(open({ ...ready, sesionTerminada: false }), false);
     assert.equal(open({ ...ready, settled: false }), false);
     assert.equal(open({ ...ready, dismissed: true }), false);
     assert.equal(open({ ...ready, bannerOpen: true }), false);

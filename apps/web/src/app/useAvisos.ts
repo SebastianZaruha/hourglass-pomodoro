@@ -19,7 +19,11 @@ import {
  * Cookies, aviso de Android y panel legal: cuál está abierto.
  * La misma prioridad que la publicada.
  */
-export function useAvisos(abierto: { readonly menu: boolean; readonly introLista: boolean }) {
+export function useAvisos(abierto: {
+  readonly menu: boolean;
+  readonly introLista: boolean;
+  readonly sesionTerminada: boolean;
+}) {
   const [promoDismissed, setPromoDismissed] = useState(() => readAndroidPromoDismissed());
   const [legal, setLegal] = useState<{ href: string; title: string } | null>(null);
   const [consentChoice, setConsentChoice] = useState<ConsentChoice | null>(
@@ -67,6 +71,7 @@ export function useAvisos(abierto: { readonly menu: boolean; readonly introLista
 
   const showAndroidPromo = androidPromoOpen({
     settled: abierto.introLista,
+    sesionTerminada: abierto.sesionTerminada,
     dismissed: promoDismissed,
     bannerOpen,
     menuOpen: abierto.menu,
