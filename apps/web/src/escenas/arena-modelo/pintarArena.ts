@@ -303,22 +303,21 @@ function sombrearGranos(
       ) {
         vidrio = true;
       }
-      const grano = ((tono * 17) % 7) - 3;
-      let valor = 1 - profundo * 0.065 + grano * 0.012;
-      if (cara) valor += 0.08;
-      if (vidrio) valor -= 0.16;
-      valor = Math.max(0.42, Math.min(1, valor));
+      const grano = ((tono * 17) % 11) - 5;
+      let valor = 1 - profundo * 0.04 + grano * 0.022;
+      if (cara) valor += 0.1;
+      if (vidrio) valor -= 0.08;
+      valor = Math.max(0.64, Math.min(1, valor));
       const o = i * 4;
-      const gris = Math.round(valor * 255);
-      sd[o] = gris;
-      sd[o + 1] = gris;
-      sd[o + 2] = gris;
+      sd[o] = Math.round(Math.min(255, valor * 255));
+      sd[o + 1] = Math.round(valor * 214);
+      sd[o + 2] = Math.round(valor * 160);
       sd[o + 3] = 255;
       if (cara && profundo === 0) {
         bd[o] = 255;
-        bd[o + 1] = 196;
-        bd[o + 2] = 120;
-        bd[o + 3] = 68;
+        bd[o + 1] = 186;
+        bd[o + 2] = 96;
+        bd[o + 3] = 88;
       }
     }
   }
