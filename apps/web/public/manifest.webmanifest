@@ -1,0 +1,11 @@
+{
+  "name": "Hourglass Pomodoro",
+  "short_name": "Hourglass",
+  "description": "Un reloj de arena tranquilo para el navegador. La arena cae con el tiempo.",
+  "lang": "es",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EBE5DD",
+  "theme_color": "#EBE5DD",
+  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }]
+}

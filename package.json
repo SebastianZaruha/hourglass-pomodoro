@@ -1,8 +1,8 @@
 {
-  "name": "reloj-de-arena",
+  "name": "hourglass-pomodoro",
   "version": "1.8.14",
   "private": true,
-  "description": "Reloj de Arena: temporizador minimalista con forma de reloj de arena (monorepo).",
+  "description": "Hourglass Pomodoro: temporizador minimalista con forma de reloj de arena (monorepo).",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Sebastián Zaruha (https://github.com/SebastianZaruha)",
   "homepage": "https://github.com/SebastianZaruha/reloj-de-arena#readme",

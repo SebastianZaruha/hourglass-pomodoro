@@ -1,9 +1,9 @@
-# Reloj de Arena ⏳
+# Hourglass Pomodoro ⏳
 
 **Un temporizador minimalista que es, literalmente, un reloj de arena: la arena cae grano a
 grano, se desliza al inclinar el móvil y empieza de nuevo al darle la vuelta.**
 
-> **English summary.** _Reloj de Arena_ ("hourglass") is a minimalist timer app for Android
+> **English summary.** _Hourglass Pomodoro_ is a minimalist timer app for Android
 > built with Expo / React Native, React Native Skia shaders and a real granular sand
 > simulation. Tilt the phone and the sand slides; lay it on its side to pause; flip it to
 > restart. A discreet frosted-glass menu adds light/dark/auto themes, quick times, work/break
