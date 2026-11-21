@@ -5,14 +5,15 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 1rem;
+  /* El mismo margen lateral que la hoja del menú en estrecho. */
+  padding: clamp(0.75rem, 3.5vw, 1.25rem);
 }
 
 .gestos-hoja {
-  width: min(28rem, 100%);
+  width: min(31rem, 100%);
   max-height: min(70vh, 34rem);
   overflow: auto;
-  padding: 1rem 1.15rem 1.2rem;
+  padding: 1.35rem 1.5rem 1.45rem;
   color: #fff;
 }
 
@@ -21,7 +22,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.05rem;
 }
 
 .gestos-cabeza h2 {
@@ -36,13 +37,21 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1.15rem;
 }
 
 .gestos-hoja li {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr);
+  column-gap: 0.9rem;
+  row-gap: 0.2rem;
+  align-items: center;
+}
+
+.gestos-icono {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
 }
 
 .gestos-hoja strong {

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 
 import { useTactil } from '../../entrada/tactil';
 import { useHojaVidrio } from '../../estilo/vidrio-liquido';
+import { IconoGesto, type IconoGestoId } from './IconosGesto';
 import './gestos.css';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 interface Fila {
+  readonly icono: IconoGestoId;
   readonly titulo: string;
   readonly detalle: string;
 }
@@ -22,30 +24,30 @@ function filas(lang: Language, tactil: boolean): readonly Fila[] {
   if (tactil) {
     return es
       ? [
-          { titulo: 'Toca', detalle: 'Empieza o pausa. En pausa, solo un toque sigue.' },
-          { titulo: 'Desliza', detalle: 'Arriba o abajo, con un dedo, para elegir el tiempo.' },
-          { titulo: 'Arrastra', detalle: 'Inclina el reloj. Soltar lo devuelve; no empieza la sesión.' },
-          { titulo: 'Dos toques', detalle: 'Da la vuelta y empieza de cero, con la arena dentro.' },
+          { icono: 'toca', titulo: 'Toca', detalle: 'Empieza o pausa. En pausa, solo un toque sigue.' },
+          { icono: 'desliza', titulo: 'Desliza', detalle: 'Arriba o abajo, con un dedo, para elegir el tiempo.' },
+          { icono: 'arrastra', titulo: 'Arrastra', detalle: 'Inclina el reloj. Soltar lo devuelve; no empieza la sesión.' },
+          { icono: 'dobleToque', titulo: 'Dos toques', detalle: 'Da la vuelta y empieza de cero, con la arena dentro.' },
         ]
       : [
-          { titulo: 'Tap', detalle: 'Starts or pauses. While paused, only a tap resumes.' },
-          { titulo: 'Swipe', detalle: 'Up or down, with one finger, to set the time.' },
-          { titulo: 'Drag', detalle: 'Tilts the hourglass. Releasing returns it; it does not start.' },
-          { titulo: 'Double-tap', detalle: 'Flips it and starts over, with the sand inside.' },
+          { icono: 'toca', titulo: 'Tap', detalle: 'Starts or pauses. While paused, only a tap resumes.' },
+          { icono: 'desliza', titulo: 'Swipe', detalle: 'Up or down, with one finger, to set the time.' },
+          { icono: 'arrastra', titulo: 'Drag', detalle: 'Tilts the hourglass. Releasing returns it; it does not start.' },
+          { icono: 'dobleToque', titulo: 'Double-tap', detalle: 'Flips it and starts over, with the sand inside.' },
         ];
   }
   return es
     ? [
-        { titulo: 'Clic', detalle: 'Empieza o pausa. En pausa, solo un clic sigue.' },
-        { titulo: 'Rueda', detalle: 'Ajusta el tiempo. No hace otra cosa.' },
-        { titulo: 'Arrastra', detalle: 'Inclina el reloj. Soltar lo devuelve; no empieza la sesión.' },
-        { titulo: 'Doble clic', detalle: 'Da la vuelta y empieza de cero, con la arena dentro.' },
+        { icono: 'clic', titulo: 'Clic', detalle: 'Empieza o pausa. En pausa, solo un clic sigue.' },
+        { icono: 'rueda', titulo: 'Rueda', detalle: 'Ajusta el tiempo. No hace otra cosa.' },
+        { icono: 'arrastra', titulo: 'Arrastra', detalle: 'Inclina el reloj. Soltar lo devuelve; no empieza la sesión.' },
+        { icono: 'doble', titulo: 'Doble clic', detalle: 'Da la vuelta y empieza de cero, con la arena dentro.' },
       ]
     : [
-        { titulo: 'Click', detalle: 'Starts or pauses. While paused, only a click resumes.' },
-        { titulo: 'Scroll', detalle: 'Sets the time. It does nothing else.' },
-        { titulo: 'Drag', detalle: 'Tilts the hourglass. Releasing returns it; it does not start.' },
-        { titulo: 'Double-click', detalle: 'Flips it and starts over, with the sand inside.' },
+        { icono: 'clic', titulo: 'Click', detalle: 'Starts or pauses. While paused, only a click resumes.' },
+        { icono: 'rueda', titulo: 'Scroll', detalle: 'Sets the time. It does nothing else.' },
+        { icono: 'arrastra', titulo: 'Drag', detalle: 'Tilts the hourglass. Releasing returns it; it does not start.' },
+        { icono: 'doble', titulo: 'Double-click', detalle: 'Flips it and starts over, with the sand inside.' },
       ];
 }
 
@@ -84,6 +86,9 @@ export function HojaGestos({ abierta, lang, alCerrar }: Props) {
         <ul>
           {filas(lang, tactil).map((fila) => (
             <li key={fila.titulo}>
+              <span className="gestos-icono">
+                <IconoGesto id={fila.icono} />
+              </span>
               <strong>{fila.titulo}</strong>
               <span>{fila.detalle}</span>
             </li>
