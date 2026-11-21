@@ -251,10 +251,39 @@ function pasoEje(v: number): -1 | 0 | 1 {
 }
 
 /**
- * Sombra de la luz de noche sobre el color ya pintado. No mueve granos:
- * multiplica por la profundidad, la cara que mira a la luz y el contacto
- * con el vidrio, y aclara un poco las caras iluminadas.
+ * Sombreado de Arena oscuro. La foto tiene esferas cálidas: una a la izquierda,
+ * a la altura de la arena, y otras detrás de las rocas a la derecha. Entran de
+ * lado y un poco desde abajo. Solo color: no mueve granos. Clásico y Arena
+ * claro no llegan aquí (`luzGrano` es null).
  */
+/** Cada celda hacia la sombra de la clave. El tope evita un pozo negro. */
+const SOMBRA_PASO = 0.055;
+const SOMBRA_TOPE = 6;
+/** De un grano al vecino, para que el montón no sea un bloque. */
+const GRANO_PASO = 0.032;
+/** Cara que mira a la clave, a la derecha (rim) y hacia abajo (esfera baja). */
+const CARA_CLAVE = 0.08;
+const VIDRIO_CONTACTO = 0.035;
+/** Suelo del multiplicador: por debajo el caqui se apaga. */
+const VALOR_MIN = 0.78;
+const VALOR_MAX = 1;
+/**
+ * Multiplicación casi blanca y solo un poco cálida. 214/160 teñía de naranja
+ * y, con el valor bajo, dejaba la arena plana y oscura.
+ */
+const TINT_R = 255;
+const TINT_G = 246;
+const TINT_B = 232;
+/** Screen. Sube la luz general sin quemar; la clave y el rim suman encima. */
+const BRILLO_BASE = 34;
+const BRILLO_CLAVE = 64;
+const BRILLO_RIM = 36;
+const BRILLO_BAJO = 22;
+const BRILLO_TOPE = 140;
+const BRILLO_R = 255;
+const BRILLO_G = 220;
+const BRILLO_B = 184;
+
 function sombrearGranos(
   g: CanvasRenderingContext2D,
   ctx: CanvasRenderingContext2D,
@@ -336,22 +365,34 @@ function sombrearGranos(
       ) {
         vidrio = true;
       }
+      const ox = col - sx;
+      const oy = row - sy;
+      const rimDentro = ox >= 0 && oy >= 0 && ox < cols && oy < rows;
+      const vecinoRim = rimDentro ? (cells[oy * cols + ox] ?? 0) : 0;
+      const caraRim = !rimDentro || vecinoRim === 0;
+      const by = row + 1;
+      const abajoDentro = by >= 0 && by < rows;
+      const vecinoAbajo = abajoDentro ? (cells[by * cols + col] ?? 0) : 0;
+      const caraBaja = !vidrio && (!abajoDentro || vecinoAbajo === 0);
       const grano = ((tono * 17) % 11) - 5;
-      let valor = 1 - profundo * 0.04 + grano * 0.022;
-      if (cara) valor += 0.1;
-      if (vidrio) valor -= 0.08;
-      valor = Math.max(0.64, Math.min(1, valor));
+      let valor = 1 - Math.min(SOMBRA_TOPE, profundo) * SOMBRA_PASO + grano * GRANO_PASO;
+      if (cara) valor += CARA_CLAVE;
+      if (vidrio) valor -= VIDRIO_CONTACTO;
+      valor = Math.max(VALOR_MIN, Math.min(VALOR_MAX, valor));
       const o = i * 4;
-      sd[o] = Math.round(Math.min(255, valor * 255));
-      sd[o + 1] = Math.round(valor * 214);
-      sd[o + 2] = Math.round(valor * 160);
+      sd[o] = Math.round(Math.min(255, valor * TINT_R));
+      sd[o + 1] = Math.round(Math.min(255, valor * TINT_G));
+      sd[o + 2] = Math.round(Math.min(255, valor * TINT_B));
       sd[o + 3] = 255;
-      if (cara && profundo === 0) {
-        bd[o] = 255;
-        bd[o + 1] = 186;
-        bd[o + 2] = 96;
-        bd[o + 3] = 88;
-      }
+      let brillo = BRILLO_BASE;
+      if (cara && profundo === 0) brillo += BRILLO_CLAVE;
+      if (caraRim) brillo += BRILLO_RIM;
+      if (caraBaja) brillo += BRILLO_BAJO;
+      brillo = Math.min(BRILLO_TOPE, brillo);
+      bd[o] = BRILLO_R;
+      bd[o + 1] = BRILLO_G;
+      bd[o + 2] = BRILLO_B;
+      bd[o + 3] = brillo;
     }
   }
 

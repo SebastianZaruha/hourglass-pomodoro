@@ -3,10 +3,18 @@ import { crearArena, fijarLuzGrano } from '../arena-modelo';
 
 /**
  * Arena. El movimiento de la arena es el de arena-modelo, sin cambios.
- * En oscuro, el pintado sombrea los granos con la luz de la escena.
+ * En oscuro, el pintado sombrea los granos con la luz de las esferas de la foto.
  * La luz ambiente del vidrio va a 0. El reloj, en ancha, sube al bulbo.
  * El fondo va a cover, centrado: no se amplía para apoyar el frasco en la duna.
  */
+
+/**
+ * Hacia la esfera cálida de la izquierda, a la altura de la arena y un poco
+ * por debajo. 0° es la derecha y 90° es abajo en el lienzo. 176° queda
+ * casi horizontal: el paso del sombreado no se va en diagonal.
+ * El vidrio no usa este número (oscuro.luz.fuerza es 0 y su dirección se queda).
+ */
+const LUZ_GRANO_OSCURO = 176;
 const claro: Aspecto = {
   fondo: {
     tipo: 'foto',
@@ -59,7 +67,7 @@ export const arena: Escena = {
           // girado; la hoja del frasco 3D no, y ahí se descuenta el ángulo aquí.
           const t = ctx.getTransform();
           const girado = Math.atan2(t.b, t.a);
-          fijarLuzGrano(oscuro.luz.direccion + ((girado - p.angulo) * 180) / Math.PI);
+          fijarLuzGrano(LUZ_GRANO_OSCURO + ((girado - p.angulo) * 180) / Math.PI);
         }
         try {
           contenido.pintar(ctx, p);
