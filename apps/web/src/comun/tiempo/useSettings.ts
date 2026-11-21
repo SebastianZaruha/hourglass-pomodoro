@@ -13,13 +13,20 @@ import { useCallback, useState } from 'react';
 
 export const WEB_SETTINGS_KEY = 'hourglass-web/ajustes';
 
+/** Primera visita: 25:00. Si ya hay ajustes guardados, se respeta la última duración. */
+const DURACION_PRIMERA_VEZ = 25 * 60_000;
+
+function ajustesNuevos(): Settings {
+  return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false, lastDurationMs: DURACION_PRIMERA_VEZ });
+}
+
 export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage): Settings {
   try {
     const raw = storage.getItem(WEB_SETTINGS_KEY);
-    if (raw === null) return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false });
+    if (raw === null) return ajustesNuevos();
     return sanitizeSettings(JSON.parse(raw));
   } catch {
-    return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false });
+    return ajustesNuevos();
   }
 }
 
