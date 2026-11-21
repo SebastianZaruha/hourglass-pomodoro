@@ -1,6 +1,6 @@
 import { FOTO_ALTO, FOTO_ANCHO, CUELLO_FILA, RELLENO_ANCHO, SEMI_ALTO, SEMI_ANCHO } from './geometria';
 import type { GeometriaFrasco } from './contrato';
-import type { GlassLayout } from './pintarVidrio';
+import { pivoteCuello, type GlassLayout } from './pintarVidrio';
 
 const CENTRO_X = (26 + 421) / 2;
 
@@ -15,12 +15,13 @@ export function golpe(
   y: number,
   angulo: number,
 ): boolean {
-  const dx = x - layout.cx;
-  const dy = y - layout.cy;
+  const pivote = pivoteCuello(layout);
+  const dx = x - pivote.x;
+  const dy = y - pivote.y;
   const c = Math.cos(angulo);
   const s = Math.sin(angulo);
-  const lx = dx * c + dy * s;
-  const ly = -dx * s + dy * c;
+  const lx = pivote.x - layout.cx + dx * c + dy * s;
+  const ly = pivote.y - layout.cy - dx * s + dy * c;
   const medioAncho = layout.halfW * RELLENO_ANCHO;
   const fotoX = ((lx + medioAncho) / (medioAncho * 2)) * FOTO_ANCHO;
   const fotoY = ((ly + layout.halfH) / (layout.halfH * 2)) * FOTO_ALTO;

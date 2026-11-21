@@ -20,6 +20,8 @@ const MASCARA = '/frasco/jar-mask.webp';
 const ATRAS = '/frasco/jar-back.webp';
 const DELANTE = '/frasco/jar-front.webp';
 const CENTRO_X = 223.5;
+/** Columna del cuello en la máscara de 446. El giro del frasco sale de aquí. */
+export const CUELLO_X = CENTRO_X;
 
 export interface FotosFrasco {
   readonly geo: GeometriaFrasco;

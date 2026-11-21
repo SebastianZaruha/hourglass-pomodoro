@@ -1,6 +1,14 @@
 import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
-import { opacidadFundido, type GeometriaFrasco, type Scheme } from '../../comun/frasco';
+import {
+  CUELLO_FILA,
+  CUELLO_X,
+  FOTO_ALTO,
+  FOTO_ANCHO,
+  opacidadFundido,
+  type GeometriaFrasco,
+  type Scheme,
+} from '../../comun/frasco';
 
 export function buildPaletteLut(palette: ContentPalette): Uint8ClampedArray {
   const lut = new Uint8ClampedArray(256 * 3);
@@ -117,9 +125,9 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.imageSmoothingEnabled = false;
   if (scene.fundido) {
     const { queda, viejo, blurSale, blurEntra } = scene.fundido;
-    // El mismo centro que el giro del vidrio: la caja, no la ventana.
-    const cx = caja.w / 2;
-    const cy = caja.h / 2;
+    // El mismo centro que el giro del vidrio: el cuello, no el centro del bitmap.
+    const cx = (caja.w * CUELLO_X) / FOTO_ANCHO;
+    const cy = (caja.h * CUELLO_FILA) / FOTO_ALTO;
     g.save();
     g.globalCompositeOperation = 'source-over';
     g.imageSmoothingEnabled = true;

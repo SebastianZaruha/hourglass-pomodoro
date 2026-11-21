@@ -62,6 +62,8 @@ export function crearGiro() {
   let phaseRequest = false;
 
   let intro: PoseIntro = { activa: false, angulo: 0, escala: 1, sombra: 1 };
+  let vueltaT0: number | null = null;
+  let vueltaDesde = 0;
   let quieto = false;
   let velocidad = 0;
   let prevAng = 0;
@@ -175,7 +177,7 @@ export function crearGiro() {
     },
     /**
      * Un fotograma, en el mismo orden que el motor publicado:
-     * el giro pedido, el muelle ×0,84 y las dos animaciones.
+     * el giro pedido, la vuelta a cero y las dos animaciones.
      */
     avanzar(now: number, reducir: boolean): EventoGiro[] {
       const events: EventoGiro[] = [];
@@ -195,9 +197,23 @@ export function crearGiro() {
         }
       }
 
-      if (!flipBusy && !gestureActive && Math.abs(gestureAngle) > 0.0008) {
-        gestureAngle *= 0.84;
-        if (Math.abs(gestureAngle) < 0.004) gestureAngle = 0;
+      // La vuelta a cero sale con velocidad nula. El recorte del muelle
+      // ×0,84 dejaba un escalón en el último tramo, y con el pivote
+      // desplazado ese escalón se veía como un salto de sitio.
+      if (gestureActive || flipBusy || flipStart !== null) {
+        vueltaT0 = null;
+      } else if (Math.abs(gestureAngle) > 1e-5) {
+        if (vueltaT0 === null) {
+          vueltaT0 = now;
+          vueltaDesde = gestureAngle;
+        }
+        const duracion = 160 + Math.min(280, Math.abs(vueltaDesde) * 320);
+        const t = Math.min(1, (now - vueltaT0) / duracion);
+        const queda = (1 - t) * (1 - t) * (1 - t);
+        gestureAngle = t >= 1 ? 0 : vueltaDesde * queda;
+      } else {
+        gestureAngle = 0;
+        vueltaT0 = null;
       }
 
       if (flipStart !== null) {

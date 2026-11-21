@@ -3,7 +3,7 @@
  * La luz va con fuerza 0: Clásico sigue con el degradado publicado.
  */
 import type { GeometriaFrasco } from './contrato';
-import { FOTO_ALTO, FOTO_ANCHO, RELLENO_ANCHO } from './geometria';
+import { CUELLO_FILA, CUELLO_X, FOTO_ALTO, FOTO_ANCHO, RELLENO_ANCHO } from './geometria';
 import { pintarLuz, type LuzEscena } from './luz';
 import { pintarSombra } from './sombra';
 
@@ -73,6 +73,20 @@ export interface VidrioFoto {
   readonly luz: LuzEscena;
 }
 
+/**
+ * El cuello, en los mismos px que la foto pintada. El bitmap no lo tiene
+ * en el centro (la fila 496,5 de 1024): girar sobre el centro de la caja
+ * traslada el frasco y, al volver el ángulo a 0, lo deja caer de golpe.
+ */
+export function pivoteCuello(layout: GlassLayout): { x: number; y: number } {
+  const w = layout.halfW * 2 * RELLENO_ANCHO * ESCALA_FOTO;
+  const h = layout.halfH * 2 * ESCALA_FOTO;
+  return {
+    x: layout.cx - w / 2 + (w * CUELLO_X) / FOTO_ANCHO,
+    y: layout.cy - h / 2 + (h * CUELLO_FILA) / FOTO_ALTO,
+  };
+}
+
 function cajaDe(layout: GlassLayout): CajaVidrio {
   return {
     x: layout.cx - layout.halfW,
@@ -114,12 +128,12 @@ function conGiro(
   poseScale: number,
   pintar: () => void,
 ): void {
-  const { cx, cy } = layout;
+  const { x, y } = pivoteCuello(layout);
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(x, y);
   if (poseScale !== 1) ctx.scale(poseScale, poseScale);
   ctx.rotate(rotation);
-  ctx.translate(-cx, -cy);
+  ctx.translate(-x, -y);
   pintar();
   ctx.restore();
 }

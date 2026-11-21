@@ -1,4 +1,4 @@
-import type { Pintura } from '../../../comun/frasco';
+import { CUELLO_FILA, CUELLO_X, FOTO_ALTO, FOTO_ANCHO, type Pintura } from '../../../comun/frasco';
 import { crearAguaVidrio, matrizFrasco, type AguaVidrio, type EstadoBulbo, type Matriz2D } from './vidrio';
 import type { VistaAgua } from './modelo';
 
@@ -248,8 +248,10 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       const pose = poseDelContexto(ctx);
       const vidrioEl = document.querySelector('.glass-canvas');
       const origen = vidrioEl?.getBoundingClientRect();
-      const cx = (origen?.left ?? 0) + p.caja.x + p.caja.w / 2;
-      const cy = (origen?.top ?? 0) + p.caja.y + p.caja.h / 2;
+      const nx = (CUELLO_X / FOTO_ANCHO - 0.5) * p.caja.w;
+      const ny = (CUELLO_FILA / FOTO_ALTO - 0.5) * p.caja.h;
+      const cuelloX = (origen?.left ?? 0) + p.caja.x + p.caja.w * (CUELLO_X / FOTO_ANCHO);
+      const cuelloY = (origen?.top ?? 0) + p.caja.y + p.caja.h * (CUELLO_FILA / FOTO_ALTO);
 
       ctx.save();
       ponerEnPantalla(ctx);
@@ -266,7 +268,11 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       const fondo = fondoVisible();
       if (fondo) vidrio.actualizarFondo(fondo);
 
-      matrizFrasco(p.angulo, cx, cy, pose, matriz);
+      // Los polígonos están medidos desde el centro de la caja. El pivote
+      // es el cuello, el mismo que el del vidrio, para que no orbiten.
+      matrizFrasco(p.angulo, 0, 0, pose, matriz);
+      matriz.e = cuelloX - matriz.a * nx + matriz.b * ny;
+      matriz.f = cuelloY - matriz.b * nx - matriz.a * ny;
       const fundido = vista.fundido;
       const u = fundido?.u ?? 0;
       const fracA = fundido ? vista.volArriba * (1 - u) + fundido.arriba * u : vista.volArriba;

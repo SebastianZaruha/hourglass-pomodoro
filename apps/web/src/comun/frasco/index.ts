@@ -11,7 +11,7 @@ export type {
 } from './contrato';
 export { Frasco } from './Frasco';
 export { opacidadFundido } from './fundido';
-export { RELLENO_ANCHO, fotosDelFrasco, geometriaDelFrasco } from './geometria';
+export { CUELLO_FILA, CUELLO_X, FOTO_ALTO, FOTO_ANCHO, RELLENO_ANCHO, fotosDelFrasco, geometriaDelFrasco } from './geometria';
 export { golpe } from './golpe';
 export { usePageIntro } from './intro';
 export { escalaDeIntro, layoutFor, pintarVidrio, type GlassLayout, type Scheme } from './pintarVidrio';
