@@ -2,14 +2,16 @@ import type { Frasco3D } from './tipos';
 
 /**
  * Lo que comparten la capa WebGL (Capa3D) y el bucle de Frasco.
- * La capa pone `listo` y `motor`; Frasco pone `despertar` y, cuando el
- * frasco 3D pinta, manda el ángulo y el pintor del contenido.
- * Si `listo` es false, todo sigue como antes: el frasco de foto en 2D.
+ * La capa pone `estado` y `motor`; Frasco pone `despertar` y, con el 3D listo,
+ * manda el ángulo, la pose de la intro y el pintor del contenido.
+ * La intro espera a que el estado deje de ser 'cargando'. Con 'fallo' se usa
+ * el frasco de foto en 2D, que solo es el de reserva.
  */
+export type Estado3D = 'cargando' | 'listo' | 'fallo';
+
 export interface Puente3D {
-  /** El WebGL ya pinta la escena y no ha fallado. */
-  listo: boolean;
-  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido'> | null;
+  estado: Estado3D;
+  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido' | 'setPoseIntro'> | null;
   /** Despierta el bucle de Frasco (se duerme en reposo). */
   despertar: (() => void) | null;
   /**
@@ -25,5 +27,5 @@ export interface Puente3D {
 }
 
 export function crearPuente3D(): Puente3D {
-  return { listo: false, motor: null, despertar: null, pantalla: null };
+  return { estado: 'cargando', motor: null, despertar: null, pantalla: null };
 }

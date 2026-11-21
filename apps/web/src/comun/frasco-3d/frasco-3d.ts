@@ -261,7 +261,8 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   function colocarRaiz() {
     const c = pose.centrado ?? 0;
     const dx = c ? (vw / 2 - (caja.x + caja.w / 2)) * c : 0;
-    const dy = c ? (vh / 2 - (caja.y + caja.h * 0.48)) * c : 0;
+    // Hourglass centra el punto al 48 % de la columna, que es el centro de la caja (layoutFor).
+    const dy = c ? (vh / 2 - (caja.y + caja.h / 2)) * c : 0;
     escalaPose = pose.activa ? escalaDeIntro(pose.escala, { halfW: caja.w / 2, halfH: caja.h / 2 }, pose.angulo, vw, vh) : 1;
     pivoteVisible.x = pivote.x + dx; pivoteVisible.y = pivote.y + dy;
     raiz.position.set(pivoteVisible.x - vw / 2, vh / 2 - pivoteVisible.y, 0);

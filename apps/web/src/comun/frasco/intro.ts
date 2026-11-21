@@ -156,6 +156,8 @@ export function usePageIntro(
             angulo: pose.done ? 0 : pose.angle,
             escala: pose.done ? 1 : pose.scale,
             sombra: pose.done ? 1 : pose.shadow,
+            centrado: pose.done ? 0 : pose.centered,
+            opacidad: pose.done ? 1 : pose.glassOpacity,
           });
           if (!revealed && frameNow - (t0 ?? frameNow) >= INTRO.chromeDelay) {
             revealed = true;

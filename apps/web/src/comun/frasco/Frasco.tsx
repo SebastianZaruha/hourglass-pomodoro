@@ -12,8 +12,6 @@ import { cantidadSombra } from './sombra';
 
 const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
 const ESPERA_FOTOS = 2500;
-/** Al pasar al frasco 3D, el de foto se funde encima durante este tiempo. */
-const RELEVO_MS = 320;
 
 function geoVacia(): GeometriaFrasco {
   const mascara = document.createElement('canvas');
@@ -45,8 +43,9 @@ interface Props {
   /** La nube lee solo este número: 1 de pie, 0 a partir de 50°. */
   readonly alFlotar?: RefObject<number>;
   /**
-   * Frasco 3D. Cuando está listo y no hay intro, pinta él el vidrio y el contenido;
-   * aquí siguen el giro, la física y los gestos. Si no, el vidrio de foto de siempre.
+   * Frasco 3D. Con él listo pinta el vidrio y el contenido, también en la intro;
+   * aquí siguen el giro, la física y los gestos. La intro espera a que cargue.
+   * Si falla (o no hay WebGL), el vidrio de foto de siempre.
    */
   readonly puente3d?: Puente3D;
 }
@@ -109,13 +108,11 @@ export function Frasco({
       geo: null as GeometriaFrasco | null,
       fallo: false,
       empezado: performance.now(),
+      /** Las fotos del vidrio 2D solo se piden si hace falta la reserva. */
+      fotosPedidas: false,
       /** El frasco 3D pinta el vidrio y el contenido. */
       tresD: false,
-      relevo: 0,
-      /** Al cambiar de escena con el 3D ya listo, el relevo es inmediato: sin fundido del de foto. */
-      relevoInmediato: puenteRef.current?.listo === true,
     };
-    if (paint && !loop.relevoInmediato) paint.style.opacity = '';
     /** Lo que pinta el 3D en su hoja. Cambia cada fotograma con el ángulo. */
     let pintor3D: ((ctx: CanvasRenderingContext2D, caja: { x: number; y: number; w: number; h: number }) => void) | null =
       null;
@@ -125,20 +122,25 @@ export function Frasco({
         if (loop.alive) pintor3D?.(ctx, caja);
       },
     };
-    void fotosDelFrasco().then(
-      (fotos) => {
-        if (!loop.alive) return;
-        loop.fotos = fotos;
-        loop.geo = fotos.geo;
-        geoRef.current = fotos.geo;
-        wake();
-      },
-      () => {
-        if (!loop.alive) return;
-        loop.fallo = true;
-        wake();
-      },
-    );
+    const pedirFotos = (now: number) => {
+      if (loop.fotosPedidas) return;
+      loop.fotosPedidas = true;
+      loop.empezado = now;
+      void fotosDelFrasco().then(
+        (fotos) => {
+          if (!loop.alive) return;
+          loop.fotos = fotos;
+          loop.geo = fotos.geo;
+          geoRef.current = fotos.geo;
+          wake();
+        },
+        () => {
+          if (!loop.alive) return;
+          loop.fallo = true;
+          wake();
+        },
+      );
+    };
     void geometriaDelFrasco().then((geo) => {
       if (!loop.alive) return;
       loop.geo = geo;
@@ -148,8 +150,13 @@ export function Frasco({
 
     const frame = (now: number) => {
       if (!loop.alive) return;
-      const fotosListas = loop.fotos !== null || loop.fallo || now - loop.empezado >= ESPERA_FOTOS;
-      const introSigue = fotosListas ? introRef.current(now) : true;
+      // Con el 3D, la intro espera a que pinte. Sin él, a las fotos del vidrio, como siempre.
+      const estado3D = puenteRef.current?.estado ?? 'fallo';
+      if (estado3D === 'fallo') pedirFotos(now);
+      const fotosListas =
+        loop.fotosPedidas && (loop.fotos !== null || loop.fallo || now - loop.empezado >= ESPERA_FOTOS);
+      const introLista = estado3D === 'listo' || (estado3D === 'fallo' && fotosListas);
+      const introSigue = introLista ? introRef.current(now) : true;
       const cssW = canvas.clientWidth;
       const cssH = canvas.clientHeight;
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -204,16 +211,17 @@ export function Frasco({
       const poseScale = pose.activa ? escalaDeIntro(pose.escala, layout, pose.angulo, cssW, cssH) : 1;
       const esquema = ESQUEMA[schemeAhora];
 
-      // Frasco 3D: después de la intro y solo si el WebGL ya pinta.
+      // Frasco 3D: en cuanto el WebGL pinta, también la intro (pose, escalaDeIntro, centrado).
       const puente = puenteRef.current;
-      const motor = puente && puente.listo && !pose.activa ? puente.motor : null;
+      const motor = puente && puente.estado === 'listo' ? puente.motor : null;
       if (motor) {
         if (!loop.tresD) {
           loop.tresD = true;
-          loop.relevo = loop.relevoInmediato ? now - RELEVO_MS : now;
           motor.setContenido(contenido3D);
           motor.setFrascoVisible(true);
         }
+        // El ángulo de la intro ya va en est.angulo: la pose solo pone escala, sombra, centrado y opacidad.
+        motor.setPoseIntro(pose.activa ? pose : null);
         // El giro sigue siendo el de comun/giro (arrastre, 81°, doble clic, fases).
         // El 3D solo lo copia, sobre el cuello; la velocidad le da el balanceo de ±8°.
         motor.girar(est.angulo, false, reducirAhora ? 0 : est.velocidad);
@@ -224,13 +232,11 @@ export function Frasco({
           contenido.pintar(context, { caja, angulo, esquema, geo, pantalla });
         };
       } else if (loop.tresD) {
+        // Solo si el WebGL se pierde: vuelve el vidrio de foto.
         loop.tresD = false;
         pintor3D = null;
         puente?.motor?.setFrascoVisible(false);
-        if (paint) paint.style.opacity = '';
       }
-      const relevo = loop.tresD ? Math.min(1, (now - loop.relevo) / RELEVO_MS) : 0;
-      if (loop.tresD && paint) paint.style.opacity = relevo < 1 ? String(1 - relevo) : '0';
 
       const escena = {
         layout,
@@ -261,7 +267,7 @@ export function Frasco({
       // La intro ya encoge el frasco para la columna. Fuera de ella, el
       // bitmap de la columna recortaba el giro: se pinta en un lienzo del
       // tamaño de la ventana, con el mismo centro y el mismo tamaño.
-      if (loop.tresD && relevo >= 1) {
+      if (loop.tresD || estado3D === 'cargando') {
         if (paintCtx && paint) {
           paintCtx.setTransform(1, 0, 0, 1, 0, 0);
           paintCtx.clearRect(0, 0, paint.width, paint.height);
@@ -310,8 +316,7 @@ export function Frasco({
         est.fase !== 'reposo' ||
         est.ocupado ||
         introSigue ||
-        pose.activa ||
-        (loop.tresD && relevo < 1);
+        pose.activa;
       if (keep && loop.alive) loop.raf = requestAnimationFrame(frame);
       else loop.raf = 0;
     };
@@ -334,7 +339,10 @@ export function Frasco({
       if (wakeRef.current === wake) wakeRef.current = null;
       if (puenteMontado?.despertar === wake) puenteMontado.despertar = null;
       pintor3D = null;
-      if (loop.tresD) puenteMontado?.motor?.setContenido(null);
+      if (loop.tresD) {
+        puenteMontado?.motor?.setContenido(null);
+        puenteMontado?.motor?.setPoseIntro(null);
+      }
       contenido.destruir();
     };
   }, [generacion, giro, wakeRef]);

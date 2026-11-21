@@ -7,6 +7,11 @@ import type { Fondo, Frasco3D, Modo } from './tipos';
 import './frasco-3d.css';
 
 const MASCARA = '/frasco/jar-mask.webp';
+/**
+ * La intro espera al 3D. Si en este tiempo no pinta, se queda el frasco de foto
+ * para toda la visita: así nunca hay un relevo de uno a otro a la vista.
+ */
+const ESPERA_3D = 4000;
 
 interface Props {
   readonly aspecto: Aspecto;
@@ -63,7 +68,15 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || ahorraDatos() || !hayWebGL()) return;
+    if (!canvas || ahorraDatos() || !hayWebGL()) {
+      puente.estado = 'fallo';
+      puente.despertar?.();
+      if (canvas) canvas.style.display = 'none';
+      return () => {
+        puente.estado = 'cargando';
+      };
+    }
+    puente.estado = 'cargando';
     let vivo = true;
     let ultimo: Fondo | null = null;
 
@@ -106,7 +119,7 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
     const fallar = () => {
       if (!vivo) return;
       vivo = false;
-      puente.listo = false;
+      puente.estado = 'fallo';
       puente.motor = null;
       puente.pantalla = null;
       motorRef.current?.destruir();
@@ -128,8 +141,9 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
               caja: cajaLocal(),
               interaccion: false,
               alListo: () => {
-                if (!vivo) return;
-                puente.listo = true;
+                if (!vivo || puente.estado !== 'cargando') return;
+                window.clearTimeout(limite);
+                puente.estado = 'listo';
                 puente.despertar?.();
               },
             });
@@ -156,9 +170,8 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
           };
           aplicarFondo();
         },
-        () => {
-          /* Sin el chunk: se queda el frasco de foto. */
-        },
+        // Sin el chunk: se queda el frasco de foto.
+        () => fallar(),
       );
     };
 
@@ -172,19 +185,19 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
     const obs = new MutationObserver(() => aplicarFondo());
     if (pila) obs.observe(pila, { childList: true, subtree: true });
 
-    const conIdle = 'requestIdleCallback' in window;
-    const espera = conIdle
-      ? window.requestIdleCallback(empezar, { timeout: 2000 })
-      : window.setTimeout(empezar, 800);
+    // Sin esperar al reposo: la intro (ya en 3D) espera a que esté.
+    const limite = window.setTimeout(() => {
+      if (puente.estado === 'cargando') fallar();
+    }, ESPERA_3D);
+    empezar();
 
     return () => {
       vivo = false;
       obs.disconnect();
       canvas.removeEventListener('webglcontextlost', alPerder);
-      if (conIdle) window.cancelIdleCallback(espera);
-      else window.clearTimeout(espera);
+      window.clearTimeout(limite);
       aplicarRef.current = () => {};
-      puente.listo = false;
+      puente.estado = 'cargando';
       puente.motor = null;
       puente.pantalla = null;
       motorRef.current?.destruir();

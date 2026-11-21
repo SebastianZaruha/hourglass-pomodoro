@@ -26,6 +26,10 @@ export interface PoseIntro {
   readonly angulo: number;
   readonly escala: number;
   readonly sombra: number;
+  /** 0..1: 1 centrado en la ventana, 0 en su sitio. Lo usa el frasco 3D (el 2D va con --intro-x/y). */
+  readonly centrado?: number;
+  /** 0..1: opacidad del vidrio. Lo usa el frasco 3D (el 2D va con --intro-glass). */
+  readonly opacidad?: number;
 }
 
 export type EventoGiro = 'reinicio-sujetar' | 'reinicio-cerrar' | 'fase-cerrar';
