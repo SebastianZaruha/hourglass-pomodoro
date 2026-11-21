@@ -108,6 +108,7 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
       vivo = false;
       puente.listo = false;
       puente.motor = null;
+      puente.pantalla = null;
       motorRef.current?.destruir();
       motorRef.current = null;
       canvas.style.display = 'none';
@@ -139,6 +140,17 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
           motor.setFrascoVisible(false);
           motorRef.current = motor;
           puente.motor = motor;
+          puente.pantalla = (ctx, angulo) => {
+            // En el tipo 'frasco' el ctx llega con S(res) y el origen en cajaFoto.
+            const { pivote, cajaFoto } = motor.getCaja();
+            const r = canvas.getBoundingClientRect();
+            const cuello = { x: pivote.x + r.left, y: pivote.y + r.top };
+            const matriz = DOMMatrix.fromMatrix(ctx.getTransform())
+              .translate(pivote.x - cajaFoto.x, pivote.y - cajaFoto.y)
+              .rotate((-angulo * 180) / Math.PI)
+              .translate(-cuello.x, -cuello.y);
+            return { matriz, cuello };
+          };
           aplicarFondo();
         },
         () => {
@@ -171,6 +183,7 @@ export function Capa3D({ aspecto, modo, caja, puente }: Props) {
       aplicarRef.current = () => {};
       puente.listo = false;
       puente.motor = null;
+      puente.pantalla = null;
       motorRef.current?.destruir();
       motorRef.current = null;
     };

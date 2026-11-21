@@ -201,8 +201,15 @@ function poseDelContexto(ctx: CanvasRenderingContext2D): number {
   return pose > 0.05 && pose < 4 ? pose : 1;
 }
 
-/** El vidrio nos llama ya girados. El agua se pinta en px de pantalla. */
-function ponerEnPantalla(ctx: CanvasRenderingContext2D): void {
+/**
+ * El vidrio nos llama ya girados. El agua se pinta en px de pantalla.
+ * Con el frasco 3D la matriz de pantalla llega hecha (px de la ventana → hoja).
+ */
+function ponerEnPantalla(ctx: CanvasRenderingContext2D, matriz?: DOMMatrixReadOnly): void {
+  if (matriz) {
+    ctx.setTransform(matriz);
+    return;
+  }
   const dpr = window.devicePixelRatio || 1;
   const lienzo = ctx.canvas.getBoundingClientRect();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -274,16 +281,16 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
       vistaActual = vista;
       const vidrio = asegurar(p);
       if (!vidrio) return;
-      const pose = poseDelContexto(ctx);
+      const pose = p.pantalla ? 1 : poseDelContexto(ctx);
       const vidrioEl = document.querySelector('.glass-canvas');
       const origen = vidrioEl?.getBoundingClientRect();
       const nx = (CUELLO_X / FOTO_ANCHO - 0.5) * p.caja.w;
       const ny = (CUELLO_FILA / FOTO_ALTO - 0.5) * p.caja.h;
-      const cuelloX = (origen?.left ?? 0) + p.caja.x + p.caja.w * (CUELLO_X / FOTO_ANCHO);
-      const cuelloY = (origen?.top ?? 0) + p.caja.y + p.caja.h * (CUELLO_FILA / FOTO_ALTO);
+      const cuelloX = p.pantalla?.cuello.x ?? (origen?.left ?? 0) + p.caja.x + p.caja.w * (CUELLO_X / FOTO_ANCHO);
+      const cuelloY = p.pantalla?.cuello.y ?? (origen?.top ?? 0) + p.caja.y + p.caja.h * (CUELLO_FILA / FOTO_ALTO);
 
       ctx.save();
-      ponerEnPantalla(ctx);
+      ponerEnPantalla(ctx, p.pantalla?.matriz);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 

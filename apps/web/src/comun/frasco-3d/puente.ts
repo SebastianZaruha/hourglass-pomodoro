@@ -12,8 +12,16 @@ export interface Puente3D {
   motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido'> | null;
   /** Despierta el bucle de Frasco (se duerme en reposo). */
   despertar: (() => void) | null;
+  /**
+   * Para quien pinta en el mundo (el agua): de px de la ventana a la hoja que
+   * recibe `ctx` (tipo 'frasco'), girada `angulo`, y el cuello en px de la ventana.
+   */
+  pantalla: ((ctx: CanvasRenderingContext2D, angulo: number) => {
+    matriz: DOMMatrix;
+    cuello: { x: number; y: number };
+  }) | null;
 }
 
 export function crearPuente3D(): Puente3D {
-  return { listo: false, motor: null, despertar: null };
+  return { listo: false, motor: null, despertar: null, pantalla: null };
 }

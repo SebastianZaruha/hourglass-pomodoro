@@ -34,6 +34,15 @@ export interface Pintura {
   readonly angulo: number;
   readonly esquema: 'claro' | 'oscuro';
   readonly geo: GeometriaFrasco;
+  /**
+   * Solo con el frasco 3D: `matriz` lleva de px de la ventana a la hoja del vidrio
+   * (que gira con él) y `cuello` es el pivote en px de la ventana. Lo usa quien
+   * pinta en el mundo, como el agua, para que su superficie siga horizontal.
+   */
+  readonly pantalla?: {
+    readonly matriz: DOMMatrixReadOnly;
+    readonly cuello: { readonly x: number; readonly y: number };
+  };
 }
 
 export interface Contenido {
