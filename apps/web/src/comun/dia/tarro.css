@@ -1,0 +1,40 @@
+.tarro-dia {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'silueta texto'
+    'silueta boton';
+  gap: 0.35rem 0.8rem;
+  align-items: center;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.tarro-silueta {
+  grid-area: silueta;
+  width: 1.35rem;
+  height: 2rem;
+  border: 1.5px solid currentColor;
+  border-radius: 0.55rem 0.55rem 0.4rem 0.4rem;
+  position: relative;
+  overflow: hidden;
+  opacity: 0.9;
+}
+
+.tarro-arena {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.tarro-dia p {
+  grid-area: texto;
+  margin: 0;
+}
+
+.tarro-dia .control {
+  grid-area: boton;
+  justify-self: start;
+}

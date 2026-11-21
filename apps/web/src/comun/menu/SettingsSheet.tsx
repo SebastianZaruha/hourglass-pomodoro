@@ -24,6 +24,8 @@ import {
 } from '@reloj/core';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
+import { TarroDia } from '../dia/TarroDia';
+import type { ArenaDia } from '../dia/dia';
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
 import { HojaGestos } from '../paneles/gestos/HojaGestos';
 import { GlobeIcon, SpeakerIcon, SunIcon } from './Icons';
@@ -49,6 +51,7 @@ interface Props {
   readonly escenaId?: string;
   readonly idioma?: Language;
   readonly onEscena?: (id: string) => void;
+  readonly arenaDia?: ArenaDia;
   /** Solo si el plan (duración o sesión) cambia. Modo, idioma y sonido no lo llaman. */
   readonly alReiniciar?: () => void;
 }
@@ -63,6 +66,7 @@ export function SettingsSheet({
   escenaId = '',
   idioma = 'es',
   onEscena = () => undefined,
+  arenaDia,
   alReiniciar = () => undefined,
 }: Props) {
   const cycles = settings.sessionMode === 'cycles';
@@ -168,6 +172,8 @@ export function SettingsSheet({
           ))}
         </div>
       ) : null}
+
+      {arenaDia ? <TarroDia arena={arenaDia} lang={idioma ?? 'es'} /> : null}
 
       <button type="button" className="control gestos-abrir" onClick={() => setGestos(true)}>
         {(idioma ?? 'es') === 'es' ? 'Gestos' : 'Gestures'}

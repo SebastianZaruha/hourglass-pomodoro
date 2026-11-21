@@ -10,6 +10,7 @@ import {
 } from '@reloj/core';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { leerArenaDia, sumarPomodoro, type ArenaDia } from '../comun/dia/dia';
 import { useTactil } from '../comun/entrada/tactil';
 import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
 import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
@@ -132,6 +133,7 @@ function Timer({
   const [pedirAviso, setPedirAviso] = useState(false);
   const [pulso, setPulso] = useState(false);
   const [brillo, setBrillo] = useState(false);
+  const [arenaDia, setArenaDia] = useState<ArenaDia>(() => leerArenaDia());
   const aspecto = escena[ESQUEMA[scheme]];
 
   const session = useSession(sessionPlanFor(settings));
@@ -183,6 +185,7 @@ function Timer({
         setBrillo(true);
         window.setTimeout(() => setBrillo(false), 900);
       }
+      setArenaDia(sumarPomodoro());
       if (
         notificationSupported() &&
         Notification.permission === 'default' &&
@@ -509,6 +512,7 @@ function Timer({
         escenaId={escena.id}
         idioma={lang}
         onEscena={alElegirEscena}
+        arenaDia={arenaDia}
         alReiniciar={alReiniciar}
         onChange={update}
         onClose={() => setMenu(false)}
