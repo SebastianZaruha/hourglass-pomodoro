@@ -3,8 +3,8 @@
   display: none;
 }
 
-/* El vidrio líquido es el fondo, también en Safari y Firefox. La tira conserva su caja.
-   Sin borde crema: el bisel del vidrio toma la luz de la escena. */
+/* El vidrio liso es el fondo, también en Safari y Firefox. La tira conserva su caja.
+   Texto blanco puro sobre humo local (vidrio-liquido.css: .app-promo-text). */
 .app-promo.vidrio {
   border: 1px solid transparent;
   border-radius: 16px;
@@ -15,28 +15,27 @@
   gap: 0.45rem;
 }
 
-.app-promo.vidrio .app-promo-pitch {
-  color: var(--vl-texto-2, rgba(255, 255, 255, 0.92));
+.app-promo.vidrio.vidrio-liquido :is(.app-promo-title, .app-promo-pitch, .app-promo-install) {
+  color: var(--vl-texto-2, #fff);
   font-weight: 500;
 }
 
-/* La línea pequeña (0,68rem) y el × van con el color principal: en tan poco cuerpo el 92 % no llega a AA. */
-.app-promo.vidrio .app-promo-install {
-  color: var(--vl-texto, #fff);
-  font-weight: 500;
-}
-
+/* Botones sin borde. «Descargar» conserva el relleno de la app; el × lleva el relleno ligero. */
 .app-promo.vidrio .app-promo-action {
-  text-shadow: none;
+  border: 0;
+  box-shadow: none;
 }
 
 .app-promo.vidrio .app-promo-dismiss {
+  border: 0;
+  background: var(--vl-humo, rgba(0, 0, 0, 0.08));
+  box-shadow: none;
   color: var(--vl-texto, #fff);
   font-weight: 600;
 }
 
 .app-promo.vidrio .app-promo-dismiss:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), var(--vl-humo, rgba(0, 0, 0, 0.08));
   color: var(--vl-texto, #fff);
 }
 

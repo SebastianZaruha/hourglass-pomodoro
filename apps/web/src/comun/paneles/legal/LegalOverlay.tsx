@@ -1,7 +1,7 @@
 import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 
 import { useHojaVidrio } from '../../estilo/vidrio-liquido';
-import { estiloVidrio } from './estiloVidrio';
+import { apartarSecciones, estiloVidrio } from './estiloVidrio';
 
 interface Props {
   readonly src: string;
@@ -84,17 +84,11 @@ function bindLegalFrame(frame: HTMLIFrameElement, onClose: () => void, onConfigu
   doc.documentElement.dataset.legalBound = '1';
   // El aviso trae su propio fondo opaco y sus colores (que siguen el tema del SISTEMA,
   // no el de la app). Dentro de la hoja se quita el fondo para que se vea el vidrio
-  // líquido, y el texto toma la tinta y la sombra del vidrio (ver estiloVidrio).
+  // líquido, el texto va en blanco y cada apartado en su tarjeta (ver estiloVidrio).
   const estilo = doc.createElement('style');
   estilo.textContent = estiloVidrio(frame);
   doc.head.append(estilo);
-  // La hoja cambia de tinta según la escena (data-vl-tinta): el aviso la sigue.
-  const hoja = frame.closest('.vidrio-liquido');
-  if (hoja) {
-    new MutationObserver(() => {
-      estilo.textContent = estiloVidrio(frame);
-    }).observe(hoja, { attributes: true, attributeFilter: ['data-vl-tinta'] });
-  }
+  apartarSecciones(doc);
 
   doc.addEventListener(
     'click',

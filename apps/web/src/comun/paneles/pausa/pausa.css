@@ -37,10 +37,9 @@
   }
 }
 
-/* El vidrio líquido es el fondo, también en Safari y Firefox. La palabra y la pista no se mueven.
-   La escena ya va desenfocada debajo (.is-paused .scene), así que aquí basta menos blur. */
+/* El vidrio liso es el fondo, también en Safari y Firefox. La palabra y la pista no se mueven.
+   La escena ya va desenfocada debajo (.is-paused .scene). Texto blanco sobre humo local. */
 .pause-screen.vidrio {
-  --vl-blur: 14px;
   border: 0;
   border-radius: 0;
   color: inherit;
@@ -48,9 +47,14 @@
   box-shadow: none;
 }
 
-/* Pantalla entera: sin filo en los bordes del navegador (Safari/Firefox). */
-.pause-screen.vidrio-liquido[data-vl='desenfoque'] {
+/* Pantalla entera: sin canto en los bordes del navegador. */
+.pause-screen.vidrio-liquido[data-vl] {
   box-shadow: none;
+}
+
+/* Pantalla entera: tampoco dobla el fondo en los bordes del navegador (solo desenfoque). */
+.pause-screen.vidrio-liquido[data-vl='refraccion'] {
+  backdrop-filter: blur(var(--vl-blur));
 }
 
 .pause-screen {
@@ -84,7 +88,7 @@
   text-align: center;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--vl-texto-2, rgba(255, 255, 255, 0.92));
+  color: var(--vl-texto-2, #fff);
   text-shadow: var(--vl-sombra-texto, none);
 }
 
