@@ -35,6 +35,7 @@ async function bundle(source, { injectGlobals = false } = {}) {
     bundle: true,
     format: 'esm',
     platform: 'neutral',
+    alias: { '@reloj/core': path.resolve(webRoot, '../../packages/core/src/index.ts') },
     ...(inject.length > 0 ? { inject } : {}),
     outfile,
   });
@@ -44,7 +45,7 @@ async function bundle(source, { injectGlobals = false } = {}) {
 
 test('un consentimiento sin bannerVersion, o con otra, vuelve a preguntar', async () => {
   const { mod, cleanup } = await bundle(
-    "export { BANNER_VERSION, parseConsent, serializeConsent, writeConsent } from './src/cookies.ts';\n",
+    "export { BANNER_VERSION, parseConsent, serializeConsent, writeConsent } from './src/comun/paneles/cookies/cookies.ts';\n",
   );
   try {
     const now = 1_700_000_000_000;
@@ -96,7 +97,7 @@ test('Rechazar quita el script de Vercel y anula beforeSend', async () => {
     },
   };
   const { mod, cleanup } = await bundle(
-    "export { stopVercelWebAnalytics } from './src/vercelAnalytics.ts';\n",
+    "export { stopVercelWebAnalytics } from './src/comun/paneles/cookies/vercelAnalytics.ts';\n",
     { injectGlobals: true },
   );
   try {

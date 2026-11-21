@@ -18,7 +18,7 @@ async function bundle() {
   await esbuild.build({
     absWorkingDir: webRoot,
     stdin: {
-      contents: "export { decideStageClick, decideStageDoubleClick } from './src/stageClick.ts';\n",
+      contents: "export { decideStageClick, decideStageDoubleClick } from './src/comun/tiempo/stageClick.ts';\n",
       resolveDir: webRoot,
       loader: 'ts',
       sourcefile: path.join(webRoot, 'entry.ts'),
@@ -26,6 +26,7 @@ async function bundle() {
     bundle: true,
     format: 'esm',
     platform: 'neutral',
+    alias: { '@reloj/core': path.resolve(webRoot, '../../packages/core/src/index.ts') },
     outfile,
   });
   const mod = await import(pathToFileURL(outfile).href);

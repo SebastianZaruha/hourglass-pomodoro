@@ -26,6 +26,7 @@ async function bundle(source) {
     bundle: true,
     format: 'esm',
     platform: 'neutral',
+    alias: { '@reloj/core': path.resolve(webRoot, '../../packages/core/src/index.ts') },
     outfile,
   });
   const mod = await import(pathToFileURL(outfile).href);
@@ -40,7 +41,7 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
       ANDROID_REPO,
       githubLatestApkUrl,
       githubReleaseApkUrl,
-    } from './src/androidApp.ts';\n`,
+    } from './src/comun/paneles/android/androidApp.ts';\n`,
   );
   try {
     assert.equal(mod.ANDROID_APP.distribution, 'github-release');
@@ -66,8 +67,8 @@ test('el APK usa releases/latest del repo, con el asset que sí está publicado'
 
 test('el pie abre una página con la misma URL y una foto de la arena inclinada', async () => {
   const { mod, cleanup } = await bundle(
-    `export { ANDROID_APP } from './src/androidApp.ts';
-     export { footerCopy, legalHrefs } from './src/copy.ts';\n`,
+    `export { ANDROID_APP } from './src/comun/paneles/android/androidApp.ts';
+     export { footerCopy, legalHrefs } from './src/comun/tiempo/copy.ts';\n`,
   );
   try {
     assert.equal(mod.footerCopy('es').app, 'App móvil');
@@ -77,7 +78,7 @@ test('el pie abre una página con la misma URL y una foto de la arena inclinada'
 
     const es = readFileSync(path.join(webRoot, 'public/app-movil.html'), 'utf8');
     const en = readFileSync(path.join(webRoot, 'public/mobile-app.html'), 'utf8');
-    const sheet = readFileSync(path.join(webRoot, 'src/components/SettingsSheet.tsx'), 'utf8');
+    const sheet = readFileSync(path.join(webRoot, 'src/comun/menu/SettingsSheet.tsx'), 'utf8');
     assert.match(es, /id="leave-page"/);
     assert.match(en, /id="leave-page"/);
     assert.match(es, /app-inclinado\.jpg/);
@@ -102,7 +103,7 @@ test('cerrar el aviso queda guardado y no es la clave de cookies', async () => {
       ANDROID_PROMO_KEY,
       readAndroidPromoDismissed,
       writeAndroidPromoDismissed,
-    } from './src/androidApp.ts';\n`,
+    } from './src/comun/paneles/android/androidApp.ts';\n`,
   );
   try {
     assert.equal(mod.ANDROID_PROMO_KEY, 'hourglass-web/android-promo');
@@ -141,7 +142,7 @@ test('cerrar el aviso queda guardado y no es la clave de cookies', async () => {
 });
 
 test('la tira espera a la intro y no tapa cookies, menú ni legales', async () => {
-  const { mod, cleanup } = await bundle("export { androidPromoOpen } from './src/androidApp.ts';\n");
+  const { mod, cleanup } = await bundle("export { androidPromoOpen } from './src/comun/paneles/android/androidApp.ts';\n");
   try {
     const open = mod.androidPromoOpen;
     const ready = {
@@ -165,7 +166,7 @@ test('la tira espera a la intro y no tapa cookies, menú ni legales', async () =
 });
 
 test('el texto habla de la mano y de inclinar, en español y en inglés', async () => {
-  const { mod, cleanup } = await bundle("export { androidPromoCopy } from './src/copy.ts';\n");
+  const { mod, cleanup } = await bundle("export { androidPromoCopy } from './src/comun/tiempo/copy.ts';\n");
   try {
     const es = mod.androidPromoCopy('es', 'github-release');
     assert.equal(es.title, 'App Android');
