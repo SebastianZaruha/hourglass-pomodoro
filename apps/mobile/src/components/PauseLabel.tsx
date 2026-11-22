@@ -22,6 +22,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { VIDRIO } from './menu/vidrioLiquido';
 import type { HourglassTheme } from '../theme/theme';
 
 interface Props {
@@ -92,6 +93,14 @@ export function PauseLabel({
     >
       {mounted ? (
         <Animated.View style={[styles.group, anim]}>
+          <View
+            style={[
+              styles.placa,
+              {
+                backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteDialogoOscuro : VIDRIO.tinteDialogoClaro,
+              },
+            ]}
+          >
           <Animated.Text
             style={[
               styles.text,
@@ -128,6 +137,7 @@ export function PauseLabel({
               {noteText}
             </Animated.Text>
           ) : null}
+          </View>
         </Animated.View>
       ) : null}
     </View>
@@ -146,6 +156,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   group: { alignItems: 'center' },
+  placa: { alignItems: 'center', borderRadius: 18, paddingHorizontal: 8, paddingVertical: 6 },
   note: {
     fontSize: 16,
     letterSpacing: 1,

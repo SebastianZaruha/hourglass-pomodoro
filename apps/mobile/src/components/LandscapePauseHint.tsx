@@ -29,7 +29,7 @@ export function LandscapePauseHint({ text, dismissLabel, bottom, font, theme, on
         style={({ pressed }) => [
           styles.chip,
           {
-            backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteOscuro : VIDRIO.tinteClaro,
+            backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteDialogoOscuro : VIDRIO.tinteDialogoClaro,
           },
           pressed && styles.pressed,
         ]}
