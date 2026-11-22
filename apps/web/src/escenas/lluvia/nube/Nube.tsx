@@ -29,7 +29,16 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
     const a = videoA.current;
     const b = videoB.current;
     if (!a || !b) return pintarPoster(tela, POSTER);
-    return engancharBucle(a, b, tela);
+    const subir = () => {
+      b.preload = 'auto';
+    };
+    if (a.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) subir();
+    else a.addEventListener('canplaythrough', subir, { once: true });
+    const soltar = engancharBucle(a, b, tela);
+    return () => {
+      a.removeEventListener('canplaythrough', subir);
+      soltar?.();
+    };
   }, [soloFoto]);
 
   const ancho = caja.w * 1.5;
@@ -48,12 +57,12 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
       {soloFoto ? null : (
         <>
           <video ref={videoA} className="nube-fuente" muted autoPlay playsInline preload="auto">
-            <source src={WEBM} type="video/webm" />
             <source src={MP4} type="video/mp4" />
+            <source src={WEBM} type="video/webm" />
           </video>
-          <video ref={videoB} className="nube-fuente" muted playsInline preload="auto">
-            <source src={WEBM} type="video/webm" />
+          <video ref={videoB} className="nube-fuente" muted playsInline preload="metadata">
             <source src={MP4} type="video/mp4" />
+            <source src={WEBM} type="video/webm" />
           </video>
         </>
       )}
