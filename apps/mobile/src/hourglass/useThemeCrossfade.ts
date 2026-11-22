@@ -12,8 +12,7 @@
  * efecto de layout de abajo corre ANTES de ese fotograma, así que la foto
  * todavía tiene el tema anterior.
  *
- * La foto incluye el vidrio del menú si está abierto: desde la 1.8.9 es un
- * panel sin desenfoque, así que fundirlo con el resto se ve bien. (En la
+ * El vidrio del menú ya no está en este lienzo (vive en la hoja). (En la
  * 1.8.7–1.8.8, con el fondo fijo desenfocado, la foto se hacía aparte y sin
  * el vidrio; ya no hace falta.)
  *

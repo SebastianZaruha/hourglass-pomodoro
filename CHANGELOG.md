@@ -16,6 +16,7 @@ Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 - El agua de Lluvia cae hacia el lado bajo, como la arena.
 - La nube no se apaga al tumbar el móvil.
 - El consentimiento tapa el menú con su propio vidrio.
+- El vidrio del menú va dentro de la hoja, encima del lienzo: el frasco ya no se pinta sobre los botones.
 - El canto superior del menú casi no se ve.
 - Las gotas son hilos finos, casi transparentes.
 - La foto de la escena funde a la vez que el frasco.

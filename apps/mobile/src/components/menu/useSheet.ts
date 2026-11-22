@@ -21,7 +21,7 @@
  * React Compiler (lint) entiendan que no estamos mutando un valor de React.
  */
 import { SheetToggle, snapToPixel } from '@reloj/core';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { PixelRatio } from 'react-native';
 import {
   Easing,
@@ -109,7 +109,12 @@ export function useSheet(screenHeight: number, reduceMotion: boolean): SheetStat
   }, [opening]);
 
   const hide = useCallback(() => {
-    if (!gate.hide(Date.now(), reduceMotion ? 0 : SHEET_CLOSE_MS)) return;
+    if (!gate.hide(Date.now(), reduceMotion ? 0 : SHEET_CLOSE_MS)) {
+      // Ya estaba cerrada. Si el velo se quedó montado (la animación no
+      // avisó), un toque tiene que devolver la pantalla: si no, no responde.
+      setVisible(false);
+      return;
+    }
     setOpen(false);
     const finish = (finished?: boolean) => {
       'worklet';
@@ -130,6 +135,17 @@ export function useSheet(screenHeight: number, reduceMotion: boolean): SheetStat
     if (action === 'show') show();
     if (action === 'hide') hide();
   }, [gate, show, hide]);
+
+  // La animación de cierre a veces no avisa (Android). Sin esto `visible`
+  // se queda en true, el velo a pantalla completa sigue montado y se come
+  // todos los toques: hide() ya no hace nada porque la hoja consta cerrada.
+  useEffect(() => {
+    if (open || !visible) return undefined;
+    const id = setTimeout(() => {
+      if (!gate.isOpen) setVisible(false);
+    }, (reduceMotion ? 0 : SHEET_CLOSE_MS) + 120);
+    return () => clearTimeout(id);
+  }, [open, visible, reduceMotion, gate]);
 
   const hideNow = useCallback(() => {
     gate.reset();
