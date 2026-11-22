@@ -102,8 +102,7 @@ import { FloatingHelp } from '../components/FloatingHelp';
 import { GesturesHelp } from '../components/GesturesHelp';
 import { LandscapePauseHint } from '../components/LandscapePauseHint';
 import { HourglassBoundary } from '../components/HourglassBoundary';
-import { crearCaptura } from '../components/menu/capturaReloj';
-import { VidrioPantalla } from '../components/menu/FrostedPanel';
+import { FrostedPanel, VidrioPantalla } from '../components/menu/FrostedPanel';
 import { MenuButton } from '../components/menu/MenuButton';
 import { SettingsSheet } from '../components/menu/SettingsSheet';
 import type { MenuFonts } from '../components/menu/themedStyles';
@@ -244,9 +243,6 @@ export function TimerScreen({ settings, fonts }: Props) {
   // La hoja se anima al abrir y cerrar (sin animación solo con «reducir
   // movimiento»), y la arena sigue moviéndose detrás con el menú abierto.
   const sheet = useSheet(height, reduceMotion);
-  // Foto del reloj que desenfoca el vidrio de la hoja. El mismo objeto toda
-  // la vida de la pantalla: la hoja está suscrita a él.
-  const capturaMenu = useRef(crearCaptura()).current;
   // Con la ayuda de gestos abierta, el tiempo y el botón del menú se apagan.
   const helpFade = useSharedValue(0);
   const consentFade = useSharedValue(0);
@@ -563,14 +559,31 @@ export function TimerScreen({ settings, fonts }: Props) {
   };
 
   // ─── Diseño ─────────────────────────────────────────────────────────────
-  // Vidrio de la ayuda y del consentimiento, dentro del lienzo. El del menú
-  // no: en Android el lienzo se compone por encima de la hoja, así que el
-  // vidrio vive en la hoja (foto del reloj). Memorizado para no regrabar la
-  // escena en cada render.
+  // El vidrio del menú va DENTRO del lienzo del reloj. Memorizado: si no, cada
+  // render de la pantalla sería un hijo «nuevo» y el lienzo Skia entero se
+  // volvería a grabar aunque no cambie nada.
+  //
+  // 1.8.6: montado SIEMPRE (cerrado queda fuera de la pantalla y Skia no lo
+  // dibuja). Montarlo al abrir obligaba a Skia a volver a grabar la escena
+  // entera en el hilo de JS (una tarea de prioridad normal que espera detrás
+  // de los fotogramas de la arena, y que lee cada shared value con una
+  // llamada síncrona al hilo de la interfaz): con el reloj en marcha la hoja
+  // subía sin vidrio y el desenfoque llegaba de golpe hasta ~1 s después.
+  // Ahora abrir solo mueve shared values, en el hilo de la interfaz, en el
+  // mismo fotograma que la hoja.
+  //
+  // Vidrio líquido: la hoja y, a pantalla completa, la ayuda y el consentimiento.
   const capaVidrio = useDerivedValue(() => helpFade.value);
   const frosted = useMemo(
     () => (
       <Group>
+        <FrostedPanel
+          width={width}
+          height={height}
+          top={sheet.top}
+          openness={sheet.openness}
+          themeProgress={themeProgress}
+        />
         <VidrioPantalla width={width} height={height} opacity={capaVidrio} themeProgress={themeProgress} />
         <VidrioPantalla
           width={width}
@@ -581,7 +594,7 @@ export function TimerScreen({ settings, fonts }: Props) {
         />
       </Group>
     ),
-    [width, height, themeProgress, capaVidrio, consentFade],
+    [sheet.top, sheet.openness, width, height, themeProgress, capaVidrio, consentFade],
   );
   // El texto del menú se pinta encima del lienzo: el desenfoque no lo tapa.
   // Mientras hay un diálogo encima, la hoja se apaga.
@@ -607,10 +620,6 @@ export function TimerScreen({ settings, fonts }: Props) {
       <GestureDetector gesture={gesture}>
         <View
           style={StyleSheet.absoluteFill}
-          // Con la hoja abierta el lienzo no puede quedarse los toques: sus
-          // gestos ya están apagados, y si se los come no responde nada. El
-          // «atrás» de Android no es un toque, por eso era el único que cerraba.
-          pointerEvents={sheet.visible ? 'none' : 'auto'}
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel={tr.hourglass}
@@ -653,8 +662,6 @@ export function TimerScreen({ settings, fonts }: Props) {
               pose={intro.pose}
               poseActive={intro.active}
               menuOpenness={sheet.openness}
-              captura={capturaMenu}
-              capturar={sheet.visible}
             >
               {frosted}
             </Hourglass>
@@ -663,11 +670,7 @@ export function TimerScreen({ settings, fonts }: Props) {
       </GestureDetector>
 
       {pip ? null : (
-        <View
-          style={[StyleSheet.absoluteFill, overlayStyle, styles.sobreTexto]}
-          pointerEvents="none"
-          collapsable={false}
-        >
+        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="none">
           <Animated.View style={[StyleSheet.absoluteFill, pauseFade]} testID="capa-pausa">
             <PauseLabel
               visible={paused}
@@ -698,11 +701,7 @@ export function TimerScreen({ settings, fonts }: Props) {
       )}
 
       {pip ? null : landscapeHint.visible ? (
-        <View
-          style={[StyleSheet.absoluteFill, overlayStyle, styles.sobreTexto]}
-          pointerEvents="box-none"
-          collapsable={false}
-        >
+        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
           <LandscapePauseHint
             text={tr.pauseLandscapeHint}
             dismissLabel={tr.dismissLandscapePauseHint}
@@ -715,11 +714,7 @@ export function TimerScreen({ settings, fonts }: Props) {
       ) : null}
 
       {pip ? null : (
-        <View
-          style={[StyleSheet.absoluteFill, overlayStyle, styles.sobreLienzo]}
-          pointerEvents="box-none"
-          collapsable={false}
-        >
+        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
           <Animated.View
             style={[StyleSheet.absoluteFill, menuBajoDialogo]}
             pointerEvents={consentVisible || infoOpen ? 'none' : 'box-none'}
@@ -736,7 +731,6 @@ export function TimerScreen({ settings, fonts }: Props) {
               testID="velo-ajustes"
             />
           ) : null}
-          {sheet.visible ? (
           <SettingsSheet
             sheet={sheet}
             settings={prefs}
@@ -745,8 +739,6 @@ export function TimerScreen({ settings, fonts }: Props) {
             themeProgress={themeProgress}
             fonts={fonts}
             screenHeight={height}
-            screenWidth={width}
-            captura={capturaMenu}
             safeTop={tilt.flipped ? safe.bottom : safe.top}
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
             onShowGestures={showGestures}
@@ -767,7 +759,6 @@ export function TimerScreen({ settings, fonts }: Props) {
                 : null
             }
           />
-          ) : null}
           </Animated.View>
           <MenuButton
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
@@ -804,11 +795,7 @@ export function TimerScreen({ settings, fonts }: Props) {
       )}
       {/* Fuera de la rama de imagen en imagen, pero con el mismo giro: si el
           móvil está volteado, el texto del consentimiento se lee derecho. */}
-      <View
-        style={[StyleSheet.absoluteFill, overlayStyle, styles.sobreDialogo]}
-        pointerEvents="box-none"
-        collapsable={false}
-      >
+      <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
         <ConsentDialog
           visible={consentVisible}
           dismissible={consent.record !== null}
@@ -875,10 +862,4 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flipped: { transform: [{ rotate: '180deg' }] },
-  // Por encima del lienzo. En Android el TextureView de Skia se compone
-  // encima de las vistas que van después si no tienen elevación: el frasco
-  // y el vidrio tapaban el menú y «Pausa».
-  sobreTexto: { zIndex: 4, elevation: 8 },
-  sobreLienzo: { zIndex: 8, elevation: 16 },
-  sobreDialogo: { zIndex: 12, elevation: 24 },
 });

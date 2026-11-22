@@ -18,7 +18,7 @@
  *     fondo
  *     [desenfoque de la pausa, solo en la franja del reloj (1.8.1)]
  *       sombra · [EL RELOJ: cuerpo + arena + reflejos]
- *     `children` (vidrio de la ayuda y del consentimiento)
+ *     `children` (p. ej. el vidrio del menú)
  *   [fundido del cambio de tema]
  *   [vidrio de la pausa de lado, a pantalla completa]
  *
@@ -33,13 +33,12 @@
  * con un pequeño retraso (ver disposal.ts). Nada vive a nivel de módulo.
  */
 import { type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
-import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef, type SkImage } from '@shopify/react-native-skia';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef } from '@shopify/react-native-skia';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import type { CapturaReloj } from '../components/menu/capturaReloj';
 import { VidrioPantalla } from '../components/menu/FrostedPanel';
 import { NubeMovil } from '../escenas/Nube';
 import { useFondoImagen } from '../escenas/fondoImagen';
@@ -122,9 +121,8 @@ export interface HourglassProps {
   readonly poseActive?: boolean;
   /**
    * Elementos Skia que se dibujan encima del reloj, en el mismo lienzo (el
-   * vidrio de la ayuda y del consentimiento). Giran con el móvil volteado,
-   * pero no se desenfocan en la pausa. El vidrio del menú no va aquí: en
-   * Android el lienzo tapa la hoja.
+   * vidrio del menú). Giran con el móvil volteado, pero no se desenfocan en
+   * la pausa.
    */
   readonly children?: ReactNode;
   /**
@@ -133,12 +131,6 @@ export interface HourglassProps {
    * reloj nunca se ve nítido, y sin re-renderizar nada (ver `blurNow`).
    */
   readonly menuOpenness?: SharedValue<number>;
-  /**
-   * Foto del lienzo para el vidrio del menú, que vive en la hoja. Mientras
-   * `capturar` es true se renueva. Sin ellos, el reloj no hace fotos.
-   */
-  readonly captura?: CapturaReloj;
-  readonly capturar?: boolean;
 }
 
 function HourglassComponent(props: HourglassProps) {
@@ -173,8 +165,6 @@ function HourglassCanvas({
   poseActive = false,
   children,
   menuOpenness,
-  captura,
-  capturar = false,
 }: HourglassProps) {
   // Si el bucle de dibujo falla (fuera del render), lo relanzamos DENTRO del
   // render para que lo capture el error boundary que nos envuelve.
@@ -380,57 +370,13 @@ function HourglassCanvas({
     </Paint>
   ) : undefined;
 
-  // Fundido al cambiar de tema: foto del lienzo antiguo que se desvanece.
+  // Fundido al cambiar de tema: foto del lienzo antiguo que se desvanece
+  // (encima de todo, también del vidrio del menú, que no tiene desenfoque).
   const canvasRef = useCanvasRef();
   const fade = useThemeCrossfade(canvasRef, temaPintado, reduceMotion);
-  const claveFoto = fondo.tipo === 'foto' ? fondo.fuente : 0;
-  // Foto para el vidrio de la hoja. El lienzo se redibuja en el siguiente
-  // fotograma, así que repetimos la foto un par de frames después (al cambiar
-  // de tema la primera saldría con el tema viejo).
-  useLayoutEffect(() => {
-    if (!capturar || !captura) return undefined;
-    let vivo = true;
-    let frame2 = 0;
-    const tomar = () => {
-      if (!vivo) return;
-      let next: SkImage | null = null;
-      try {
-        next = canvasRef.current?.makeImageSnapshot() ?? null;
-      } catch {
-        next = null;
-      }
-      if (!vivo || !next || next === captura.imagen) return;
-      const prev = captura.imagen;
-      captura.imagen = next;
-      captura.avisar();
-      if (prev) disposeLater([prev]);
-    };
-    tomar();
-    const frame1 = requestAnimationFrame(() => {
-      frame2 = requestAnimationFrame(tomar);
-    });
-    return () => {
-      vivo = false;
-      cancelAnimationFrame(frame1);
-      cancelAnimationFrame(frame2);
-    };
-  }, [capturar, captura, width, height, theme.solid, material, claveFoto, canvasRef]);
-  // Al cerrar, soltamos la foto cuando la hoja ya ha bajado. Si se vuelve a
-  // abrir antes, se cancela y la foto sigue sirviendo.
-  useEffect(() => {
-    if (!captura || capturar) return undefined;
-    const id = setTimeout(() => {
-      const prev = captura.imagen;
-      if (!prev) return;
-      captura.imagen = null;
-      captura.avisar();
-      disposeLater([prev]);
-    }, 400);
-    return () => clearTimeout(id);
-  }, [capturar, captura]);
 
   return (
-    <Canvas ref={canvasRef} style={{ width, height }} pointerEvents="none">
+    <Canvas ref={canvasRef} style={{ width, height }}>
       <Group transform={transform} origin={origin}>
         <Picture picture={background} />
         <Group layer={layer} clip={blurLayerOn && !poseActive ? blurClip : undefined}>

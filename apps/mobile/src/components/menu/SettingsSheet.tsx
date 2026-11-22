@@ -1,12 +1,8 @@
 /**
- * Hoja de ajustes (concepto A de la fase 3): sube desde abajo sobre el reloj.
- * El vidrio es hijo de esta vista (`VidrioHoja`): misma posición y la misma
- * animación. No se pinta en el lienzo del reloj, porque en Android ese
- * lienzo queda por encima de la hoja.
- *
- * La posición es `top` (el mismo shared value que el vidrio), no un
- * `translateY` sobre `bottom: 0`. Cerrada, `top` queda bajo la pantalla
- * aunque el padre mida 0 en el primer frame. No se monta hasta que se abre.
+ * Hoja de ajustes (concepto A de la fase 3): sube desde abajo sobre el reloj
+ * como un vidrio (sin desenfoque desde la 1.8.9). Aquí está la parte de
+ * React Native (textos y controles, con fondo transparente); el vidrio lo
+ * dibuja `FrostedPanel` en el lienzo de Skia, siguiendo el mismo `offset`.
  *
  * Se cierra:
  *   - arrastrando hacia abajo (gesto de Gesture Handler en el hilo de UI),
@@ -50,6 +46,7 @@ import {
   type SceneId,
   type SessionMode,
   type Settings,
+  snapToPixel,
 } from '@reloj/core';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -70,9 +67,7 @@ import { getEscena } from '../../escenas';
 import { useT } from '../../i18n/I18n';
 import { announce } from '../../hooks/useScreenReader';
 import type { HourglassTheme } from '../../theme/theme';
-import type { CapturaReloj } from './capturaReloj';
 import { Chip, DurationSlider, Segmented, Stepper, type SegmentOption } from './controls';
-import { SHEET_RADIUS, VidrioHoja } from './FrostedPanel';
 import { QuickTooltip, RoundButton, themeIcon, useQuickTooltip } from './QuickSettings';
 import { useMenuStyles, type MenuFonts, type PaletaUi } from './themedStyles';
 import { SHEET_DENSITY, type SheetState } from './useSheet';
@@ -111,9 +106,6 @@ interface Props {
   readonly themeProgress: SharedValue<number>;
   readonly fonts: MenuFonts;
   readonly screenHeight: number;
-  readonly screenWidth: number;
-  /** Foto del reloj que el vidrio de la hoja desenfoca. */
-  readonly captura: CapturaReloj;
   /** Márgenes seguros (muesca, barra de gestos). */
   readonly safeTop: number;
   readonly safeBottom: number;
@@ -148,8 +140,6 @@ export function SettingsSheet({
   themeProgress,
   fonts,
   screenHeight,
-  screenWidth,
-  captura,
   safeTop,
   safeBottom,
   onShowGestures,
@@ -163,7 +153,7 @@ export function SettingsSheet({
   const paleta: PaletaUi = { claro: escena.claro.tema.ui, oscuro: escena.oscuro.tema.ui };
   const s = useMenuStyles(themeProgress, paleta);
   const base = { styles: s, fonts, pillShadow: theme.ui.pillShadow };
-  const { open, visible, hide, offset, height, top } = sheet;
+  const { open, visible, hide, offset, height } = sheet;
   // Etiqueta de la pulsación larga en la fila de botones redondos (1.8.10).
   const { state: tipState, control: tip } = useQuickTooltip();
   const [quickRowWidth, setQuickRowWidth] = useState(0);
@@ -254,10 +244,9 @@ export function SettingsSheet({
   const headerPan = usePanGesture(makePan(true));
   const bodyPan = usePanGesture(makePan(!scrollable));
 
-  // El mismo `top` que el vidrio. Cerrada queda bajo la pantalla; el `top`
-  // fijo es el primer frame, por si el estilo animado aún no está aplicado.
-  const place = useAnimatedStyle(() => ({
-    top: top.value,
+  // Al píxel físico, igual que el canto del vidrio (`top`, ver useSheet; 1.8.7).
+  const slide = useAnimatedStyle(() => ({
+    transform: [{ translateY: snapToPixel(offset.value, SHEET_DENSITY) }],
   }));
 
   // ─── Valores mostrados ──────────────────────────────────────────────────
@@ -287,23 +276,13 @@ export function SettingsSheet({
 
   return (
     <Animated.View
-      style={[styles.sheet, { height: sheetHeight || undefined, top: screenHeight }, place]}
+      style={[styles.sheet, { height: sheetHeight || undefined }, slide]}
       pointerEvents={open ? 'auto' : 'none'}
       accessibilityViewIsModal={open}
       importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
       accessibilityElementsHidden={!open}
       testID="hoja-ajustes"
     >
-      <VidrioHoja
-        width={screenWidth}
-        screenHeight={screenHeight}
-        top={top}
-        themeProgress={themeProgress}
-        captura={captura}
-      />
-      {/* Por encima del vidrio. El vidrio no es un lienzo: no tapa esto ni
-          se queda los toques. La elevación es contra el lienzo del reloj. */}
-      <View style={styles.contenido} collapsable={false}>
       <GestureDetector gesture={headerPan}>
         <View onLayout={settled(setHeaderH)} style={styles.header}>
           <Pressable
@@ -622,7 +601,6 @@ export function SettingsSheet({
           </View>
         </ScrollView>
       </GestureDetector>
-      </View>
     </Animated.View>
   );
 }
@@ -667,15 +645,7 @@ function formatMinutes(min: number): string {
 }
 
 const styles = StyleSheet.create({
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    overflow: 'hidden',
-    borderTopLeftRadius: SHEET_RADIUS,
-    borderTopRightRadius: SHEET_RADIUS,
-  },
-  contenido: { zIndex: 2, elevation: 8 },
+  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   header: { paddingHorizontal: 26 },
   grabArea: { alignSelf: 'center', width: 88, height: 30, alignItems: 'center', justifyContent: 'center' },
   grabber: { width: 36, height: 4, borderRadius: 2 },
