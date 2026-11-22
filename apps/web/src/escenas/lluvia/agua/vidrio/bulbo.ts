@@ -164,6 +164,7 @@ function trazarSuperficie(ctx: CanvasRenderingContext2D, b: BulboMundo, dy: numb
 export function pintarBulbo(
   ctx: CanvasRenderingContext2D, b: BulboMundo, alturas: ArrayLike<number>,
   fondo: CopiasFondo, g: Gradientes, mezcla: number, alfa: number, refraccion = true,
+  cuello?: { x: number; y: number },
 ): void {
   if (!b.visible) return;
   pintarCapa(b, fondo, g, mezcla, refraccion);
@@ -171,6 +172,7 @@ export function pintarBulbo(
   ctx.save();
   trazarPoligono(ctx, b.pts);
   ctx.clip(); // 1) solo dentro del vidrio
+  if (cuello) recortarPico(ctx, b.pts, cuello.x, cuello.y);
 
   ctx.save();
   trazarSuperficie(ctx, b, 0);
@@ -306,6 +308,84 @@ function pintarMenisco(
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
   ctx.lineWidth = 1;
   ctx.stroke();
+}
+
+/**
+ * En el cuello el agua acaba en un punto. El recorte es un cono desde el
+ * centro del cuello hasta la pared, y el resto del bulbo se queda igual.
+ * Las gotas, que se pintan después, son el hilo. No mueve el nivel.
+ */
+function recortarPico(ctx, pts, nx, ny) {
+  const n = pts.length;
+  if (n < 6) return;
+  let sx = 0;
+  let sy = 0;
+  for (let i = 0; i < n; i += 2) {
+    sx += pts[i];
+    sy += pts[i + 1];
+  }
+  const c = n / 2;
+  sx /= c;
+  sy /= c;
+  let dx = sx - nx;
+  let dy = sy - ny;
+  const largo = Math.hypot(dx, dy);
+  if (!(largo > 1)) return;
+  dx /= largo;
+  dy /= largo;
+  const eje = (i) => (pts[i] - nx) * dx + (pts[i + 1] - ny) * dy;
+  let maxT = 0;
+  for (let i = 0; i < n; i += 2) {
+    const t = eje(i);
+    if (t > maxT) maxT = t;
+  }
+  // La franja del cuello, no el bulbo. 0,12 del eje cae donde el vidrio ya abre.
+  const L = maxT * 0.12;
+  if (!(L > 4)) return;
+  const cortes = [];
+  for (let i = 0; i < n; i += 2) {
+    const j = (i + 2) % n;
+    const t0 = eje(i);
+    const t1 = eje(j);
+    if (!((t0 < L && t1 >= L) || (t1 < L && t0 >= L))) continue;
+    const f = (L - t0) / (t1 - t0 || 1);
+    const x = pts[i] + (pts[j] - pts[i]) * f;
+    const y = pts[i + 1] + (pts[j + 1] - pts[i + 1]) * f;
+    cortes.push({ i, x, y, s: -dy * (x - nx) + dx * (y - ny), lejos: t1 >= L ? j : i });
+  }
+  if (cortes.length < 2) return;
+  let izq = cortes[0];
+  let der = cortes[0];
+  for (let k = 1; k < cortes.length; k++) {
+    if (cortes[k].s < izq.s) izq = cortes[k];
+    if (cortes[k].s > der.s) der = cortes[k];
+  }
+  if (!(der.s - izq.s > 1)) return;
+  let paso = 0;
+  for (const candidato of [2, -2]) {
+    let i = izq.lejos;
+    let vale = false;
+    for (let k = 0; k < c + 2; k++) {
+      if (i === der.lejos || i === der.i) { vale = true; break; }
+      const sig = (i + candidato + n) % n;
+      if (eje(sig) < L - 0.5 && sig !== der.lejos && sig !== der.i) break;
+      i = sig;
+    }
+    if (vale) { paso = candidato; break; }
+  }
+  if (paso === 0) return;
+  ctx.beginPath();
+  ctx.moveTo(nx, ny);
+  ctx.lineTo(izq.x, izq.y);
+  let i = izq.lejos;
+  for (let k = 0; k < c + 2; k++) {
+    ctx.lineTo(pts[i], pts[i + 1]);
+    if (i === der.lejos) break;
+    i = (i + paso + n) % n;
+  }
+  ctx.lineTo(der.x, der.y);
+  ctx.closePath();
+  ctx.clip();
 }
 
 /** y de la superficie en una x del mundo (para que las gotas sepan dónde caen). */
