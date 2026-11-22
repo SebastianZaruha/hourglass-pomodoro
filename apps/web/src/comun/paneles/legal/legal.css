@@ -36,4 +36,10 @@
   height: 100%;
   border: 0;
   background: transparent;
+  /* La hoja se desplaza igual (rueda, toque, teclado); solo se esconde la barra. */
+  scrollbar-width: none;
+}
+
+.legal-dialog iframe::-webkit-scrollbar {
+  display: none;
 }

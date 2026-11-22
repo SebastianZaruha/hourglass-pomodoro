@@ -17,7 +17,8 @@ export function estiloVidrio(frame: HTMLIFrameElement): string {
   const esquema = cs.colorScheme || 'normal';
   return `
 :root,:root:root{color-scheme:${esquema}!important;--fg:${texto};--muted:${texto};--line:${linea};--link:${texto};--card:transparent;--bg:transparent}
-html,body{background:transparent!important}
+html,body{background:transparent!important;scrollbar-width:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
 body{color:${texto};text-shadow:${sombra}}
 .card{background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
 .vl-apartado{background:${humoTexto};border-radius:16px;padding:1rem 1.25rem;margin:0 0 14px;box-shadow:0 0 8px 2px ${humoTexto}}
