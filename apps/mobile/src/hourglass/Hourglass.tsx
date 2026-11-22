@@ -33,7 +33,7 @@
  */
 import { type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
 import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef } from '@shopify/react-native-skia';
-import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -169,37 +169,66 @@ function HourglassCanvas({
   const layout = useMemo(() => computeLayout(width, height, model, insets), [width, height, model, insets]);
   useEffect(() => () => disposeLater([layout.outerPath, layout.innerPath]), [layout]);
 
+  const fuente = fondo.tipo === 'foto' ? fondo.fuente : null;
+  const cargada = useFondoImagen(fuente);
+  // La foto llega un instante después. Hasta entonces el frasco y el fondo
+  // siguen los de antes, y cambian juntos: el fundido los cruza a la vez,
+  // también con el menú abierto.
+  const pendiente = fondo.tipo === 'foto' && cargada.fuente !== fuente;
+  const mostrado = useRef({
+    theme,
+    fondo,
+    foto: null as typeof cargada.imagen,
+    material,
+    nube,
+    luz: luzGrano ?? null,
+  });
+  if (!pendiente) {
+    mostrado.current = {
+      theme,
+      fondo,
+      foto: fondo.tipo === 'foto' ? cargada.imagen : null,
+      material,
+      nube,
+      luz: luzGrano ?? null,
+    };
+  }
+  const temaPintado = mostrado.current.theme;
+  const fondoPintado = mostrado.current.fondo;
+  const foto = mostrado.current.foto;
+  const materialPintado = mostrado.current.material;
+  const nubePintada = mostrado.current.nube;
+  const luzPintada = mostrado.current.luz;
+  const anclaY = fondoPintado.tipo === 'foto' ? fondoPintado.anclaY : 1;
+
   // La arena no se recrea al cambiar el tema: solo el pintor.
   // El agua es otro contenido. Cambiar de escena no reinicia la otra.
   const arena = useMemo(() => crearArena({ model, cols: layout.cols, content }), [model, layout.cols, content]);
   const agua = useMemo(
-    () => (material === 'agua' ? crearAgua({ model, layout }) : null),
-    [material, model, layout],
+    () => (materialPintado === 'agua' ? crearAgua({ model, layout }) : null),
+    [materialPintado, model, layout],
   );
   const contenido = agua ?? arena;
   useEffect(() => () => arena.destruir(), [arena]);
   useEffect(() => () => agua?.destruir(), [agua]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.
-  const fuente = fondo.tipo === 'foto' ? fondo.fuente : null;
-  const foto = useFondoImagen(fuente);
-  const anclaY = fondo.tipo === 'foto' ? fondo.anclaY : 1;
   const revisionPintor = useMemo(() => {
-    const fotoPintor = foto && fondo.tipo === 'foto' ? foto : null;
+    const fotoPintor = foto && fondoPintado.tipo === 'foto' ? foto : null;
     arena.ponerPintor({
       layout,
       model,
-      theme,
+      theme: temaPintado,
       content,
       shaders,
-      luzGrano: luzGrano ?? null,
+      luzGrano: luzPintada,
       foto: null,
       anclaY,
     });
     agua?.ponerPintor({
       layout,
       model,
-      theme,
+      theme: temaPintado,
       content,
       shaders,
       luzGrano: null,
@@ -207,17 +236,17 @@ function HourglassCanvas({
       anclaY,
     });
     return arena.revision + (agua?.revision ?? 0);
-  }, [arena, agua, layout, model, theme, content, shaders, luzGrano, foto, anclaY]);
+  }, [arena, agua, layout, model, temaPintado, content, shaders, luzPintada, foto, anclaY, fondoPintado.tipo]);
   const glass = useMemo(
     () =>
       new GlassPainter(
         shaders,
         layout,
         model,
-        theme,
-        foto && fondo.tipo === 'foto' ? { image: foto, anclaY: fondo.anclaY } : null,
+        temaPintado,
+        foto && fondoPintado.tipo === 'foto' ? { image: foto, anclaY } : null,
       ),
-    [shaders, layout, model, theme, foto, fondo],
+    [shaders, layout, model, temaPintado, foto, fondoPintado, anclaY],
   );
   useEffect(() => () => disposeLater([glass]), [glass]);
 
@@ -318,7 +347,7 @@ function HourglassCanvas({
   // Fundido al cambiar de tema: foto del lienzo antiguo que se desvanece
   // (encima de todo, también del vidrio del menú, que no tiene desenfoque).
   const canvasRef = useCanvasRef();
-  const fade = useThemeCrossfade(canvasRef, theme, reduceMotion);
+  const fade = useThemeCrossfade(canvasRef, temaPintado, reduceMotion);
 
   return (
     <Canvas ref={canvasRef} style={{ width, height }}>
@@ -334,8 +363,8 @@ function HourglassCanvas({
             <Picture picture={front} />
           </Group>
         </Group>
-        {nube ? (
-          <NubeMovil layout={layout} oscuro={theme.scheme === 'dark'} reducir={reduceMotion} />
+        {nubePintada ? (
+          <NubeMovil layout={layout} oscuro={temaPintado.scheme === 'dark'} reducir={reduceMotion} />
         ) : null}
         {children}
       </Group>

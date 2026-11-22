@@ -17,12 +17,16 @@ function soltarSiSobra(): void {
   }
 }
 
-export function useFondoImagen(fuente: number | null): SkImage | null {
-  const [imagen, setImagen] = useState<SkImage | null>(null);
+/** La imagen y la fuente a la que pertenece. Mientras carga otra, sigue la anterior. */
+export function useFondoImagen(fuente: number | null): { fuente: number | null; imagen: SkImage | null } {
+  const [estado, setEstado] = useState<{ fuente: number | null; imagen: SkImage | null }>({
+    fuente: null,
+    imagen: null,
+  });
 
   useEffect(() => {
     if (fuente == null) {
-      setImagen(null);
+      setEstado({ fuente: null, imagen: null });
       return;
     }
     let cancelado = false;
@@ -37,7 +41,7 @@ export function useFondoImagen(fuente: number | null): SkImage | null {
       }
       vivas.push(creada);
       soltarSiSobra();
-      setImagen(creada);
+      setEstado({ fuente, imagen: creada });
     });
     return () => {
       cancelado = true;
@@ -52,5 +56,5 @@ export function useFondoImagen(fuente: number | null): SkImage | null {
     [],
   );
 
-  return imagen;
+  return estado;
 }
