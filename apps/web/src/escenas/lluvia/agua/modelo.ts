@@ -491,7 +491,7 @@ export function crearModelo(): ModeloAgua {
           vista.llenado = null;
         } else {
           llenando = true;
-          vista.llenado = 1 - (1 - t) * (1 - t) * (1 - t);
+          vista.llenado = easeInOutCubic(t);
         }
       }
 

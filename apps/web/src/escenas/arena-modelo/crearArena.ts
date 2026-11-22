@@ -18,7 +18,7 @@ import {
   type StreamInput,
 } from '@reloj/core';
 
-import { MS_LLENADO } from '../../comun/giro';
+import { MS_LLENADO, easeInOutCubic } from '../../comun/giro';
 import {
   RELLENO_ANCHO,
   geometriaDelFrasco,
@@ -268,7 +268,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       }
       if (llenado) {
         const t = Math.min(1, Math.max(0, (e.ahora - llenado.desde) / MS_LLENADO));
-        llenado.p = 1 - (1 - t) * (1 - t) * (1 - t);
+        llenado.p = easeInOutCubic(t);
         ultimoAhora = e.ahora;
         if (t >= 1) llenado = null;
         return true;

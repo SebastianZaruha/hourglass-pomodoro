@@ -1,12 +1,12 @@
 import type { FaseGiro } from '../frasco';
 
 /** Media vuelta del reinicio. El frasco gira este tiempo y después se llena el contenido. */
-export const MS_MEDIA_VUELTA = 900;
+export const MS_MEDIA_VUELTA = 600;
 /**
- * Revelado del contenido nuevo, al quedar el frasco de pie. Ease-out.
+ * Revelado del contenido nuevo, al quedar el frasco de pie. Ease-in-out.
  * Solo máscara: no mueve granos ni pasa nada por el cuello.
  */
-export const MS_LLENADO = 600;
+export const MS_LLENADO = 350;
 /**
  * Vuelta al soltar. Ease-out de un solo frasco, siempre el mismo.
  * No hay fundido del vidrio: si el montón no puede caer, se cruza solo el contenido.

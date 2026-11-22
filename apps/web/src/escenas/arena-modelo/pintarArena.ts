@@ -107,7 +107,7 @@ export interface ArenaPintada {
   readonly lut: Uint8ClampedArray;
   readonly geo: GeometriaFrasco;
   /**
-   * Revelado tras el giro. `p` va de 0 a 1 con ease-out. Cada bulbo se llena
+   * Revelado tras el giro. `p` va de 0 a 1 con ease-in-out. Cada bulbo se llena
    * desde su base hasta la superficie. No mueve granos.
    */
   readonly llenado?: {
