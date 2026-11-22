@@ -12,6 +12,7 @@ import type { SkRuntimeEffect } from '@shopify/react-native-skia';
 import type { SkiaDisposable } from './disposal';
 import { BACKGROUND_SKSL } from './shaders/background';
 import { GLASS_BODY_SKSL, GLASS_FRONT_SKSL } from './shaders/glass';
+import { AGUA_SKSL } from './shaders/agua';
 import { SAND_SKSL } from './shaders/sand';
 import { compileShader } from './shaders/uniforms';
 
@@ -20,6 +21,7 @@ export interface ShaderSet {
   readonly glassBody: SkRuntimeEffect;
   readonly glassFront: SkRuntimeEffect;
   readonly sand: SkRuntimeEffect;
+  readonly agua: SkRuntimeEffect;
 }
 
 /** Compila los shaders (se llama una vez por montaje del reloj). */
@@ -29,10 +31,11 @@ export function createShaderSet(): ShaderSet {
     glassBody: compileShader('vidrio-cuerpo', GLASS_BODY_SKSL),
     glassFront: compileShader('vidrio-frente', GLASS_FRONT_SKSL),
     sand: compileShader('arena', SAND_SKSL),
+    agua: compileShader('agua', AGUA_SKSL),
   };
 }
 
 /** Objetos a liberar cuando el juego de shaders ya no se use. */
 export function shaderSetDisposables(set: ShaderSet): SkiaDisposable[] {
-  return [set.background, set.glassBody, set.glassFront, set.sand];
+  return [set.background, set.glassBody, set.glassFront, set.sand, set.agua];
 }

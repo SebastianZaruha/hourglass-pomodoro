@@ -1,5 +1,5 @@
 /**
- * Lluvia. En F1 el material sigue siendo arena; el agua llega en F3.
+ * Lluvia. El material es agua: la arena de Clásico y de Arena no entra aquí.
  * Dígitos y pista, tinta del menú, barra de estado y reserva.
  */
 import { temaDeFoto } from './paleta';
@@ -26,7 +26,7 @@ const oscuro = temaDeFoto({
 export const lluvia: EscenaMovil = {
   id: 'lluvia',
   nombre: { es: 'Lluvia', en: 'Rain' },
-  material: 'arena',
+  material: 'agua',
   claro: {
     fondo: { tipo: 'foto', fuente: require('../../assets/fondos/lluvia-claro.webp'), anclaY: 1 },
     tema: claro,

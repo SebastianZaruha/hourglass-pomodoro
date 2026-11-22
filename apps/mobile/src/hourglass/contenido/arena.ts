@@ -16,7 +16,7 @@ import {
   type HourglassModel,
   type StreamInput,
 } from '@reloj/core';
-import type { SkPicture } from '@shopify/react-native-skia';
+import type { SkImage, SkPicture } from '@shopify/react-native-skia';
 
 import type { HourglassTheme } from '../../theme/theme';
 import { disposeLater } from '../disposal';
@@ -53,6 +53,9 @@ export interface OpcionesPintor {
   readonly shaders: ShaderSet;
   /** Grados, o null si la luz es la de siempre. */
   readonly luzGrano: number | null;
+  /** Foto del fondo, para el agua. La arena no la usa. */
+  readonly foto: SkImage | null;
+  readonly anclaY: number;
 }
 
 /** La arena, lista para que el bucle la mueva. El pintor se pone aparte: el tema no reinicia la simulación. */

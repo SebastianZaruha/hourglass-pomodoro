@@ -41,6 +41,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useFondoImagen } from '../escenas/fondoImagen';
 import type { FondoMovil, Material } from '../escenas';
 import type { HourglassTheme } from '../theme/theme';
+import { crearAgua } from './contenido/agua';
 import { crearArena } from './contenido/arena';
 import { disposeLater } from './disposal';
 import { objectPose } from './objectPose';
@@ -164,19 +165,45 @@ function HourglassCanvas({
   const layout = useMemo(() => computeLayout(width, height, model, insets), [width, height, model, insets]);
   useEffect(() => () => disposeLater([layout.outerPath, layout.innerPath]), [layout]);
 
-  // La simulación no se recrea al cambiar el tema: solo el pintor.
-  const contenido = useMemo(() => crearArena({ model, cols: layout.cols, content }), [model, layout.cols, content]);
-  const revisionPintor = useMemo(() => {
-    contenido.ponerPintor({ layout, model, theme, content, shaders, luzGrano: luzGrano ?? null });
-    return contenido.revision;
-  }, [contenido, layout, model, theme, content, shaders, luzGrano]);
-  useEffect(() => () => contenido.destruir(), [contenido]);
+  // La arena no se recrea al cambiar el tema: solo el pintor.
+  // El agua es otro contenido. Cambiar de escena no reinicia la otra.
+  const arena = useMemo(() => crearArena({ model, cols: layout.cols, content }), [model, layout.cols, content]);
+  const agua = useMemo(
+    () => (material === 'agua' ? crearAgua({ model, layout }) : null),
+    [material, model, layout],
+  );
+  const contenido = agua ?? arena;
+  useEffect(() => () => arena.destruir(), [arena]);
+  useEffect(() => () => agua?.destruir(), [agua]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.
   const fuente = fondo.tipo === 'foto' ? fondo.fuente : null;
   const foto = useFondoImagen(fuente);
-  // F1 pinta arena también en Lluvia. El agua usa este material en F3.
-  void material;
+  const anclaY = fondo.tipo === 'foto' ? fondo.anclaY : 1;
+  const revisionPintor = useMemo(() => {
+    const fotoPintor = foto && fondo.tipo === 'foto' ? foto : null;
+    arena.ponerPintor({
+      layout,
+      model,
+      theme,
+      content,
+      shaders,
+      luzGrano: luzGrano ?? null,
+      foto: null,
+      anclaY,
+    });
+    agua?.ponerPintor({
+      layout,
+      model,
+      theme,
+      content,
+      shaders,
+      luzGrano: null,
+      foto: fotoPintor,
+      anclaY,
+    });
+    return arena.revision + (agua?.revision ?? 0);
+  }, [arena, agua, layout, model, theme, content, shaders, luzGrano, foto, anclaY]);
   const glass = useMemo(
     () =>
       new GlassPainter(
