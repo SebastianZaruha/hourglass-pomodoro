@@ -671,11 +671,7 @@ export function TimerScreen({ settings, fonts }: Props) {
 
       {pip ? null : (
         <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="none">
-          <Animated.View
-            style={[StyleSheet.absoluteFill, styles.pauseFront, pauseFade]}
-            testID="capa-pausa"
-            collapsable={false}
-          >
+          <Animated.View style={[StyleSheet.absoluteFill, pauseFade]} testID="capa-pausa">
             <PauseLabel
               visible={paused}
               sideSign={blurred ? tilt.sideSign : 0}
@@ -720,7 +716,7 @@ export function TimerScreen({ settings, fonts }: Props) {
       {pip ? null : (
         <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
           <Animated.View
-            style={menuBajoDialogo}
+            style={[StyleSheet.absoluteFill, menuBajoDialogo]}
             pointerEvents={consentVisible || infoOpen ? 'none' : 'box-none'}
             importantForAccessibility={consentVisible || infoOpen ? 'no-hide-descendants' : 'auto'}
           >
@@ -866,7 +862,4 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flipped: { transform: [{ rotate: '180deg' }] },
-  // Encima del lienzo. En Android el TextureView de Skia, con un BackdropBlur,
-  // tapa las vistas que van después; la elevación deja «Pausa» delante.
-  pauseFront: { zIndex: 30, elevation: 30, overflow: 'visible' },
 });

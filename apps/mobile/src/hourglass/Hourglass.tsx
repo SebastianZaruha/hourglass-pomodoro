@@ -19,9 +19,8 @@
  *     [desenfoque de la pausa, solo en la franja del reloj (1.8.1)]
  *       sombra · [EL RELOJ: cuerpo + arena + reflejos]
  *     `children` (p. ej. el vidrio del menú)
- *   [desenfoque de la pausa de lado, de todo el lienzo]
- *   [tinte del vidrio, rectángulo a pantalla completa]
- *   El texto «Pausa» no va aquí: es una vista de React Native encima.
+ *   [fundido del cambio de tema]
+ *   [vidrio de la pausa de lado, a pantalla completa]
  *
  * EL RELOJ (capas 3-5) tiene su propia transformación, alrededor de su
  * centro: la `pose` (introducción: giro, escala, posición y opacidad) más el
@@ -34,19 +33,13 @@
  * con un pequeño retraso (ver disposal.ts). Nada vive a nivel de módulo.
  */
 import { type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
-import { Blur, Canvas, Group, Image, Paint, Picture, Rect, rect, useCanvasRef } from '@shopify/react-native-skia';
+import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef } from '@shopify/react-native-skia';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
-import {
-  interpolateColor,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { VIDRIO } from '../components/menu/vidrioLiquido';
+import { VidrioPantalla } from '../components/menu/FrostedPanel';
 import { NubeMovil } from '../escenas/Nube';
 import { useFondoImagen } from '../escenas/fondoImagen';
 import type { FondoMovil, Material } from '../escenas';
@@ -340,44 +333,19 @@ function HourglassCanvas({
     );
   }, [target, reduceMotion, blur]);
 
-  // Vidrio de la pausa de lado. No usa BackdropBlur: en Android ese filtro,
-  // con un Fill y un recorte que empieza a altura 0, no toma el lienzo. Se
-  // queda con el último recorte redondeado (la hoja de ajustes, la mitad de
-  // abajo) y el rótulo «Pausa», que va encima del lienzo, desaparece.
-  // Aquí el desenfoque es el mismo Blur del reloj, de todo el lienzo, y el
-  // tinte es un rectángulo explícito de ancho × alto. σ y color: vidrioLiquido.ts.
+  // Vidrio de la pausa de lado, encima de fondo, frasco y nube. Usa el
+  // desenfoque y el tinte del menú (vidrioLiquido.ts).
   const pausaOpacidad = useSharedValue(0);
-  const velo = useSharedValue(0);
-  const [veloOn, setVeloOn] = useState(vidrioPausa);
-  if (vidrioPausa && !veloOn) setVeloOn(true);
-  if (!vidrioPausa && reduceMotion && veloOn) setVeloOn(false);
   const progresoTema = useSharedValue(theme.scheme === 'dark' ? 1 : 0);
   useEffect(() => {
     const valor = vidrioPausa ? 1 : 0;
-    const sigma = vidrioPausa ? VIDRIO.blur : 0;
-    if (reduceMotion) {
-      pausaOpacidad.set(valor);
-      velo.set(sigma);
-      if (!vidrioPausa) setVeloOn(false);
-      return;
-    }
-    const off = () => setVeloOn(false);
-    pausaOpacidad.set(withTiming(valor, { duration: valor > 0 ? 320 : 240 }));
-    velo.set(
-      withTiming(sigma, { duration: sigma > 0 ? 320 : 240 }, (finished) => {
-        'worklet';
-        if (finished && sigma === 0) scheduleOnRN(off);
-      }),
-    );
-  }, [vidrioPausa, reduceMotion, pausaOpacidad, velo]);
+    pausaOpacidad.set(reduceMotion ? valor : withTiming(valor, { duration: valor > 0 ? 320 : 240 }));
+  }, [vidrioPausa, reduceMotion, pausaOpacidad]);
   useEffect(() => {
     if (themeProgress) return;
     progresoTema.set(theme.scheme === 'dark' ? 1 : 0);
   }, [theme.scheme, themeProgress, progresoTema]);
-  const progreso = themeProgress ?? progresoTema;
-  const colorPausa = useDerivedValue(() =>
-    interpolateColor(progreso.value, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro]),
-  );
+  const tintePausa = themeProgress ?? progresoTema;
 
   // El desenfoque solo cubre la franja del reloj y su sombra (1.8.1). El fondo
   // es un degradado muy suave: desenfocado se ve igual, pero desenfocar toda
@@ -396,17 +364,9 @@ function HourglassCanvas({
   const blurNow = useDerivedValue(() =>
     menuOpenness ? Math.max(blur.value, menuOpenness.value * PAUSE_BLUR_PX.full) : blur.value,
   );
-  // Con el vidrio de pausa a pantalla completa, el desenfoque del frasco
-  // sobra: si no, el frasco queda más borroso que el fondo.
-  const layer =
-    blurLayerOn && !vidrioPausa ? (
-      <Paint>
-        <Blur blur={blurNow} mode="clamp" />
-      </Paint>
-    ) : undefined;
-  const veloLayer = veloOn ? (
+  const layer = blurLayerOn ? (
     <Paint>
-      <Blur blur={velo} mode="clamp" />
+      <Blur blur={blurNow} mode="clamp" />
     </Paint>
   ) : undefined;
 
@@ -418,22 +378,20 @@ function HourglassCanvas({
   return (
     <Canvas ref={canvasRef} style={{ width, height }}>
       <Group transform={transform} origin={origin}>
-        <Group layer={veloLayer}>
-          <Picture picture={background} />
-          <Group layer={layer} clip={blurLayerOn && !vidrioPausa && !poseActive ? blurClip : undefined}>
-            <Group layer={shadowLayer}>
-              <Picture picture={shadow} />
-            </Group>
-            <Group transform={objectTransform} origin={center} layer={objectLayer}>
-              <Picture picture={body} />
-              <Picture picture={sand} />
-              <Picture picture={front} />
-            </Group>
+        <Picture picture={background} />
+        <Group layer={layer} clip={blurLayerOn && !poseActive ? blurClip : undefined}>
+          <Group layer={shadowLayer}>
+            <Picture picture={shadow} />
           </Group>
-          {nubePintada ? (
-            <NubeMovil layout={layout} oscuro={temaPintado.scheme === 'dark'} reducir={reduceMotion} />
-          ) : null}
+          <Group transform={objectTransform} origin={center} layer={objectLayer}>
+            <Picture picture={body} />
+            <Picture picture={sand} />
+            <Picture picture={front} />
+          </Group>
         </Group>
+        {nubePintada ? (
+          <NubeMovil layout={layout} oscuro={temaPintado.scheme === 'dark'} reducir={reduceMotion} />
+        ) : null}
         {children}
       </Group>
       {fade.image ? (
@@ -447,9 +405,7 @@ function HourglassCanvas({
           opacity={fade.opacity}
         />
       ) : null}
-      <Group opacity={pausaOpacidad}>
-        <Rect x={0} y={0} width={width} height={height} color={colorPausa} />
-      </Group>
+      <VidrioPantalla width={width} height={height} opacity={pausaOpacidad} themeProgress={tintePausa} />
     </Canvas>
   );
 }
