@@ -21,7 +21,7 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
   const videoA = useRef<HTMLVideoElement>(null);
   const videoB = useRef<HTMLVideoElement>(null);
   const soloFoto = reducir || ahorraDatos();
-  useOpacidad(raiz, opacidad, reducir);
+  const leerOpacidad = useOpacidad(raiz, opacidad, reducir);
   useEffect(() => {
     const tela = lienzo.current;
     if (!tela) return;
@@ -34,7 +34,7 @@ export function Nube({ caja, opacidad, reducir, oscuro }: PropsEncima) {
     };
     if (a.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) subir();
     else a.addEventListener('canplaythrough', subir, { once: true });
-    const soltar = engancharBucle(a, b, tela);
+    const soltar = engancharBucle(a, b, tela, leerOpacidad);
     return () => {
       a.removeEventListener('canplaythrough', subir);
       soltar?.();
@@ -80,7 +80,9 @@ function cicloNube(ahora: number): number {
   return suave((u - 0.74) / 0.26);
 }
 
-function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject<number>, reducir: boolean) {
+function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject<number>, reducir: boolean): () => number {
+  const actual = useRef(1);
+  const leer = useRef(() => actual.current);
   useEffect(() => {
     const el = raiz.current;
     if (!el) return;
@@ -89,7 +91,8 @@ function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject
     const cuadro = (ahora: number) => {
       const valor = opacidad.current ?? 1;
       const ciclo = reducir ? 1 : cicloNube(ahora);
-      el.style.opacity = String(Math.max(0, Math.min(1, valor * ciclo)));
+      actual.current = Math.max(0, Math.min(1, valor * ciclo));
+      el.style.opacity = String(actual.current);
       if (!reducir) {
         const t = ahora / 1000;
         const x = Math.sin(t * 0.07) * 8;
@@ -101,4 +104,5 @@ function useOpacidad(raiz: RefObject<HTMLDivElement | null>, opacidad: RefObject
     raf = requestAnimationFrame(cuadro);
     return () => cancelAnimationFrame(raf);
   }, [opacidad, raiz, reducir]);
+  return leer.current;
 }

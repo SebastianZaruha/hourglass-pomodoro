@@ -43,8 +43,13 @@ function leer(ctx: CanvasRenderingContext2D, fuente: CanvasImageSource, w: numbe
   return foto;
 }
 
+let mezcla: ImageData | null = null;
+
 function fundir(abajo: ImageData, arriba: ImageData, t: number): ImageData {
-  const salida = new ImageData(abajo.width, abajo.height);
+  if (!mezcla || mezcla.width !== abajo.width || mezcla.height !== abajo.height) {
+    mezcla = new ImageData(abajo.width, abajo.height);
+  }
+  const salida = mezcla;
   const a = abajo.data;
   const b = arriba.data;
   const o = salida.data;
@@ -54,7 +59,12 @@ function fundir(abajo: ImageData, arriba: ImageData, t: number): ImageData {
     const pb = (b[i + 3] ?? 0) * t;
     const s = pa + pb;
     o[i + 3] = Math.min(255, s);
-    if (s < 1) continue;
+    if (s < 1) {
+      o[i] = 0;
+      o[i + 1] = 0;
+      o[i + 2] = 0;
+      continue;
+    }
     o[i] = ((a[i] ?? 0) * pa + (b[i] ?? 0) * pb) / s;
     o[i + 1] = ((a[i + 1] ?? 0) * pa + (b[i + 1] ?? 0) * pb) / s;
     o[i + 2] = ((a[i + 2] ?? 0) * pa + (b[i + 2] ?? 0) * pb) / s;
@@ -88,6 +98,7 @@ export function engancharBucle(
   a: HTMLVideoElement,
   b: HTMLVideoElement,
   lienzo: HTMLCanvasElement,
+  opacidad: () => number = () => 1,
 ): () => void {
   let vivo = true;
   let cruzando = false;
@@ -97,6 +108,10 @@ export function engancharBucle(
   b.pause();
   const soltarA = engancharReproduccion(a);
   let raf = 0;
+  let tActivo = -1;
+  let tEspera = -1;
+  let ultimoW = 0;
+  let ultimoH = 0;
 
   // La nube nace con opacity 0 y el ciclo la vuelve a apagar. Con el padre
   // invisible, Chrome, Firefox y Safari dejan de entregar
@@ -127,13 +142,22 @@ export function engancharBucle(
         void espera.play().catch(() => undefined);
       }
       if (cruzando) reanudar(espera);
-      const base = leer(ctx, activo, caja.w, caja.h);
-      if (base && cruzando && espera.readyState >= 2 && (espera.currentTime > 0 || !espera.paused)) {
-        const encima = leer(ctx, espera, caja.w, caja.h);
-        const t = Math.min(1, Math.max(0, 1 - queda / CRUCE_S));
-        if (encima) ctx.putImageData(fundir(base, encima, t), 0, 0);
-        else ctx.putImageData(base, 0, 0);
-      } else if (base) ctx.putImageData(base, 0, 0);
+      const visible = opacidad() > 0;
+      const mismoTiempo = activo.currentTime === tActivo && (!cruzando || espera.currentTime === tEspera);
+      const mismoTam = caja.w === ultimoW && caja.h === ultimoH;
+      if (visible && !(mismoTiempo && mismoTam)) {
+        const base = leer(ctx, activo, caja.w, caja.h);
+        if (base && cruzando && espera.readyState >= 2 && (espera.currentTime > 0 || !espera.paused)) {
+          const encima = leer(ctx, espera, caja.w, caja.h);
+          const t = Math.min(1, Math.max(0, 1 - queda / CRUCE_S));
+          if (encima) ctx.putImageData(fundir(base, encima, t), 0, 0);
+          else ctx.putImageData(base, 0, 0);
+        } else if (base) ctx.putImageData(base, 0, 0);
+        tActivo = activo.currentTime;
+        tEspera = espera.currentTime;
+        ultimoW = caja.w;
+        ultimoH = caja.h;
+      }
 
       if (cruzando && (queda <= 0.05 || activo.ended)) {
         activo.pause();
