@@ -39,91 +39,28 @@ los paquetes locales como si fueran dependencias normales. Por eso en la app pue
 `import { createTimer } from '@reloj/core'`.
 
 ```
-reloj-de-arena/
-├── package.json            ← raíz: workspaces + scripts globales (test, lint, check…)
-├── eslint.config.mjs       ← reglas de calidad (Expo para la app, TypeScript para el core)
-├── .prettierrc.json        ← formato automático del código
-├── README.md · CHANGELOG.md · LICENSE.md · THIRD_PARTY_NOTICES.md
-├── docs/
-│   ├── ARQUITECTURA.md     ← este documento
-│   ├── SEGUNDO_PLANO.md    ← notificación y avisos con la app cerrada (Android, 1.7)
-│   └── capturas/           ← capturas de pantalla
-│
-├── packages/
-│   └── core/               ← @reloj/core: LÓGICA PURA (sin React, sin UI)
-│       ├── src/
-│       │   ├── timer/      ← motor del temporizador, duraciones, formato, avisos, vibración y serialización
-│       │   ├── recovery/   ← política del error boundary (remontar / recargar / rendirse)
-│       │   ├── session/    ← planes, ciclos (preajustes, límites) y MOTOR DE SESIONES
-│       │   ├── settings/   ← modelo de ajustes + validación (sanitize) + plan según ajustes
-│       │   ├── catalog/    ← catálogos: contenidos (arena; agua más adelante) y modelos de reloj
-│       │   ├── geometry/   ← perfil matemático (silueta) del reloj y zona de guarda del botón del menú
-│       │   ├── i18n/       ← textos en español e inglés (diccionarios tipados) e idioma automático
-│       │   ├── physics/    ← vectores 2D, filtro del acelerómetro, pausa/volteo
-│       │   ├── sim/        ← simulación granular de la arena + controlador de flujo + menos detalle en un giro fuerte (TiltLod, 1.8.9)
-│       │   ├── persistence/← interfaces de almacenamiento + implementación local
-│       │   └── background/ ← sesión mínima para Android, avisos futuros y textos de la notificación
-│       └── test/           ← tests de Vitest
-│
-└── apps/
-    ├── mobile/             ← @reloj/mobile: la app Expo / React Native
-    └── web/                ← @reloj/web: app de navegador (Vite + React). Reutiliza el core; no toca el móvil.
-        ├── index.ts        ← entrada de Expo → src/bootstrap(.web).ts
-        ├── app.json        ← configuración de Expo (nombre, paquete Android, tema, web…)
-        ├── assets/sounds/  ← fin.mp3 (aviso al terminar) y cambio.mp3 (cambio de fase)
-        ├── modules/background-timer/ ← MÓDULO NATIVO PROPIO (Kotlin): notificación, alarmas, botones, ventana flotante y PiP
-        ├── public/         ← canvaskit.wasm para la web (lo copia npm install; no se versiona)
-        └── src/
-            ├── App.tsx             ← proveedores (gestos, safe area), fuentes, ajustes y fondo según el tema
-            ├── bootstrap.ts        ← arranque nativo
-            ├── bootstrap.web.ts    ← arranque web: carga CanvasKit y después la app
-            ├── screens/TimerScreen.tsx ← la pantalla: gestos, avisos, menú, entrada, accesibilidad
-            ├── components/TimeDisplay.tsx ← el tiempo digital de abajo y el rótulo de fase
-            ├── components/HourglassBoundary.tsx ← error boundary: recupera el reloj si Skia falla
-            ├── components/menu/    ← MENÚ DE AJUSTES (ver sección 10)
-            │   ├── MenuButton.tsx  ← botón de dos rayas (abajo a la derecha desde la 1.8.10; su área es toda la zona de guarda)
-            │   ├── SettingsSheet.tsx ← la hoja: pestañas de sesión, alto estable, arrastre, «atrás»
-            │   ├── QuickSettings.tsx ← fila de botones redondos: Tema, Idioma, Sonido, Vibración, Flotante (1.8.8); etiqueta al mantener pulsado (1.8.10)
-            │   ├── FrostedPanel.tsx  ← el vidrio de la hoja, sin desenfoque (Skia, dentro del lienzo del reloj)
-            │   ├── useSheet.ts     ← estado y animación de abrir/cerrar
-            │   ├── controls.tsx    ← segmentado, chip y stepper accesibles
-            │   └── themedStyles.ts ← colores que cambian suavemente con el tema
-            ├── hooks/              ← useSession, useSettings, useLatest, useKeepAwakeWhile
-            ├── intro/useIntro.ts   ← entrada animada (solo al arrancar en frío)
-            ├── dev/devClock.ts     ← reloj de la app; acelerable con ?velocidad=N (solo desarrollo)
-            ├── sound/useCueSound.ts← avisos de fin y de cambio de fase (expo-audio)
-            ├── haptics/            ← vibración (expo-haptics): haptics.ts + useTimerHaptics
-            ├── motion/             ← acelerómetro (expo-sensors) → LiveMotion; simulador web
-            ├── components/PauseLabel.tsx ← rótulo «Pausa» (al tumbar el móvil o al tocar)
-            ├── components/GesturesHelp.tsx ← pantalla de ayuda «Gestos» (sección 14)
-            ├── components/FloatingHelp.tsx ← explicación de la ventana flotante (mismo marco: InfoScreen.tsx)
-            ├── i18n/I18n.tsx       ← idioma de la app: proveedor y useT() (sección 13)
-            ├── background/         ← enlace con el módulo nativo: useBackgroundTimer, useFloatingWindow, sync, ¿avisa la app?
-            ├── recovery/           ← guardar/recuperar la cuenta si hay que recargar (web)
-            ├── storage/            ← adaptador AsyncStorage → interfaz del core
-            ├── theme/theme.ts      ← paletas clara y oscura (también las del menú) y resolveScheme
-            ├── theme/useAppTheme.ts← tema elegido o del sistema + progreso animado 0..1
-            └── hourglass/          ← RENDERIZADOR REUTILIZABLE (Skia)
-                ├── Hourglass.tsx   ← componente <Hourglass/> (capas en un Canvas, pose animable, hijos)
-                ├── useThemeCrossfade.ts ← fundido al cambiar de tema (foto del lienzo)
-                ├── objectPose.ts   ← pose del reloj (entrada + giro de cambio de fase)
-                ├── layout.ts       ← tamaños en píxeles y trazados del vidrio
-                ├── staticLayers.ts ← GlassPainter: fondo, sombra y vidrio (SkPicture)
-                ├── pictureSlot.ts  ← publica pictures y libera los viejos (anillo fijo)
-                ├── sandPainter.ts  ← arena + chorro en cada fotograma
-                ├── useSandEngine.ts← bucle de animación (requestAnimationFrame; menos detalle en un giro fuerte, 1.8.9)
-                ├── disposal.ts     ← liberación (diferida) de objetos Skia
-                ├── resources.ts    ← compilación de shaders (por instancia, nunca global)
-                ├── types.ts        ← fuente de movimiento (gravedad, inclinación, volteo)
-                └── shaders/        ← programas SkSL para la GPU (vidrio, arena, fondo)
+hourglass-pomodoro/
+├── packages/core/     @reloj/core · temporizador, sesiones, ajustes, i18n, simulación de arena
+├── apps/mobile/       @reloj/mobile · Expo + Skia (TimerScreen, hourglass/, shaders)
+│   ├── src/           TimerScreen, hourglass/, motion/, components/menu/, …
+│   └── modules/background-timer/   aviso con la app cerrada
+└── apps/web/          @reloj/web · Vite + React 19 + three.js
+    └── src/
+        ├── app/       pantalla y registro de escenas (Lluvia, Arena, Clásico)
+        ├── comun/     giro, frasco 3D, menú, reloj, cookies
+        └── escenas/   lluvia (agua + nube), arena, clasico
 ```
 
-**Regla de oro:** `core` no importa nada de la app. La app importa de `core`. Así la lógica se
-puede testear sin emuladores y reutilizar en la futura app de escritorio.
+El detalle de archivos que sigue en este documento (`TimerScreen`, `hourglass/`, shaders Skia)
+está en **`apps/mobile/src`**, no en `apps/web`.
 
-`apps/web` es la app de navegador (Vite + React). Importa el mismo core (sesión, ciclos,
-ajustes, textos y simulación) y dibuja el vidrio en Canvas 2D. No usa Skia, sensores ni la
-ventana flotante, y no modifica `apps/mobile`. Cómo arrancarla: [README › App de navegador](../README.md#app-de-navegador-appsweb).
+**Regla de oro:** `core` no importa nada de la app. La app importa de `core`.
+
+`apps/web` es la app de navegador publicada en
+[hourglass.sebastianzaruha.com](https://hourglass.sebastianzaruha.com). Importa el mismo core
+(sesión, ciclos, ajustes, textos y simulación). El frasco es vidrio 3D (three.js) y el
+contenido (arena o agua) va en un lienzo 2D. No usa Skia ni el acelerómetro, y no modifica
+`apps/mobile`. Cómo arrancarla: [README › Web](../README.md#web).
 
 ## Visión general
 
