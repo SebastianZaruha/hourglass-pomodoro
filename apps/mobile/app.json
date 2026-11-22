@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Reloj de Arena",
+    "name": "Hourglass Dev",
     "slug": "reloj-de-arena",
-    "version": "1.8.15",
+    "version": "1.9.0-f0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -12,7 +12,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "versionCode": 10815,
+      "versionCode": 10900,
       "adaptiveIcon": {
         "backgroundColor": "#E6DED4",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,7 +20,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.sebastianzaruha.relojdearena",
+      "package": "com.sebastianzaruha.relojdearena.dev",
       "blockedPermissions": ["android.permission.ACTIVITY_RECOGNITION"]
     },
     "web": {
