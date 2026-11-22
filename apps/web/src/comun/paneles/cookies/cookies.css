@@ -102,6 +102,12 @@
   margin: 12px 0 0;
 }
 
+/* El panel también es .banner, y la regla de arriba le quitaba el margen inferior.
+   16 px bajo el título, como el aire entre las filas y los botones. Arriba basta el padding. */
+.cookie-panel > .cookie-policy {
+  margin: 0 0 16px;
+}
+
 .cookie-switches {
   display: flex;
   flex-direction: column;
