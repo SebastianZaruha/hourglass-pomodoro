@@ -12,6 +12,12 @@ export const MS_LLENADO = 350;
  * No hay fundido del vidrio: si el montón no puede caer, se cruza solo el contenido.
  */
 export const MS_VUELTA_SOLTAR = 360;
+/**
+ * A partir de aquí, soltar reinicia. El máximo del arrastre, no el ángulo
+ * al que se suelta: si pasó de 90° y volvió, también reinicia.
+ * Por debajo, el muelle devuelve el frasco y el tiempo sigue.
+ */
+export const UMBRAL_REINICIO = Math.PI / 2;
 const FLIP_MS = MS_MEDIA_VUELTA;
 const TURN_MS = 950;
 
@@ -61,6 +67,8 @@ export function crearGiro() {
   let dragMoved = false;
   let startAng = 0;
   let startRot = 0;
+  /** Mayor |ángulo| de este arrastre. Se compara con UMBRAL_REINICIO al soltar. */
+  let maxArrastre = 0;
 
   let flipBusy = false;
   let flipToken = 0;
@@ -132,6 +140,7 @@ export function crearGiro() {
     ordenar(o: OrdenGiro): ResultadoOrden {
       if (o.tipo === 'agarrar') {
         if (flipBusy) return 'nada';
+        maxArrastre = Math.abs(gestureAngle);
         if (quieto) {
           dragOn = true;
           dragMoved = false;
@@ -164,16 +173,21 @@ export function crearGiro() {
         if (next > Math.PI) next = Math.PI;
         if (next < -Math.PI) next = -Math.PI;
         gestureAngle = next;
+        if (Math.abs(next) > maxArrastre) maxArrastre = Math.abs(next);
         return 'nada';
       }
       if (o.tipo === 'soltar') {
-        // Soltar no reinicia, ni a 170°. El muelle devuelve el ángulo a 0.
-        // El medio giro solo lo pide el doble clic.
         if (!dragOn) return 'nada';
         dragOn = false;
         gestureActive = false;
         const moved = dragMoved;
         dragMoved = false;
+        // Pasó de 90° en este arrastre: el usuario volteó el frasco a mano.
+        // Por debajo, el muelle (MS_VUELTA_SOLTAR) devuelve el ángulo y no hay reinicio.
+        if (!flipBusy && maxArrastre > UMBRAL_REINICIO) {
+          pedirReinicio();
+          return 'commit';
+        }
         return moved ? 'moved' : 'nada';
       }
       if (o.tipo === 'reiniciar') {

@@ -4,6 +4,7 @@ export {
   MS_LLENADO,
   MS_MEDIA_VUELTA,
   MS_VUELTA_SOLTAR,
+  UMBRAL_REINICIO,
   type EstadoGiro,
   type EventoGiro,
   type MaquinaGiro,

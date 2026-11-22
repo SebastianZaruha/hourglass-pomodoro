@@ -173,11 +173,6 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
   let llenado: { desde: number; p: number; supArriba: number; supAbajo: number } | null = null;
   /** El reinicio está girando. El montón nuevo se coloca al cerrar, ya de pie. */
   let preparado = false;
-  /**
-   * Soltar con el reloj parado: la arena vieja va pegada al vidrio.
-   * Al quedar de pie se revela el montón asentado, sin simular la caída.
-   */
-  let asentado = false;
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
@@ -246,26 +241,9 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         ultimoAhora = e.ahora;
         return true;
       }
-      // Soltar parado: tampoco se simula. Al quedar de pie empieza el revelado.
-      // En marcha el chorro y el resbalar siguen como estaban.
-      if (e.fase === 'arrastre') {
-        asentado = false;
-        llenado = null;
-      }
-      const soltarQuieto = e.fase === 'volviendo' && snap.status !== 'running' && !e.reducir && !preparado;
-      if (soltarQuieto) {
-        if (!asentado) {
-          particles.reset(3);
-          lod.reset();
-          asentado = true;
-        }
-        ultimoAhora = e.ahora;
-        return true;
-      }
-      if (asentado && e.fase !== 'volviendo') {
-        empezarLlenado(e.ahora, snap);
-        asentado = false;
-      }
+      // Soltar por debajo de 90° no reinicia: el muelle endereza el frasco
+      // y la arena sigue desde donde está. Solo un arrastre nuevo corta el revelado.
+      if (e.fase === 'arrastre') llenado = null;
       if (llenado) {
         const t = Math.min(1, Math.max(0, (e.ahora - llenado.desde) / MS_LLENADO));
         llenado.p = easeInOutCubic(t);
