@@ -9,6 +9,23 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.9.0-f1 — Escenas en el móvil (prueba)
+
+Versión de prueba. El nombre sigue siendo Hourglass Dev y el paquete
+`com.sebastianzaruha.relojdearena.dev`. Antes de publicar 1.9.0 hay que volver
+al nombre y al paquete de producción y quitar el cliente `.dev` de
+`google-services.json`. La web no cambia de comportamiento.
+
+- F0: paquete `.dev`, nombre Hourglass Dev y `versionCode` 10900.
+- La arena del móvil no desliza en un giro pequeño. La web sigue igual.
+- F1: se elige Clásico, Lluvia o Arena, cada una con su foto y sus colores.
+  Clásico conserva el fondo, los colores y el comportamiento de siempre.
+- F2: la arena pasa a ser un contenido que se puede cambiar. En Arena oscuro
+  los granos se iluminan desde la izquierda.
+- F3: Lluvia pinta agua. El modelo vive en el core y el pintado en el móvil.
+- F4: la nube es un vídeo sobre la boca del frasco y no gira con él.
+- F5: el lector de pantalla anuncia la escena elegida. El frasco no se mueve.
+
 ## 1.8.15 — Ajustes más bajos (Android)
 
 - Hoja de ajustes más compacta: analítica y privacidad en un bloque bajo (enlace
