@@ -11,7 +11,7 @@ export type Estado3D = 'cargando' | 'listo' | 'fallo';
 
 export interface Puente3D {
   estado: Estado3D;
-  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido' | 'setPoseIntro'> | null;
+  motor: Pick<Frasco3D, 'girar' | 'setFrascoVisible' | 'setContenido' | 'setPoseIntro' | 'marcar'> | null;
   /** Despierta el bucle de Frasco (se duerme en reposo). */
   despertar: (() => void) | null;
   /**

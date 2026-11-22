@@ -225,6 +225,7 @@ export function Frasco({
         // El giro sigue siendo el de comun/giro (arrastre, 81°, doble clic, fases).
         // El 3D solo lo copia, sobre el centro del perfil; la velocidad le da el balanceo de ±8°.
         motor.girar(est.angulo, false, reducirAhora ? 0 : est.velocidad);
+        motor.marcar();
         const angulo = est.angulo;
         const geo = loop.geo ?? geoVacia();
         pintor3D = (context, caja) => {

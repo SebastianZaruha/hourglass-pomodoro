@@ -116,6 +116,8 @@ export interface Frasco3D {
    * sirve para escalaDeIntro. Escala, sombra, centrado y opacidad sí se aplican.
    */
   setPoseIntro(pose: PoseIntro | null): void;
+  /** El bucle de Frasco avisa de que el contenido se ha vuelto a pintar. */
+  marcar(): void;
   setCalidad(c: Calidad | 'auto'): void;
   redimensionar(): void;
   /** Solo para afinar/verificar. */

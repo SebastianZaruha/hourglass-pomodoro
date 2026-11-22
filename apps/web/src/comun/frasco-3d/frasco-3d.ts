@@ -221,6 +221,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   let entornoRT: WebGLRenderTarget | null = null;
   let ajusteEntorno: Partial<AjusteEntorno> = {};
   let listo = false, vivo = true, raf = 0, previo = performance.now();
+  let sucio = true;
   // Hourglass: el frasco se oculta mientras la intro 2D lo pinta (sin vidrio, contenido ni sombra).
   let frascoVisible = true;
   let ultimaCopiaVideo = 0, ultimoTiempoVideo = -1;
@@ -439,11 +440,16 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     rehacerEntorno();
   }
 
+  function marcar() {
+    sucio = true;
+  }
+
   function redimensionar() {
     const r = canvas.getBoundingClientRect();
     vw = Math.max(1, r.width); vh = Math.max(1, r.height);
     renderer.setSize(vw, vh, false);
     recolocar();
+    marcar();
   }
 
   // ── Puntero: girar sobre el cuello, inercia, doble clic/toque = media vuelta ──
@@ -510,6 +516,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   }
 
   function mediaVuelta() {
+    marcar();
     if (vuelta) return;
     arrastre = null;
     if (o.volteo === 'reiniciar') {
@@ -528,6 +535,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // Hourglass: con `interaccion: false` el ángulo lo manda la app en cada frame; su velocidad
   // (rad/s) solo alimenta el balanceo 3D, nunca mueve el ángulo por su cuenta.
   function girar(a: number, animado = false, velocidad = 0) {
+    marcar();
     arrastre = null;
     if (!animado || reducido) {
       const t = performance.now(), d = a - angulo, dt = (t - tFuera) / 1000;
@@ -543,6 +551,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // ── Bucle ──
   function paso(ahora: number) {
     const dtReal = (ahora - previo) / 1000;
+    let videoNuevo = false;
     const dt = Math.min(1 / 30, Math.max(0.001, dtReal));
     previo = ahora;
 
@@ -623,6 +632,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       if (v instanceof HTMLVideoElement && U.uHayB.value && v.currentTime !== ultimoTiempoVideo && ahora - ultimaCopiaVideo >= 1000 / o.fpsVideo - 2) {
         texturaDe(fondo).needsUpdate = true;
         ultimoTiempoVideo = v.currentTime; ultimaCopiaVideo = ahora;
+        videoNuevo = true;
       }
       if (fondoPrevio) {
         const m = reducido ? 1 : Math.min(1, (ahora - mezclaT0) / 360);
@@ -631,17 +641,36 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       } else U.uMezcla.value = 1;
     }
 
-    // Contenido en la hoja.
-    if (contenido && frascoVisible) pintarContenido(dt);
-
-    renderer.render(escena, camara);
+    // El rAF sigue, pero el lienzo solo se pinta si este fotograma cambió.
+    const muelle =
+      Math.abs(inclX) > 1e-4 ||
+      Math.abs(inclY) > 1e-4 ||
+      Math.abs(vInclX) > 1e-4 ||
+      Math.abs(vInclY) > 1e-4;
+    const pintar =
+      sucio ||
+      !listo ||
+      vuelta !== null ||
+      arrastre !== null ||
+      omega !== 0 ||
+      omegaFuera !== 0 ||
+      muelle ||
+      pose.activa ||
+      introT0 !== null ||
+      fondoPrevio !== null ||
+      videoNuevo;
+    sucio = false;
+    if (pintar) {
+      if (contenido && frascoVisible) pintarContenido(dt);
+      renderer.render(escena, camara);
+      medir(dtReal * 1000);
+    }
 
     if (!listo && U.uHayB.value) {
       listo = true;
       canvas.style.opacity = '1';
       o.alListo?.();
     }
-    medir(dtReal * 1000);
     if (vivo) raf = requestAnimationFrame(paso);
   }
 
@@ -696,6 +725,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
 
   return {
     setFondo(f) {
+      marcar();
       if (f.reserva) U.uReserva.value.set(f.reserva);
       if (fondo && f.fuente === fondo.fuente) { fondo = f; encuadrar(); aplicarModo(); return; }
       if (fondo && U.uHayB.value) { fondoPrevio = fondo; mezclaT0 = performance.now(); }
@@ -709,6 +739,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       aplicarModo();
     },
     setContenido(c) {
+      marcar();
       contenido = c;
       UH.uHayHoja.value = c ? 1 : 0;
       if (c?.tipo === 'canvas') {
@@ -717,9 +748,9 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
         UH.uHoja.value = t;
       } else UH.uHoja.value = texHoja;
     },
-    setModo(m) { modo = m; aplicarModo(); },
-    setFrascoVisible(v) { frascoVisible = v; raiz.visible = v; },
-    setCaja(c) { o.caja = c; recolocar(); },
+    setModo(m) { marcar(); modo = m; aplicarModo(); },
+    setFrascoVisible(v) { marcar(); frascoVisible = v; raiz.visible = v; },
+    setCaja(c) { marcar(); o.caja = c; recolocar(); },
     getCaja() {
       const cf = fondo ? cajaFondoDe(fondo) : null;
       return { caja, cajaFoto: foto, pivote: { ...pivote }, pivoteVisible: { ...pivoteVisible }, escala: escalaPose, cajaFondo: cf };
@@ -732,12 +763,15 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       return { angulo: anguloVisible, velocidad, fase };
     },
     intro(alTerminar) {
+      marcar();
       arrastre = null; omega = 0;
       introFin = alTerminar;
       introT0 = listo ? performance.now() : -1;
     },
-    setPoseIntro(p) { poseFuera = p && p.activa ? p : null; },
+    setPoseIntro(p) { marcar(); poseFuera = p && p.activa ? p : null; },
+    marcar,
     setCalidad(c) {
+      marcar();
       auto = c === 'auto';
       calidad = c === 'auto' ? 'alto' : c;
       aplicarNivel();
