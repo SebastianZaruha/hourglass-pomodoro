@@ -238,9 +238,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     renderer.setSize(vw, vh, false);
     renderer.transmissionResolutionScale = Math.min(1, n.transmision / dpr);
     vidrio.dispersion = n.dispersion;
-    const g = crearGeometriaFrasco(n.segmentos);
-    malla.geometry.dispose();
-    malla.geometry = g;
     redimensionarHoja();
     o.alCalidad?.(calidad);
   }
