@@ -119,6 +119,19 @@ export interface ArenaPintada {
 }
 
 let hoja: HTMLCanvasElement | null = null;
+let patronRuido: {
+  noise: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  pattern: CanvasPattern;
+} | null = null;
+
+function patronDe(g: CanvasRenderingContext2D, noise: HTMLCanvasElement): CanvasPattern | null {
+  if (patronRuido && patronRuido.noise === noise && patronRuido.ctx === g) return patronRuido.pattern;
+  const pattern = g.createPattern(noise, 'repeat');
+  if (!pattern) return null;
+  patronRuido = { noise, ctx: g, pattern };
+  return pattern;
+}
 
 /**
  * Rejilla, ruido y chorro en la ventana interior, recortados con la máscara.
@@ -157,7 +170,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.save();
   g.globalCompositeOperation = 'source-atop';
   g.globalAlpha = RUIDO[scene.scheme];
-  const pattern = g.createPattern(scene.noise, 'repeat');
+  const pattern = patronDe(g, scene.noise);
   if (pattern) {
     g.fillStyle = pattern;
     g.fillRect(vx, vy, vw, vh);
