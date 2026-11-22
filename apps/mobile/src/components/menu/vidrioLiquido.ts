@@ -12,9 +12,9 @@ export const VIDRIO = {
   /** Lavado sobre el desenfoque. En la web el velo de la hoja es transparente. */
   tinteClaro: 'rgba(247, 243, 237, 0.22)',
   tinteOscuro: 'rgba(16, 13, 10, 0.32)',
-  /** Canto de 1 px, gris 170. Lados al 0,45; el filo de arriba al 0,65. */
-  canto: 'rgba(170, 170, 170, 0.45)',
-  cantoArriba: 'rgba(170, 170, 170, 0.65)',
+  /** Canto de 1 px. Casi nada: el filo de arriba no debe leerse como una línea blanca. */
+  canto: 'rgba(170, 170, 170, 0.06)',
+  cantoArriba: 'rgba(170, 170, 170, 0)',
   /** Humo de los controles (--vl-humo). */
   humo: 'rgba(0, 0, 0, 0.08)',
   /**
