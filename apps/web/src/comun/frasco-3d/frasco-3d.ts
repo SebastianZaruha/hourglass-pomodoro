@@ -85,6 +85,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // Con DPR ≥ 2 (móviles) el MSAA cuesta mucho y casi no se nota: va sin él.
   const antialias = o.antialias ?? (o.calidad !== 'bajo' && (window.devicePixelRatio || 1) < 2);
   const renderer = new WebGLRenderer({ canvas, antialias, alpha: false, powerPreference: 'high-performance' });
+  renderer.debug.checkShaderErrors = import.meta.env.DEV;
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NoToneMapping; // el fondo sale idéntico al DOM
   const pmrem = new PMREMGenerator(renderer);
@@ -222,6 +223,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   let ajusteEntorno: Partial<AjusteEntorno> = {};
   let listo = false, vivo = true, raf = 0, previo = performance.now();
   let sucio = true;
+  let shadersListos = false;
   // Hourglass: el frasco se oculta mientras la intro 2D lo pinta (sin vidrio, contenido ni sombra).
   let frascoVisible = true;
   let ultimaCopiaVideo = 0, ultimoTiempoVideo = -1;
@@ -647,18 +649,20 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       Math.abs(inclY) > 1e-4 ||
       Math.abs(vInclX) > 1e-4 ||
       Math.abs(vInclY) > 1e-4;
+    const primerListo = !listo && U.uHayB.value === 1;
     const pintar =
-      sucio ||
-      !listo ||
-      vuelta !== null ||
-      arrastre !== null ||
-      omega !== 0 ||
-      omegaFuera !== 0 ||
-      muelle ||
-      pose.activa ||
-      introT0 !== null ||
-      fondoPrevio !== null ||
-      videoNuevo;
+      (sucio ||
+        !listo ||
+        vuelta !== null ||
+        arrastre !== null ||
+        omega !== 0 ||
+        omegaFuera !== 0 ||
+        muelle ||
+        pose.activa ||
+        introT0 !== null ||
+        fondoPrevio !== null ||
+        videoNuevo) &&
+      (!primerListo || shadersListos);
     sucio = false;
     if (pintar) {
       if (contenido && frascoVisible) pintarContenido(dt);
@@ -721,6 +725,10 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   redimensionar();
   aplicarNivel();
   aplicarModo();
+  void renderer.compileAsync(escena, camara).then(() => {
+    shadersListos = true;
+    marcar();
+  });
   raf = requestAnimationFrame(paso);
 
   return {
