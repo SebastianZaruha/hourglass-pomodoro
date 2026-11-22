@@ -292,6 +292,7 @@ function Foto({
         className={listo ? 'fondo-medio listo' : 'fondo-medio'}
         src={elegida.jpg ?? elegida.webp}
         alt=""
+        fetchPriority="high"
         style={marco}
         onLoad={() => setListo(true)}
       />
@@ -361,6 +362,7 @@ function Video({
         className={posterListo ? 'fondo-medio listo' : 'fondo-medio'}
         src={fondo.poster}
         alt=""
+        fetchPriority="high"
         style={marco}
         onLoad={() => setPosterListo(true)}
       />

@@ -25,6 +25,25 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Hourglass Pomodoro</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        var escena = 'lluvia';
+        var tema = 'system';
+        try { escena = localStorage.getItem('hourglass-web/escena') || 'lluvia'; } catch (e) {}
+        try {
+          var crudo = localStorage.getItem('reloj-de-arena/ajustes');
+          if (crudo) tema = JSON.parse(crudo).theme || 'system';
+        } catch (e) {}
+        var oscuro = tema === 'dark' || (tema !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var nombre = escena === 'arena' || escena === 'clasico' ? escena : 'lluvia';
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.setAttribute('fetchpriority', 'high');
+        link.href = '/fondos/' + nombre + '-' + (oscuro ? 'oscuro' : 'claro') + '.webp';
+        document.head.appendChild(link);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
