@@ -1,11 +1,12 @@
 /**
  * Vidrio líquido.
  *
- * La hoja de ajustes NO lo pinta en el lienzo del reloj. En Android ese
- * lienzo es un TextureView y se compone por encima de las vistas que van
- * después: el frasco tapaba el menú y el vidrio tapaba su texto. `VidrioHoja`
- * vive dentro de la hoja (misma vista, mismo desplazamiento) y desenfoca una
- * foto del reloj.
+ * La hoja no lleva otro lienzo de Skia. En Android ese lienzo (TextureView)
+ * se compone por encima de sus hermanos y se queda los toques: al abrir el
+ * menú se veía el vidrio vacío, el texto no estaba, y el único gesto que
+ * respondía era el «atrás» del sistema (el reloj ya tenía los gestos
+ * apagados). `VidrioHoja` es una foto del reloj desenfocada fuera de pantalla
+ * y pintada con una Image normal, debajo del texto. No recibe toques.
  *
  * La ayuda, el consentimiento y la pausa de lado sí siguen en el lienzo
  * (`VidrioPantalla`): su texto es una vista de React Native con elevación,
@@ -13,21 +14,17 @@
  */
 import {
   BackdropBlur,
-  Blur,
-  Canvas,
   Fill,
   Group,
-  Image,
-  Paint,
-  Rect,
-  RoundedRect,
+  ImageFormat,
+  Skia,
+  TileMode,
   rect,
-  rrect,
   type SkImage,
 } from '@shopify/react-native-skia';
 import { useLayoutEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { interpolateColor, useDerivedValue, type SharedValue } from 'react-native-reanimated';
+import { Image, StyleSheet, View } from 'react-native';
+import Animated, { interpolateColor, useAnimatedStyle, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import type { CapturaReloj } from './capturaReloj';
 import { VIDRIO } from './vidrioLiquido';
@@ -36,20 +33,57 @@ import { VIDRIO } from './vidrioLiquido';
 export const SHEET_RADIUS = 30;
 
 /**
- * Fondo de la hoja: la foto del reloj, desplazada para que coincida con lo
- * que hay detrás, desenfocada y teñida. Se mueve con la hoja porque es hija
- * suya; `top` solo elige qué trozo de la foto se ve.
+ * Foto del reloj desenfocada y teñida, en JPEG. Se hace fuera del lienzo
+ * para que el resultado sea una vista normal: queda debajo del texto y no
+ * se come los toques. Si falla, null: la hoja sigue siendo opaca y usable.
+ */
+function fotoVidrio(imagen: SkImage, ancho: number, alto: number, progreso: number): string | null {
+  const w = Math.max(1, Math.round(ancho));
+  const h = Math.max(1, Math.round(alto));
+  const surface = Skia.Surface.MakeOffscreen(w, h);
+  if (!surface) return null;
+  const filtro = Skia.ImageFilter.MakeBlur(VIDRIO.blur, VIDRIO.blur, TileMode.Clamp, null);
+  const pintura = Skia.Paint();
+  const velo = Skia.Paint();
+  try {
+    pintura.setImageFilter(filtro);
+    const src = Skia.XYWHRect(0, 0, imagen.width(), imagen.height());
+    const dst = Skia.XYWHRect(0, 0, w, h);
+    const canvas = surface.getCanvas();
+    canvas.drawImageRect(imagen, src, dst, pintura);
+    velo.setColor(Skia.Color(interpolateColor(progreso, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro])));
+    canvas.drawRect(dst, velo);
+    const salida = surface.makeImageSnapshot();
+    try {
+      const datos = salida.encodeToBase64(ImageFormat.JPEG, 70);
+      return datos ? `data:image/jpeg;base64,${datos}` : null;
+    } finally {
+      salida.dispose();
+    }
+  } catch {
+    return null;
+  } finally {
+    pintura.dispose();
+    velo.dispose();
+    filtro.dispose();
+    surface.dispose();
+  }
+}
+
+/**
+ * Fondo de la hoja: la foto del reloj, desplazada para coincidir con lo que
+ * hay detrás. Es hija de la hoja, así que se mueve con ella; `top` solo
+ * elige qué trozo se ve. Debajo, un velo opaco por si la foto aún no está:
+ * el texto nunca flota sobre el frasco.
  */
 export function VidrioHoja({
   width,
-  height,
   screenHeight,
   top,
   themeProgress,
   captura,
 }: {
   readonly width: number;
-  readonly height: number;
   readonly screenHeight: number;
   /** Canto superior de la hoja en la pantalla (se anima con ella). */
   readonly top: SharedValue<number>;
@@ -57,38 +91,40 @@ export function VidrioHoja({
   readonly themeProgress: SharedValue<number>;
   readonly captura: CapturaReloj;
 }) {
-  const [imagen, setImagen] = useState<SkImage | null>(null);
+  const [uri, setUri] = useState<string | null>(null);
   useLayoutEffect(() => {
-    setImagen(captura.imagen);
-    return captura.suscribir(() => setImagen(captura.imagen));
-  }, [captura]);
-  const y = useDerivedValue(() => -top.value);
-  const tinte = useDerivedValue(() =>
-    interpolateColor(themeProgress.value, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro]),
-  );
-  // El radio de abajo cae fuera de la hoja: solo se redondea el canto de arriba.
-  const clip = useDerivedValue(() =>
-    rrect(rect(0, 0, width, height + SHEET_RADIUS), SHEET_RADIUS, SHEET_RADIUS),
-  );
-  const filo = useDerivedValue(() => rect(SHEET_RADIUS, 0, Math.max(0, width - SHEET_RADIUS * 2), 1));
-  if (!imagen || width <= 0 || height <= 0) return null;
+    let vivo = true;
+    const aplicar = () => {
+      if (!vivo) return;
+      const img = captura.imagen;
+      if (!img || width < 1 || screenHeight < 1) {
+        setUri(null);
+        return;
+      }
+      setUri(fotoVidrio(img, width, screenHeight, themeProgress.get()));
+    };
+    aplicar();
+    const baja = captura.suscribir(aplicar);
+    return () => {
+      vivo = false;
+      baja();
+    };
+  }, [captura, width, screenHeight, themeProgress]);
+  const desplazar = useAnimatedStyle(() => ({
+    transform: [{ translateY: -top.value }],
+  }));
+  const velo = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(themeProgress.value, [0, 1], [VIDRIO.tinteDialogoClaro, VIDRIO.tinteDialogoOscuro]),
+  }));
   return (
-    <Canvas style={[StyleSheet.absoluteFill, styles.lienzo]} pointerEvents="none">
-      <Group clip={clip}>
-        <Group
-          layer={
-            <Paint>
-              <Blur blur={VIDRIO.blur} mode="clamp" />
-            </Paint>
-          }
-        >
-          <Image image={imagen} x={0} y={y} width={width} height={screenHeight} fit="fill" />
-        </Group>
-        <Fill color={tinte} />
-        <RoundedRect rect={clip} style="stroke" strokeWidth={1} color={VIDRIO.canto} />
-        <Rect rect={filo} color={VIDRIO.cantoArriba} />
-      </Group>
-    </Canvas>
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, velo]} />
+      {uri ? (
+        <Animated.View pointerEvents="none" style={[{ width, height: screenHeight }, desplazar]}>
+          <Image source={{ uri }} style={{ width, height: screenHeight }} resizeMode="stretch" />
+        </Animated.View>
+      ) : null}
+    </View>
   );
 }
 
@@ -120,7 +156,3 @@ export function VidrioPantalla({
   );
 }
 
-const styles = StyleSheet.create({
-  // Por debajo del contenido de la hoja (ese lleva elevación).
-  lienzo: { zIndex: 0, elevation: 0 },
-});

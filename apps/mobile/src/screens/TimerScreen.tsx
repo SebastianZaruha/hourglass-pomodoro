@@ -607,6 +607,10 @@ export function TimerScreen({ settings, fonts }: Props) {
       <GestureDetector gesture={gesture}>
         <View
           style={StyleSheet.absoluteFill}
+          // Con la hoja abierta el lienzo no puede quedarse los toques: sus
+          // gestos ya están apagados, y si se los come no responde nada. El
+          // «atrás» de Android no es un toque, por eso era el único que cerraba.
+          pointerEvents={sheet.visible ? 'none' : 'auto'}
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel={tr.hourglass}

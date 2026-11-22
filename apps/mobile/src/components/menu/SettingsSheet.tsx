@@ -72,7 +72,7 @@ import { announce } from '../../hooks/useScreenReader';
 import type { HourglassTheme } from '../../theme/theme';
 import type { CapturaReloj } from './capturaReloj';
 import { Chip, DurationSlider, Segmented, Stepper, type SegmentOption } from './controls';
-import { VidrioHoja } from './FrostedPanel';
+import { SHEET_RADIUS, VidrioHoja } from './FrostedPanel';
 import { QuickTooltip, RoundButton, themeIcon, useQuickTooltip } from './QuickSettings';
 import { useMenuStyles, type MenuFonts, type PaletaUi } from './themedStyles';
 import { SHEET_DENSITY, type SheetState } from './useSheet';
@@ -296,14 +296,13 @@ export function SettingsSheet({
     >
       <VidrioHoja
         width={screenWidth}
-        height={sheetHeight}
         screenHeight={screenHeight}
-        top={sheet.top}
+        top={top}
         themeProgress={themeProgress}
         captura={captura}
       />
-      {/* Por encima del vidrio. Sin elevación, en Android el lienzo de la
-          foto se compone encima de los botones. */}
+      {/* Por encima del vidrio. El vidrio no es un lienzo: no tapa esto ni
+          se queda los toques. La elevación es contra el lienzo del reloj. */}
       <View style={styles.contenido} collapsable={false}>
       <GestureDetector gesture={headerPan}>
         <View onLayout={settled(setHeaderH)} style={styles.header}>
@@ -668,7 +667,14 @@ function formatMinutes(min: number): string {
 }
 
 const styles = StyleSheet.create({
-  sheet: { position: 'absolute', left: 0, right: 0 },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
+  },
   contenido: { zIndex: 2, elevation: 8 },
   header: { paddingHorizontal: 26 },
   grabArea: { alignSelf: 'center', width: 88, height: 30, alignItems: 'center', justifyContent: 'center' },

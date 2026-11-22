@@ -430,7 +430,7 @@ function HourglassCanvas({
   }, [capturar, captura]);
 
   return (
-    <Canvas ref={canvasRef} style={{ width, height }}>
+    <Canvas ref={canvasRef} style={{ width, height }} pointerEvents="none">
       <Group transform={transform} origin={origin}>
         <Picture picture={background} />
         <Group layer={layer} clip={blurLayerOn && !poseActive ? blurClip : undefined}>
