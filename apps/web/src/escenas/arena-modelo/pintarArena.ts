@@ -71,11 +71,6 @@ const RUIDO: Record<Scheme, number> = { light: 0.2, dark: 0.16 };
 const BORDE_LLENADO = 0.08;
 const BORDE_MIN_PX = 4;
 /**
- * Franja del chorro, en fracción del alto del frasco. Solo cómo se pinta
- * el grano ahí: la caída no cambia.
- */
-const CUELLO_HUECO = 0.018;
-/**
  * Zona del embudo, en la coordenada de la ventana (0 = cuello).
  * Más arriba la pared ya es ancha y el peldaño de una celda no se ve.
  */
@@ -188,11 +183,36 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const cellH = vh / scene.sim.rows;
   const count = scene.particles.count;
   const alfaChorro = scene.chorro ?? 1;
+  const cx = vx + vw / 2;
+  const boca = geo.radio(0) * (vw / 2);
   g.save();
   g.globalAlpha = alfaChorro;
-  const cuelloY = geo.cuelloY * caja.h;
-  const huecoY = caja.h * CUELLO_HUECO;
   g.imageSmoothingEnabled = true;
+  // El chorro del cuello es un hilo del ancho del hueco, no granos cuadrados.
+  let yHilo0 = Infinity;
+  let yHilo1 = -Infinity;
+  let tonoHilo = 1;
+  let nHilo = 0;
+  for (let i = 0; i < count; i++) {
+    const py = scene.particles.y[i] ?? 0;
+    const y = vy + (py / scene.sim.rows) * vh;
+    const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
+    const medio = geo.radio(yn) * (vw / 2);
+    if (!(medio > 0 && medio <= boca * 1.45)) continue;
+    nHilo += 1;
+    tonoHilo = scene.particles.tone[i] ?? tonoHilo;
+    if (y < yHilo0) yHilo0 = y;
+    if (y > yHilo1) yHilo1 = y;
+  }
+  if (nHilo > 0 && boca > 0) {
+    const l = tonoHilo * 3;
+    g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
+    const alto = Math.max(boca * 2, yHilo1 - yHilo0);
+    const arriba = (yHilo0 + yHilo1) / 2 - alto / 2;
+    g.beginPath();
+    g.roundRect(cx - boca, arriba, boca * 2, alto, boca);
+    g.fill();
+  }
   for (let i = 0; i < count; i++) {
     const px = scene.particles.x[i] ?? 0;
     const py = scene.particles.y[i] ?? 0;
@@ -202,10 +222,14 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     const y = vy + (py / scene.sim.rows) * vh;
     const l = tone * 3;
     g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
-    if (Math.abs(y - cuelloY) <= huecoY) {
-      // En el cuello, un grano cuadrado. La elipse suavizada era un bloque.
-      const lado = Math.max(0.45, size * cellW);
-      g.fillRect(x - lado / 2, y - lado / 2, lado, lado);
+    const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
+    const medio = geo.radio(yn) * (vw / 2);
+    if (medio > 0 && medio <= boca * 1.45) {
+      const r = Math.max(0.35, Math.min(medio * 0.42, size * cellW * 0.65));
+      const xG = Math.max(cx - medio + r, Math.min(cx + medio - r, x));
+      g.beginPath();
+      g.ellipse(xG, y, r, r * 1.35, 0, 0, Math.PI * 2);
+      g.fill();
     } else {
       const radius = Math.max(0.6, size * cellW * 1.15);
       g.beginPath();
@@ -274,19 +298,12 @@ function revelarLlenado(
 }
 
 /**
- * La rejilla pinta cada celda entera. Cuando el radio del vidrio cruza el
- * centro de una columna, esa columna desaparece de golpe: un peldaño. Mientras
- * el radio no llega a la columna de al lado, el ancho no cambia: la punta
- * rectangular metida en el cuello. El cono anterior era más ancho que el
- * vidrio y no lo cortaba.
- *
- * Aquí cada fila del embudo —el de arriba y el de abajo— sigue el radio del
- * vidrio. Junto al cuello ese radio se cierra en punta; más arriba la arena
- * sigue tocando el vidrio. Se recorta lo que sobra y, si la arena ya tocaba
- * la pared, se rellena el peldaño. La simulación no se toca.
+ * La rejilla pinta cada celda entera y deja un peldaño contra el vidrio.
+ * En el embudo se recorta lo que sale de la pared interior y, si la arena
+ * ya llegaba, se rellena ese peldaño. El hueco del cuello no se cierra en
+ * una punta: si hay arena en el centro, ocupa la abertura. La simulación
+ * no se toca.
  */
-/** En esta distancia al cuello el radio pasa de la pared a la punta. */
-const CIERRE_PUNTA = 0.08;
 function perfilarEmbudo(
   g: CanvasRenderingContext2D,
   scene: ArenaPintada,
@@ -322,9 +339,7 @@ function perfilarEmbudo(
       derecha = col;
     }
     if (izquierda < 0 || derecha < 0) continue;
-    const distancia = Math.abs(yn);
-    const holgura = distancia >= CIERRE_PUNTA ? 0 : boca * (1 - distancia / CIERRE_PUNTA);
-    const medio = Math.max(0, geo.radio(yn) - holgura) * (vw / 2);
+    const medio = geo.radio(yn) * (vw / 2);
     const x0 = cx - medio;
     const x1 = cx + medio;
     const y = vy + (row / rows) * vh;
@@ -334,6 +349,12 @@ function perfilarEmbudo(
     if (pixL < x0) g.fillRect(pixL, y, x0 - pixL, altoFila);
     if (pixR > x1) g.fillRect(x1, y, pixR - x1, altoFila);
     g.globalCompositeOperation = 'source-over';
+    const centro = Math.min(cols - 1, Math.max(0, Math.round((cols - 1) / 2)));
+    const arenaEnCentro = (mapa[(fila + centro) * 4 + 3] ?? 0) !== 0;
+    if (arenaEnCentro && geo.radio(yn) <= boca * 1.45 && x1 > x0) {
+      g.drawImage(scene.sand, centro, row, 1, 1, x0, y, x1 - x0, altoFila);
+      continue;
+    }
     if (x0 < pixL && pixL - x0 <= margen) {
       g.drawImage(scene.sand, izquierda, row, 1, 1, x0, y, pixL - x0, altoFila);
     }
