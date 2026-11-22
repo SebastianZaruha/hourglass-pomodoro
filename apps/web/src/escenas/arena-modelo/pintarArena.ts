@@ -116,6 +116,8 @@ export interface ArenaPintada {
     readonly supArriba: number;
     readonly supAbajo: number;
   };
+  /** Opacidad del chorro. 1 en marcha; durante el revelado baja con `llenado.p`. */
+  readonly chorro?: number;
 }
 
 let hoja: HTMLCanvasElement | null = null;
@@ -185,6 +187,9 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const cellW = vw / scene.sim.cols;
   const cellH = vh / scene.sim.rows;
   const count = scene.particles.count;
+  const alfaChorro = scene.chorro ?? 1;
+  g.save();
+  g.globalAlpha = alfaChorro;
   const cuelloY = geo.cuelloY * caja.h;
   const huecoY = caja.h * CUELLO_HUECO;
   g.imageSmoothingEnabled = true;
@@ -208,6 +213,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
       g.fill();
     }
   }
+  g.restore();
 
   g.globalCompositeOperation = 'destination-in';
   g.imageSmoothingEnabled = true;
@@ -240,24 +246,30 @@ function revelarLlenado(
   const yCuello = yDe(gate);
   g.save();
   g.globalAlpha = 1;
-  g.globalCompositeOperation = 'destination-in';
-  const pintarBulbo = (yTecho: number, ySuelo: number, yBase: number, ySup: number) => {
+  // Se borra lo que queda por encima de la línea. Con p = 0 el montón
+  // entero desaparece; no depende de que un degradado tape el lienzo.
+  g.globalCompositeOperation = 'destination-out';
+  g.fillStyle = '#000';
+  const tapar = (yTecho: number, yBase: number, ySup: number) => {
     const alto = yBase - ySup;
-    if (!(alto > 0.5) || !(ySuelo > yTecho)) return;
+    if (!(alto > 0)) return;
     const suave = Math.max(BORDE_MIN_PX, alto * BORDE_LLENADO);
-    const yLinea = yBase - (alto + suave) * llenado.p;
-    const grad = g.createLinearGradient(0, yLinea - suave, 0, yLinea + suave);
-    grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    grad.addColorStop(1, '#000');
-    g.fillStyle = grad;
-    g.fillRect(vx, yTecho, vw, ySuelo - yTecho);
+    const yLinea = yBase - alto * llenado.p;
+    const ySolido = Math.max(yTecho, yLinea - suave);
+    if (ySolido > yTecho) g.fillRect(vx, yTecho, vw, ySolido - yTecho);
+    const y0 = Math.max(yTecho, yLinea - suave);
+    const y1 = Math.min(yBase, yLinea);
+    if (y1 - y0 > 0.5) {
+      const grad = g.createLinearGradient(0, y0, 0, y1);
+      grad.addColorStop(0, '#000');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      g.fillStyle = grad;
+      g.fillRect(vx, y0, vw, y1 - y0);
+      g.fillStyle = '#000';
+    }
   };
-  if (llenado.supArriba < gate) {
-    pintarBulbo(vy, yCuello, yDe(gate - 1), yDe(llenado.supArriba));
-  }
-  if (llenado.supAbajo < rows) {
-    pintarBulbo(yCuello, vy + vh, yDe(rows - 1), yDe(llenado.supAbajo));
-  }
+  if (llenado.supArriba < gate) tapar(vy, yDe(gate - 1), yDe(llenado.supArriba));
+  if (llenado.supAbajo < rows) tapar(yCuello, yDe(rows - 1), yDe(llenado.supAbajo));
   g.restore();
 }
 

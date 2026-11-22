@@ -173,6 +173,8 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
   let llenado: { desde: number; p: number; supArriba: number; supAbajo: number } | null = null;
   /** El reinicio está girando. El montón nuevo se coloca al cerrar, ya de pie. */
   let preparado = false;
+  /** 1 visible. Durante el revelado baja a 0: el chorro se apaga con el llenado, no de golpe. */
+  let chorro = 1;
   let muerto = false;
   let fallo = false;
   const gravedad: MutableVec2 = { x: 0, y: 1 };
@@ -217,11 +219,12 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
     mode = 'idle';
     populated = true;
     dirty = true;
-    subir();
-    particles.reset(3);
     lod.reset();
     const bordes = bordesMonton(sim);
+    // El factor existe antes de subir el lienzo: el primer pintado ya recorta.
     llenado = { desde: ahora, p: 0, supArriba: bordes.supArriba, supAbajo: bordes.supAbajo };
+    chorro = 1;
+    subir();
   };
 
   const contenido: Contenido = {
@@ -233,7 +236,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       // se coloca al cerrar y se revela desde la base. No hay paso de granos.
       const reinicio = e.fase === 'volteo' && snap.status !== 'running' && !e.reducir;
       if (reinicio && !preparado) {
-        particles.reset(3);
+        // El chorro se queda. Se apaga luego, con el mismo reloj que el revelado.
         lod.reset();
         preparado = true;
       }
@@ -243,12 +246,21 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       }
       // Soltar por debajo de 90° no reinicia: el muelle endereza el frasco
       // y la arena sigue desde donde está. Solo un arrastre nuevo corta el revelado.
-      if (e.fase === 'arrastre') llenado = null;
+      if (e.fase === 'arrastre' && llenado) {
+        llenado = null;
+        chorro = 1;
+        particles.reset(3);
+      }
       if (llenado) {
         const t = Math.min(1, Math.max(0, (e.ahora - llenado.desde) / MS_LLENADO));
         llenado.p = easeInOutCubic(t);
+        chorro = 1 - llenado.p;
         ultimoAhora = e.ahora;
-        if (t >= 1) llenado = null;
+        if (t >= 1) {
+          llenado = null;
+          chorro = 1;
+          particles.reset(3);
+        }
         return true;
       }
       const turning = e.fase === 'volteo';
@@ -281,6 +293,12 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (!turning && snap.status === 'idle') {
         const key = String(snap.durationMs);
         if (mode !== 'idle' || idleKey !== key || !populated) {
+          // Reinicio sin media vuelta (movimiento reducido): el mismo revelado.
+          // Cambiar la duración en reposo, o el primer pintado, sigue siendo instantáneo.
+          if (populated && mode !== '' && mode !== 'idle') {
+            empezarLlenado(e.ahora, snap);
+            return true;
+          }
           const level = nivel(sim, snap.durationMs);
           sim.arrange(level, Math.max(0, sim.totalGrains - level), gs, { crater: TOP_CRATER });
           runInitial = level;
@@ -356,6 +374,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         lut,
         geo,
         llenado: llenado ?? undefined,
+        chorro,
       });
     },
     alVoltear(motivo: 'reinicio' | 'fase', snap: SessionSnapshot): void {
@@ -372,27 +391,13 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
       if (!flipHold) {
         // Un fotograma a 180°, todavía con la arena vieja pegada al vidrio.
         flipHold = true;
-        particles.reset(7);
         return;
       }
+      // De pie, doble clic o volteo a mano: los dos bulbos suben desde la base.
+      // No hay un arrange suelto: ese pintaba el montón entero en un fotograma.
       flipHold = false;
-      if (preparado) {
-        // De pie: el montón nuevo se revela desde la base de cada bulbo.
-        preparado = false;
-        empezarLlenado(performance.now(), snap);
-        return;
-      }
-      sim.rotateHalfTurn();
-      lod.reset();
-      const level = nivel(sim, snap.durationMs);
-      sim.arrange(level, Math.max(0, sim.totalGrains - level), GRAVITY_DOWN, { crater: TOP_CRATER });
-      runInitial = level;
-      idleKey = String(snap.durationMs);
-      mode = 'idle';
-      populated = true;
-      dirty = true;
-      particles.reset(3);
-      subir();
+      preparado = false;
+      empezarLlenado(performance.now(), snap);
     },
     destruir(): void {
       muerto = true;
