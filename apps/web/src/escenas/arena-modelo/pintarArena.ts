@@ -217,32 +217,6 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   g.save();
   g.globalAlpha = alfaChorro;
   g.imageSmoothingEnabled = true;
-  // El hilo nace en el hueco y sigue hacia abajo. Encima no se inventa trazo.
-  let yHilo0 = Infinity;
-  let yHilo1 = -Infinity;
-  let tonoHilo = 1;
-  let nHilo = 0;
-  for (let i = 0; i < count; i++) {
-    const py = scene.particles.y[i] ?? 0;
-    const y = vy + (py / scene.sim.rows) * vh;
-    const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
-    if (!enElHilo(yn)) continue;
-    nHilo += 1;
-    tonoHilo = scene.particles.tone[i] ?? tonoHilo;
-    if (y < yHilo0) yHilo0 = y;
-    if (y > yHilo1) yHilo1 = y;
-  }
-  if (nHilo > 0) {
-    const l = tonoHilo * 3;
-    g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
-    const alto = Math.max(hilo * 2, yHilo1 - yHilo0);
-    const yCuello = vy + vh / 2;
-    let arriba = (yHilo0 + yHilo1) / 2 - alto / 2;
-    // El extremo del hilo no cruza el hueco hacia el montón.
-    if (abajo > 0) arriba = Math.max(yCuello, arriba);
-    else arriba = Math.min(arriba, yCuello - alto);
-    g.fillRect(cx - hilo, arriba, hilo * 2, alto);
-  }
   for (let i = 0; i < count; i++) {
     const px = scene.particles.x[i] ?? 0;
     const py = scene.particles.y[i] ?? 0;
