@@ -1,5 +1,7 @@
 import { formatDuration, type SessionSnapshot } from '@reloj/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { useHojaVidrio } from '../estilo/vidrio-liquido';
 
 interface Props {
   readonly getSnapshot: () => SessionSnapshot;
@@ -8,9 +10,13 @@ interface Props {
   readonly hint: string | null;
   readonly pulso?: boolean;
   readonly describe: (remainingMs: number) => string;
+  /** En vertical el reloj va bajo el frasco y lleva el mismo vidrio que las hojas. */
+  readonly estrecho?: boolean;
 }
 
-export function TimeReadout({ getSnapshot, running, label, hint, describe, pulso = false }: Props) {
+export function TimeReadout({ getSnapshot, running, label, hint, describe, pulso = false, estrecho = false }: Props) {
+  const caja = useRef<HTMLDivElement>(null);
+  useHojaVidrio(caja, estrecho);
   const [text, setText] = useState(() => formatDuration(getSnapshot().remainingMs));
   const [live, setLive] = useState(() => describe(getSnapshot().remainingMs));
 
@@ -34,7 +40,7 @@ export function TimeReadout({ getSnapshot, running, label, hint, describe, pulso
   }, [describe, getSnapshot, running]);
 
   return (
-    <div className="readout">
+    <div ref={caja} className={estrecho ? 'readout vidrio vidrio-liquido' : 'readout'}>
       <p className="sr-only" aria-live="polite">
         {label ? `${label}. ` : ''}
         {live}

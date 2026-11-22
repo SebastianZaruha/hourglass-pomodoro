@@ -407,6 +407,7 @@ function Timer({
               hint={paused ? null : hint}
               pulso={pulso}
               describe={describe}
+              estrecho={!wide}
             />
           </div>
         </div>
