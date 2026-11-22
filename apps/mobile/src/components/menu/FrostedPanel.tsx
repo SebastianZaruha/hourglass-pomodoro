@@ -47,26 +47,28 @@ export function FrostedPanel({ width, height, top, openness, themeProgress }: Pr
   );
 }
 
-/** El mismo vidrio, a pantalla completa: ayuda, consentimiento y avisos. */
+/** El mismo vidrio, a pantalla completa. `intenso` tapa lo que haya detrás. */
 export function VidrioPantalla({
   width,
   height,
   opacity,
   themeProgress,
+  intenso = false,
 }: {
   readonly width: number;
   readonly height: number;
   readonly opacity: SharedValue<number>;
   readonly themeProgress: SharedValue<number>;
+  readonly intenso?: boolean;
 }) {
-  const tinte = useDerivedValue(() =>
-    interpolateColor(themeProgress.value, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro]),
-  );
+  const claro = intenso ? VIDRIO.tinteDialogoClaro : VIDRIO.tinteClaro;
+  const oscuro = intenso ? VIDRIO.tinteDialogoOscuro : VIDRIO.tinteOscuro;
+  const tinte = useDerivedValue(() => interpolateColor(themeProgress.value, [0, 1], [claro, oscuro]));
   const recorte = useDerivedValue(() => rect(0, 0, width, opacity.value < 0.001 ? 0 : height));
 
   return (
     <Group opacity={opacity} clip={recorte}>
-      <BackdropBlur blur={VIDRIO.blur}>
+      <BackdropBlur blur={intenso ? VIDRIO.blurDialogo : VIDRIO.blur}>
         <Fill color={tinte} />
       </BackdropBlur>
     </Group>

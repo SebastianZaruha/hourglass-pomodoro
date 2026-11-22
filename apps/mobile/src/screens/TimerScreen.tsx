@@ -567,7 +567,7 @@ export function TimerScreen({ settings, fonts }: Props) {
   // mismo fotograma que la hoja.
   //
   // Vidrio líquido: la hoja y, a pantalla completa, la ayuda y el consentimiento.
-  const capaVidrio = useDerivedValue(() => Math.max(helpFade.value, consentFade.value));
+  const capaVidrio = useDerivedValue(() => helpFade.value);
   const frosted = useMemo(
     () => (
       <Group>
@@ -579,10 +579,22 @@ export function TimerScreen({ settings, fonts }: Props) {
           themeProgress={themeProgress}
         />
         <VidrioPantalla width={width} height={height} opacity={capaVidrio} themeProgress={themeProgress} />
+        <VidrioPantalla
+          width={width}
+          height={height}
+          opacity={consentFade}
+          themeProgress={themeProgress}
+          intenso
+        />
       </Group>
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress, capaVidrio],
+    [sheet.top, sheet.openness, width, height, themeProgress, capaVidrio, consentFade],
   );
+  // El texto del menú se pinta encima del lienzo: el desenfoque no lo tapa.
+  // Mientras hay un diálogo encima, la hoja se apaga.
+  const menuBajoDialogo = useAnimatedStyle(() => ({
+    opacity: 1 - Math.max(consentFade.value, helpFade.value),
+  }));
   // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
   const insets = useMemo(
     () => (pip ? PIP_INSETS : { top: safe.top + 12, bottom: safe.bottom + BOTTOM_AREA }),
@@ -695,6 +707,11 @@ export function TimerScreen({ settings, fonts }: Props) {
 
       {pip ? null : (
         <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
+          <Animated.View
+            style={menuBajoDialogo}
+            pointerEvents={consentVisible || infoOpen ? 'none' : 'box-none'}
+            importantForAccessibility={consentVisible || infoOpen ? 'no-hide-descendants' : 'auto'}
+          >
           {sheet.visible ? (
             // Velo invisible: tocar fuera de la hoja la cierra (y protege al
             // reloj de toques sin querer). El lector de pantalla usa el asa.
@@ -734,6 +751,7 @@ export function TimerScreen({ settings, fonts }: Props) {
                 : null
             }
           />
+          </Animated.View>
           <MenuButton
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
             hidden={sheet.visible}

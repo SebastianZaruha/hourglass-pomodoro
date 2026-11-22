@@ -17,4 +17,11 @@ export const VIDRIO = {
   cantoArriba: 'rgba(170, 170, 170, 0.65)',
   /** Humo de los controles (--vl-humo). */
   humo: 'rgba(0, 0, 0, 0.08)',
+  /**
+   * Diálogo encima del menú (consentimiento). El desenfoque del lienzo no
+   * tapa el texto de la hoja: este velo sí, y el texto de la hoja se apaga.
+   */
+  blurDialogo: 32,
+  tinteDialogoClaro: 'rgba(247, 243, 237, 0.82)',
+  tinteDialogoOscuro: 'rgba(16, 13, 10, 0.86)',
 } as const;
