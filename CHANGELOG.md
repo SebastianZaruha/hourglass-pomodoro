@@ -19,7 +19,7 @@ Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 - El canto superior del menú casi no se ve.
 - Las gotas son hilos finos, casi transparentes.
 - La foto de la escena funde a la vez que el frasco.
-- La pausa de lado se lee sobre las piedras.
+- En la pausa de lado, fondo, frasco y nube quedan tras un vidrio a pantalla completa. «Pausa» se lee nítido delante.
 
 ## 1.9.0-f2 — Lluvia no se cierra, y las hojas son vidrio (prueba)
 

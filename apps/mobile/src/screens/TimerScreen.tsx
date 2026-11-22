@@ -246,8 +246,11 @@ export function TimerScreen({ settings, fonts }: Props) {
   // Con la ayuda de gestos abierta, el tiempo y el botón del menú se apagan.
   const helpFade = useSharedValue(0);
   const consentFade = useSharedValue(0);
+  // En la pausa de lado el tiempo y su pista se apagan: quedan detrás del
+  // vidrio. Solo «Pausa» (y, si hace falta, la nota de reanudar) sigue delante.
+  const ladoPausa = useSharedValue(0);
   const timeOpacity = useDerivedValue(
-    () => intro.chrome.value * (1 - sheet.openness.value) * (1 - helpFade.value),
+    () => intro.chrome.value * (1 - sheet.openness.value) * (1 - helpFade.value) * (1 - ladoPausa.value),
   );
   // «Pausa» se apaga con la hoja o una ayuda delante (1.8.2): el vidrio de
   // la hoja se dibuja en el lienzo, DEBAJO de esta capa, y el contenido de la
@@ -420,6 +423,9 @@ export function TimerScreen({ settings, fonts }: Props) {
     announce(tr.pauseLandscapeHint);
   }, [landscapeHint.visible, tr.pauseLandscapeHint]);
   const landscapeHintBottom = (tilt.flipped ? safe.top : safe.bottom) + TIME_BOTTOM + 72;
+  useEffect(() => {
+    ladoPausa.set(withTiming(blurred ? 1 : 0, { duration: reduceMotion ? 0 : 280 }));
+  }, [blurred, reduceMotion, ladoPausa]);
 
   // ─── Elegir el tiempo (deslizar y TalkBack) ─────────────────────────────
   /** Duración que se ajusta: la de la sesión única o el TRABAJO de los ciclos. */
@@ -650,6 +656,8 @@ export function TimerScreen({ settings, fonts }: Props) {
               durationMs={view.durationMs}
               motion={tilt.motion}
               pauseBlur={pauseBlur}
+              vidrioPausa={blurred}
+              themeProgress={themeProgress}
               reduceMotion={reduceMotion}
               pose={intro.pose}
               poseActive={intro.active}

@@ -20,6 +20,7 @@
  *       sombra · [EL RELOJ: cuerpo + arena + reflejos]
  *     `children` (p. ej. el vidrio del menú)
  *   [fundido del cambio de tema]
+ *   [vidrio de la pausa de lado, a pantalla completa]
  *
  * EL RELOJ (capas 3-5) tiene su propia transformación, alrededor de su
  * centro: la `pose` (introducción: giro, escala, posición y opacidad) más el
@@ -38,6 +39,7 @@ import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { VidrioPantalla } from '../components/menu/FrostedPanel';
 import { NubeMovil } from '../escenas/Nube';
 import { useFondoImagen } from '../escenas/fondoImagen';
 import type { FondoMovil, Material } from '../escenas';
@@ -104,6 +106,14 @@ export interface HourglassProps {
   readonly motion?: MotionSource;
   /** Desenfoque de pausa (ver `PauseBlur`). */
   readonly pauseBlur?: PauseBlur;
+  /**
+   * Pausa al tumbar el móvil: un vidrio a pantalla completa (las mismas
+   * constantes del menú) tapa fondo, frasco, nube y lo que haya en el lienzo.
+   * El texto «Pausa» vive fuera del lienzo y se queda nítido.
+   */
+  readonly vidrioPausa?: boolean;
+  /** 0 = tema claro, 1 = oscuro. Tiñe el vidrio de la pausa. */
+  readonly themeProgress?: SharedValue<number>;
   readonly reduceMotion?: boolean;
   /** Pose animada del reloj (introducción). Sin ella, quieto en su sitio. */
   readonly pose?: HourglassPose;
@@ -148,6 +158,8 @@ function HourglassCanvas({
   durationMs,
   motion = STILL_MOTION,
   pauseBlur = 'none',
+  vidrioPausa = false,
+  themeProgress,
   reduceMotion = false,
   pose,
   poseActive = false,
@@ -321,6 +333,20 @@ function HourglassCanvas({
     );
   }, [target, reduceMotion, blur]);
 
+  // Vidrio de la pausa de lado, encima de fondo, frasco y nube. Usa el
+  // desenfoque y el tinte del menú (vidrioLiquido.ts).
+  const pausaOpacidad = useSharedValue(0);
+  const progresoTema = useSharedValue(theme.scheme === 'dark' ? 1 : 0);
+  useEffect(() => {
+    const valor = vidrioPausa ? 1 : 0;
+    pausaOpacidad.set(reduceMotion ? valor : withTiming(valor, { duration: valor > 0 ? 320 : 240 }));
+  }, [vidrioPausa, reduceMotion, pausaOpacidad]);
+  useEffect(() => {
+    if (themeProgress) return;
+    progresoTema.set(theme.scheme === 'dark' ? 1 : 0);
+  }, [theme.scheme, themeProgress, progresoTema]);
+  const tintePausa = themeProgress ?? progresoTema;
+
   // El desenfoque solo cubre la franja del reloj y su sombra (1.8.1). El fondo
   // es un degradado muy suave: desenfocado se ve igual, pero desenfocar toda
   // la pantalla en cada fotograma costaba unas tres veces más en la GPU.
@@ -379,6 +405,7 @@ function HourglassCanvas({
           opacity={fade.opacity}
         />
       ) : null}
+      <VidrioPantalla width={width} height={height} opacity={pausaOpacidad} themeProgress={tintePausa} />
     </Canvas>
   );
 }

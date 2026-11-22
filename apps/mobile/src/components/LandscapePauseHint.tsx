@@ -29,7 +29,8 @@ export function LandscapePauseHint({ text, dismissLabel, bottom, font, theme, on
         style={({ pressed }) => [
           styles.chip,
           {
-            backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteDialogoOscuro : VIDRIO.tinteDialogoClaro,
+            backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteOscuro : VIDRIO.tinteClaro,
+            opacity: 0.92,
           },
           pressed && styles.pressed,
         ]}
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.88 },
   text: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 20,
     letterSpacing: 0.2,
     textAlign: 'center',
