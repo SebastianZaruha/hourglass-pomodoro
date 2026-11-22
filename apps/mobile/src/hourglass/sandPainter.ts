@@ -151,6 +151,7 @@ export class SandPainter {
     uLight: number[];
     uGravity: number[];
     uExposure: number;
+    uLightBias: number[];
   };
   private disposed = false;
 
@@ -160,6 +161,8 @@ export class SandPainter {
     private readonly theme: HourglassTheme,
     private readonly lut: Uint8Array,
     shaders: ShaderSet,
+    /** Grados. null: la luz de siempre (Clásico y el resto). */
+    private readonly luzGrano: number | null = null,
   ) {
     this.pixels = new Uint8Array(layout.cols * layout.rows * 4);
     this.imageInfo = {
@@ -191,6 +194,7 @@ export class SandPainter {
       uLight: [0, 0],
       uGravity: [0, 1],
       uExposure: theme.sand.exposure,
+      uLightBias: [0, 0],
     };
 
     this.sandPaint = Skia.Paint();
@@ -204,7 +208,7 @@ export class SandPainter {
   }
 
   /** Graba un SkPicture con la arena y el chorro. */
-  paint(sim: SandSimulation, inputs: PhysicalInputs, stream: StreamState): SkPicture {
+  paint(sim: SandSimulation, inputs: PhysicalInputs, stream: StreamState, giro = 0): SkPicture {
     if (this.disposed) throw new Error('SandPainter usado después de dispose()');
     const { layout } = this;
     this.frame = (this.frame + 1) % 1_000_000;
@@ -228,6 +232,15 @@ export class SandPainter {
       u.uLight[1] = inputs.tilt.y;
       u.uGravity[0] = inputs.gravity.x;
       u.uGravity[1] = inputs.gravity.y;
+      // El picture gira con la fase; la esfera de la foto no. Se descuenta el giro.
+      if (this.luzGrano === null) {
+        u.uLightBias[0] = 0;
+        u.uLightBias[1] = 0;
+      } else {
+        const rad = (this.luzGrano * Math.PI) / 180 - giro;
+        u.uLightBias[0] = Math.cos(rad) + 0.45;
+        u.uLightBias[1] = Math.sin(rad) + 0.8;
+      }
       shader = this.sand.makeShaderWithChildren(this.packer.pack(u), [grid]);
       this.sandPaint.setShader(shader);
       canvas.save();

@@ -91,6 +91,8 @@ export interface HourglassProps {
   readonly fondo?: FondoMovil;
   /** Arena en F1. El agua llega en F3. */
   readonly material?: Material;
+  /** Luz de los granos, en grados. Sin ella, la luz de siempre. */
+  readonly luzGrano?: number;
   readonly getSnapshot: () => HourglassSnapshot;
   readonly status: TimerStatus;
   readonly durationMs: number;
@@ -135,6 +137,7 @@ function HourglassCanvas({
   theme,
   fondo = { tipo: 'procedural' },
   material = 'arena',
+  luzGrano,
   getSnapshot,
   status,
   durationMs,
@@ -164,9 +167,9 @@ function HourglassCanvas({
   // La simulación no se recrea al cambiar el tema: solo el pintor.
   const contenido = useMemo(() => crearArena({ model, cols: layout.cols, content }), [model, layout.cols, content]);
   const revisionPintor = useMemo(() => {
-    contenido.ponerPintor({ layout, model, theme, content, shaders });
+    contenido.ponerPintor({ layout, model, theme, content, shaders, luzGrano: luzGrano ?? null });
     return contenido.revision;
-  }, [contenido, layout, model, theme, content, shaders]);
+  }, [contenido, layout, model, theme, content, shaders, luzGrano]);
   useEffect(() => () => contenido.destruir(), [contenido]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.

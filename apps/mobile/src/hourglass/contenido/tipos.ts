@@ -31,8 +31,11 @@ export interface EntradaMotor {
 export interface MotorContenido {
   /** Avanza. Devuelve true si la arena o el chorro siguen moviéndose. */
   paso(e: EntradaMotor): boolean;
-  /** Picture de este fotograma. El bucle lo publica y lo libera. */
-  pintar(motion: MotionSource): SkPicture;
+  /**
+   * Picture de este fotograma. El bucle lo publica y lo libera.
+   * `giro` es el de la fase, en radianes: la foto no gira con él.
+   */
+  pintar(motion: MotionSource, giro: number): SkPicture;
   /**
    * La rejilla da media vuelta. `reinicio` es el volteo del móvil;
    * `fase` es el final del giro de un ciclo. En los dos la arena hace lo mismo.

@@ -51,6 +51,8 @@ export interface OpcionesPintor {
   readonly theme: HourglassTheme;
   readonly content: ContentDefinition;
   readonly shaders: ShaderSet;
+  /** Grados, o null si la luz es la de siempre. */
+  readonly luzGrano: number | null;
 }
 
 /** La arena, lista para que el bucle la mueva. El pintor se pone aparte: el tema no reinicia la simulación. */
@@ -102,7 +104,14 @@ class ArenaMotor implements ContenidoArena {
 
   ponerPintor(opts: OpcionesPintor): void {
     const palette = opts.theme.scheme === 'dark' ? opts.content.palette.dark : opts.content.palette.light;
-    const next = new SandPainter(opts.layout, opts.model, opts.theme, buildPaletteLut(palette), opts.shaders);
+    const next = new SandPainter(
+      opts.layout,
+      opts.model,
+      opts.theme,
+      buildPaletteLut(palette),
+      opts.shaders,
+      opts.luzGrano,
+    );
     const prev = this.painter;
     this.painter = next;
     this.revision += 1;
@@ -163,7 +172,7 @@ class ArenaMotor implements ContenidoArena {
     return !this.sim.isSettled || this.particles.active;
   }
 
-  pintar(motion: MotionSource): SkPicture {
+  pintar(motion: MotionSource, giro: number): SkPicture {
     const painter = this.painter;
     if (!painter) throw new Error('La arena no tiene pintor.');
     const stream = this.stream;
@@ -171,7 +180,7 @@ class ArenaMotor implements ContenidoArena {
     stream.particles = this.particles;
     stream.reduceMotion = this.reducir;
     this.streamShown = this.streaming;
-    return painter.paint(this.sim, motion, stream);
+    return painter.paint(this.sim, motion, stream, giro);
   }
 
   alVoltear(_motivo: 'reinicio' | 'fase'): void {

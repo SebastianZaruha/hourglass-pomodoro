@@ -24,5 +24,10 @@ export function materialDe(escena: EscenaMovil): Material {
   return escena.material;
 }
 
+/** Grados de la luz de los granos, o undefined si es la de siempre. */
+export function luzDe(escena: EscenaMovil, scheme: ColorSchemeName): number | undefined {
+  return scheme === 'dark' ? escena.oscuro.luzGrano : escena.claro.luzGrano;
+}
+
 export { arena, clasico, lluvia };
 export type { AspectoMovil, EscenaMovil, FondoMovil, Material } from './tipos';

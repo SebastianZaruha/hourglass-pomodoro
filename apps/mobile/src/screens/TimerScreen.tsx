@@ -110,7 +110,7 @@ import { TIME_LINE_HEIGHT, TimeDisplay } from '../components/TimeDisplay';
 import { appClock } from '../dev/devClock';
 import { playSelectionTick, playTimerHaptic, useTimerHaptics } from '../haptics';
 import { useLandscapePauseHint } from '../hints/useLandscapePauseHint';
-import { fondoDe, getEscena, materialDe, temaDe } from '../escenas';
+import { fondoDe, getEscena, luzDe, materialDe, temaDe } from '../escenas';
 import { Hourglass, type PauseBlur } from '../hourglass';
 import { useKeepAwakeWhile } from '../hooks/useKeepAwakeWhile';
 import { useLatest } from '../hooks/useLatest';
@@ -162,6 +162,7 @@ export function TimerScreen({ settings, fonts }: Props) {
   const theme = temaDe(escena, scheme);
   const fondo = fondoDe(escena, scheme);
   const material = materialDe(escena);
+  const luzGrano = luzDe(escena, scheme);
   const paleta = { claro: escena.claro.tema.ui, oscuro: escena.oscuro.tema.ui };
 
   const model = getHourglassModel(prefs.hourglassModelId);
@@ -620,6 +621,7 @@ export function TimerScreen({ settings, fonts }: Props) {
               theme={theme}
               fondo={fondo}
               material={material}
+              luzGrano={luzGrano}
               getSnapshot={session.getSnapshot}
               status={view.status}
               durationMs={view.durationMs}

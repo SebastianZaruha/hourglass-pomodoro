@@ -313,7 +313,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
 
       // 4b) Arena.
       if (changed || p.contenido.hayQuePintar) {
-        slots.sand.publish(p.contenido.pintar(m));
+        slots.sand.publish(p.contenido.pintar(m, spin.value));
       }
 
       // ¿Seguimos? Mientras corre el tiempo o la arena se mueve, sí.

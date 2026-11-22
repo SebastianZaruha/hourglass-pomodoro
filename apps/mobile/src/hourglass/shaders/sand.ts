@@ -34,6 +34,9 @@ uniform float2 uGridSize;   // columnas, filas
 uniform float2 uLight;      // inclinación de la luz (-1..1)
 uniform float2 uGravity;    // gravedad (para iluminar la superficie)
 uniform float uExposure;
+// (0, 0) deja la luz como siempre. Si no, se suma para que la clave
+// apunte al ángulo de la escena (0° derecha, 90° abajo).
+uniform float2 uLightBias;
 
 half4 cellAt(float2 c) {
   if (c.x < 0.0 || c.y < 0.0 || c.x >= uGridSize.x || c.y >= uGridSize.y) return half4(0.0);
@@ -46,11 +49,12 @@ half4 main(float2 pos) {
   float2 mc = floor(m);
   half4 own = cellAt(floor(g));
 
-  float3 lightDir = normalize(float3(-0.45 + uLight.x * 0.5, -0.8 + uLight.y * 0.5, 0.95));
+  // Con uLightBias en cero, estas dos líneas son las de siempre.
+  float3 lightDir = normalize(float3(-0.45 + uLight.x * 0.5 + uLightBias.x, -0.8 + uLight.y * 0.5 + uLightBias.y, 0.95));
 
   // Luz de los destellos: se mueve MÁS con la inclinación que la luz
   // principal, así unos pocos grados bastan para encender/apagar destellos.
-  float3 glintDir = normalize(float3(-0.45 + uLight.x * 1.8, -0.8 + uLight.y * 1.8, 0.9));
+  float3 glintDir = normalize(float3(-0.45 + uLight.x * 1.8 + uLightBias.x, -0.8 + uLight.y * 1.8 + uLightBias.y, 0.9));
 
   float bestH = -1.0;
   float bestSparkle = 0.0;
