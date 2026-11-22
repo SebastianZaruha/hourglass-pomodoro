@@ -19,6 +19,7 @@ import {
   FilterMode,
   MipmapMode,
   PaintStyle,
+  StrokeCap,
   Skia,
   TileMode,
   type SkCanvas,
@@ -38,9 +39,11 @@ import type { OpcionesPintor } from './arena';
 import type { EntradaMotor, MotorContenido } from './tipos';
 
 const GOTAS = 4;
-const INTERVALO_GOTA = 0.22;
-const VELOCIDAD_GOTA = 220;
-const RADIO_GOTA = 2.1;
+const INTERVALO_GOTA = 0.14;
+const VELOCIDAD_GOTA = 520;
+const LARGO_HILO = 16;
+const GROSOR_HILO = 0.6;
+const ALFA_HILO = 0.16;
 const FADE_GOTAS = 0.2;
 const REFRACCION = 4;
 
@@ -138,6 +141,9 @@ class AguaMotor implements AguaContenido {
     this.menisco.setAntiAlias(true);
     this.menisco.setColor(Skia.Color('white'));
     this.gotaPaint.setAntiAlias(true);
+    this.gotaPaint.setStyle(PaintStyle.Stroke);
+    this.gotaPaint.setStrokeWidth(GROSOR_HILO);
+    this.gotaPaint.setStrokeCap(StrokeCap.Round);
     this.gotaPaint.setColor(Skia.Color('white'));
     this.uniforms.uSplit = layout.cy;
   }
@@ -299,7 +305,7 @@ class AguaMotor implements AguaContenido {
     const cs = Math.cos(e.theta);
     for (let i = 0; i < GOTAS; i++) {
       if (!this.gviva[i]) continue;
-      this.gv[i] = (this.gv[i] ?? 0) + 900 * e.dt;
+      this.gv[i] = (this.gv[i] ?? 0) + 1600 * e.dt;
       const vel = VELOCIDAD_GOTA + (this.gv[i] ?? 0);
       this.gx[i] = (this.gx[i] ?? 0) + sen * vel * e.dt;
       this.gy[i] = (this.gy[i] ?? 0) + cs * vel * e.dt;
@@ -331,10 +337,14 @@ class AguaMotor implements AguaContenido {
 
   private dibujarGotas(canvas: SkCanvas): void {
     if (this.fade <= 0.02) return;
-    this.gotaPaint.setAlphaf(0.72 * this.fade);
+    const sen = Math.sin(this.theta);
+    const cs = Math.cos(this.theta);
+    this.gotaPaint.setAlphaf(ALFA_HILO * this.fade);
     for (let i = 0; i < GOTAS; i++) {
       if (!this.gviva[i]) continue;
-      canvas.drawCircle(this.gx[i] ?? 0, this.gy[i] ?? 0, RADIO_GOTA, this.gotaPaint);
+      const x = this.gx[i] ?? 0;
+      const y = this.gy[i] ?? 0;
+      canvas.drawLine(x - sen * LARGO_HILO, y - cs * LARGO_HILO, x, y, this.gotaPaint);
     }
   }
 }
