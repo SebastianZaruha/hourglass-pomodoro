@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import type { Aspecto } from '../frasco';
 import { ahorraDatos, type Caja } from '../fondo';
 import { FOTO_ALTO, CUELLO_FILA } from './encuadre';
-import { CENTRO_FILA } from './geometria';
+import { CENTRO_FILA } from './centro';
 import type { Puente3D } from './puente';
 import type { Fondo, Frasco3D, Modo } from './tipos';
 import './frasco-3d.css';
