@@ -2,7 +2,7 @@
  * Lluvia. El material es agua: la arena de Clásico y de Arena no entra aquí.
  * Dígitos y pista, tinta del menú, barra de estado y reserva.
  */
-import { temaDeFoto } from './paleta';
+import { CONTROLES, temaDeFoto } from './paleta';
 import type { EscenaMovil } from './tipos';
 
 const claro = temaDeFoto({
@@ -12,6 +12,7 @@ const claro = temaDeFoto({
   barra: '#c5d0cb',
   reserva: '#d8d8d6',
   sombra: 'rgba(84, 64, 44, 0.28)',
+  controles: CONTROLES.lluvia.light,
 });
 
 const oscuro = temaDeFoto({
@@ -21,6 +22,7 @@ const oscuro = temaDeFoto({
   barra: '#1a2422',
   reserva: '#141414',
   sombra: 'rgba(0, 0, 0, 0.38)',
+  controles: CONTROLES.lluvia.dark,
 });
 
 export const lluvia: EscenaMovil = {

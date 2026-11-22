@@ -20,6 +20,7 @@ Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 - Las gotas son hilos finos, casi transparentes.
 - La foto de la escena funde a la vez que el frasco.
 - En la pausa de lado, fondo, frasco y nube quedan tras un vidrio a pantalla completa. «Pausa» se lee nítido delante.
+- Los botones del menú se separan un poco del vidrio, con un color por escena.
 
 ## 1.9.0-f2 — Lluvia no se cierra, y las hojas son vidrio (prueba)
 

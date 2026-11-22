@@ -17,7 +17,59 @@ export interface ColoresFoto {
   readonly reserva: string;
   /** Sombra del frasco sobre la foto. */
   readonly sombra: string;
+  /** Relleno de segmento, chip y botón redondo sobre el vidrio. */
+  readonly controles?: ControlesEscena;
 }
+
+/**
+ * Color de los controles del menú sobre el vidrio. Un paso más de contraste
+ * que el tinte del vidrio, sin cambiar la tinta ni el texto.
+ */
+export interface ControlesEscena {
+  readonly track: string;
+  readonly pill: string;
+  readonly accent: string;
+}
+
+/** Valores por escena y por claro/oscuro. Se editan aquí. */
+export const CONTROLES = {
+  clasico: {
+    light: {
+      track: 'rgba(92, 78, 64, 0.16)',
+      pill: 'rgba(255, 252, 247, 0.98)',
+      accent: '#6E5A48',
+    },
+    dark: {
+      track: 'rgba(255, 238, 214, 0.14)',
+      pill: 'rgba(255, 238, 214, 0.24)',
+      accent: '#D4C0A4',
+    },
+  },
+  lluvia: {
+    light: {
+      track: 'rgba(70, 78, 76, 0.16)',
+      pill: 'rgba(255, 255, 255, 0.96)',
+      accent: '#4E5754',
+    },
+    dark: {
+      track: 'rgba(220, 228, 224, 0.14)',
+      pill: 'rgba(236, 242, 238, 0.22)',
+      accent: '#8D9894',
+    },
+  },
+  arena: {
+    light: {
+      track: 'rgba(113, 53, 13, 0.16)',
+      pill: 'rgba(255, 248, 236, 0.97)',
+      accent: '#8A4518',
+    },
+    dark: {
+      track: 'rgba(233, 206, 174, 0.16)',
+      pill: 'rgba(255, 228, 196, 0.22)',
+      accent: '#C4895C',
+    },
+  },
+} as const satisfies Record<string, { light: ControlesEscena; dark: ControlesEscena }>;
 
 const hex = (h: string): Rgb01 => {
   const n = parseInt(h.slice(1), 16);
@@ -41,7 +93,7 @@ function rgbaDe(hexColor: string, alfa: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alfa})`;
 }
 
-function uiDe(tinta: string, scheme: ColorSchemeName): UiPalette {
+function uiDe(tinta: string, scheme: ColorSchemeName, controles?: ControlesEscena): UiPalette {
   const claro = scheme === 'light';
   const hacia = claro ? '#f7f3ee' : '#f3ece4';
   const suave = claro ? 0.32 : 0.38;
@@ -49,12 +101,12 @@ function uiDe(tinta: string, scheme: ColorSchemeName): UiPalette {
     ink: tinta,
     inkSoft: mezcla(tinta, hacia, suave),
     label: mezcla(tinta, hacia, claro ? 0.22 : 0.28),
-    track: rgbaDe(tinta, claro ? 0.08 : 0.1),
-    pill: claro ? 'rgba(255, 252, 247, 0.94)' : 'rgba(255, 244, 232, 0.14)',
+    track: controles?.track ?? rgbaDe(tinta, claro ? 0.08 : 0.1),
+    pill: controles?.pill ?? (claro ? 'rgba(255, 252, 247, 0.94)' : 'rgba(255, 244, 232, 0.14)'),
     pillShadow: claro
       ? '0px 1px 2px rgba(40, 32, 24, 0.10), 0px 4px 12px rgba(40, 32, 24, 0.07)'
       : '0px 1px 2px rgba(0, 0, 0, 0.35)',
-    accent: mezcla(tinta, hacia, claro ? 0.12 : 0.2),
+    accent: controles?.accent ?? mezcla(tinta, hacia, claro ? 0.12 : 0.2),
     line: rgbaDe(tinta, claro ? 0.14 : 0.16),
     panelEdge: claro ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 244, 232, 0.1)',
     scrim: claro ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.22)',
@@ -100,6 +152,6 @@ export function temaDeFoto(c: ColoresFoto): HourglassTheme {
       pauseGlow: claro ? 'rgba(250, 246, 240, 0.95)' : 'rgba(12, 10, 8, 0.9)',
     },
     solid: c.barra,
-    ui: uiDe(c.tinta, c.scheme),
+    ui: uiDe(c.tinta, c.scheme, c.controles),
   };
 }

@@ -3,7 +3,7 @@
  * En oscuro los granos se iluminan desde la esfera cálida de la izquierda.
  */
 import type { HourglassTheme } from '../theme/theme';
-import { temaDeFoto } from './paleta';
+import { CONTROLES, temaDeFoto } from './paleta';
 import type { EscenaMovil } from './tipos';
 
 const claroBase = temaDeFoto({
@@ -13,6 +13,7 @@ const claroBase = temaDeFoto({
   barra: '#e6d7c4',
   reserva: '#e4c7a4',
   sombra: 'rgba(84, 64, 44, 0.28)',
+  controles: CONTROLES.arena.light,
 });
 
 const oscuroBase = temaDeFoto({
@@ -22,6 +23,7 @@ const oscuroBase = temaDeFoto({
   barra: '#241910',
   reserva: '#3a2618',
   sombra: 'rgba(0, 0, 0, 0.38)',
+  controles: CONTROLES.arena.dark,
 });
 
 /**
