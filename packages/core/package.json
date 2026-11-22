@@ -7,7 +7,7 @@
   "author": "Sebastián Zaruha (https://github.com/SebastianZaruha)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SebastianZaruha/reloj-de-arena.git",
+    "url": "git+https://github.com/SebastianZaruha/hourglass-pomodoro.git",
     "directory": "packages/core"
   },
   "type": "module",
