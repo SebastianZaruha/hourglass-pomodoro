@@ -9,12 +9,11 @@
  * El gesto de arrastrar escribe en `offset` directamente (en el hilo de UI),
  * así el contenido (React Native) y el vidrio (Skia) se mueven a la vez.
  *
- * Canto al píxel (1.8.7): `top` y el desplazamiento de la vista se
- * redondean al píxel físico (`snapToPixel`). Al final de la subida la hoja
- * avanza décimas de píxel por fotograma; el filo de luz del vidrio (Skia)
- * caía entre píxeles y su suavizado cambiaba de un fotograma a otro, y
- * podía ir medio píxel por delante o por detrás del contenido (React
- * Native). Redondeados igual, van juntos y el filo queda quieto y nítido.
+ * Canto al píxel (1.8.7): `top` se redondea al píxel físico (`snapToPixel`).
+ * La vista usa ese mismo `top` (no un `translateY` sobre `bottom: 0`): si el
+ * padre medía 0 al arrancar, `bottom: 0` era el borde de arriba y la hoja
+ * cerrada —desplazada «hacia abajo»— quedaba pintada en la pantalla, sin
+ * vidrio, con el frasco encima. Cerrada no se monta.
  *
  * Nota: fuera de los worklets usamos `sv.get()` / `sv.set()` en lugar de
  * `sv.value`: es lo que recomienda Reanimated 4 para que las reglas del
@@ -22,7 +21,7 @@
  */
 import { SheetToggle, snapToPixel } from '@reloj/core';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { PixelRatio } from 'react-native';
+import { Dimensions, PixelRatio } from 'react-native';
 import {
   Easing,
   cancelAnimation,
@@ -37,6 +36,17 @@ export const SHEET_OPEN_MS = 340;
 export const SHEET_CLOSE_MS = 260;
 /** Píxeles físicos por punto (para `snapToPixel`). */
 export const SHEET_DENSITY = PixelRatio.get();
+
+/**
+ * Alto de pantalla para el estado cerrado. `useWindowDimensions` puede dar 0
+ * en el primer render: un offset 0 es la hoja ABIERTA (`top` = 0) y se ve
+ * al arrancar, antes de que llegue el layout.
+ */
+function altoDePantalla(screenHeight: number): number {
+  if (screenHeight > 0) return screenHeight;
+  const medida = Dimensions.get('screen').height;
+  return medida > 0 ? medida : 800;
+}
 
 export interface SheetState {
   /** ¿Está abierta (o abriéndose)? */
@@ -65,17 +75,33 @@ export interface SheetState {
 export function useSheet(screenHeight: number, reduceMotion: boolean): SheetState {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  // Alto provisional hasta medir el contenido (lo fija SettingsSheet).
-  const height = useSharedValue(Math.round(screenHeight * 0.7));
-  const offset = useSharedValue(screenHeight);
-  // El borde de arriba de la vista (lo coloca Yoga, ya en píxeles enteros)
-  // más el desplazamiento, redondeados por separado como la vista.
+  // Cerrada desde el primer valor: un offset 0 dejaría `top` en 0 y la hoja
+  // ocuparía la pantalla en el primer frame, antes de medirla.
+  const pantalla = altoDePantalla(screenHeight);
+  const height = useSharedValue(Math.round(pantalla * 0.7));
+  const offset = useSharedValue(pantalla);
+  // En un shared value: el worklet de `top` no se queda con el 0 del primer
+  // render si la medida de verdad llega después.
+  const alto = useSharedValue(pantalla);
+  useLayoutEffect(() => {
+    if (screenHeight > 0) alto.set(screenHeight);
+  }, [screenHeight, alto]);
+  // Canto superior de la propia vista. Cerrada (offset ≥ alto de la hoja)
+  // queda en o bajo el borde inferior, también antes del primer layout.
   const top = useDerivedValue(
-    () => snapToPixel(screenHeight - height.value, SHEET_DENSITY) + snapToPixel(offset.value, SHEET_DENSITY),
+    () => snapToPixel(alto.value - height.value, SHEET_DENSITY) + snapToPixel(offset.value, SHEET_DENSITY),
   );
   const openness = useDerivedValue(() =>
     height.value > 0 ? Math.min(1, Math.max(0, 1 - offset.value / height.value)) : 0,
   );
+
+  // Si el alto de verdad llega después (el primer render iba a 0), la hoja
+  // sigue cerrada: el canto queda por debajo de la pantalla. No toca una
+  // hoja abierta ni una que se está cerrando.
+  useLayoutEffect(() => {
+    if (open || visible || !(screenHeight > 0)) return;
+    if (offset.get() < screenHeight) offset.set(Math.max(height.get() + 40, screenHeight));
+  }, [screenHeight, open, visible, offset, height]);
 
   // Estado real al momento (el `open` de React llega un render después) y
   // qué hacer con cada toque del botón (ver SheetToggle en el core).

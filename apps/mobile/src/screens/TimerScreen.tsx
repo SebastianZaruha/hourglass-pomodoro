@@ -732,6 +732,7 @@ export function TimerScreen({ settings, fonts }: Props) {
               testID="velo-ajustes"
             />
           ) : null}
+          {sheet.visible ? (
           <SettingsSheet
             sheet={sheet}
             settings={prefs}
@@ -762,6 +763,7 @@ export function TimerScreen({ settings, fonts }: Props) {
                 : null
             }
           />
+          ) : null}
           </Animated.View>
           <MenuButton
             safeBottom={tilt.flipped ? safe.top : safe.bottom}

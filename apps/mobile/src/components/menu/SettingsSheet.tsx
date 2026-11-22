@@ -4,6 +4,10 @@
  * animación. No se pinta en el lienzo del reloj, porque en Android ese
  * lienzo queda por encima de la hoja.
  *
+ * La posición es `top` (el mismo shared value que el vidrio), no un
+ * `translateY` sobre `bottom: 0`. Cerrada, `top` queda bajo la pantalla
+ * aunque el padre mida 0 en el primer frame. No se monta hasta que se abre.
+ *
  * Se cierra:
  *   - arrastrando hacia abajo (gesto de Gesture Handler en el hilo de UI),
  *   - tocando fuera (el velo de TimerScreen),
@@ -46,7 +50,6 @@ import {
   type SceneId,
   type SessionMode,
   type Settings,
-  snapToPixel,
 } from '@reloj/core';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -160,7 +163,7 @@ export function SettingsSheet({
   const paleta: PaletaUi = { claro: escena.claro.tema.ui, oscuro: escena.oscuro.tema.ui };
   const s = useMenuStyles(themeProgress, paleta);
   const base = { styles: s, fonts, pillShadow: theme.ui.pillShadow };
-  const { open, visible, hide, offset, height } = sheet;
+  const { open, visible, hide, offset, height, top } = sheet;
   // Etiqueta de la pulsación larga en la fila de botones redondos (1.8.10).
   const { state: tipState, control: tip } = useQuickTooltip();
   const [quickRowWidth, setQuickRowWidth] = useState(0);
@@ -251,9 +254,10 @@ export function SettingsSheet({
   const headerPan = usePanGesture(makePan(true));
   const bodyPan = usePanGesture(makePan(!scrollable));
 
-  // Al píxel físico, igual que el canto del vidrio (`top`, ver useSheet; 1.8.7).
-  const slide = useAnimatedStyle(() => ({
-    transform: [{ translateY: snapToPixel(offset.value, SHEET_DENSITY) }],
+  // El mismo `top` que el vidrio. Cerrada queda bajo la pantalla; el `top`
+  // fijo es el primer frame, por si el estilo animado aún no está aplicado.
+  const place = useAnimatedStyle(() => ({
+    top: top.value,
   }));
 
   // ─── Valores mostrados ──────────────────────────────────────────────────
@@ -283,7 +287,7 @@ export function SettingsSheet({
 
   return (
     <Animated.View
-      style={[styles.sheet, { height: sheetHeight || undefined }, slide]}
+      style={[styles.sheet, { height: sheetHeight || undefined, top: screenHeight }, place]}
       pointerEvents={open ? 'auto' : 'none'}
       accessibilityViewIsModal={open}
       importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
@@ -664,7 +668,7 @@ function formatMinutes(min: number): string {
 }
 
 const styles = StyleSheet.create({
-  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  sheet: { position: 'absolute', left: 0, right: 0 },
   contenido: { zIndex: 2, elevation: 8 },
   header: { paddingHorizontal: 26 },
   grabArea: { alignSelf: 'center', width: 88, height: 30, alignItems: 'center', justifyContent: 'center' },
