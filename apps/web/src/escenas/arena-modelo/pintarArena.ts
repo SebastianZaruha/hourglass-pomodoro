@@ -82,6 +82,12 @@ const EMBUDO_Y = 0.35;
 const PICO_Y = 0.12;
 /** Ancho del hilo, como fracción del hueco. La punta del cono mide lo mismo. */
 const HILO_FRACCION = 0.22;
+/**
+ * Filas del bulbo emisor junto al hueco. Un grano ahí solo se pinta si
+ * una cadena vertical o diagonal lo une al resto del montón. La simulación
+ * no se toca.
+ */
+const FRANJA_GARGANTA = 4;
 
 function medioDelCuello(radio: (y: number) => number, yn: number, vw: number): number {
   const pared = radio(yn) * (vw / 2);
@@ -198,6 +204,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     sombrearGranos(g, ctx, scene, vx, vy, vw, vh);
     perfilarEmbudo(g, scene, vx, vy, vw, vh);
   }
+  taparGarganta(g, scene, vx, vy, vw, vh);
 
   const cellW = vw / scene.sim.cols;
   const cellH = vh / scene.sim.rows;
@@ -273,6 +280,93 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(hoja, caja.x, caja.y, caja.w, caja.h);
+}
+
+let marcasGarganta: Uint32Array | null = null;
+let colaGarganta: Int32Array | null = null;
+let selloGarganta = 1;
+
+/** Borra los granos de la garganta que no llegan al montón. No cambia las celdas. */
+function taparGarganta(
+  g: CanvasRenderingContext2D,
+  scene: ArenaPintada,
+  vx: number,
+  vy: number,
+  vw: number,
+  vh: number,
+): void {
+  const sim = scene.sim;
+  const cols = sim.cols;
+  const rows = sim.rows;
+  const cells = sim.cells;
+  const mask = sim.mask;
+  const gate = sim.gateRow;
+  const dir = scene.abajo ?? 1;
+  if (cols < 3 || rows < 3 || !(vw > 0) || !(vh > 0)) return;
+  const n = cols * rows;
+  if (!marcasGarganta || marcasGarganta.length < n || !colaGarganta) {
+    marcasGarganta = new Uint32Array(n);
+    colaGarganta = new Int32Array(n);
+    selloGarganta = 1;
+  }
+  if (selloGarganta === 0xffffffff) {
+    marcasGarganta.fill(0);
+    selloGarganta = 1;
+  }
+  const marcas = marcasGarganta;
+  const cola = colaGarganta;
+  const sello = selloGarganta;
+  const enBanda = (fila: number) => {
+    const d = (gate - fila) * dir;
+    return d >= 1 && d <= FRANJA_GARGANTA;
+  };
+  const fuera = gate - dir * (FRANJA_GARGANTA + 1);
+  let qc = 0;
+  if (fuera >= 0 && fuera < rows) {
+    for (let col = 0; col < cols; col++) {
+      const i = fuera * cols + col;
+      if ((cells[i] ?? 0) === 0 || mask[i] !== 1) continue;
+      marcas[i] = sello;
+      cola[qc] = i;
+      qc += 1;
+    }
+  }
+  for (let q = 0; q < qc; q++) {
+    const i = cola[q] ?? 0;
+    const col = i % cols;
+    const fila = (i - col) / cols;
+    for (let dc = -1; dc <= 1; dc++) {
+      for (let dr = -1; dr <= 1; dr++) {
+        if (dr === 0) continue;
+        const nf = fila + dr;
+        const nc = col + dc;
+        if (nc < 0 || nc >= cols || nf < 0 || nf >= rows || !enBanda(nf)) continue;
+        const j = nf * cols + nc;
+        if (marcas[j] === sello || (cells[j] ?? 0) === 0 || mask[j] !== 1) continue;
+        marcas[j] = sello;
+        cola[qc] = j;
+        qc += 1;
+      }
+    }
+  }
+  g.save();
+  g.globalCompositeOperation = 'destination-out';
+  g.globalAlpha = 1;
+  g.fillStyle = '#000';
+  const alto = vh / rows;
+  const ancho = vw / cols;
+  for (let d = 1; d <= FRANJA_GARGANTA; d++) {
+    const fila = gate - dir * d;
+    if (fila < 0 || fila >= rows) continue;
+    const y = vy + (fila / rows) * vh;
+    for (let col = 0; col < cols; col++) {
+      const i = fila * cols + col;
+      if ((cells[i] ?? 0) === 0 || mask[i] !== 1 || marcas[i] === sello) continue;
+      g.fillRect(vx + (col / cols) * vw, y, ancho, alto);
+    }
+  }
+  g.restore();
+  selloGarganta = sello + 1;
 }
 
 /**
