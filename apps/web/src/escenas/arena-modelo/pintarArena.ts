@@ -131,6 +131,8 @@ export interface ArenaPintada {
   };
   /** Opacidad del chorro. 1 en marcha; durante el revelado baja con `llenado.p`. */
   readonly chorro?: number;
+  /** +1 si la caída va hacia yn positivo. Lo marca la gravedad, no el eje del frasco. */
+  readonly abajo?: 1 | -1;
 }
 
 let hoja: HTMLCanvasElement | null = null;
@@ -203,10 +205,12 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
   const alfaChorro = scene.chorro ?? 1;
   const cx = vx + vw / 2;
   const hilo = Math.max(0.6, geo.radio(0) * (vw / 2) * HILO_FRACCION);
+  const abajo = scene.abajo ?? 1;
+  const enElHilo = (yn: number) => (abajo > 0 ? yn >= 0 : yn <= 0) && Math.abs(yn) <= PICO_Y;
   g.save();
   g.globalAlpha = alfaChorro;
   g.imageSmoothingEnabled = true;
-  // El chorro es un hilo fino. El montón, más arriba, ya se cerró en pico.
+  // El hilo nace en el hueco y sigue hacia abajo. Encima no se inventa trazo.
   let yHilo0 = Infinity;
   let yHilo1 = -Infinity;
   let tonoHilo = 1;
@@ -215,7 +219,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     const py = scene.particles.y[i] ?? 0;
     const y = vy + (py / scene.sim.rows) * vh;
     const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
-    if (Math.abs(yn) > PICO_Y) continue;
+    if (!enElHilo(yn)) continue;
     nHilo += 1;
     tonoHilo = scene.particles.tone[i] ?? tonoHilo;
     if (y < yHilo0) yHilo0 = y;
@@ -225,7 +229,11 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     const l = tonoHilo * 3;
     g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
     const alto = Math.max(hilo * 2, yHilo1 - yHilo0);
-    const arriba = (yHilo0 + yHilo1) / 2 - alto / 2;
+    const yCuello = vy + vh / 2;
+    let arriba = (yHilo0 + yHilo1) / 2 - alto / 2;
+    // El extremo del hilo no cruza el hueco hacia el montón.
+    if (abajo > 0) arriba = Math.max(yCuello, arriba);
+    else arriba = Math.min(arriba, yCuello - alto);
     g.fillRect(cx - hilo, arriba, hilo * 2, alto);
   }
   for (let i = 0; i < count; i++) {
@@ -238,7 +246,7 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     const l = tone * 3;
     g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
     const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
-    if (Math.abs(yn) <= PICO_Y) {
+    if (enElHilo(yn)) {
       const medio = medioDelCuello(geo.radio, yn, vw);
       const r = Math.max(0.35, Math.min(hilo * 0.85, size * cellW * 0.55));
       const xG = Math.max(cx - medio + r, Math.min(cx + medio - r, x));
@@ -315,8 +323,9 @@ function revelarLlenado(
 /**
  * La rejilla pinta cada celda entera y deja un peldaño contra el vidrio.
  * En el embudo se recorta lo que sale de la pared y, si la arena ya llegaba,
- * se rellena ese peldaño. Junto al cuello el recorte es un cono: acaba en
- * el ancho del hilo, sin tapa plana. La simulación no se toca.
+ * se rellena ese peldaño. Debajo del hueco el chorro se estrecha al hilo.
+ * Encima, solo se recorta a la pared: el pico es la arena que hay, y al
+ * inclinar se va con ella. La simulación no se toca.
  */
 function perfilarEmbudo(
   g: CanvasRenderingContext2D,
@@ -352,7 +361,8 @@ function perfilarEmbudo(
       derecha = col;
     }
     if (izquierda < 0 || derecha < 0) continue;
-    const medio = medioDelCuello(geo.radio, yn, vw);
+    const arriba = (scene.abajo ?? 1) > 0 ? yn < 0 : yn > 0;
+    const medio = arriba ? geo.radio(yn) * (vw / 2) : medioDelCuello(geo.radio, yn, vw);
     const x0 = cx - medio;
     const x1 = cx + medio;
     const y = vy + (row / rows) * vh;

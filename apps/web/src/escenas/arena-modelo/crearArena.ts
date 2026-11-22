@@ -375,6 +375,7 @@ export function crearArena(medida: MedidaLienzo, esquema: 'claro' | 'oscuro'): C
         geo,
         llenado: llenado ?? undefined,
         chorro,
+        abajo: gravedad.y >= 0 ? 1 : -1,
       });
     },
     alVoltear(motivo: 'reinicio' | 'fase', snap: SessionSnapshot): void {
