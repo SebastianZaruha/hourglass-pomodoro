@@ -8,23 +8,30 @@ import {
   type Settings,
   type ThemePreference,
 } from '@reloj/core';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 
 import { leerArenaDia, sumarPomodoro, type ArenaDia } from '../comun/dia/dia';
 import { useTactil } from '../comun/entrada/tactil';
 import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
 import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
-import { SettingsSheet } from '../comun/menu';
-import { AndroidPromo, readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
-import { AvisoSesion } from '../comun/paneles/aviso/AvisoSesion';
-import { CookieBanner, PanelCookies } from '../comun/paneles/cookies';
-import { LegalOverlay } from '../comun/paneles/legal';
+import { readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
+import { CookieBanner } from '../comun/paneles/cookies';
 import { Mano } from '../comun/paneles/mano/Mano';
-import { Pausa } from '../comun/paneles/pausa';
 import { SiteFooter } from '../comun/paneles/pie';
 import { TimeReadout } from '../comun/reloj';
-import { Frasco, usePageIntro } from '../comun/frasco';
+import { Frasco, usePageIntro, type Escena } from '../comun/frasco';
 import {
   hintFor,
   playCue,
@@ -37,26 +44,61 @@ import {
 } from '../comun/tiempo';
 import { useAvisos } from './useAvisos';
 import { useEntrada } from './useEntrada';
-import { escenas } from './registro';
+import { cargarOtrasEscenas, lluvia } from './registro';
+
+const SettingsSheet = lazy(() => import('../comun/menu').then((mod) => ({ default: mod.SettingsSheet })));
+const AndroidPromo = lazy(() =>
+  import('../comun/paneles/android/promo').then((mod) => ({ default: mod.AndroidPromo })),
+);
+const AvisoSesion = lazy(() =>
+  import('../comun/paneles/aviso/AvisoSesion').then((mod) => ({ default: mod.AvisoSesion })),
+);
+const PanelCookies = lazy(() =>
+  import('../comun/paneles/cookies/panel').then((mod) => ({ default: mod.PanelCookies })),
+);
+const LegalOverlay = lazy(() =>
+  import('../comun/paneles/legal/hoja').then((mod) => ({ default: mod.LegalOverlay })),
+);
+const Pausa = lazy(() => import('../comun/paneles/pausa').then((mod) => ({ default: mod.Pausa })));
+
+function AlMontar({ onMontar, children }: { readonly onMontar: () => void; readonly children: ReactNode }) {
+  useLayoutEffect(() => {
+    onMontar();
+  }, [onMontar]);
+  return children;
+}
+
+/** El menú se monta cerrado y abre al fotograma siguiente, para que el deslizamiento empiece desde abajo. */
+function AjustesPerezosos(props: ComponentProps<typeof SettingsSheet>) {
+  const [pedido, setPedido] = useState(false);
+  const [montada, setMontada] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const marcar = useCallback(() => setMontada(true), []);
+  useEffect(() => {
+    if (props.open) setPedido(true);
+  }, [props.open]);
+  useLayoutEffect(() => {
+    if (!montada) return;
+    if (!props.open) {
+      setVisible(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, [montada, props.open]);
+  if (!pedido) return null;
+  return (
+    <Suspense fallback={null}>
+      <AlMontar onMontar={marcar}>
+        <SettingsSheet {...props} open={visible} />
+      </AlMontar>
+    </Suspense>
+  );
+}
 
 const ESQUEMA = { light: 'claro', dark: 'oscuro' } as const;
 const CLAVE_ESCENA = 'hourglass-web/escena';
 
-function escenaInicial() {
-  let id: string | null = null;
-  try {
-    id = localStorage.getItem(CLAVE_ESCENA);
-  } catch {
-    id = null;
-  }
-  const hallada = escenas.find((item) => item.id === id);
-  if (hallada) return hallada;
-  const lluvia = escenas.find((item) => item.id === 'lluvia');
-  if (lluvia) return lluvia;
-  const primera = escenas[0];
-  if (primera) return primera;
-  throw new Error('El registro no tiene escenas.');
-}
 
 function allowAnalyticsEvent<E>(event: E): E {
   return event;
@@ -128,7 +170,28 @@ function Timer({
   const scheme = resolveScheme(settings.theme, systemDark);
   const lang = resolveLanguage(settings.language, navigator.language);
   const t = messagesFor(settings.language, navigator.language);
-  const [escena, setEscena] = useState(escenaInicial);
+  const [catalogo, setCatalogo] = useState<readonly Escena[]>([lluvia]);
+  const [escena, setEscena] = useState<Escena>(lluvia);
+  const escenaElegida = useRef(false);
+  useEffect(() => {
+    let vivo = true;
+    void cargarOtrasEscenas().then((lista) => {
+      if (!vivo) return;
+      setCatalogo(lista);
+      if (escenaElegida.current) return;
+      let id: string | null = null;
+      try {
+        id = localStorage.getItem(CLAVE_ESCENA);
+      } catch {
+        id = null;
+      }
+      const hallada = id ? lista.find((item) => item.id === id) : undefined;
+      if (hallada) setEscena(hallada);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, []);
   const [sesionTerminada, setSesionTerminada] = useState(() => readPrimeraSesion());
   const [pedirAviso, setPedirAviso] = useState(false);
   const [pulso, setPulso] = useState(false);
@@ -254,28 +317,29 @@ function Timer({
   }, [giro, wake]);
 
   const alElegirEscena = useCallback((id: string) => {
-    const siguiente = escenas.find((item) => item.id === id);
+    const siguiente = catalogo.find((item) => item.id === id);
     if (!siguiente) return;
+    escenaElegida.current = true;
     setEscena(siguiente);
     try {
       localStorage.setItem(CLAVE_ESCENA, siguiente.id);
     } catch {
       /* el navegador no guarda */
     }
-  }, []);
+  }, [catalogo]);
 
   useEffect(() => {
     const propias = new Set(direccionesDePrecarga(aspecto));
     const urls = [
       ...new Set(
-        escenas
+        catalogo
           .flatMap((item) => [item.claro, item.oscuro])
           .flatMap((item) => [...direccionesDePrecarga(item)])
           .filter((url) => !propias.has(url)),
       ),
     ];
     precargarFondos(urls);
-  }, [aspecto]);
+  }, [aspecto, catalogo]);
 
   const sideRef = useRef<HTMLDivElement>(null);
   const nubeOpacidad = useRef(1);
@@ -419,7 +483,11 @@ function Timer({
           onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
         />
       </div>
-      {showAndroidPromo ? <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} /> : null}
+      {showAndroidPromo ? (
+        <Suspense fallback={null}>
+          <AndroidPromo lang={lang} onDismiss={avisos.dismissAndroidPromo} />
+        </Suspense>
+      ) : null}
       <CookieBanner
         open={avisos.bannerOpen && !avisos.panelOpen}
         lang={lang}
@@ -427,36 +495,50 @@ function Timer({
         onConfigure={avisos.abrirPanel}
         onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
       />
-      <PanelCookies
-        open={avisos.panelOpen}
-        lang={lang}
-        inicial={avisos.inicialCookies}
-        onGuardar={avisos.guardarCookies}
-        onCerrar={avisos.cerrarPanel}
-        onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
-      />
-      {avisos.legal ? (
-        <LegalOverlay
-          src={avisos.legal.href}
-          title={avisos.legal.title}
-          onClose={() => avisos.setLegal(null)}
-          onConfigure={avisos.abrirPanel}
-        />
+      {avisos.panelOpen ? (
+        <Suspense fallback={null}>
+          <PanelCookies
+            open
+            lang={lang}
+            inicial={avisos.inicialCookies}
+            onGuardar={avisos.guardarCookies}
+            onCerrar={avisos.cerrarPanel}
+            onOpenLegal={(href, title) => avisos.setLegal({ href, title })}
+          />
+        </Suspense>
       ) : null}
-      <AvisoSesion
-        abierta={pedirAviso && !paused && !menu && !avisos.cookiesAbiertas && avisos.legal === null}
-        lang={lang}
-        alAceptar={() => {
-          setPedirAviso(false);
-          update({ alertsPermissionAsked: true });
-          void ensureNotificationPermission();
-        }}
-        alRechazar={() => {
-          setPedirAviso(false);
-          update({ alertsPermissionAsked: true });
-        }}
-      />
-      {paused ? <Pausa word={t.paused} lang={lang} /> : null}
+      {avisos.legal ? (
+        <Suspense fallback={null}>
+          <LegalOverlay
+            src={avisos.legal.href}
+            title={avisos.legal.title}
+            onClose={() => avisos.setLegal(null)}
+            onConfigure={avisos.abrirPanel}
+          />
+        </Suspense>
+      ) : null}
+      {pedirAviso && !paused && !menu && !avisos.cookiesAbiertas && avisos.legal === null ? (
+        <Suspense fallback={null}>
+          <AvisoSesion
+            abierta
+            lang={lang}
+            alAceptar={() => {
+              setPedirAviso(false);
+              update({ alertsPermissionAsked: true });
+              void ensureNotificationPermission();
+            }}
+            alRechazar={() => {
+              setPedirAviso(false);
+              update({ alertsPermissionAsked: true });
+            }}
+          />
+        </Suspense>
+      ) : null}
+      {paused ? (
+        <Suspense fallback={null}>
+          <Pausa word={t.paused} lang={lang} />
+        </Suspense>
+      ) : null}
       <Mano visible={intro.settled && !avisos.cookiesAbiertas && !menu && !paused && avisos.legal === null} />
       <button
         type="button"
@@ -485,11 +567,11 @@ function Timer({
           onClick={() => setMenu(false)}
         />
       ) : null}
-      <SettingsSheet
+      <AjustesPerezosos
         open={menu}
         settings={settings}
         t={t}
-        escenas={escenas}
+        escenas={catalogo}
         escenaId={escena.id}
         idioma={lang}
         onEscena={alElegirEscena}

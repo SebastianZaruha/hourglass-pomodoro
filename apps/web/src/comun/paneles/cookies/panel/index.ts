@@ -1,0 +1,1 @@
+export { PanelCookies } from '../PanelCookies';

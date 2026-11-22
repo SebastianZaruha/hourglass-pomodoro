@@ -14,4 +14,3 @@ export {
   readAndroidPromoDismissed,
   writeAndroidPromoDismissed,
 } from './androidApp';
-export { AndroidPromo } from './AndroidPromo';

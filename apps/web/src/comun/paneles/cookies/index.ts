@@ -18,5 +18,4 @@ export {
   writeConsent,
 } from './cookies';
 export { CookieBanner } from './CookieBanner';
-export { PanelCookies } from './PanelCookies';
 export { resumeVercelWebAnalytics, stopVercelWebAnalytics } from './vercelAnalytics';

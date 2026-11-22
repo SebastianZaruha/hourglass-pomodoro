@@ -1,0 +1,1 @@
+export { LegalOverlay } from '../LegalOverlay';

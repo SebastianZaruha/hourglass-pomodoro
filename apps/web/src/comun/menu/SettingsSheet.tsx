@@ -22,6 +22,8 @@ import {
   type Settings,
 } from '@reloj/core';
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -29,10 +31,13 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
-import { HojaDia } from '../dia/HojaDia';
 import type { ArenaDia } from '../dia/dia';
 import { useHojaVidrio } from '../estilo/vidrio-liquido';
-import { HojaGestos } from '../paneles/gestos/HojaGestos';
+
+const HojaDia = lazy(() => import('../dia/HojaDia').then((mod) => ({ default: mod.HojaDia })));
+const HojaGestos = lazy(() =>
+  import('../paneles/gestos/HojaGestos').then((mod) => ({ default: mod.HojaGestos })),
+);
 import { AutoThemeIcon, HandIcon, JarIcon, MoonIcon, SpeakerIcon, SunIcon } from './Icons';
 
 const QUICK_TIMES_MIN = [5, 10, 15, 25, 45, 60] as const;
@@ -418,14 +423,15 @@ export function SettingsSheet({
         ) : null}
       </div>
     </div>
-    <HojaGestos abierta={open && gestos} lang={idioma ?? 'es'} alCerrar={() => setGestos(false)} />
-    {arenaDia ? (
-      <HojaDia
-        abierta={open && racha}
-        arena={arenaDia}
-        lang={idioma ?? 'es'}
-        alCerrar={() => setRacha(false)}
-      />
+    {open && gestos ? (
+      <Suspense fallback={null}>
+        <HojaGestos abierta lang={idioma ?? 'es'} alCerrar={() => setGestos(false)} />
+      </Suspense>
+    ) : null}
+    {arenaDia && open && racha ? (
+      <Suspense fallback={null}>
+        <HojaDia abierta arena={arenaDia} lang={idioma ?? 'es'} alCerrar={() => setRacha(false)} />
+      </Suspense>
     ) : null}
     </>
   );

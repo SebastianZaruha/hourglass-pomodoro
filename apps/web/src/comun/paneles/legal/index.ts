@@ -1,1 +1,1 @@
-export { LegalOverlay, keepAppOnLegalClick } from './LegalOverlay';
+export { keepAppOnLegalClick } from './clic';

@@ -1,0 +1,1 @@
+export { AndroidPromo } from '../AndroidPromo';
