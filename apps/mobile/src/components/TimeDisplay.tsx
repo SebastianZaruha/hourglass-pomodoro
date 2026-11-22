@@ -43,6 +43,9 @@ interface Props {
   readonly fonts: { readonly time?: string; readonly hint?: string; readonly label?: string };
   readonly themeProgress: SharedValue<number>;
   readonly opacity: SharedValue<number>;
+  /** Colores de la escena. Sin ellos, los de Clásico. */
+  readonly textoClaro?: { readonly time: string; readonly hint: string };
+  readonly textoOscuro?: { readonly time: string; readonly hint: string };
 }
 
 const L = LIGHT_THEME.text;
@@ -57,14 +60,20 @@ export function TimeDisplay({
   fonts,
   themeProgress,
   opacity,
+  textoClaro,
+  textoOscuro,
 }: Props) {
+  const claroTiempo = textoClaro?.time ?? L.time;
+  const oscuroTiempo = textoOscuro?.time ?? D.time;
+  const claroPista = textoClaro?.hint ?? L.hint;
+  const oscuroPista = textoOscuro?.hint ?? D.hint;
   const shown = useLiveText(text, refresh);
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const timeColor = useAnimatedStyle(() => ({
-    color: interpolateColor(themeProgress.value, [0, 1], [L.time, D.time]),
+    color: interpolateColor(themeProgress.value, [0, 1], [claroTiempo, oscuroTiempo]),
   }));
   const hintColor = useAnimatedStyle(() => ({
-    color: interpolateColor(themeProgress.value, [0, 1], [L.hint, D.hint]),
+    color: interpolateColor(themeProgress.value, [0, 1], [claroPista, oscuroPista]),
   }));
 
   return (

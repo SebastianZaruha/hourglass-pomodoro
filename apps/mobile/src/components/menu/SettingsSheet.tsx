@@ -43,6 +43,7 @@ import {
   type CycleConfig,
   type CyclePresetId,
   type Messages,
+  type SceneId,
   type SessionMode,
   type Settings,
   snapToPixel,
@@ -62,12 +63,13 @@ import Animated, { Easing, useAnimatedStyle, withTiming, type SharedValue } from
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { AlertsNotice } from '../../background/useBackgroundTimer';
+import { getEscena } from '../../escenas';
 import { useT } from '../../i18n/I18n';
 import { announce } from '../../hooks/useScreenReader';
 import type { HourglassTheme } from '../../theme/theme';
 import { Chip, DurationSlider, Segmented, Stepper, type SegmentOption } from './controls';
 import { QuickTooltip, RoundButton, themeIcon, useQuickTooltip } from './QuickSettings';
-import { useMenuStyles, type MenuFonts } from './themedStyles';
+import { useMenuStyles, type MenuFonts, type PaletaUi } from './themedStyles';
 import { SHEET_DENSITY, type SheetState } from './useSheet';
 
 /** Tiempos rápidos (minutos). Sin 45 ni 60: caben cuatro círculos + «Personalizado» ancho. */
@@ -81,6 +83,12 @@ const CUSTOM_CHIP_WIDTH = CHIP_ROUND * 2 + CHIP_GAP;
 const modeOptions = (t: Messages): readonly SegmentOption<SessionMode>[] => [
   { value: 'single', label: t.single },
   { value: 'cycles', label: t.cycles },
+];
+
+const sceneOptions = (t: Messages): readonly SegmentOption<SceneId>[] => [
+  { value: 'clasico', label: t.sceneClassic },
+  { value: 'lluvia', label: t.sceneRain },
+  { value: 'arena', label: t.sceneSand },
 ];
 
 /** Arrastre (fracción del alto) o velocidad (px/s) a partir de los que se cierra. */
@@ -141,13 +149,15 @@ export function SettingsSheet({
   analytics = null,
 }: Props) {
   const t = useT();
-  const s = useMenuStyles(themeProgress);
+  const escena = getEscena(settings.sceneId);
+  const paleta: PaletaUi = { claro: escena.claro.tema.ui, oscuro: escena.oscuro.tema.ui };
+  const s = useMenuStyles(themeProgress, paleta);
   const base = { styles: s, fonts, pillShadow: theme.ui.pillShadow };
   const { open, visible, hide, offset, height } = sheet;
   // Etiqueta de la pulsación larga en la fila de botones redondos (1.8.10).
   const { state: tipState, control: tip } = useQuickTooltip();
   const [quickRowWidth, setQuickRowWidth] = useState(0);
-  const round = { ...base, progress: themeProgress, tip };
+  const round = { ...base, progress: themeProgress, paleta, tip };
   // Con la hoja cerrándose, la etiqueta se va ya.
   useEffect(() => {
     if (!open) tip.hide();
@@ -328,6 +338,16 @@ export function SettingsSheet({
           contentContainerStyle={{ paddingBottom: safeBottom + 14 }}
         >
           <View onLayout={settled(setBodyH)} style={styles.body}>
+            <Section label={t.scene} styles={s} fonts={fonts}>
+              <Segmented
+                {...base}
+                options={sceneOptions(t)}
+                value={settings.sceneId}
+                onChange={(sceneId) => update({ sceneId })}
+                accessibilityLabel={t.scene}
+                testID="escena"
+              />
+            </Section>
             {/* Sesión: pestañas que solo enseñan lo de la elegida (el último modo usado). */}
             <View style={styles.tabs}>
               <Segmented
@@ -518,6 +538,7 @@ export function SettingsSheet({
                 styles={s}
                 fonts={fonts}
                 progress={themeProgress}
+                paleta={paleta}
                 shadow={theme.ui.pillShadow}
               />
             </View>

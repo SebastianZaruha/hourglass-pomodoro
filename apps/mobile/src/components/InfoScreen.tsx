@@ -23,13 +23,15 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { announce } from '../hooks/useScreenReader';
 import type { HourglassTheme } from '../theme/theme';
-import { useMenuStyles, type MenuFonts, type MenuStyles } from './menu/themedStyles';
+import { useMenuStyles, type MenuFonts, type MenuStyles, type PaletaUi } from './menu/themedStyles';
 
 export interface InfoScreenProps {
   readonly visible: boolean;
   readonly onClose: () => void;
   readonly theme: HourglassTheme;
   readonly themeProgress: SharedValue<number>;
+  /** Colores de la escena. Sin ellos, los de Clásico. */
+  readonly paleta?: PaletaUi;
   readonly fonts: MenuFonts;
   readonly safeTop: number;
   readonly safeBottom: number;
@@ -55,6 +57,7 @@ export function InfoScreen({
   onClose,
   theme,
   themeProgress,
+  paleta,
   fonts,
   safeTop,
   safeBottom,
@@ -65,7 +68,7 @@ export function InfoScreen({
   closeTestID,
   children,
 }: Props) {
-  const s = useMenuStyles(themeProgress);
+  const s = useMenuStyles(themeProgress, paleta);
 
   // Montada mientras se ve o se desvanece (como el rótulo «Pausa»).
   const [mounted, setMounted] = useState(visible);

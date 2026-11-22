@@ -24,11 +24,14 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 /**
  * Versión del esquema. 2 (app 1.5): añade sonido, modo de sesión y ciclos.
  * 3 (app 1.6): añade el idioma. 4 (app 1.7): recuerda si ya se pidió el
- * permiso de notificaciones. 5 (app 1.8): ventana flotante. Los ajustes de
- * versiones anteriores se migran solos: lo que falta toma su valor por
- * defecto en `sanitizeSettings`.
+ * permiso de notificaciones. 5 (app 1.8): ventana flotante. 6 (app 1.9):
+ * la escena (Clásico, Lluvia o Arena). Los ajustes de versiones anteriores
+ * se migran solos: lo que falta toma su valor por defecto en `sanitizeSettings`.
  */
-export const SETTINGS_VERSION = 5;
+export const SETTINGS_VERSION = 6;
+
+/** Escena visual. Cualquier valor desconocido vuelve a Clásico. */
+export type SceneId = 'clasico' | 'lluvia' | 'arena';
 
 export interface Settings {
   /** Versión del esquema, para migraciones futuras. */
@@ -37,6 +40,8 @@ export interface Settings {
   readonly lastDurationMs: number;
   /** Contenido elegido (arena; agua en el futuro). */
   readonly contentId: string;
+  /** Escena visual (1.9). Clásico si falta o no se reconoce. */
+  readonly sceneId: SceneId;
   /** Modelo de reloj elegido. */
   readonly hourglassModelId: string;
   /** Tema visual: claro, oscuro o automático (sigue al sistema). */
@@ -83,6 +88,7 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   version: SETTINGS_VERSION,
   lastDurationMs: DEFAULT_DURATION_MS,
   contentId: DEFAULT_CONTENT_ID,
+  sceneId: 'clasico',
   hourglassModelId: DEFAULT_MODEL_ID,
   theme: 'system',
   language: 'system',
@@ -111,10 +117,14 @@ export function sanitizeSettings(raw: unknown): Settings {
   const theme: ThemePreference =
     r.theme === 'light' || r.theme === 'dark' || r.theme === 'system' ? r.theme : DEFAULT_SETTINGS.theme;
 
+  const sceneId: SceneId =
+    r.sceneId === 'lluvia' || r.sceneId === 'arena' || r.sceneId === 'clasico' ? r.sceneId : 'clasico';
+
   return {
     version: SETTINGS_VERSION,
     lastDurationMs: duration,
     contentId: getContent(typeof r.contentId === 'string' ? r.contentId : null).id,
+    sceneId,
     hourglassModelId: getHourglassModel(typeof r.hourglassModelId === 'string' ? r.hourglassModelId : null)
       .id,
     theme,

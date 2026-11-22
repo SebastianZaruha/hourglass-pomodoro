@@ -41,7 +41,7 @@ import { playSelectionTick } from '../../haptics/haptics';
 
 import { DARK_THEME, LIGHT_THEME, type UiPalette } from '../../theme/theme';
 import { circle } from '../InfoScreen';
-import { useThemedBackground, type MenuFonts, type MenuStyles } from './themedStyles';
+import { useThemedBackground, type MenuFonts, type MenuStyles, type PaletaUi } from './themedStyles';
 
 // ─── Iconos (caja de 32 × 32) ────────────────────────────────────────────────
 
@@ -68,9 +68,9 @@ export const themeIcon = (v: 'light' | 'dark' | 'system'): IconName =>
   v === 'light' ? 'sun' : v === 'dark' ? 'moon' : 'auto';
 
 /** Color del tema que se funde con `progress` (0 claro, 1 oscuro), en el hilo de la interfaz. */
-function useThemedColor(progress: SharedValue<number>, key: keyof UiPalette) {
-  const light = LIGHT_THEME.ui[key];
-  const dark = DARK_THEME.ui[key];
+function useThemedColor(progress: SharedValue<number>, key: keyof UiPalette, paleta?: PaletaUi) {
+  const light = (paleta?.claro ?? LIGHT_THEME.ui)[key];
+  const dark = (paleta?.oscuro ?? DARK_THEME.ui)[key];
   return useDerivedValue(() => interpolateColors(progress.value, [0, 1], [light, dark]));
 }
 
@@ -79,13 +79,15 @@ function Icon({
   size,
   progress,
   colorKey,
+  paleta,
 }: {
   name: IconName;
   size: number;
   progress: SharedValue<number>;
   colorKey: keyof UiPalette;
+  paleta?: PaletaUi;
 }) {
-  const color = useThemedColor(progress, colorKey);
+  const color = useThemedColor(progress, colorKey, paleta);
   const transform = [{ scale: size / 32 }];
   const fill = FILLS[name];
   return (
@@ -122,6 +124,7 @@ interface RoundProps {
   readonly styles: MenuStyles;
   readonly fonts: MenuFonts;
   readonly progress: SharedValue<number>;
+  readonly paleta?: PaletaUi;
   readonly pillShadow: string;
   readonly testID?: string;
   /** Nombre corto del control para la etiqueta de la pulsación larga («Sonido»). */
@@ -140,6 +143,7 @@ export function RoundButton({
   styles: s,
   fonts,
   progress,
+  paleta,
   pillShadow,
   testID,
   tooltip,
@@ -197,6 +201,7 @@ export function RoundButton({
             size={ICON_SIZE}
             progress={progress}
             colorKey={on ? 'onAccent' : isSwitch ? 'inkSoft' : 'ink'}
+            paleta={paleta}
           />
         ) : (
           <Animated.Text style={[st.glyph, { fontFamily: fonts.semibold }, s.ink]} numberOfLines={1}>
@@ -257,6 +262,7 @@ interface TooltipProps {
   readonly styles: MenuStyles;
   readonly fonts: MenuFonts;
   readonly progress: SharedValue<number>;
+  readonly paleta?: PaletaUi;
   readonly shadow: string;
 }
 
@@ -268,9 +274,9 @@ const TOOLTIP_GAP = 8;
  * claro, gris tostado en el oscuro) con el texto del menú, encima del botón.
  * Solo para la vista: el lector de pantalla ya dice el nombre de cada botón.
  */
-export function QuickTooltip({ state, rowWidth, styles: s, fonts, progress, shadow }: TooltipProps) {
+export function QuickTooltip({ state, rowWidth, styles: s, fonts, progress, paleta, shadow }: TooltipProps) {
   const reduceMotion = useReducedMotion();
-  const bg = useThemedBackground(progress, 'tooltip');
+  const bg = useThemedBackground(progress, 'tooltip', paleta);
   // Ancho medido de la etiqueta actual: hasta medirla se dibuja invisible.
   const [measured, setMeasured] = useState({ label: '', width: 0 });
   const ready = measured.label === state.label && measured.width > 0;

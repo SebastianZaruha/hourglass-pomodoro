@@ -28,10 +28,15 @@ import type { HourglassModel, Vec2 } from '@reloj/core';
 import {
   BlendMode,
   BlurStyle,
+  FilterMode,
+  MipmapMode,
   PaintStyle,
   Skia,
+  TileMode,
   type SkCanvas,
+  type SkImage,
   type SkMaskFilter,
+  type SkMatrix,
   type SkPaint,
   type SkPicture,
   type SkPictureRecorder,
@@ -56,6 +61,32 @@ function blurRadius(r: number): number {
  * cada capa se mueva distinto da sensación de profundidad (paralaje).
  */
 export const PARALLAX = { background: -10, shadow: 9, front: 2.5 } as const;
+
+/**
+ * Cover de una foto con ancla vertical. `anclaY` 1 apoya el borde de abajo
+ * en el rectángulo ampliado, así una pantalla más ancha recorta el cielo.
+ * El rectángulo suma la holgura del paralaje (±|PARALLAX.background| px,
+ * porque la inclinación va de -1 a 1) y 2 px, para que el borde no asome.
+ */
+export function marcoFoto(
+  imgW: number,
+  imgH: number,
+  viewW: number,
+  viewH: number,
+  anclaY: number,
+): { x: number; y: number; escala: number } {
+  const margen = Math.abs(PARALLAX.background) + 2;
+  const necesidadW = viewW + margen * 2;
+  const necesidadH = viewH + margen * 2;
+  const escala = Math.max(necesidadW / imgW, necesidadH / imgH);
+  const dibujoW = imgW * escala;
+  const dibujoH = imgH * escala;
+  return {
+    x: -margen + (necesidadW - dibujoW) / 2,
+    y: -margen + (necesidadH - dibujoH) * anclaY,
+    escala,
+  };
+}
 
 export class GlassPainter {
   private readonly recorder: SkPictureRecorder;
@@ -82,6 +113,10 @@ export class GlassPainter {
   private readonly bgU: UniformValues & { uOffset: number[] };
   private readonly bodyU: UniformValues & { uLight: number[] };
   private readonly frontU: UniformValues & { uLight: number[]; uParallax: number[] };
+  /** Foto del fondo. Null en Clásico y hasta que la imagen llega. */
+  private readonly foto: SkImage | null;
+  private readonly anclaY: number;
+  private readonly fotoMatrix: SkMatrix;
   private disposed = false;
 
   constructor(
@@ -89,6 +124,7 @@ export class GlassPainter {
     private readonly layout: HourglassLayout,
     model: HourglassModel,
     theme: HourglassTheme,
+    foto: { readonly image: SkImage; readonly anclaY: number } | null = null,
   ) {
     this.recorder = Skia.PictureRecorder();
     this.bounds = Skia.XYWHRect(0, 0, layout.width, layout.height);
@@ -126,7 +162,12 @@ export class GlassPainter {
       uReflection: theme.glass.reflection,
       uRim: model.glass.rimStrength,
       uSpecular: model.glass.specularStrength,
+      // Clásico: 1, la banda de siempre. Foto: 0, el vidrio no se pone beige.
+      uWarmDark: foto ? 0 : 1,
     };
+    this.foto = foto?.image ?? null;
+    this.anclaY = foto?.anclaY ?? 1;
+    this.fotoMatrix = Skia.Matrix();
 
     this.bgPaint = Skia.Paint();
     this.bodyPaint = Skia.Paint();
@@ -260,11 +301,26 @@ export class GlassPainter {
       this.causticPaint,
       ...this.masks,
       this.recorder,
+      this.fotoMatrix,
     ].forEach(safeDispose);
   }
 
   /** Shader del fondo con el paralaje de la inclinación (lo libera quien lo pide). */
   private makeBackgroundShader(tilt: Vec2) {
+    const foto = this.foto;
+    if (foto) {
+      const marco = marcoFoto(foto.width(), foto.height(), this.layout.width, this.layout.height, this.anclaY);
+      // El degradado muestrea pos + tilt*PARALLAX (PARALLAX.background es negativo):
+      // el motivo se desplaza como tilt * |parallax|. La matriz local lleva el
+      // píxel de la foto al lienzo, y Skia la invierte al muestrear.
+      const ox = -tilt.x * PARALLAX.background;
+      const oy = -tilt.y * PARALLAX.background;
+      const m = this.fotoMatrix;
+      m.identity();
+      m.scale(marco.escala, marco.escala);
+      m.translate(marco.x + ox, marco.y + oy);
+      return foto.makeShaderOptions(TileMode.Clamp, TileMode.Clamp, FilterMode.Linear, MipmapMode.None, m);
+    }
     const bgU = this.bgU;
     bgU.uOffset[0] = tilt.x * PARALLAX.background;
     bgU.uOffset[1] = tilt.y * PARALLAX.background;

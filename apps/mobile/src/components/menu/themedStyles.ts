@@ -16,42 +16,48 @@ type Key = keyof UiPalette;
 const L = LIGHT_THEME.ui;
 const D = DARK_THEME.ui;
 
+/** Claro y oscuro de la escena. Sin ella, los de Clásico (los mismos objetos). */
+export interface PaletaUi {
+  readonly claro: UiPalette;
+  readonly oscuro: UiPalette;
+}
+
 /** Estilo animado de color de texto. */
-export function useThemedText(progress: SharedValue<number>, key: Key) {
-  const light = L[key];
-  const dark = D[key];
+export function useThemedText(progress: SharedValue<number>, key: Key, paleta?: PaletaUi) {
+  const light = (paleta?.claro ?? L)[key];
+  const dark = (paleta?.oscuro ?? D)[key];
   return useAnimatedStyle(() => ({ color: interpolateColor(progress.value, [0, 1], [light, dark]) }));
 }
 
 /** Estilo animado de color de fondo. */
-export function useThemedBackground(progress: SharedValue<number>, key: Key) {
-  const light = L[key];
-  const dark = D[key];
+export function useThemedBackground(progress: SharedValue<number>, key: Key, paleta?: PaletaUi) {
+  const light = (paleta?.claro ?? L)[key];
+  const dark = (paleta?.oscuro ?? D)[key];
   return useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(progress.value, [0, 1], [light, dark]),
   }));
 }
 
 /** Estilo animado de color de borde. */
-export function useThemedBorder(progress: SharedValue<number>, key: Key) {
-  const light = L[key];
-  const dark = D[key];
+export function useThemedBorder(progress: SharedValue<number>, key: Key, paleta?: PaletaUi) {
+  const light = (paleta?.claro ?? L)[key];
+  const dark = (paleta?.oscuro ?? D)[key];
   return useAnimatedStyle(() => ({ borderColor: interpolateColor(progress.value, [0, 1], [light, dark]) }));
 }
 
 /** Todos los estilos que usan los controles del menú. */
-export function useMenuStyles(progress: SharedValue<number>) {
+export function useMenuStyles(progress: SharedValue<number>, paleta?: PaletaUi) {
   return {
-    ink: useThemedText(progress, 'ink'),
-    inkSoft: useThemedText(progress, 'inkSoft'),
-    label: useThemedText(progress, 'label'),
-    trackBg: useThemedBackground(progress, 'track'),
-    pillBg: useThemedBackground(progress, 'pill'),
-    accentBg: useThemedBackground(progress, 'accent'),
-    lineBg: useThemedBackground(progress, 'line'),
-    inkSoftBg: useThemedBackground(progress, 'inkSoft'),
-    lineBorder: useThemedBorder(progress, 'inkSoft'),
-    grabberBg: useThemedBackground(progress, 'grabber'),
+    ink: useThemedText(progress, 'ink', paleta),
+    inkSoft: useThemedText(progress, 'inkSoft', paleta),
+    label: useThemedText(progress, 'label', paleta),
+    trackBg: useThemedBackground(progress, 'track', paleta),
+    pillBg: useThemedBackground(progress, 'pill', paleta),
+    accentBg: useThemedBackground(progress, 'accent', paleta),
+    lineBg: useThemedBackground(progress, 'line', paleta),
+    inkSoftBg: useThemedBackground(progress, 'inkSoft', paleta),
+    lineBorder: useThemedBorder(progress, 'inkSoft', paleta),
+    grabberBg: useThemedBackground(progress, 'grabber', paleta),
     // Fondo transparente, también como estilo animado. En la web, si un
     // estilo animado desaparece del array, su color se queda «pegado»; por
     // eso el segmento NO seleccionado usa este en vez de ningún estilo.

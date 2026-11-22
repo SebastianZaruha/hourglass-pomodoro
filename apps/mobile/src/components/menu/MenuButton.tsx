@@ -21,7 +21,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { useT } from '../../i18n/I18n';
-import { useThemedBackground } from './themedStyles';
+import { useThemedBackground, type PaletaUi } from './themedStyles';
 
 /** Centro de las rayas sobre el margen seguro de abajo: el de la zona táctil. */
 export const MENU_ICON_CENTER = MENU_GUARD_SIZE / 2;
@@ -35,11 +35,13 @@ interface Props {
   /** Opacidad (introducción, ayuda y hoja abierta). */
   readonly opacity: SharedValue<number>;
   readonly themeProgress: SharedValue<number>;
+  /** Colores de la escena. Sin ellos, los de Clásico. */
+  readonly paleta?: PaletaUi;
 }
 
-export function MenuButton({ safeBottom, hidden, onPress, opacity, themeProgress }: Props) {
+export function MenuButton({ safeBottom, hidden, onPress, opacity, themeProgress, paleta }: Props) {
   const t = useT();
-  const line = useThemedBackground(themeProgress, 'menuIcon');
+  const line = useThemedBackground(themeProgress, 'menuIcon', paleta);
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   // Rayas: la larga 4 px por encima del centro, la corta 4 px por debajo.
   const center = safeBottom + MENU_ICON_CENTER;

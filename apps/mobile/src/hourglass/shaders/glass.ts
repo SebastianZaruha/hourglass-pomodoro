@@ -83,6 +83,7 @@ uniform float2 uParallax;    // desplazamiento de reflejos (px)
 uniform float uReflection;   // intensidad global de reflejos
 uniform float uRim;          // intensidad del brillo de borde
 uniform float uSpecular;     // intensidad especular
+uniform float uWarmDark;     // 1 = banda marrón del grosor; 0 = vidrio neutro
 
 // Rectángulo suave en el espacio de direcciones (una "ventana" luminosa).
 float softBox(float2 p, float2 lo, float2 hi, float blur) {
@@ -135,7 +136,8 @@ half4 main(float2 pos) {
 
   float a = clamp((refl + rimLine + rimLine2 + thickLine + spark) * uReflection, 0.0, 0.92);
   // Banda oscura del vidrio grueso (marrón cálido muy tenue).
-  float d = clamp(thickDark, 0.0, 0.3) * (1.0 - a);
+  // uWarmDark es 1 en Clásico (igual que antes) y 0 en las fotos: ahí no tiñe.
+  float d = clamp(thickDark, 0.0, 0.3) * (1.0 - a) * uWarmDark;
   // Salida premultiplicada: blanco cálido (reflejo) + marrón oscuro (grosor).
   return half4(half3(1.0, 0.988, 0.965) * a + half3(0.24, 0.2, 0.16) * d, a + d);
 }

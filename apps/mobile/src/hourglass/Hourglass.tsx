@@ -38,6 +38,8 @@ import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useFondoImagen } from '../escenas/fondoImagen';
+import type { FondoMovil, Material } from '../escenas';
 import type { HourglassTheme } from '../theme/theme';
 import { disposeLater } from './disposal';
 import { objectPose } from './objectPose';
@@ -85,6 +87,10 @@ export interface HourglassProps {
   readonly model: HourglassModel;
   readonly content: ContentDefinition;
   readonly theme: HourglassTheme;
+  /** Fondo de la escena. Sin él, el degradado de Clásico. */
+  readonly fondo?: FondoMovil;
+  /** Arena en F1. El agua llega en F3. */
+  readonly material?: Material;
   readonly getSnapshot: () => HourglassSnapshot;
   readonly status: TimerStatus;
   readonly durationMs: number;
@@ -127,6 +133,8 @@ function HourglassCanvas({
   model,
   content,
   theme,
+  fondo = { tipo: 'procedural' },
+  material = 'arena',
   getSnapshot,
   status,
   durationMs,
@@ -173,9 +181,20 @@ function HourglassCanvas({
   useEffect(() => () => disposeLater([painter]), [painter]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.
+  const fuente = fondo.tipo === 'foto' ? fondo.fuente : null;
+  const foto = useFondoImagen(fuente);
+  // F1 pinta arena también en Lluvia. El agua usa este material en F3.
+  void material;
   const glass = useMemo(
-    () => new GlassPainter(shaders, layout, model, theme),
-    [shaders, layout, model, theme],
+    () =>
+      new GlassPainter(
+        shaders,
+        layout,
+        model,
+        theme,
+        foto && fondo.tipo === 'foto' ? { image: foto, anclaY: fondo.anclaY } : null,
+      ),
+    [shaders, layout, model, theme, foto, fondo],
   );
   useEffect(() => () => disposeLater([glass]), [glass]);
 

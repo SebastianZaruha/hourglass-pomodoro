@@ -55,7 +55,7 @@ describe('ajustes', () => {
     const old = { version: 1, lastDurationMs: 15 * MIN, theme: 'dark', haptics: false, updatedAt: 5 };
     const s = sanitizeSettings(old);
     expect(s).toMatchObject({
-      version: 5,
+      version: 6,
       lastDurationMs: 15 * MIN,
       language: 'system',
       theme: 'dark',
@@ -69,7 +69,7 @@ describe('ajustes', () => {
 
   it('ventana flotante (1.8): apagada y sin explicar por defecto; solo true cuenta', () => {
     const fromV4 = sanitizeSettings({ version: 4, alertsPermissionAsked: true });
-    expect(fromV4).toMatchObject({ version: 5, floatingWindow: false, floatingExplained: false });
+    expect(fromV4).toMatchObject({ version: 6, floatingWindow: false, floatingExplained: false });
     expect(sanitizeSettings({ floatingWindow: true, floatingExplained: true })).toMatchObject({
       floatingWindow: true,
       floatingExplained: true,

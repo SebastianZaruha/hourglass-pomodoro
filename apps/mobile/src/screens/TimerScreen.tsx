@@ -110,6 +110,7 @@ import { TIME_LINE_HEIGHT, TimeDisplay } from '../components/TimeDisplay';
 import { appClock } from '../dev/devClock';
 import { playSelectionTick, playTimerHaptic, useTimerHaptics } from '../haptics';
 import { useLandscapePauseHint } from '../hints/useLandscapePauseHint';
+import { fondoDe, getEscena, materialDe, temaDe } from '../escenas';
 import { Hourglass, type PauseBlur } from '../hourglass';
 import { useKeepAwakeWhile } from '../hooks/useKeepAwakeWhile';
 import { useLatest } from '../hooks/useLatest';
@@ -156,7 +157,12 @@ export function TimerScreen({ settings, fonts }: Props) {
   const tr = useT();
 
   // Tema efectivo (Claro / Oscuro / Automático) con transición suave.
-  const { theme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
+  const { scheme, progress: themeProgress } = useAppTheme(prefs.theme, reduceMotion);
+  const escena = getEscena(prefs.sceneId);
+  const theme = temaDe(escena, scheme);
+  const fondo = fondoDe(escena, scheme);
+  const material = materialDe(escena);
+  const paleta = { claro: escena.claro.tema.ui, oscuro: escena.oscuro.tema.ui };
 
   const model = getHourglassModel(prefs.hourglassModelId);
   const content = getContent(prefs.contentId);
@@ -612,6 +618,8 @@ export function TimerScreen({ settings, fonts }: Props) {
               model={model}
               content={content}
               theme={theme}
+              fondo={fondo}
+              material={material}
               getSnapshot={session.getSnapshot}
               status={view.status}
               durationMs={view.durationMs}
@@ -653,6 +661,8 @@ export function TimerScreen({ settings, fonts }: Props) {
             fonts={timeFonts}
             themeProgress={themeProgress}
             opacity={timeOpacity}
+            textoClaro={escena.claro.tema.text}
+            textoOscuro={escena.oscuro.tema.text}
           />
         </View>
       )}
@@ -717,12 +727,14 @@ export function TimerScreen({ settings, fonts }: Props) {
             onPress={sheet.toggle}
             opacity={buttonOpacity}
             themeProgress={themeProgress}
+            paleta={paleta}
           />
           <GesturesHelp
             visible={helpOpen}
             onClose={closeGestures}
             theme={theme}
             themeProgress={themeProgress}
+            paleta={paleta}
             fonts={fonts}
             safeTop={tilt.flipped ? safe.bottom : safe.top}
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
@@ -734,6 +746,7 @@ export function TimerScreen({ settings, fonts }: Props) {
             onAllow={floating.allow}
             theme={theme}
             themeProgress={themeProgress}
+            paleta={paleta}
             fonts={fonts}
             safeTop={tilt.flipped ? safe.bottom : safe.top}
             safeBottom={tilt.flipped ? safe.top : safe.bottom}
