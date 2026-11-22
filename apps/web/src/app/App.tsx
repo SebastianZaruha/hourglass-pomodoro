@@ -69,11 +69,17 @@ function AlMontar({ onMontar, children }: { readonly onMontar: () => void; reado
 }
 
 /** El menú se monta cerrado y abre al fotograma siguiente, para que el deslizamiento empiece desde abajo. */
-function AjustesPerezosos(props: ComponentProps<typeof SettingsSheet>) {
+function AjustesPerezosos({
+  onLista,
+  ...props
+}: ComponentProps<typeof SettingsSheet> & { readonly onLista: () => void }) {
   const [pedido, setPedido] = useState(false);
   const [montada, setMontada] = useState(false);
   const [visible, setVisible] = useState(false);
-  const marcar = useCallback(() => setMontada(true), []);
+  const marcar = useCallback(() => {
+    setMontada(true);
+    onLista();
+  }, [onLista]);
   useEffect(() => {
     if (props.open) setPedido(true);
   }, [props.open]);
@@ -367,6 +373,20 @@ function Timer({
 
   const sideRef = useRef<HTMLDivElement>(null);
   const nubeOpacidad = useRef(1);
+  const [hojaLista, setHojaLista] = useState(0);
+  const avisarHoja = useCallback(() => setHojaLista((n) => n + 1), []);
+  useEffect(() => {
+    // El primer abrir no espera al chunk: se pide en un hueco, fuera del arranque.
+    const cargar = () => {
+      void import('../comun/menu');
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(cargar, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(cargar, 200);
+    return () => window.clearTimeout(id);
+  }, []);
   useLayoutEffect(() => {
     const app = appRef.current;
     const side = sideRef.current;
@@ -414,7 +434,7 @@ function Timer({
       observed.disconnect();
       window.removeEventListener('resize', apply);
     };
-  }, [menu, wide]);
+  }, [menu, wide, hojaLista]);
 
   const label = useMemo(() => {
     if (view.status === 'finished') return view.isCycle ? t.cyclesDone : lang === 'es' ? 'Hecho' : 'Done';
@@ -592,6 +612,7 @@ function Timer({
         />
       ) : null}
       <AjustesPerezosos
+        onLista={avisarHoja}
         open={menu}
         settings={settings}
         t={t}
