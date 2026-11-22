@@ -344,7 +344,9 @@ export function SettingsSheet({
                 options={sceneOptions(t)}
                 value={settings.sceneId}
                 onChange={(sceneId) => update({ sceneId })}
-                accessibilityLabel={t.scene}
+                accessibilityLabel={`${t.scene}: ${
+                  sceneOptions(t).find((o) => o.value === settings.sceneId)?.label ?? t.sceneClassic
+                }`}
                 testID="escena"
               />
             </Section>
