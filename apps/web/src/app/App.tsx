@@ -23,7 +23,7 @@ import {
 
 import { leerArenaDia, sumarPomodoro, type ArenaDia } from '../comun/dia/dia';
 import { useTactil } from '../comun/entrada/tactil';
-import { Fondo, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
+import { Fondo, ahorraDatos, direccionesDePrecarga, precargarFondos, useCajaFrasco } from '../comun/fondo';
 import { Capa3D, crearPuente3D } from '../comun/frasco-3d';
 import { useGiro } from '../comun/giro';
 import { readPrimeraSesion, writePrimeraSesion } from '../comun/paneles/android';
@@ -328,18 +328,42 @@ function Timer({
     }
   }, [catalogo]);
 
+  const fondosPedidos = useRef(new Set<string>());
   useEffect(() => {
+    if (ahorraDatos()) return;
     const propias = new Set(direccionesDePrecarga(aspecto));
     const urls = [
       ...new Set(
         catalogo
           .flatMap((item) => [item.claro, item.oscuro])
           .flatMap((item) => [...direccionesDePrecarga(item)])
-          .filter((url) => !propias.has(url)),
+          .filter((url) => !propias.has(url) && !fondosPedidos.current.has(url)),
       ),
     ];
-    precargarFondos(urls);
-  }, [aspecto, catalogo]);
+    if (urls.length === 0) return;
+    const lanzar = () => {
+      for (const url of urls) fondosPedidos.current.add(url);
+      precargarFondos(urls);
+    };
+    if (menu) {
+      lanzar();
+      return;
+    }
+    let espera = window.setTimeout(lanzar, 15_000);
+    const mover = () => {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(lanzar, 15_000);
+    };
+    for (const nombre of ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const) {
+      window.addEventListener(nombre, mover, { passive: true });
+    }
+    return () => {
+      window.clearTimeout(espera);
+      for (const nombre of ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const) {
+        window.removeEventListener(nombre, mover);
+      }
+    };
+  }, [aspecto, catalogo, menu]);
 
   const sideRef = useRef<HTMLDivElement>(null);
   const nubeOpacidad = useRef(1);
