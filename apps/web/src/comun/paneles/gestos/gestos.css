@@ -10,19 +10,25 @@
 }
 
 .gestos-hoja {
+  position: relative;
   width: min(31rem, 100%);
   max-height: min(70vh, 34rem);
   overflow: auto;
-  padding: 1.35rem 1.5rem 1.45rem;
+  /* El mismo aire que Ajustes: el × queda a 16 px del canto, dentro de la hoja. */
+  padding: var(--espacio-16);
   color: #fff;
 }
 
 .gestos-cabeza {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   margin-bottom: 1.05rem;
+  padding-right: calc(48px + var(--espacio-12));
+}
+
+.gestos-hoja .sheet-close {
+  position: absolute;
+  top: var(--espacio-16);
+  right: var(--espacio-16);
+  margin: 0;
 }
 
 .gestos-cabeza h2 {

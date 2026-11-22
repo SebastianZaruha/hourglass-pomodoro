@@ -77,9 +77,14 @@ export function HojaGestos({ abierta, lang, alCerrar }: Props) {
         aria-label={titulo}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="gestos-cabeza">
+        <div className="gestos-cabeza sheet-head">
           <h2>{titulo}</h2>
-          <button type="button" className="control redondo" aria-label={es ? 'Cerrar' : 'Close'} onClick={alCerrar}>
+          <button
+            type="button"
+            className="control redondo sheet-close"
+            aria-label={es ? 'Cerrar' : 'Close'}
+            onClick={alCerrar}
+          >
             ×
           </button>
         </div>
