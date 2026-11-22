@@ -334,11 +334,11 @@ function HourglassCanvas({
             <Picture picture={front} />
           </Group>
         </Group>
+        {nube ? (
+          <NubeMovil layout={layout} oscuro={theme.scheme === 'dark'} reducir={reduceMotion} />
+        ) : null}
         {children}
       </Group>
-      {nube ? (
-        <NubeMovil layout={layout} motion={motion} oscuro={theme.scheme === 'dark'} reducir={reduceMotion} />
-      ) : null}
       {fade.image ? (
         <Image
           image={fade.image}

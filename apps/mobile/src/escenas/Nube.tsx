@@ -1,8 +1,8 @@
 /**
- * Nube de Lluvia. El vídeo de Skia en Android release cierra la app
- * (el decodificador devuelve un buffer ya liberado), así que aquí va
- * el póster, con el mismo tratamiento y un vaivén muy corto.
- * Si el efecto no compila, se pinta el póster tal cual: no se cierra.
+ * Nube de Lluvia, sobre la boca de arriba. Va con el volteo del móvil
+ * (así sigue en la boca) y no con el giro de fase. El vídeo de Skia en
+ * Android cierra la app, así que es el póster. Si el efecto no compila,
+ * se pinta el póster tal cual.
  */
 import { useEffect, useMemo } from 'react';
 import { useDerivedValue, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -11,27 +11,17 @@ import { Group, Image, Paint, RuntimeShader, Skia, useImage } from '@shopify/rea
 import { disposeLater } from '../hourglass/disposal';
 import type { HourglassLayout } from '../hourglass/layout';
 import { NUBE_SKSL } from '../hourglass/shaders/nube';
-import type { MotionSource } from '../hourglass/types';
 
 const FORMA = 438 / 1100;
 /** Un vaivén de opacidad, en ms. No mueve la nube: la máscara va en coordenadas fijas. */
 const DERIVA_MS = 6400;
 
-/** 1 de pie o boca abajo, 0 a los 50°. Igual que el frasco de la web. */
-function opacidadDe(gx: number, gy: number): number {
-  let grados = (Math.abs(Math.atan2(gx, gy)) * 180) / Math.PI;
-  grados = Math.min(grados, Math.abs(grados - 180), Math.abs(grados - 360));
-  return Math.max(0, 1 - grados / 50);
-}
-
 export function NubeMovil({
   layout,
-  motion,
   oscuro,
   reducir,
 }: {
   readonly layout: HourglassLayout;
-  readonly motion: MotionSource;
   readonly oscuro: boolean;
   readonly reducir: boolean;
 }) {
@@ -44,7 +34,6 @@ export function NubeMovil({
   const efecto = useMemo(() => Skia.RuntimeEffect.Make(NUBE_SKSL), []);
   useEffect(() => () => disposeLater([efecto]), [efecto]);
 
-  const opacidad = useSharedValue(opacidadDe(motion.gravity.x, motion.gravity.y));
   const deriva = useSharedValue(0);
   useEffect(() => {
     if (reducir) {
@@ -54,15 +43,9 @@ export function NubeMovil({
     deriva.value = withRepeat(withTiming(1, { duration: DERIVA_MS }), -1, true);
   }, [reducir, deriva]);
 
-  useEffect(
-    () =>
-      motion.subscribe(() => {
-        opacidad.value = opacidadDe(motion.gravity.x, motion.gravity.y);
-      }),
-    [motion, opacidad],
-  );
-
-  const visible = useDerivedValue(() => opacidad.value * (0.9 + deriva.value * 0.1));
+  // Sigue visible en cualquier inclinación. El frasco no se tumba con el
+  // móvil: la boca de arriba sigue arriba en pantalla, y la nube se queda ahí.
+  const visible = useDerivedValue(() => 0.9 + deriva.value * 0.1);
   const uniforme = { uY: y, uH: alto, uOscuro: oscuro ? 1 : 0 };
 
   if (!poster) return null;
