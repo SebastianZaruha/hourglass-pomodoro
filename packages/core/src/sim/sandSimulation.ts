@@ -60,6 +60,12 @@ export interface SandSimulationOptions {
    * Si no se pasa, la máscara se construye como siempre.
    */
   readonly radioInterior?: (y: number) => number;
+  /**
+   * Un giro pequeño (10-20°) también hace resbalar la superficie.
+   * Por defecto es el comportamiento de la web. En `false` el paso es el
+   * de antes de ese deslizamiento: ni `slumpOne` ni el corte del cuello.
+   */
+  readonly deslizarConGiroPequeno?: boolean;
 }
 
 export interface ArrangeOptions {
@@ -116,6 +122,8 @@ export class SandSimulation {
   private lastMoves = 0;
   /** Fila de la superficie de cada columna, para el deslizamiento. */
   private readonly slumpRow: Int16Array;
+  /** Ver `SandSimulationOptions.deslizarConGiroPequeno`. */
+  private readonly deslizarConGiroPequeno: boolean;
 
   constructor(options: SandSimulationOptions) {
     const { profile } = options;
@@ -127,9 +135,10 @@ export class SandSimulation {
     this.rng = createRng(this.seed);
     this.slideChance = options.slideChance ?? 0.55;
     this.staticFriction = Math.min(1, Math.max(0.01, options.staticFriction ?? 0.3));
+    this.deslizarConGiroPequeno = options.deslizarConGiroPequeno !== false;
 
     const size = this.cols * this.rows;
-    this.slumpRow = new Int16Array(this.cols);
+    this.slumpRow = new Int16Array(this.deslizarConGiroPequeno ? this.cols : 0);
     this.mask = new Uint8Array(size);
     this.cells = new Uint8Array(size);
     this.stamp = new Uint16Array(size);
@@ -272,6 +281,10 @@ export class SandSimulation {
     this.listCur = curList;
 
     if (curCount === 0) {
+      if (!this.deslizarConGiroPequeno) {
+        this.lastMoves = 0;
+        return 0;
+      }
       let quiet = 0;
       if (this.slumpOne(g, 'top')) quiet++;
       if (this.slumpOne(g, 'top')) quiet++;
@@ -367,10 +380,12 @@ export class SandSimulation {
     // grano y la superficie se quedaba la recta que dejó arrange, pegada
     // al frasco. Un grano de lo alto da un paso corto hacia el lado bajo.
     // Dos granos por bulbo: con uno solo, un giro de 15° tarda en verse.
-    if (this.slumpOne(g, 'top')) moves++;
-    if (this.slumpOne(g, 'top')) moves++;
-    if (this.slumpOne(g, 'bottom')) moves++;
-    if (this.slumpOne(g, 'bottom')) moves++;
+    if (this.deslizarConGiroPequeno) {
+      if (this.slumpOne(g, 'top')) moves++;
+      if (this.slumpOne(g, 'top')) moves++;
+      if (this.slumpOne(g, 'bottom')) moves++;
+      if (this.slumpOne(g, 'bottom')) moves++;
+    }
     this.lastMoves = moves;
     return moves;
   }
@@ -668,9 +683,12 @@ export class SandSimulation {
     if (!this.isFree(x, y)) return false;
     // El deslizamiento de dos celdas puede saltar la fila cerrada del cuello
     // (de dos filas antes a una fila después). Ese salto no es el temporizador.
-    const fromX = from % this.cols;
-    const fromY = (from - fromX) / this.cols;
-    if ((fromY - this.gateRow) * (y - this.gateRow) < 0) return false;
+    // Sin el deslizamiento de giro pequeño, este corte no existe.
+    if (this.deslizarConGiroPequeno) {
+      const fromX = from % this.cols;
+      const fromY = (from - fromX) / this.cols;
+      if ((fromY - this.gateRow) * (y - this.gateRow) < 0) return false;
+    }
     const to = y * this.cols + x;
     this.cells[to] = this.cells[from] as number;
     this.cells[from] = 0;

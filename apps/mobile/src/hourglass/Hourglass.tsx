@@ -161,6 +161,7 @@ function HourglassCanvas({
         slideChance: content.slideChance,
         fillRatio: content.fillRatio,
         seed: 7,
+        deslizarConGiroPequeno: false,
       }),
     [model, layout.cols, content],
   );
