@@ -118,8 +118,8 @@ function anchoDe(p: Float32Array): number {
 }
 
 /**
- * Silueta del bulbo en px del frasco, centrada en el cuello.
- * Sale de los puntos interiores: pared con pared, sin un corte vertical.
+ * Silueta gruesa, solo para la altura del agua (el área no debe cambiar).
+ * El recorte visible sale de la máscara, en `siluetaDeMascara`.
  */
 function escribirSilueta(fracciones: Float32Array, w: number, h: number, out: Float32Array): boolean {
   const n = fracciones.length / 2;
@@ -182,6 +182,81 @@ function escribirSilueta(fracciones: Float32Array, w: number, h: number, out: Fl
   return true;
 }
 
+/** Una fila de cada dos de la máscara. El arco entre medias no llega a 1 px de la foto. */
+const PASO_MASCARA = 2;
+
+let mascaraLeida: CanvasImageSource | null = null;
+let fraccionArriba: Float32Array | null = null;
+let fraccionAbajo: Float32Array | null = null;
+
+/**
+ * Borde real de la máscara, el mismo que recorta la arena.
+ * Fracciones de la foto: lado derecho de arriba abajo y el izquierdo de vuelta.
+ * La de 40 cortes se quedaba hasta ~9 px dentro, junto al cuello.
+ */
+function siluetaDeMascara(mascara: CanvasImageSource): { arriba: Float32Array; abajo: Float32Array } | null {
+  if (mascaraLeida === mascara && fraccionArriba && fraccionAbajo) {
+    return { arriba: fraccionArriba, abajo: fraccionAbajo };
+  }
+  const w = 'width' in mascara ? Number(mascara.width) : 0;
+  const h = 'height' in mascara ? Number(mascara.height) : 0;
+  if (w < 8 || h < 8) return null;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = w;
+  lienzo.height = h;
+  const g = lienzo.getContext('2d', { willReadFrequently: true });
+  if (!g) return null;
+  g.drawImage(mascara, 0, 0);
+  const data = g.getImageData(0, 0, w, h).data;
+  const cuello = (CUELLO_FILA / FOTO_ALTO) * h;
+  const construir = (superior: boolean): Float32Array | null => {
+    const filas: { y: number; l: number; r: number }[] = [];
+    for (let y = 0; y < h; y += PASO_MASCARA) {
+      if ((y + 0.5 < cuello) !== superior) continue;
+      let l = -1;
+      let r = -1;
+      const fila = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        if ((data[fila + x * 4 + 3] ?? 0) <= 127) continue;
+        if (l < 0) l = x;
+        r = x;
+      }
+      if (l < 0) continue;
+      filas.push({ y: (y + 0.5) / h, l: l / w, r: (r + 1) / w });
+    }
+    if (filas.length < 4) return null;
+    const out = new Float32Array(filas.length * 4);
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i];
+      if (!f) continue;
+      out[i * 2] = f.r;
+      out[i * 2 + 1] = f.y;
+    }
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[filas.length - 1 - i];
+      if (!f) continue;
+      const k = filas.length + i;
+      out[k * 2] = f.l;
+      out[k * 2 + 1] = f.y;
+    }
+    return out;
+  };
+  const arriba = construir(true);
+  const abajo = construir(false);
+  if (!arriba || !abajo) return null;
+  mascaraLeida = mascara;
+  fraccionArriba = arriba;
+  fraccionAbajo = abajo;
+  return { arriba, abajo };
+}
+
+function escalarSilueta(frac: Float32Array, w: number, h: number, out: Float32Array): void {
+  for (let i = 0; i < frac.length; i += 2) {
+    out[i] = ((frac[i] ?? 0.5) - 0.5) * w;
+    out[i + 1] = ((frac[i + 1] ?? 0.5) - 0.5) * h;
+  }
+}
+
 function poseDelContexto(ctx: CanvasRenderingContext2D): number {
   const dpr = window.devicePixelRatio || 1;
   const t = ctx.getTransform();
@@ -225,10 +300,15 @@ export interface PincelAgua {
  * doblado dentro. La horizontal es la de la pantalla, no la del frasco.
  */
 export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => void): PincelAgua {
-  const poliA = new Float32Array(POLI);
-  const poliB = new Float32Array(POLI);
-  const mundoA = new Float32Array(POLI);
-  const mundoB = new Float32Array(POLI);
+  // Recorte: borde de la máscara. La altura del agua sigue en la silueta gruesa.
+  let poliA = new Float32Array(POLI);
+  let poliB = new Float32Array(POLI);
+  let mundoA = new Float32Array(POLI);
+  let mundoB = new Float32Array(POLI);
+  const gruesoA = new Float32Array(POLI);
+  const gruesoB = new Float32Array(POLI);
+  const mundoGruesoA = new Float32Array(POLI);
+  const mundoGruesoB = new Float32Array(POLI);
   const alturasA = new Float32Array(OLAS);
   const alturasB = new Float32Array(OLAS);
   const cuello = { x: 0, y: 0 };
@@ -242,8 +322,34 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
   const asegurar = (p: Pintura): AguaVidrio | null => {
     const clave = `${p.caja.w.toFixed(1)}x${p.caja.h.toFixed(1)}`;
     if (clave !== firma || !agua) {
-      const listaA = escribirSilueta(p.geo.puntos.arriba, p.caja.w, p.caja.h, poliA);
-      const listaB = escribirSilueta(p.geo.puntos.abajo, p.caja.w, p.caja.h, poliB);
+      const sil = siluetaDeMascara(p.geo.mascara);
+      if (sil && (poliA.length !== sil.arriba.length || poliB.length !== sil.abajo.length)) {
+        poliA = new Float32Array(sil.arriba.length);
+        poliB = new Float32Array(sil.abajo.length);
+        mundoA = new Float32Array(sil.arriba.length);
+        mundoB = new Float32Array(sil.abajo.length);
+        agua?.destruir();
+        agua = null;
+      }
+      if (sil) {
+        escalarSilueta(sil.arriba, p.caja.w, p.caja.h, poliA);
+        escalarSilueta(sil.abajo, p.caja.w, p.caja.h, poliB);
+      }
+      const listaA = escribirSilueta(p.geo.puntos.arriba, p.caja.w, p.caja.h, gruesoA);
+      const listaB = escribirSilueta(p.geo.puntos.abajo, p.caja.w, p.caja.h, gruesoB);
+      if (!sil) {
+        if (poliA.length !== POLI) {
+          poliA = gruesoA;
+          poliB = gruesoB;
+          mundoA = mundoGruesoA;
+          mundoB = mundoGruesoB;
+          agua?.destruir();
+          agua = null;
+        } else {
+          poliA.set(gruesoA);
+          poliB.set(gruesoB);
+        }
+      }
       if (!listaA || !listaB) return null;
       cuello.x = 0;
       cuello.y = (p.geo.cuelloY - 0.5) * p.caja.h;
@@ -317,10 +423,14 @@ export function crearPincel(pulso: (bulbo: 'arriba' | 'abajo', s: number) => voi
 
       aMundo(poliA, matriz, mundoA);
       aMundo(poliB, matriz, mundoB);
-      escribirAlturas(alturasA, phi, anchoDe(mundoA), vista.arriba.onda);
-      escribirAlturas(alturasB, phi, anchoDe(mundoB), vista.abajo.onda);
-      const bulboA: EstadoBulbo = { nivel: nivelDe(mundoA, fracA), alturas: alturasA };
-      const bulboB: EstadoBulbo = { nivel: nivelDe(mundoB, fracB), alturas: alturasB };
+      // La altura sale del polígono grueso: el nivel no se mueve. El bulbo
+      // recorta con el borde de la máscara, así que el agua toca la pared.
+      aMundo(gruesoA, matriz, mundoGruesoA);
+      aMundo(gruesoB, matriz, mundoGruesoB);
+      escribirAlturas(alturasA, phi, anchoDe(mundoGruesoA), vista.arriba.onda);
+      escribirAlturas(alturasB, phi, anchoDe(mundoGruesoB), vista.abajo.onda);
+      const bulboA: EstadoBulbo = { nivel: nivelDe(mundoGruesoA, fracA), alturas: alturasA };
+      const bulboB: EstadoBulbo = { nivel: nivelDe(mundoGruesoB, fracB), alturas: alturasB };
       vidrio.pintarAgua(ctx, {
         matriz,
         bulbos: [bulboA, bulboB],
