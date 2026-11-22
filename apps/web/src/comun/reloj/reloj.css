@@ -22,7 +22,6 @@
   justify-content: center;
 }
 
-/* El mismo vidrio que las hojas, solo con el reloj bajo el frasco. */
 .app[data-layout='narrow'] .readout.vidrio-liquido {
   padding: 0.85rem 1.35rem 0.95rem;
   border-radius: var(--radio-panel, 28px);
@@ -30,11 +29,11 @@
 
 .app[data-layout='narrow'] .readout.vidrio-liquido .time,
 .app[data-layout='narrow'] .readout.vidrio-liquido .status {
-  color: var(--vl-texto, #fff);
+  color: var(--time);
 }
 
 .app[data-layout='narrow'] .readout.vidrio-liquido .hint {
-  color: var(--vl-texto-2, #fff);
+  color: var(--hint);
 }
 
 .readout {
