@@ -31,7 +31,7 @@
  * sustituyen (cambio de tamaño/tema) o el componente se desmonta, se liberan
  * con un pequeño retraso (ver disposal.ts). Nada vive a nivel de módulo.
  */
-import { SandSimulation, type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
+import { type ContentDefinition, type HourglassModel, type TimerStatus } from '@reloj/core';
 import { Blur, Canvas, Group, Image, Paint, Picture, rect, useCanvasRef } from '@shopify/react-native-skia';
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
@@ -41,11 +41,11 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useFondoImagen } from '../escenas/fondoImagen';
 import type { FondoMovil, Material } from '../escenas';
 import type { HourglassTheme } from '../theme/theme';
+import { crearArena } from './contenido/arena';
 import { disposeLater } from './disposal';
 import { objectPose } from './objectPose';
 import { computeLayout, isUsableSize, type LayoutInsets } from './layout';
 import { createShaderSet, shaderSetDisposables } from './resources';
-import { SandPainter, buildPaletteLut } from './sandPainter';
 import { GlassPainter } from './staticLayers';
 import { STILL_MOTION, type HourglassSnapshot, type MotionSource } from './types';
 import { useSandEngine } from './useSandEngine';
@@ -161,24 +161,13 @@ function HourglassCanvas({
   const layout = useMemo(() => computeLayout(width, height, model, insets), [width, height, model, insets]);
   useEffect(() => () => disposeLater([layout.outerPath, layout.innerPath]), [layout]);
 
-  const sim = useMemo(
-    () =>
-      new SandSimulation({
-        profile: model.profile,
-        cols: layout.cols,
-        slideChance: content.slideChance,
-        fillRatio: content.fillRatio,
-        seed: 7,
-        deslizarConGiroPequeno: false,
-      }),
-    [model, layout.cols, content],
-  );
-
-  const painter = useMemo(() => {
-    const palette = theme.scheme === 'dark' ? content.palette.dark : content.palette.light;
-    return new SandPainter(layout, model, theme, buildPaletteLut(palette), shaders);
-  }, [layout, model, theme, content, shaders]);
-  useEffect(() => () => disposeLater([painter]), [painter]);
+  // La simulación no se recrea al cambiar el tema: solo el pintor.
+  const contenido = useMemo(() => crearArena({ model, cols: layout.cols, content }), [model, layout.cols, content]);
+  const revisionPintor = useMemo(() => {
+    contenido.ponerPintor({ layout, model, theme, content, shaders });
+    return contenido.revision;
+  }, [contenido, layout, model, theme, content, shaders]);
+  useEffect(() => () => contenido.destruir(), [contenido]);
 
   // Pintor del vidrio (fondo, sombra, reflejos): objetos persistentes.
   const fuente = fondo.tipo === 'foto' ? fondo.fuente : null;
@@ -199,8 +188,8 @@ function HourglassCanvas({
   useEffect(() => () => disposeLater([glass]), [glass]);
 
   const { background, shadow, body, sand, front, rotation, spin } = useSandEngine({
-    sim,
-    painter,
+    contenido,
+    revisionPintor,
     glass,
     motion,
     getSnapshot,

@@ -3,15 +3,13 @@
  *
  * En cada fotograma (al ritmo que pide la interfaz, ver useFramePacer;
  * ~60 por segundo si el móvil puede):
- *  0. Si se ha volteado el móvil, la arena da la vuelta (rotateHalfTurn) y el
+ *  0. Si se ha volteado el móvil, el contenido da la vuelta (`alVoltear`) y el
  *     dibujo gira 180° en el MISMO fotograma (para que no se vea un salto).
  *  1. Pregunta al temporizador cuánto tiempo queda (calculado a partir de
  *     marcas de tiempo, así que siempre es exacto).
- *  2. El controlador de flujo pasa por el cuello los granos necesarios.
- *  3. La simulación avanza dos pasos con la gravedad del acelerómetro (los
- *     granos ruedan, se deslizan en avalanchas y se asientan) y las
- *     partículas del chorro se mueven (el chorro se curva con la inclinación).
- *  4. Si algo ha cambiado, se pinta un nuevo SkPicture de arena; si ha
+ *  2. El contenido pasa por el cuello los granos necesarios y avanza la
+ *     simulación con la gravedad del acelerómetro.
+ *  3. Si algo ha cambiado, el contenido pinta un nuevo SkPicture; si ha
  *     cambiado la inclinación, también se regraban las capas del vidrio (la
  *     luz, los reflejos y la sombra se mueven). Todo se publica en "shared
  *     values" de Reanimated: el Canvas lo dibuja en el hilo de UI sin volver
@@ -21,7 +19,7 @@
  * temporizador, el reloj se DA LA VUELTA con una animación (`spin`: 0 → π en
  * TURN_MS, lento-rápido-lento). La arena no se toca durante el giro (va
  * «pegada» al vidrio, como en uno de verdad); al terminar, en el MISMO
- * fotograma, la rejilla gira 180° (rotateHalfTurn) y `spin` vuelve a 0: el
+ * fotograma, la rejilla gira 180° (`alVoltear`) y `spin` vuelve a 0: el
  * dibujo es idéntico, pero ahora la arena está arriba y empieza a caer. Lo
  * llevamos aquí (en el hilo de JS) y no con withTiming para que el giro y el
  * cambio de la rejilla nunca se desincronicen ni un fotograma.
@@ -32,7 +30,7 @@
  * se regraba a la mitad de ritmo. De pie, de lado o con un móvil que llega,
  * no cambia nada.
  *
- * Cuando la arena está quieta, el temporizador no corre y el móvil no se
+ * Cuando el contenido está quieto, el temporizador no corre y el móvil no se
  * mueve, el bucle se DETIENE (cero consumo de batería) hasta que algo lo
  * despierta (un cambio de props o un aviso de la fuente de movimiento).
  *
@@ -42,34 +40,22 @@
  * render de React, así que un error boundary no lo vería), paramos el bucle
  * y avisamos con `onError`.
  */
-import {
-  MAX_DURATION_MS,
-  MIN_DURATION_MS,
-  flowBudget,
-  MIN_FLOW_GRAVITY_Y,
-  sandLevelForDuration,
-  StreamParticles,
-  syncSandToTarget,
-  targetSourceGrains,
-  TiltLod,
-  type SandSimulation,
-  type StreamInput,
-  type TimerStatus,
-} from '@reloj/core';
+import { TiltLod, type TimerStatus } from '@reloj/core';
 import type { SkPicture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 
 import { useLatest } from '../hooks/useLatest';
+import type { EntradaMotor, MotorContenido } from './contenido/tipos';
 import { useFramePacer } from './useFramePacer';
 import { PictureSlot, recordEmptyPicture } from './pictureSlot';
-import type { SandPainter, StreamState } from './sandPainter';
 import type { GlassPainter } from './staticLayers';
 import type { HourglassSnapshot, MotionSource } from './types';
 
 export interface SandEngineParams {
-  readonly sim: SandSimulation;
-  readonly painter: SandPainter;
+  readonly contenido: MotorContenido;
+  /** Cambia con el pintor de la arena (tema, tamaño) sin recrear la simulación. */
+  readonly revisionPintor: number;
   readonly glass: GlassPainter;
   readonly motion: MotionSource;
   /** Devuelve la foto actual del temporizador. */
@@ -98,8 +84,6 @@ export interface SandEngineOutput {
 /** Duración del giro en un cambio de fase (ms). */
 export const TURN_MS = 950;
 
-/** Pasos de simulación por fotograma (más = arena más "viva", más CPU). */
-const STEPS_PER_FRAME = 2;
 /**
  * Fotogramas largos (el navegador a 20–30 fps): la arena da los pasos que
  * le tocarían a 60 fps, hasta este máximo de «fotogramas de 60» por
@@ -107,11 +91,6 @@ const STEPS_PER_FRAME = 2;
  * tiempo, se acumulaba retraso y salía a tirones. A 60 fps: 1 (como siempre).
  */
 const MAX_CATCH_UP = 3;
-/**
- * Embudo suave de la arena en reposo (al elegir duración o reiniciar):
- * el centro algo más bajo que los lados, nunca una línea recta (1.6).
- */
-const IDLE_CRATER = 0.25;
 /** Cambio mínimo de inclinación para regrabar las capas del vidrio (más pequeño no se ve). */
 const LIGHT_EPSILON = 0.01;
 /**
@@ -124,11 +103,25 @@ const GLASS_MIN_MS = 50;
 /** Lo mismo durante un giro fuerte con menos detalle (1.8.9, ver TiltLod): ~10 por segundo. */
 const GLASS_MIN_MS_LOD = 100;
 
+function entradaVacia(): EntradaMotor {
+  return {
+    dt: 0,
+    ticks: 1,
+    gravedad: { x: 0, y: 1 },
+    gravedadSuave: { x: 0, y: 1 },
+    snap: { status: 'idle', remainingMs: 0, durationMs: 0, elapsedMs: 0, progress: 0 },
+    reducir: false,
+    durationMs: 0,
+    enGiro: false,
+    vaciar: false,
+    soloVaciar: false,
+    reposo: false,
+  };
+}
+
 export function useSandEngine(params: SandEngineParams): SandEngineOutput {
-  const { sim, status, durationMs, motion } = params;
+  const { status, durationMs, motion } = params;
   const [emptyPicture] = useState(recordEmptyPicture);
-  // Granos sueltos del chorro: capacidad fija, se crean una sola vez.
-  const [particles] = useState(() => new StreamParticles({ capacity: 360, seed: 7 }));
   const background = useSharedValue<SkPicture>(emptyPicture);
   const shadow = useSharedValue<SkPicture>(emptyPicture);
   const body = useSharedValue<SkPicture>(emptyPicture);
@@ -151,13 +144,6 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
   // (que vive fuera del ciclo de render de React) siempre lea valores frescos.
   const live = useLatest(params);
 
-  /** Granos que había arriba al empezar con esta duración. */
-  const initialGrains = useMemo(
-    () => Math.round(sim.totalGrains * sandLevelForDuration(durationMs)),
-    [sim, durationMs],
-  );
-  const initialRef = useLatest(initialGrains);
-
   // Quien da paso al siguiente fotograma: la interfaz, cuando ha dibujado el anterior.
   const pacer = useFramePacer();
 
@@ -166,20 +152,14 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     scheduled: false,
     dirty: true,
     failed: false,
-    /** Simulación ya rellenada de arena (para detectar simulaciones nuevas). */
-    populated: null as SandSimulation | null,
-    /**
-     * Granos del bulbo de arriba al empezar ESTA tanda. Normalmente los que
-     * corresponden a la duración; tras voltear, los que había abajo.
-     */
-    runInitial: 0,
+    /** Contenido ya visto (para no girar al montar uno nuevo). */
+    contenido: null as MotorContenido | null,
     /** Volteos ya aplicados a la arena. */
     flips: motion.flips,
     /** Cambios de fase ya vistos (null = aún no sabemos cuántos había). */
     turns: null as number | null,
     /** Inicio (performance.now) del giro de cambio de fase en curso, o null. */
     turnStart: null as number | null,
-    streamShown: false,
     /** Capas del vidrio: con qué pintor e inclinación se grabaron. */
     glass: null as GlassPainter | null,
     lightX: Number.NaN,
@@ -188,22 +168,14 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     glassAt: 0,
     /** La luz ha cambiado pero aún no tocaba regrabar: queda pendiente. */
     glassPending: false,
-    /** Estado del chorro reutilizado en cada fotograma (sin crear objetos). */
-    stream: { flowing: false, particles: null, reduceMotion: false } as StreamState,
-    /** Entrada de las partículas, reutilizada en cada fotograma. */
-    particleInput: {
-      dt: 0,
-      emitting: false,
-      intensity: 1,
-      gravity: { x: 0, y: 1 },
-      calm: false,
-    } as StreamInput,
     /** Marca de tiempo del fotograma anterior (para calcular dt). */
     lastTime: 0,
     /** Menos detalle durante un giro fuerte (1.8.9). */
     lod: new TiltLod(),
     /** Lo que costó simular el fotograma anterior (ms), para `lod`. */
     simMs: 0,
+    /** Entrada del contenido, reutilizada en cada fotograma. */
+    entrada: entradaVacia(),
   });
 
   // La función que despierta el bucle (estable entre renders).
@@ -213,13 +185,8 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     if (state.scheduled || state.failed) return;
 
     /** Fin del giro: la rejilla da la vuelta y el dibujo vuelve a 0, a la vez. */
-    const finishTurn = (sim: SandSimulation) => {
-      if (state.populated === sim) {
-        sim.rotateHalfTurn();
-        // La nueva fase vacía TODO lo que ahora está arriba (como al voltear).
-        state.runInitial = sim.topCount;
-      }
-      particles.reset(7);
+    const finishTurn = () => {
+      live.current.contenido.alVoltear('fase');
       spin.value = 0;
     };
 
@@ -247,12 +214,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       // 0) Volteo: la arena da la vuelta y el dibujo gira 180° a la vez.
       if (m.flips !== state.flips) {
         state.flips = m.flips;
-        if (state.populated === p.sim) {
-          p.sim.rotateHalfTurn();
-          // La nueva tanda vacía TODO lo que ahora está arriba.
-          state.runInitial = p.sim.topCount;
-        }
-        particles.reset(7);
+        p.contenido.alVoltear('reinicio');
         rotation.value = m.flipped ? Math.PI : 0;
         // Voltear no es un giro fuerte «a medias»: calidad normal.
         state.lod.reset();
@@ -272,20 +234,38 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       // fotograma lo harían aún más lento.
       const ticks = lod ? 1 : Math.min(MAX_CATCH_UP, Math.max(1, Math.round(frameDt * 60 - 0.2)));
 
+      const e = state.entrada;
+      e.dt = frameDt;
+      e.ticks = ticks;
+      e.gravedad = gs;
+      e.gravedadSuave = g;
+      e.snap = snap;
+      e.reducir = p.reduceMotion;
+      e.durationMs = p.durationMs;
+      e.enGiro = false;
+      e.vaciar = false;
+      e.soloVaciar = false;
+      e.reposo = false;
+
       // 0b) Cambio de fase (ciclos): empieza el giro animado del reloj.
       const turns = snap.transitions ?? 0;
-      if (state.turns === null || state.populated !== p.sim) {
-        state.turns = turns; // primera foto o simulación nueva: nada que girar
+      if (state.turns === null || state.contenido !== p.contenido) {
+        state.turns = turns; // primera foto o contenido nuevo: nada que girar
+        state.contenido = p.contenido;
       } else if (turns !== state.turns) {
         state.turns = turns;
         // La fase anterior ha terminado: su arena tiene que estar abajo. Los
         // pocos granos rezagados (resbalan despacio por el embudo) pasan ya;
         // si no, tras el giro quedaban colgando bajo el cuello y bajaban
-        // como un bloque.
-        p.sim.flushSource(gs);
+        // como un bloque. La vaciada va ANTES de dar la vuelta.
+        e.vaciar = true;
+        e.soloVaciar = true;
+        p.contenido.paso(e);
+        e.vaciar = false;
+        e.soloVaciar = false;
         if (p.reduceMotion) {
           // Sin animación: la arena da la vuelta en el acto.
-          finishTurn(p.sim);
+          finishTurn();
         } else if (state.turnStart === null) {
           state.turnStart = now;
           p.onTurnChange?.(true);
@@ -298,63 +278,18 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         if (t < 1) {
           spin.value = Math.PI * easeInOutCubic(t);
         } else {
-          finishTurn(p.sim);
+          finishTurn();
           state.turnStart = null;
           p.onTurnChange?.(false);
         }
         changed = true;
       }
 
-      // 1-2) Sincronizar la arena con el tiempo restante.
-      if (state.populated !== p.sim) {
-        // Simulación nueva (cambio de tamaño, Fast Refresh, remontaje tras
-        // un error...): la rellenamos según el tiempo restante AHORA. Antes
-        // de esto, una simulación recreada con el tiempo corriendo se quedaba
-        // vacía y la arena "desaparecía" hasta el siguiente gesto.
-        state.runInitial = initialRef.current;
-        const top =
-          snap.status === 'idle'
-            ? state.runInitial
-            : targetSourceGrains(state.runInitial, snap.remainingMs, snap.durationMs);
-        p.sim.arrange(top, p.sim.totalGrains - top, gs, {
-          crater: snap.status === 'idle' ? IDLE_CRATER : 0.35,
-        });
-        state.populated = p.sim;
-        particles.reset(7);
-        changed = true;
-      }
-      // 2-3) Sincronizar y mover la arena, una vez por «fotograma de 60 fps»
-      //      (a 60 fps, una vez). Durante el giro no se sincroniza: la arena
-      //      va quieta dentro del vidrio.
-      const syncing = snap.status !== 'idle' && state.turnStart === null;
-      const target = syncing ? targetSourceGrains(state.runInitial, snap.remainingMs, snap.durationMs) : 0;
-      // Límites según el caudal: con mucha arena y poco tiempo puede pasar
-      // más por fotograma y no se recoloca por un simple retraso.
-      const budget = syncing ? flowBudget(state.runInitial, snap.durationMs, p.sim.totalGrains) : null;
-      const simStart = performance.now();
-      for (let k = 0; k < ticks; k++) {
-        if (budget && syncSandToTarget(p.sim, target, gs, budget) !== 'idle') changed = true;
-        for (let i = 0; i < STEPS_PER_FRAME; i++) {
-          if (p.sim.step(gs) > 0) changed = true;
-        }
-      }
-      state.simMs = performance.now() - simStart;
-
-      // 3b) Granos sueltos del chorro. Siguen cayendo aunque el flujo se
-      //     corte: así el chorro termina con los últimos granos.
-      const streaming =
-        state.turnStart === null &&
-        snap.status === 'running' &&
-        snap.remainingMs > 0 &&
-        gs.y >= MIN_FLOW_GRAVITY_Y &&
-        p.sim.hasGrainAtNeck(gs);
-      const pin = state.particleInput;
-      pin.dt = frameDt;
-      pin.emitting = streaming;
-      pin.intensity = streamIntensity(snap.durationMs);
-      pin.gravity = g;
-      pin.calm = p.reduceMotion;
-      particles.update(p.sim, pin);
+      // 1-3) Colocar, sincronizar y mover la arena. Durante el giro no se
+      //      sincroniza: la arena va quieta dentro del vidrio.
+      e.enGiro = state.turnStart !== null;
+      const sigue = p.contenido.paso(e);
+      state.simMs = p.contenido.simMs;
 
       // 4a) Vidrio: regrabamos si cambió el pintor (tamaño/tema) o la luz.
       const t = m.tilt;
@@ -377,21 +312,15 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       }
 
       // 4b) Arena.
-      if (changed || particles.active || streaming !== state.streamShown) {
-        const stream = state.stream;
-        stream.flowing = streaming;
-        stream.particles = particles;
-        stream.reduceMotion = p.reduceMotion;
-        slots.sand.publish(p.painter.paint(p.sim, m, stream));
-        state.streamShown = streaming;
+      if (changed || p.contenido.hayQuePintar) {
+        slots.sand.publish(p.contenido.pintar(m));
       }
 
       // ¿Seguimos? Mientras corre el tiempo o la arena se mueve, sí.
       const keepGoing =
         snap.status === 'running' ||
-        !p.sim.isSettled ||
+        sigue ||
         state.dirty ||
-        particles.active ||
         turning ||
         state.glassPending ||
         // Hasta volver a la calidad normal (y recolocar la arena a 3°).
@@ -403,28 +332,31 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     };
     state.scheduled = true;
     pacer.request(frame);
-  }, [live, initialRef, particles, rotation, spin, slots, pacer]);
+  }, [live, rotation, spin, slots, pacer]);
 
   // Al elegir duración (o reiniciar), colocamos la arena directamente.
   useEffect(() => {
     if (status !== 'idle') return;
     const state = loop.current;
-    sim.arrange(initialGrains, sim.totalGrains - initialGrains, live.current.motion.simGravity, {
-      crater: IDLE_CRATER,
-    });
-    state.populated = sim;
-    state.runInitial = initialGrains;
+    const e = state.entrada;
+    e.gravedad = live.current.motion.simGravity;
+    e.durationMs = durationMs;
+    e.reposo = true;
+    e.vaciar = false;
+    e.soloVaciar = false;
+    live.current.contenido.paso(e);
+    e.reposo = false;
     // Si estaba dando la vuelta (cambio de fase) y se reinicia, se cancela.
     if (state.turnStart !== null) live.current.onTurnChange?.(false);
     state.turnStart = null;
     spin.set(0);
     wake();
-  }, [sim, status, initialGrains, wake, live, spin]);
+  }, [params.contenido, status, durationMs, wake, live, spin]);
 
   // Cualquier cambio relevante despierta el bucle.
   useEffect(() => {
     wake();
-  }, [status, params.painter, params.glass, params.reduceMotion, wake]);
+  }, [status, params.contenido, params.revisionPintor, params.glass, params.reduceMotion, wake]);
 
   // La fuente de movimiento (acelerómetro) también lo despierta.
   useEffect(() => motion.subscribe(wake), [motion, wake]);
@@ -455,10 +387,4 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
 /** Curva lento-rápido-lento (como un objeto real que se gira con la mano). */
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-/** Grosor relativo del chorro: más fino cuanto más largo es el temporizador. */
-function streamIntensity(durationMs: number): number {
-  const t = Math.log(durationMs / MIN_DURATION_MS) / Math.log(MAX_DURATION_MS / MIN_DURATION_MS);
-  return 1 - 0.6 * Math.min(1, Math.max(0, t));
 }
