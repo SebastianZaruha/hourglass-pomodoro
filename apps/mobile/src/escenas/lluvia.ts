@@ -27,6 +27,7 @@ export const lluvia: EscenaMovil = {
   id: 'lluvia',
   nombre: { es: 'Lluvia', en: 'Rain' },
   material: 'agua',
+  nube: true,
   claro: {
     fondo: { tipo: 'foto', fuente: require('../../assets/fondos/lluvia-claro.webp'), anclaY: 1 },
     tema: claro,

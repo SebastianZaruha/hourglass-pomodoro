@@ -38,6 +38,7 @@ import { View } from 'react-native';
 import { useDerivedValue, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { NubeMovil } from '../escenas/Nube';
 import { useFondoImagen } from '../escenas/fondoImagen';
 import type { FondoMovil, Material } from '../escenas';
 import type { HourglassTheme } from '../theme/theme';
@@ -94,6 +95,8 @@ export interface HourglassProps {
   readonly material?: Material;
   /** Luz de los granos, en grados. Sin ella, la luz de siempre. */
   readonly luzGrano?: number;
+  /** Nube de vídeo sobre la boca. Solo Lluvia. */
+  readonly nube?: boolean;
   readonly getSnapshot: () => HourglassSnapshot;
   readonly status: TimerStatus;
   readonly durationMs: number;
@@ -139,6 +142,7 @@ function HourglassCanvas({
   fondo = { tipo: 'procedural' },
   material = 'arena',
   luzGrano,
+  nube = false,
   getSnapshot,
   status,
   durationMs,
@@ -332,6 +336,9 @@ function HourglassCanvas({
         </Group>
         {children}
       </Group>
+      {nube ? (
+        <NubeMovil layout={layout} motion={motion} oscuro={theme.scheme === 'dark'} reducir={reduceMotion} />
+      ) : null}
       {fade.image ? (
         <Image
           image={fade.image}

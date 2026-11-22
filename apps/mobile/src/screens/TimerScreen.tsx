@@ -622,6 +622,7 @@ export function TimerScreen({ settings, fonts }: Props) {
               fondo={fondo}
               material={material}
               luzGrano={luzGrano}
+              nube={escena.nube === true}
               getSnapshot={session.getSnapshot}
               status={view.status}
               durationMs={view.durationMs}

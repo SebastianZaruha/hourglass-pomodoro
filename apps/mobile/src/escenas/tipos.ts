@@ -26,4 +26,6 @@ export interface EscenaMovil {
   readonly material: Material;
   readonly claro: AspectoMovil;
   readonly oscuro: AspectoMovil;
+  /** Solo Lluvia lleva la nube de vídeo sobre la boca. */
+  readonly nube?: boolean;
 }
