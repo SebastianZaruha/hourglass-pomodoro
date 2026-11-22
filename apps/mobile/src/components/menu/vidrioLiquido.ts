@@ -4,12 +4,8 @@
  * y sin sombra. El texto y los iconos siguen la paleta de la escena.
  */
 export const VIDRIO = {
-  /**
-   * σ del desenfoque, en px. En la web es clamp(6px, 0.6vw, 12px).
-   * En el móvil va bastante más alto: detrás no se distinguen las formas
-   * y el texto de la hoja se lee.
-   */
-  blur: 40,
+  /** σ del desenfoque, en px. En la web es clamp(6px, 0.6vw, 12px). */
+  blur: 12,
   /** Lavado sobre el desenfoque. En la web el velo de la hoja es transparente. */
   tinteClaro: 'rgba(247, 243, 237, 0.22)',
   tinteOscuro: 'rgba(16, 13, 10, 0.32)',
