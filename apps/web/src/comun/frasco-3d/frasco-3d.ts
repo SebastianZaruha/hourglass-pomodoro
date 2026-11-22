@@ -6,6 +6,7 @@ import {
   PlaneGeometry, PMREMGenerator, SRGBColorSpace, Scene, ShaderChunk, ShaderMaterial, Texture, CanvasTexture, TextureLoader,
   Vector2, Vector4, WebGLRenderer, type WebGLRenderTarget, FrontSide,
 } from 'three';
+import { mascaraConCuello } from '../frasco';
 import { BASE_BULBO, BASE_OPACA, CUELLO_FILA, FOTO_ALTO, FOTO_ANCHO, cajaFoto, encuadreFondo, layoutFor, yEnFoto, type Caja } from './encuadre';
 import { crearEntorno, type AjusteEntorno, type Modo } from './entorno';
 import { CENTRO_LOCAL_Y, crearGeometriaFrasco } from './geometria';
@@ -131,7 +132,12 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   texHoja.colorSpace = SRGBColorSpace;
   texHoja.generateMipmaps = false;
   texHoja.minFilter = LinearFilter;
-  const texMascara = new TextureLoader().load(o.mascara);
+  const texMascara = new TextureLoader().load(o.mascara, (tex) => {
+    const recorte = mascaraConCuello(tex.image as CanvasImageSource);
+    if (!recorte) return;
+    tex.image = recorte as unknown as HTMLImageElement;
+    tex.needsUpdate = true;
+  });
   const UH = { ...U, uHoja: { value: texHoja as Texture }, uMascara: { value: texMascara }, uHayHoja: { value: 0 }, uOpacidad: { value: 1 } };
   const matHoja = new ShaderMaterial({
     uniforms: UH,

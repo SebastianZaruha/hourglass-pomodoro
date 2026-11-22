@@ -3,6 +3,7 @@
 // La malla se escala luego a la cajaFoto en pantalla (x/z por ancho, y por alto).
 import { BufferGeometry, LatheGeometry, Vector2 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { factorCuello } from '../frasco';
 import { CUELLO_FILA } from './encuadre';
 import { INTERIOR, EXTERIOR } from './perfil-datos';
 
@@ -10,7 +11,10 @@ export { CENTRO_FILA, CENTRO_LOCAL_Y } from './centro';
 
 function puntos(pares: readonly number[], deAbajoArriba: boolean): Vector2[] {
   const p: Vector2[] = [];
-  for (let i = 0; i < pares.length; i += 2) p.push(new Vector2(pares[i]!, CUELLO_FILA - pares[i + 1]!));
+  for (let i = 0; i < pares.length; i += 2) {
+    const fila = pares[i + 1]!;
+    p.push(new Vector2(pares[i]! * factorCuello(fila), CUELLO_FILA - fila));
+  }
   // Lathe saca la normal hacia fuera si el perfil sube. La cavidad la quiere hacia el eje.
   return deAbajoArriba ? p.reverse() : p;
 }
