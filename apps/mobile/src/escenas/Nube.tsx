@@ -1,21 +1,21 @@
 /**
- * Nube de Lluvia, en vídeo. No gira con el frasco: se pinta fuera de ese grupo.
- * Un solo reproductor no puede cruzar el final con el principio, así que en el
- * corte la opacidad baja y vuelve en unos 300 ms.
+ * Nube de Lluvia. El vídeo de Skia en Android release cierra la app
+ * (el decodificador devuelve un buffer ya liberado), así que aquí va
+ * el póster, con el mismo tratamiento y un vaivén muy corto.
+ * Si el efecto no compila, se pinta el póster tal cual: no se cierra.
  */
-import { Asset } from 'expo-asset';
-import { useEffect, useMemo, useState } from 'react';
-import { AppState } from 'react-native';
-import { runOnJS, useAnimatedReaction, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
-import { Group, Image, Paint, RuntimeShader, useImage, useVideo } from '@shopify/react-native-skia';
+import { useEffect, useMemo } from 'react';
+import { useDerivedValue, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Group, Image, Paint, RuntimeShader, Skia, useImage } from '@shopify/react-native-skia';
 
 import { disposeLater } from '../hourglass/disposal';
 import type { HourglassLayout } from '../hourglass/layout';
 import { NUBE_SKSL } from '../hourglass/shaders/nube';
-import { compileShader } from '../hourglass/shaders/uniforms';
 import type { MotionSource } from '../hourglass/types';
 
 const FORMA = 438 / 1100;
+/** Un vaivén de opacidad, en ms. No mueve la nube: la máscara va en coordenadas fijas. */
+const DERIVA_MS = 6400;
 
 /** 1 de pie o boca abajo, 0 a los 50°. Igual que el frasco de la web. */
 function opacidadDe(gx: number, gy: number): number {
@@ -40,43 +40,19 @@ export function NubeMovil({
   const x = layout.cx - ancho / 2;
   const y = layout.cy - layout.halfH - 0.28 * alto;
   const poster = useImage(require('../../assets/nube/nube.webp'));
-  const efecto = useMemo(() => compileShader('nube', NUBE_SKSL), []);
+  // Frontera nativa: Make devuelve null si el SkSL no compila. No se lanza.
+  const efecto = useMemo(() => Skia.RuntimeEffect.Make(NUBE_SKSL), []);
   useEffect(() => () => disposeLater([efecto]), [efecto]);
 
-  const [uri, setUri] = useState<string | null>(null);
-  const [fallo, setFallo] = useState(false);
-  useEffect(() => {
-    if (reducir) return;
-    let vivo = true;
-    Asset.fromModule(require('../../assets/nube/nube.mp4'))
-      .downloadAsync()
-      .then((asset) => {
-        if (!vivo) return;
-        const local = asset.localUri ?? asset.uri;
-        if (local) setUri(local);
-        else setFallo(true);
-      })
-      .catch(() => {
-        if (vivo) setFallo(true);
-      });
-    return () => {
-      vivo = false;
-    };
-  }, [reducir]);
-
   const opacidad = useSharedValue(opacidadDe(motion.gravity.x, motion.gravity.y));
-  const enFondo = useSharedValue(AppState.currentState !== 'active');
-  const corte = useSharedValue(1);
-  const paused = useDerivedValue(() => enFondo.value || opacidad.value <= 0.001);
-  const video = useVideo(reducir || fallo ? null : uri, { looping: true, volume: 0, paused });
-  const [conMarco, setConMarco] = useState(false);
-
+  const deriva = useSharedValue(0);
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (estado) => {
-      enFondo.value = estado !== 'active';
-    });
-    return () => sub.remove();
-  }, [enFondo]);
+    if (reducir) {
+      deriva.value = 0;
+      return;
+    }
+    deriva.value = withRepeat(withTiming(1, { duration: DERIVA_MS }), -1, true);
+  }, [reducir, deriva]);
 
   useEffect(
     () =>
@@ -86,38 +62,24 @@ export function NubeMovil({
     [motion, opacidad],
   );
 
-  useAnimatedReaction(
-    () => video.currentTime.value as number,
-    (t, prev) => {
-      if (prev != null && prev > 0.8 && t + 0.4 < prev) {
-        corte.value = withTiming(0, { duration: 140 }, (fin) => {
-          if (fin) corte.value = withTiming(1, { duration: 180 });
-        });
-      }
-    },
-  );
-  useAnimatedReaction(
-    () => video.currentFrame.value != null,
-    (hay, antes) => {
-      if (hay && !antes) runOnJS(setConMarco)(true);
-    },
-  );
-
-  const visible = useDerivedValue(() => opacidad.value * corte.value);
+  const visible = useDerivedValue(() => opacidad.value * (0.9 + deriva.value * 0.1));
   const uniforme = { uY: y, uH: alto, uOscuro: oscuro ? 1 : 0 };
-  const foto = reducir || fallo || !uri || !conMarco;
-  const imagen = foto ? poster : video.currentFrame;
+
+  if (!poster) return null;
 
   return (
-    <Group
-      opacity={visible}
-      layer={
-        <Paint>
-          <RuntimeShader source={efecto} uniforms={uniforme} />
-        </Paint>
-      }
-    >
-      <Image image={imagen} x={x} y={y} width={ancho} height={alto} fit="fill" />
+    <Group opacity={visible}>
+      <Group
+        layer={
+          efecto ? (
+            <Paint>
+              <RuntimeShader source={efecto} uniforms={uniforme} />
+            </Paint>
+          ) : undefined
+        }
+      >
+        <Image image={poster} x={x} y={y} width={ancho} height={alto} fit="fill" />
+      </Group>
     </Group>
   );
 }
