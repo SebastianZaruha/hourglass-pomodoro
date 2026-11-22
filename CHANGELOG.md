@@ -9,6 +9,15 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.9.0-f2 — Lluvia no se cierra, y las hojas son vidrio (prueba)
+
+Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
+
+- Lluvia ya no reproduce el vídeo con Skia: en Android release ese reproductor
+  cierra la app. La nube es el póster, con el mismo tratamiento.
+- El menú, la ayuda, el consentimiento y la pista de pausa usan el vidrio
+  líquido (desenfoque, tinte y canto gris). Sin borde blanco y sin sombra.
+
 ## 1.9.0-f1 — Escenas en el móvil (prueba)
 
 Versión de prueba. El nombre sigue siendo Hourglass Dev y el paquete
