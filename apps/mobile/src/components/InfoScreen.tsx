@@ -2,7 +2,8 @@
  * Pantalla informativa a pantalla completa, con el estilo del concepto B de
  * la fase 3: sobre el reloj (que queda desenfocado y apagado detrás),
  * contenido centrado, título pequeño en versalitas espaciadas, una × fina
- * arriba a la derecha y mucho aire.
+ * arriba a la derecha y mucho aire. El fondo lo desenfoca el lienzo
+ * (VidrioPantalla); esta vista es transparente.
  *
  * La usan la ayuda de gestos (1.6) y la explicación de la ventana flotante
  * (1.8). Aquí está todo lo común: aparecer y desaparecer con un fundido, el
@@ -49,13 +50,9 @@ interface Props extends InfoScreenProps {
   readonly children: (styles: MenuStyles) => ReactNode;
 }
 
-/** Velo sobre el reloj (deja verlo, desenfocado, detrás). */
-const VEIL = { light: 'rgba(235, 229, 221, 0.80)', dark: 'rgba(32, 27, 23, 0.84)' } as const;
-
 export function InfoScreen({
   visible,
   onClose,
-  theme,
   themeProgress,
   paleta,
   fonts,
@@ -113,7 +110,7 @@ export function InfoScreen({
 
   return (
     <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: VEIL[theme.scheme] }, fade]}
+      style={[StyleSheet.absoluteFill, fade]}
       pointerEvents={visible ? 'auto' : 'none'}
       accessibilityViewIsModal
       testID={testID}

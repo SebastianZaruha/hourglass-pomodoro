@@ -95,12 +95,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBackgroundTimer } from '../background/useBackgroundTimer';
 import { useFloatingWindow } from '../background/useFloatingWindow';
 import { appShouldAlert, systemPromptOpen } from '../background/visibility';
+import { Group } from '@shopify/react-native-skia';
+
 import { ConsentDialog } from '../components/ConsentDialog';
 import { FloatingHelp } from '../components/FloatingHelp';
 import { GesturesHelp } from '../components/GesturesHelp';
 import { LandscapePauseHint } from '../components/LandscapePauseHint';
 import { HourglassBoundary } from '../components/HourglassBoundary';
-import { FrostedPanel } from '../components/menu/FrostedPanel';
+import { FrostedPanel, VidrioPantalla } from '../components/menu/FrostedPanel';
 import { MenuButton } from '../components/menu/MenuButton';
 import { SettingsSheet } from '../components/menu/SettingsSheet';
 import type { MenuFonts } from '../components/menu/themedStyles';
@@ -243,6 +245,7 @@ export function TimerScreen({ settings, fonts }: Props) {
   const sheet = useSheet(height, reduceMotion);
   // Con la ayuda de gestos abierta, el tiempo y el botón del menú se apagan.
   const helpFade = useSharedValue(0);
+  const consentFade = useSharedValue(0);
   const timeOpacity = useDerivedValue(
     () => intro.chrome.value * (1 - sheet.openness.value) * (1 - helpFade.value),
   );
@@ -306,6 +309,9 @@ export function TimerScreen({ settings, fonts }: Props) {
   // El diálogo va después de la intro (reloj asentado y tiempo ya visible),
   // y antes que la ayuda de gestos. Hasta Aceptar no se recoge nada.
   const consentVisible = consent.prompt && !intro.active && intro.chromeSettled;
+  useEffect(() => {
+    consentFade.set(withTiming(consentVisible ? 1 : 0, { duration: reduceMotion ? 0 : 220 }));
+  }, [consentVisible, reduceMotion, consentFade]);
   const autoHelp =
     !prefs.gesturesSeen && !intro.active && intro.chromeSettled && consent.ready && !consent.prompt;
   useEffect(() => {
@@ -560,18 +566,22 @@ export function TimerScreen({ settings, fonts }: Props) {
   // Ahora abrir solo mueve shared values, en el hilo de la interfaz, en el
   // mismo fotograma que la hoja.
   //
-  // 1.8.9: el vidrio es un panel sin desenfoque (ver FrostedPanel).
+  // Vidrio líquido: la hoja y, a pantalla completa, la ayuda y el consentimiento.
+  const capaVidrio = useDerivedValue(() => Math.max(helpFade.value, consentFade.value));
   const frosted = useMemo(
     () => (
-      <FrostedPanel
-        width={width}
-        height={height}
-        top={sheet.top}
-        openness={sheet.openness}
-        themeProgress={themeProgress}
-      />
+      <Group>
+        <FrostedPanel
+          width={width}
+          height={height}
+          top={sheet.top}
+          openness={sheet.openness}
+          themeProgress={themeProgress}
+        />
+        <VidrioPantalla width={width} height={height} opacity={capaVidrio} themeProgress={themeProgress} />
+      </Group>
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress],
+    [sheet.top, sheet.openness, width, height, themeProgress, capaVidrio],
   );
   // En imagen en imagen no hay textos ni menú: el reloj ocupa toda la ventanita.
   const insets = useMemo(

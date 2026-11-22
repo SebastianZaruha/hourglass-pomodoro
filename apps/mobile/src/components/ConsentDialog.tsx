@@ -7,14 +7,13 @@
 import { useEffect } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { VIDRIO } from './menu/vidrioLiquido';
 import { bannerCopy } from '../consent/bannerCopy';
 import type { ConsentChoice } from '../consent/consent';
 import { announce } from '../hooks/useScreenReader';
 import { useLanguage } from '../i18n/I18n';
 import type { HourglassTheme } from '../theme/theme';
 import type { MenuFonts } from './menu/themedStyles';
-
-const VEIL = { light: 'rgba(235, 229, 221, 0.92)', dark: 'rgba(32, 27, 23, 0.92)' } as const;
 
 interface Props {
   readonly visible: boolean;
@@ -79,12 +78,12 @@ export function ConsentDialog({
       style={[
         StyleSheet.absoluteFill,
         styles.veil,
-        { backgroundColor: VEIL[theme.scheme], paddingTop: safeTop + 24, paddingBottom: safeBottom + 24 },
+        { paddingTop: safeTop + 24, paddingBottom: safeBottom + 24 },
       ]}
       accessibilityViewIsModal
       testID="consentimiento"
     >
-      <View style={[styles.card, { backgroundColor: theme.ui.tooltip }]}>
+      <View style={styles.card}>
         <Text style={[styles.title, { fontFamily: fonts.semibold, color: ink }]} accessibilityRole="header">
           {copy.title}
         </Text>
@@ -109,7 +108,11 @@ export function ConsentDialog({
             onPress={() => onChoose('rejected')}
             disabled={saving}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.choice, { borderColor: soft }, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.choice,
+              { borderColor: soft, backgroundColor: VIDRIO.humo },
+              pressed && styles.pressed,
+            ]}
             testID="consentimiento-rechazar"
           >
             <Text style={[styles.choiceText, { fontFamily: fonts.medium, color: ink }]}>{copy.reject}</Text>
@@ -118,7 +121,11 @@ export function ConsentDialog({
             onPress={() => onChoose('accepted')}
             disabled={saving}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.choice, { borderColor: soft }, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.choice,
+              { borderColor: soft, backgroundColor: VIDRIO.humo },
+              pressed && styles.pressed,
+            ]}
             testID="consentimiento-aceptar"
           >
             <Text style={[styles.choiceText, { fontFamily: fonts.medium, color: ink }]}>{copy.accept}</Text>

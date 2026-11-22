@@ -74,7 +74,6 @@ function FloatingHelpScreen({ onAllow, ...props }: Props) {
               accessibilityRole="button"
               style={({ pressed }) => [
                 styles.primary,
-                { boxShadow: theme.ui.pillShadow },
                 pressed && styles.pressed,
               ]}
               testID="dar-permiso-flotante"

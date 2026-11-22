@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { VIDRIO } from './menu/vidrioLiquido';
 import type { HourglassTheme } from '../theme/theme';
 
 interface Props {
@@ -28,9 +29,7 @@ export function LandscapePauseHint({ text, dismissLabel, bottom, font, theme, on
         style={({ pressed }) => [
           styles.chip,
           {
-            borderColor: theme.ui.line,
-            backgroundColor: theme.ui.track,
-            boxShadow: theme.ui.pillShadow,
+            backgroundColor: theme.scheme === 'dark' ? VIDRIO.tinteOscuro : VIDRIO.tinteClaro,
           },
           pressed && styles.pressed,
         ]}
@@ -61,7 +60,6 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingRight: 12,
     borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   pressed: { opacity: 0.88 },
   text: {
