@@ -1,4 +1,4 @@
-import { hash32, PARTICLE_SWIRL, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
+import { hash32, type ContentPalette, type SandSimulation, type StreamParticles } from '@reloj/core';
 
 import { type GeometriaFrasco, type Scheme } from '../../comun/frasco';
 
@@ -254,8 +254,8 @@ export function pintarArena(ctx: CanvasRenderingContext2D, scene: ArenaPintada):
     g.fillStyle = `rgb(${scene.lut[l] ?? 200}, ${scene.lut[l + 1] ?? 170}, ${scene.lut[l + 2] ?? 130})`;
     const yn = vh > 0 ? ((y - vy) / vh) * 2 - 1 : 0;
     const fila = Math.floor(py);
-    // El remolino nace encima del hueco, pegado al eje. No se pinta: el montón ya no lo tapa al inclinar.
-    if ((scene.particles.kind[i] ?? 0) === PARTICLE_SWIRL && (fila - scene.sim.gateRow) * abajo < 0) continue;
+    // Encima del hueco no se pinta ninguna partícula: el chorro nace del lado del montón y deja una rayita.
+    if ((fila - scene.sim.gateRow) * abajo < 0) continue;
     if (enElHilo(yn)) {
       const medio = medioDelCuello(geo.radio, yn, vw);
       const r = Math.max(0.35, Math.min(hilo * 0.85, size * cellW * 0.55));
