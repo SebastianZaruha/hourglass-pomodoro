@@ -120,9 +120,5 @@ export interface Frasco3D {
   marcar(): void;
   setCalidad(c: Calidad | 'auto'): void;
   redimensionar(): void;
-  /** Solo para afinar/verificar. */
-  depurar(): Record<string, unknown>;
-  /** Medidas para la verificación: tiempos de frame recientes y nivel. */
-  medidas(): { calidad: Calidad; frames: number; mediaMs: number; p95Ms: number };
   destruir(): void;
 }

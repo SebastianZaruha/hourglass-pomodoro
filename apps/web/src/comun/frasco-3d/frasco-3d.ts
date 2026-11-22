@@ -228,8 +228,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   let frascoVisible = true;
   let ultimaCopiaVideo = 0, ultimoTiempoVideo = -1;
   let medioPintado: HTMLImageElement | HTMLVideoElement | null = null;
-  const tiempos = new Float32Array(240);
-  let nTiempos = 0, framesNivel = 0;
+  let framesNivel = 0;
 
   function aplicarNivel() {
     const n = NIVELES[calidad];
@@ -703,7 +702,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // Si la media pasa de 19,6 ms (~51 fps) baja un nivel y vuelve a medir. Nunca sube.
   let tNivel = performance.now(), sumaNivel = 0;
   function medir(ms: number) {
-    tiempos[nTiempos++ % tiempos.length] = ms;
     if (!auto) return;
     const t = performance.now() - tNivel;
     if (t < 600) return;
@@ -783,14 +781,6 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
       reiniciarMedida();
     },
     redimensionar,
-    /** Solo para afinar/verificar: material y luz. No es API estable. */
-    depurar: () => ({ vidrio, luz, malla, rehacerEntorno, ajustarEntorno: (aj: Partial<AjusteEntorno>) => { ajusteEntorno = aj; rehacerEntorno(); } }),
-    medidas() {
-      const n = Math.min(nTiempos, tiempos.length);
-      const v = Array.from(tiempos.subarray(0, n)).sort((a, b) => a - b);
-      const media = v.reduce((a, b) => a + b, 0) / (n || 1);
-      return { calidad, frames: n, mediaMs: +media.toFixed(2), p95Ms: +(v[Math.floor(n * 0.95)] ?? 0).toFixed(2) };
-    },
     destruir() {
       vivo = false;
       cancelAnimationFrame(raf);
