@@ -132,8 +132,9 @@ export function muestraOla(onda: Float64Array, s: number, s0: number, s1: number
 
 /**
  * Agua del móvil. La superficie queda horizontal en el mundo:
- * en el marco del frasco su ángulo es −θ + φ.
- * φ es un muelle. La altura de la línea sale por bisección del polígono.
+ * en el marco del frasco su ángulo es θ + φ.
+ * θ = atan2(gx, gy) apunta al lado bajo (la arena cae hacia ahí).
+ * φ es un muelle alrededor de esa horizontal. La altura sale por bisección.
  */
 export function crearModeloAgua(): ModeloAgua {
   let muerto = false;
@@ -424,9 +425,11 @@ export function crearModeloAgua(): ModeloAgua {
           volAbajo += (obj.abajo - volAbajo) * k;
         }
         const dTheta = e.theta - prevTheta;
-        const vel = dt > 0 ? -dTheta / dt : 0;
+        // vel es la velocidad de la horizontal en pantalla. El golpe a φ
+        // la compensa un instante, y el muelle la trae de vuelta.
+        const vel = dt > 0 ? dTheta / dt : 0;
         const acc = !saltar && dt > 0 ? (vel - prevVel) / dt : 0;
-        if (!saltar) phi += dTheta;
+        if (!saltar) phi -= dTheta;
         saltar = false;
         prevTheta = e.theta;
         prevVel = vel;
@@ -445,7 +448,7 @@ export function crearModeloAgua(): ModeloAgua {
           phi = -TOPE_PHI;
           if (phiV < 0) phiV = 0;
         }
-        const alfa = -e.theta + phi;
+        const alfa = e.theta + phi;
         const muestraA = vista.arriba.dibujar ? vista.arriba : null;
         const s0A = muestraA ? muestraA.s0 : -1;
         const s1A = muestraA ? muestraA.s1 : 1;
@@ -464,7 +467,7 @@ export function crearModeloAgua(): ModeloAgua {
       } else if (congelada && llenadoT0 !== null && e.dt > 0) {
         llenadoT0 += e.dt * 1000;
       }
-      if (!(congelada && !e.reposo)) vista.alfa = -e.theta + phi;
+      if (!(congelada && !e.reposo)) vista.alfa = e.theta + phi;
       const factor = vista.llenado === null ? 1 : vista.llenado;
       const fa = Math.min(1, Math.max(0, volArriba * factor));
       const fb = Math.min(1, Math.max(0, volAbajo * factor));
