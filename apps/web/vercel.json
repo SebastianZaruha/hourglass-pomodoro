@@ -16,5 +16,34 @@
   "rewrites": [
     { "source": "/legal", "destination": "/legal.html" },
     { "source": "/legal-en", "destination": "/legal-en.html" }
+  ],
+  "headers": [
+    {
+      "source": "/fondos/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/nube/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/frasco/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    }
   ]
 }
