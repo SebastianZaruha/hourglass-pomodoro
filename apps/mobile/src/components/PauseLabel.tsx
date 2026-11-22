@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
   group: { alignItems: 'center' },
   note: {
