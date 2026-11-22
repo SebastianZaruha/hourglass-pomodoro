@@ -33,6 +33,8 @@ const VIDRIO: Record<Modo, { env: number; atenuacion: string; distancia: number;
   oscuro: { env: 1.3, atenuacion: '#e2e9ea', distancia: 16, distanciaEstudio: 16, especular: 1 },
 };
 const GROSOR = 16; // px de la foto (≈ la pared real: 211−196 a 446)
+/** Tope del camino en la silueta (1/cos). 0.16 deja el grosor como máximo a 6.25×. */
+const ABRAZO_SILUETA = 0.16;
 const SOMBRA: Record<Modo, { r: number; g: number; b: number; a: number }> = {
   claro: { r: 84, g: 64, b: 44, a: 0.28 },
   oscuro: { r: 0, g: 0, b: 0, a: 0.38 },
@@ -157,22 +159,27 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
   // Grosor real de una pared hueca: el rayo cruza la pared en diagonal, así que el camino
   // crece hacia la silueta (1/cos). Eso da más refracción y más tinte (attenuation) en los
   // bordes y casi nada en el centro: el color sale del grosor, no de una capa encima.
+  // El include se expande después de onBeforeCompile, así que el trozo se pega ya
+  // cambiado. El rayo de three sigue la normal de la malla y el fondo giraría con el
+  // frasco. La refracción usa esa normal sin el giro en Z: vuelve el desplazamiento
+  // de vidrio fino y el fondo no se desliza. El grosor de la silueta sigue la normal real.
+  const uGiroZ = { value: 0 };
   vidrio.onBeforeCompile = (sh) => {
-    // El include aún no está expandido. El rayo de three sigue la normal de la malla,
-    // así que el fondo gira con el frasco y salta al volver a 0°. Se muestra el píxel
-    // de pantalla que hay detrás del fragmento.
-    sh.fragmentShader = sh.fragmentShader.replace(
-      '#include <transmission_pars_fragment>',
-      ShaderChunk.transmission_pars_fragment.replaceAll(
-        'vec3 refractedRayExit = position + transmissionRay;',
-        'vec3 refractedRayExit = position;',
-      ),
-    );
-    sh.fragmentShader = sh.fragmentShader.replace(
+    sh.uniforms.uGiroZ = uGiroZ;
+    let trozo = ShaderChunk.transmission_fragment;
+    trozo = trozo.replace(
       'vec3 n = transformNormalByInverseViewMatrix( normal, viewMatrix );',
-      'vec3 n = transformNormalByInverseViewMatrix( normal, viewMatrix );\n\tmaterial.thickness = thickness / max( abs( dot( n, v ) ), 0.16 );',
+      `vec3 n = transformNormalByInverseViewMatrix( normal, viewMatrix );
+	float cGiro = cos(uGiroZ);
+	float sGiro = sin(uGiroZ);
+	vec3 nVidrio = vec3(cGiro * n.x - sGiro * n.y, sGiro * n.x + cGiro * n.y, n.z);
+	material.thickness = thickness / max( abs( dot( n, v ) ), ${ABRAZO_SILUETA.toFixed(2)} );`,
     );
+    trozo = trozo.replace('getIBLVolumeRefraction(\n\t\tn, v,', 'getIBLVolumeRefraction(\n\t\tnVidrio, v,');
+    sh.fragmentShader =
+      'uniform float uGiroZ;\n' + sh.fragmentShader.replace('#include <transmission_fragment>', trozo);
   };
+  vidrio.customProgramCacheKey = () => 'vidrio-giro-quieto';
   const malla = new Mesh(crearGeometriaFrasco(NIVELES[calidad].segmentos), vidrio);
   malla.renderOrder = 1;
 
@@ -601,6 +608,7 @@ export function crearFrasco3D(canvas: HTMLCanvasElement, opciones: OpcionesFrasc
     anguloVisible = angulo + (pose.activa && introT0 !== null ? pose.angulo : 0);
     velocidad = (anguloVisible - anguloAntes) / dt;
     giro.rotation.z = -anguloVisible;
+    uGiroZ.value = anguloVisible;
 
     // Sombra: se apaga al tumbarse (a 180° vuelve: el frasco apoya en la otra base).
     const cs = Math.cos(anguloVisible);
