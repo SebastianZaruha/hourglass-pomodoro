@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hourglass Dev",
     "slug": "reloj-de-arena",
-    "version": "1.9.0-f2",
+    "version": "1.9.0-f3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -12,7 +12,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "versionCode": 10902,
+      "versionCode": 10903,
       "adaptiveIcon": {
         "backgroundColor": "#E6DED4",
         "foregroundImage": "./assets/android-icon-foreground.png",

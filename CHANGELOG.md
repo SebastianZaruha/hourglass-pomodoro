@@ -9,6 +9,19 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.9.0-f3 — Ajustes de Lluvia y del vidrio (prueba)
+
+Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
+
+- El agua de Lluvia cae hacia el lado bajo, como la arena.
+- La nube no se apaga al tumbar el móvil.
+- El consentimiento tapa el menú con su propio vidrio.
+- El canto superior del menú casi no se ve.
+- Las gotas son hilos finos, casi transparentes.
+- La foto de la escena funde a la vez que el frasco.
+- La pausa de lado se lee sobre las piedras.
+- El menú desenfoca más el fondo.
+
 ## 1.9.0-f2 — Lluvia no se cierra, y las hojas son vidrio (prueba)
 
 Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
