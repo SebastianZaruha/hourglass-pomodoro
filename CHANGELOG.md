@@ -9,10 +9,13 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
-## 1.9.0 — Build de Android definitivo
+## 1.9.0 — Hourglass
 
-El paquete vuelve a ser el de producción. No es una publicación: no hay APK subido.
+El móvil tiene las tres escenas. No es una publicación: no hay APK subido.
 
+- Lluvia y Arena en el móvil, cada una en claro y en oscuro. Clásico se queda como estaba.
+- El menú, las pistas y los dígitos se leen en las seis combinaciones de escena y tema.
+- Mantener pulsado reinicia el tiempo y gira el frasco.
 - Nombre «Hourglass». Paquete `com.sebastianzaruha.relojdearena`.
 - `versionCode` 10904, por encima del 10815 de la 1.8.15.
 - `google-services.json` solo con el cliente de `com.sebastianzaruha.relojdearena`.
