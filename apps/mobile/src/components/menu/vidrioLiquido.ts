@@ -58,6 +58,7 @@ export function cajaVidrioReloj(
   bottom: number,
   altoLinea: number,
 ): CajaVidrioReloj {
+  'worklet';
   const { ancho, paddingArriba, paddingAbajo, radio } = VIDRIO.reloj;
   const alto = paddingArriba + altoLinea + paddingAbajo;
   const radioCaja = Math.min(radio, ancho / 2, alto / 2);
