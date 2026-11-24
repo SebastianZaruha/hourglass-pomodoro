@@ -566,7 +566,7 @@ De ese token salen, con desplazamientos fijos, los demás tonos del fondo. Con l
 Aparte, `apps/mobile/app.json` tiene `backgroundColor: #E6DED4` (solo la pantalla de carga y el
 fondo del icono adaptativo de Android; no afecta a la app ya abierta).
 
-En `docs/capturas/07-fondos-claros.png` está el reloj en reposo sobre 4 variantes:
+El reloj en reposo se comparó sobre 4 variantes:
 
 | Variante | Hex       | Descripción             |
 | -------- | --------- | ----------------------- |

@@ -1125,13 +1125,6 @@ tiene una **pantalla de ayuda de gestos**, la arena **se vacía en embudo** y ya
 dar la vuelta, y el toque en el botón del menú ya no empieza ni pausa el reloj. **No hay
 cambios nativos:** sigue valiendo el APK de desarrollo de la 1.3.
 
-<p align="center">
-  <img src="docs/capturas/17-menu-es-claro.png" width="22%" alt="Menú en español, tema claro" />
-  <img src="docs/capturas/17-menu-en-oscuro.png" width="22%" alt="Menú en inglés, tema oscuro, con ciclos" />
-  <img src="docs/capturas/16-gestos-es-claro.png" width="22%" alt="Ayuda de gestos en español" />
-  <img src="docs/capturas/17-pausa-en-oscuro.png" width="22%" alt="Pausa con el dedo en inglés: «Paused»" />
-</p>
-
 ### Cómo actualizar desde la 1.5
 
 1. `git pull`.
@@ -1206,13 +1199,6 @@ La **fase 3**: un menú discreto con vidrio esmerilado, tema claro/oscuro/autom�
 rápidos, **ciclos trabajo/descanso** (adelanta la antigua fase 4), sonido y vibración
 configurables y una entrada animada. **No hay cambios nativos:** sigue valiendo el APK de
 desarrollo de la 1.3.
-
-<p align="center">
-  <img src="docs/capturas/17-menu-es-claro.png" width="22%" alt="Menú abierto, tema claro" />
-  <img src="docs/capturas/17-menu-es-oscuro.png" width="22%" alt="Menú abierto, tema oscuro" />
-  <img src="docs/capturas/17-ciclo-es-claro.png" width="22%" alt="Ciclo: Trabajo 2/4" />
-  <img src="docs/capturas/14-intro-claro.png" width="22%" alt="Entrada animada" />
-</p>
 
 ### Cómo actualizar desde la 1.4
 
