@@ -80,8 +80,6 @@ class AguaMotor implements AguaContenido {
   private recorder = Skia.PictureRecorder();
   private readonly bounds;
   private readonly aguaPaint: SkPaint = Skia.Paint();
-  private readonly brillo: SkPaint = Skia.Paint();
-  private readonly menisco: SkPaint = Skia.Paint();
   private readonly gotaPaint: SkPaint = Skia.Paint();
   private foto: SkImage | null = null;
   private anclaY = 1;
@@ -134,12 +132,6 @@ class AguaMotor implements AguaContenido {
       enGiro: false,
       reposo: false,
     });
-    this.brillo.setAntiAlias(true);
-    this.brillo.setStyle(PaintStyle.Stroke);
-    this.brillo.setStrokeWidth(1.1);
-    this.brillo.setColor(Skia.Color('white'));
-    this.menisco.setAntiAlias(true);
-    this.menisco.setColor(Skia.Color('white'));
     this.gotaPaint.setAntiAlias(true);
     this.gotaPaint.setStyle(PaintStyle.Stroke);
     this.gotaPaint.setStrokeWidth(GROSOR_HILO);
@@ -212,8 +204,6 @@ class AguaMotor implements AguaContenido {
       canvas.save();
       canvas.clipPath(this.layout.innerPath, ClipOp.Intersect, true);
       canvas.drawRect(this.bounds, this.aguaPaint);
-      this.trazo(canvas, this.vista.arriba);
-      this.trazo(canvas, this.vista.abajo);
       this.dibujarGotas(canvas);
       canvas.restore();
       this.aguaPaint.setShader(null);
@@ -233,40 +223,7 @@ class AguaMotor implements AguaContenido {
     this.modelo.destruir();
     const fondo = this.fondo;
     this.fondo = null;
-    disposeLater([fondo, this.aguaPaint, this.brillo, this.menisco, this.gotaPaint, this.recorder, this.matriz]);
-  }
-
-  private trazo(canvas: SkCanvas, linea: LineaAgua): void {
-    if (!linea.dibujar) return;
-    const sen = Math.sin(this.vista.alfa);
-    const cs = Math.cos(this.vista.alfa);
-    const tramos = 6;
-    let x0 = 0;
-    let y0 = 0;
-    for (let i = 0; i <= tramos; i++) {
-      const u = i / tramos;
-      const x = linea.x0 + (linea.x1 - linea.x0) * u;
-      const y = linea.y0 + (linea.y1 - linea.y0) * u;
-      const s = x * cs - y * sen;
-      const onda = muestraOla(linea.onda, s, linea.s0, linea.s1);
-      const px = x + sen * onda;
-      const py = y + cs * onda;
-      if (i > 0) {
-        this.brillo.setAlphaf(i === 1 || i === tramos ? 0.35 : 0.9);
-        canvas.drawLine(x0, y0, px, py, this.brillo);
-      }
-      x0 = px;
-      y0 = py;
-    }
-    this.meniscoEn(canvas, linea.x0, linea.y0);
-    this.meniscoEn(canvas, linea.x1, linea.y1);
-  }
-
-  private meniscoEn(canvas: SkCanvas, x: number, y: number): void {
-    this.menisco.setAlphaf(0.22);
-    canvas.drawCircle(x, y, 7, this.menisco);
-    this.menisco.setAlphaf(0.4);
-    canvas.drawCircle(x, y, 3.2, this.menisco);
+    disposeLater([fondo, this.aguaPaint, this.gotaPaint, this.recorder, this.matriz]);
   }
 
   private llenarUniforms(motion: MotionSource): void {
