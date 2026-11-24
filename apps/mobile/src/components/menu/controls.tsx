@@ -93,6 +93,8 @@ export function Segmented<T extends string>({
                   on ? s.ink : s.inkSoft,
                 ]}
                 numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
               >
                 {o.label}
               </Animated.Text>
@@ -153,6 +155,8 @@ export function Chip({
           selected ? s.ink : s.inkSoft,
         ]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
       >
         {label}
       </Animated.Text>

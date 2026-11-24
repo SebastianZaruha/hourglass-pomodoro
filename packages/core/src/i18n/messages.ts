@@ -261,7 +261,7 @@ export const en: Messages = {
   permissionNotNow: 'Not now',
   exactAlarmTitle: 'On-time alerts',
   exactAlarmBody:
-    'For alerts to arrive at the exact second, turn on "Alarms & reminders" for Reloj de Arena.',
+    'For alerts to arrive at the exact second, turn on "Alarms & reminders" for Hourglass.',
   openSystemSettings: 'Open settings',
   alertsBlocked: 'Notifications are off · tap to turn them on',
   exactAlarmsBlocked: 'Alerts may arrive late · tap to fix it',
