@@ -42,10 +42,14 @@ const GOTAS = 4;
 const INTERVALO_GOTA = 0.14;
 const VELOCIDAD_GOTA = 520;
 const LARGO_HILO = 16;
-const GROSOR_HILO = 0.6;
-const ALFA_HILO = 0.16;
 const FADE_GOTAS = 0.2;
-const REFRACCION = 4;
+/** Hilos del chorro. En claro se ven; en oscuro siguen blancos y finos. */
+const GOTA_CLARA = '#2e2e2e';
+const ALFA_GOTA_CLARA = 0.32;
+const GROSOR_GOTA_CLARA = 0.8;
+const GOTA_OSCURA = '#ffffff';
+const ALFA_GOTA_OSCURA = 0.22;
+const GROSOR_GOTA_OSCURA = 0.6;
 
 export function crearAgua(opts: { readonly model: HourglassModel; readonly layout: HourglassLayout }): AguaContenido {
   return new AguaMotor(opts.model, opts.layout);
@@ -103,8 +107,8 @@ class AguaMotor implements AguaContenido {
     uOB0: [0, 0, 0, 0],
     uOB1: [0, 0, 0, 0],
     uParallax: [0, 0],
-    uRefraccion: REFRACCION,
   };
+  private alfaGota = ALFA_GOTA_OSCURA;
   private readonly gx = new Float32Array(GOTAS);
   private readonly gy = new Float32Array(GOTAS);
   private readonly gv = new Float32Array(GOTAS);
@@ -134,13 +138,17 @@ class AguaMotor implements AguaContenido {
     });
     this.gotaPaint.setAntiAlias(true);
     this.gotaPaint.setStyle(PaintStyle.Stroke);
-    this.gotaPaint.setStrokeWidth(GROSOR_HILO);
+    this.gotaPaint.setStrokeWidth(GROSOR_GOTA_OSCURA);
     this.gotaPaint.setStrokeCap(StrokeCap.Round);
-    this.gotaPaint.setColor(Skia.Color('white'));
+    this.gotaPaint.setColor(Skia.Color(GOTA_OSCURA));
     this.uniforms.uSplit = layout.cy;
   }
 
   ponerPintor(opts: OpcionesPintor): void {
+    const claro = opts.theme.scheme !== 'dark';
+    this.alfaGota = claro ? ALFA_GOTA_CLARA : ALFA_GOTA_OSCURA;
+    this.gotaPaint.setStrokeWidth(claro ? GROSOR_GOTA_CLARA : GROSOR_GOTA_OSCURA);
+    this.gotaPaint.setColor(Skia.Color(claro ? GOTA_CLARA : GOTA_OSCURA));
     this.shaders = opts.shaders;
     this.packer = new UniformPacker(opts.shaders.agua);
     this.anclaY = opts.anclaY;
@@ -296,7 +304,7 @@ class AguaMotor implements AguaContenido {
     if (this.fade <= 0.02) return;
     const sen = Math.sin(this.theta);
     const cs = Math.cos(this.theta);
-    this.gotaPaint.setAlphaf(ALFA_HILO * this.fade);
+    this.gotaPaint.setAlphaf(this.alfaGota * this.fade);
     for (let i = 0; i < GOTAS; i++) {
       if (!this.gviva[i]) continue;
       const x = this.gx[i] ?? 0;
