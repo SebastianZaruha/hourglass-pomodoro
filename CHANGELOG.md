@@ -9,6 +9,15 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 > APK de desarrollo. A partir de la publicación en GitHub basta con `git pull`; las
 > instrucciones «Cómo actualizar» se conservan como referencia.
 
+## 1.9.0 — Build de Android definitivo
+
+El paquete vuelve a ser el de producción. No es una publicación: no hay APK subido.
+
+- Nombre «Hourglass». Paquete `com.sebastianzaruha.relojdearena` (sin `.dev`).
+- `versionCode` 10904, por encima del 10815 de la 1.8.15.
+- `google-services.json` solo con el cliente de `com.sebastianzaruha.relojdearena`.
+- La firma no cambia: `npm run apk` sigue compilando `assembleRelease` con la misma clave que las releases desde la 1.8.1.
+
 ## 1.9.0-f3 — Ajustes de Lluvia y del vidrio (prueba)
 
 Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
