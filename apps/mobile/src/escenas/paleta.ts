@@ -15,6 +15,8 @@ export interface ColoresFoto {
   readonly pausa?: string;
   /** Enlaces y texto del menú. */
   readonly tinta: string;
+  /** Icono suelto sobre la foto (las rayas del menú). No es la tinta. */
+  readonly icono: string;
   /** Barra de estado y color sólido de la pantalla. */
   readonly barra: string;
   /** Plano de reserva mientras llega la foto. */
@@ -109,7 +111,7 @@ function rgbaDe(hexColor: string, alfa: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alfa})`;
 }
 
-function uiDe(tinta: string, scheme: ColorSchemeName, controles?: ControlesEscena): UiPalette {
+function uiDe(tinta: string, scheme: ColorSchemeName, controles: ControlesEscena | undefined, icono: string): UiPalette {
   const claro = scheme === 'light';
   const hacia = claro ? '#f7f3ee' : '#f3ece4';
   const suave = claro ? 0.32 : 0.38;
@@ -128,7 +130,7 @@ function uiDe(tinta: string, scheme: ColorSchemeName, controles?: ControlesEscen
     panelEdge: claro ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 244, 232, 0.1)',
     scrim: claro ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.22)',
     grabber: rgbaDe(tinta, claro ? 0.28 : 0.4),
-    menuIcon: tinta,
+    menuIcon: icono,
     onAccent: controles?.sobreAcento ?? (claro ? '#fffdf9' : '#1c1612'),
     tooltip: claro ? 'rgba(255, 252, 247, 0.98)' : 'rgba(36, 30, 26, 0.98)',
   };
@@ -169,6 +171,6 @@ export function temaDeFoto(c: ColoresFoto): HourglassTheme {
       pauseGlow: claro ? 'rgba(250, 246, 240, 0.95)' : 'rgba(12, 10, 8, 0.9)',
     },
     solid: c.barra,
-    ui: uiDe(c.tinta, c.scheme, c.controles),
+    ui: uiDe(c.tinta, c.scheme, c.controles, c.icono),
   };
 }

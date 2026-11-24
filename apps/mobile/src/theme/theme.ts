@@ -183,6 +183,7 @@ export const LIGHT_THEME: HourglassTheme = {
     panelEdge: 'rgba(255, 252, 246, 0.80)',
     scrim: 'rgba(235, 229, 221, 0.20)',
     grabber: 'rgba(92, 78, 64, 0.18)',
+    // Icono suelto sobre la escena (las rayas del menú).
     menuIcon: '#8F8272',
     onAccent: '#FFFCF7',
     tooltip: 'rgba(255, 252, 247, 0.98)',
@@ -229,6 +230,7 @@ export const DARK_THEME: HourglassTheme = {
     panelEdge: 'rgba(255, 238, 214, 0.10)',
     scrim: 'rgba(12, 10, 8, 0.22)',
     grabber: 'rgba(255, 238, 214, 0.16)',
+    // Icono suelto sobre la escena (las rayas del menú).
     menuIcon: '#796C60',
     onAccent: '#2A231D',
     tooltip: 'rgba(58, 50, 43, 0.98)',

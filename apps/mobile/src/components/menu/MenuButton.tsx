@@ -1,7 +1,7 @@
 /**
  * Botón del menú: sin borde ni fondo, dos rayitas finas (la de abajo más
- * corta) en un tono muy cercano al fondo. Se nota lo justo: el protagonista
- * es el reloj.
+ * corta). El color es el icono suelto de la escena (`icono` en Arena y
+ * Lluvia, `menuIcon` en Clásico): se lee sobre la foto sin ser un acento.
  *
  * Sitio (1.8.10): abajo a la derecha, cerca del pulgar, para usarlo con una
  * mano. Las rayas van centradas en su zona táctil, por encima de la barra

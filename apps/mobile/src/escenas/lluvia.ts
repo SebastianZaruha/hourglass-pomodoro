@@ -11,6 +11,8 @@ const claro = temaDeFoto({
   pista: '#1a2420',
   pausa: '#141816',
   tinta: '#141414',
+  // Sobre el gris de la foto. Una raya oscura se pierde en el grano.
+  icono: '#f7faf8',
   barra: '#c5d0cb',
   reserva: '#d8d8d6',
   sombra: 'rgba(84, 64, 44, 0.28)',
@@ -23,6 +25,7 @@ const oscuro = temaDeFoto({
   pista: '#e8f0ec',
   pausa: '#f4f8f6',
   tinta: '#e8f0ec',
+  icono: '#6f827c',
   barra: '#1a2422',
   reserva: '#141414',
   sombra: 'rgba(0, 0, 0, 0.38)',
