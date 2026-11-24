@@ -31,7 +31,8 @@
         var tema = 'system';
         try { escena = localStorage.getItem('hourglass-web/escena') || 'lluvia'; } catch (e) {}
         try {
-          var crudo = localStorage.getItem('reloj-de-arena/ajustes');
+          var crudo = localStorage.getItem('hourglass-web/ajustes');
+          if (!crudo) crudo = localStorage.getItem('reloj-de-arena/ajustes');
           if (crudo) tema = JSON.parse(crudo).theme || 'system';
         } catch (e) {}
         var oscuro = tema === 'dark' || (tema !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
