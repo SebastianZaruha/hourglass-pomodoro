@@ -83,6 +83,7 @@ class AguaMotor implements AguaContenido {
   private packer: UniformPacker | null = null;
   private recorder = Skia.PictureRecorder();
   private readonly bounds;
+  private readonly frasco;
   private readonly aguaPaint: SkPaint = Skia.Paint();
   private readonly gotaPaint: SkPaint = Skia.Paint();
   private foto: SkImage | null = null;
@@ -90,7 +91,8 @@ class AguaMotor implements AguaContenido {
   private fondo: SkShader | null = null;
   private readonly matriz = Skia.Matrix();
   private readonly uniforms = {
-    uAlfa: 0,
+    uSen: 0,
+    uCs: 1,
     uSplit: 0,
     uHA: 0,
     uHB: 0,
@@ -124,6 +126,7 @@ class AguaMotor implements AguaContenido {
   constructor(model: HourglassModel, layout: HourglassLayout) {
     this.layout = layout;
     this.bounds = Skia.XYWHRect(0, 0, layout.width, layout.height);
+    this.frasco = Skia.XYWHRect(layout.gridX, layout.gridY, layout.halfW * 2, layout.halfH * 2);
     this.modelo.fijarContorno(poligono(model, layout, true), poligono(model, layout, false));
     this.vista = this.modelo.paso({
       dt: 0,
@@ -211,7 +214,7 @@ class AguaMotor implements AguaContenido {
       this.aguaPaint.setShader(shader);
       canvas.save();
       canvas.clipPath(this.layout.innerPath, ClipOp.Intersect, true);
-      canvas.drawRect(this.bounds, this.aguaPaint);
+      canvas.drawRect(this.frasco, this.aguaPaint);
       this.dibujarGotas(canvas);
       canvas.restore();
       this.aguaPaint.setShader(null);
@@ -237,7 +240,8 @@ class AguaMotor implements AguaContenido {
   private llenarUniforms(motion: MotionSource): void {
     const u = this.uniforms;
     const v = this.vista;
-    u.uAlfa = v.alfa;
+    u.uSen = Math.sin(v.alfa);
+    u.uCs = Math.cos(v.alfa);
     copiarOnda(v.arriba.onda, u.uOA0, u.uOA1);
     copiarOnda(v.abajo.onda, u.uOB0, u.uOB1);
     u.uHA = v.arriba.h;

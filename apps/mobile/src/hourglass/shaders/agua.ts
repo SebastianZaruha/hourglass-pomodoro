@@ -35,7 +35,8 @@ const muestras = [
 
 export const AGUA_SKSL = /* glsl */ `
 uniform shader uBackground;
-uniform float uAlfa;
+uniform float uSen;
+uniform float uCs;
 uniform float uSplit;
 uniform float uHA;
 uniform float uHB;
@@ -82,10 +83,8 @@ half4 main(float2 pos) {
   float s0 = mix(uSB0, uSA0, arriba);
   float s1 = mix(uSB1, uSA1, arriba);
   float rango = max(mix(uRB, uRA, arriba), 1.0);
-  float sen = sin(uAlfa);
-  float cs = cos(uAlfa);
-  float proj = pos.x * sen + pos.y * cs;
-  float s = pos.x * cs - pos.y * sen;
+  float proj = pos.x * uSen + pos.y * uCs;
+  float s = pos.x * uCs - pos.y * uSen;
   float ancho = max(s1 - s0, 1.0);
   float t = (s - s0) / ancho;
   float4 a0 = arriba > 0.5 ? uOA0 : uOB0;
@@ -96,8 +95,8 @@ half4 main(float2 pos) {
   float u = clamp(t, 0.0, 1.0);
   float campana = 4.0 * u * (1.0 - u);
   float profundidad = clamp((proj - (h + onda)) / rango, 0.0, 1.0);
-  float2 normal = float2(sen, cs);
-  float2 tangente = float2(cs, -sen);
+  float2 normal = float2(uSen, uCs);
+  float2 tangente = float2(uCs, -uSen);
   float ola = onda / max(rango * 0.04, 1.0);
   float2 muestra = pos - uParallax - normal * (${LUPA} * campana * profundidad) + tangente * ola * ${DESVIO_OLA};
   half4 bg = fondo(muestra);
