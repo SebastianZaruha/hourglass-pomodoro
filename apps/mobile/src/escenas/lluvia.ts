@@ -8,7 +8,7 @@ import type { EscenaMovil } from './tipos';
 const claro = temaDeFoto({
   scheme: 'light',
   digitos: '#5d5d5d',
-  tinta: '#5d5d5d',
+  tinta: '#141414',
   barra: '#c5d0cb',
   reserva: '#d8d8d6',
   sombra: 'rgba(84, 64, 44, 0.28)',
@@ -18,7 +18,7 @@ const claro = temaDeFoto({
 const oscuro = temaDeFoto({
   scheme: 'dark',
   digitos: '#615958',
-  tinta: '#615958',
+  tinta: '#8a8281',
   barra: '#1a2422',
   reserva: '#141414',
   sombra: 'rgba(0, 0, 0, 0.38)',
