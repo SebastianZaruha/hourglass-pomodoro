@@ -7,8 +7,12 @@ import type { ColorSchemeName, HourglassTheme, Rgb01, UiPalette } from '../theme
 
 export interface ColoresFoto {
   readonly scheme: ColorSchemeName;
-  /** Dígitos y pista del reloj. */
+  /** Dígitos del reloj. */
   readonly digitos: string;
+  /** Pista («desliza para elegir»). Sin ella, el color de los dígitos. */
+  readonly pista?: string;
+  /** Rótulo «Pausa». Sin él, se deriva de los dígitos. */
+  readonly pausa?: string;
   /** Enlaces y texto del menú. */
   readonly tinta: string;
   /** Barra de estado y color sólido de la pantalla. */
@@ -160,8 +164,8 @@ export function temaDeFoto(c: ColoresFoto): HourglassTheme {
     },
     text: {
       time: c.digitos,
-      hint: c.digitos,
-      pause: claro ? mezcla(c.digitos, '#3a342e', 0.35) : mezcla(c.digitos, '#f3ece4', 0.55),
+      hint: c.pista ?? c.digitos,
+      pause: c.pausa ?? (claro ? mezcla(c.digitos, '#3a342e', 0.35) : mezcla(c.digitos, '#f3ece4', 0.55)),
       pauseGlow: claro ? 'rgba(250, 246, 240, 0.95)' : 'rgba(12, 10, 8, 0.9)',
     },
     solid: c.barra,
