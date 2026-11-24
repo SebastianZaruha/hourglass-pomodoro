@@ -62,6 +62,11 @@ export interface SandEngineParams {
   readonly getSnapshot: () => HourglassSnapshot;
   readonly status: TimerStatus;
   readonly durationMs: number;
+  /**
+   * Sube en cada reinicio con giro (mantener pulsado). 0 no gira: es el
+   * reposo de siempre, también con reducir movimiento.
+   */
+  readonly reinicio: number;
   readonly reduceMotion: boolean;
   /** Se llama si el dibujo falla (para que un error boundary lo recupere). */
   readonly onError: (error: unknown) => void;
@@ -83,6 +88,12 @@ export interface SandEngineOutput {
 
 /** Duración del giro en un cambio de fase (ms). */
 export const TURN_MS = 950;
+/**
+ * Giro al mantener pulsado para reiniciar. Media vuelta, como el volteo de
+ * la web (MS_MEDIA_VUELTA), y al quedar de pie se coloca el montón nuevo.
+ * Entre 600 y 900. Con reducir movimiento no hay giro.
+ */
+export const GIRO_REINICIO_MS = 750;
 
 /**
  * Fotogramas largos (el navegador a 20–30 fps): la arena da los pasos que
@@ -120,7 +131,7 @@ function entradaVacia(): EntradaMotor {
 }
 
 export function useSandEngine(params: SandEngineParams): SandEngineOutput {
-  const { status, durationMs, motion } = params;
+  const { status, durationMs, motion, reinicio } = params;
   const [emptyPicture] = useState(recordEmptyPicture);
   const background = useSharedValue<SkPicture>(emptyPicture);
   const shadow = useSharedValue<SkPicture>(emptyPicture);
@@ -160,6 +171,12 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     turns: null as number | null,
     /** Inicio (performance.now) del giro de cambio de fase en curso, o null. */
     turnStart: null as number | null,
+    /** Inicio del giro de reinicio (mantener pulsado), o null. */
+    reinicioStart: null as number | null,
+    /** Un fotograma quieto a 180°, como el «sujetar» del volteo de la web. */
+    reinicioHold: false,
+    /** Último reinicio ya animado. */
+    reinicioHecho: 0,
     /** Capas del vidrio: con qué pintor e inclinación se grabaron. */
     glass: null as GlassPainter | null,
     lightX: Number.NaN,
@@ -272,8 +289,32 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         }
         changed = true;
       }
+
+      // 0c) Reinicio (mantener pulsado): el frasco da media vuelta con lo que
+      //     había dentro. Al terminar, de pie, se coloca el montón nuevo.
+      //     La nube no gira: el ángulo es el del frasco, no el del lienzo.
+      if (state.reinicioStart !== null) {
+        const t = Math.min(1, (now - state.reinicioStart) / GIRO_REINICIO_MS);
+        if (p.reduceMotion) {
+          state.reinicioStart = null;
+          state.reinicioHold = false;
+          spin.value = 0;
+          if (snap.status === 'idle') e.reposo = true;
+        } else if (t < 1) {
+          spin.value = Math.PI * easeInOutCubic(t);
+        } else if (!state.reinicioHold) {
+          state.reinicioHold = true;
+          spin.value = Math.PI;
+        } else {
+          state.reinicioStart = null;
+          state.reinicioHold = false;
+          spin.value = 0;
+          if (snap.status === 'idle') e.reposo = true;
+        }
+        changed = true;
+      }
       const turning = state.turnStart !== null;
-      if (turning) {
+      if (turning && state.reinicioStart === null) {
         const t = Math.min(1, (now - (state.turnStart as number)) / TURN_MS);
         if (t < 1) {
           spin.value = Math.PI * easeInOutCubic(t);
@@ -287,7 +328,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
 
       // 1-3) Colocar, sincronizar y mover la arena. Durante el giro no se
       //      sincroniza: la arena va quieta dentro del vidrio.
-      e.enGiro = state.turnStart !== null;
+      e.enGiro = state.turnStart !== null || state.reinicioStart !== null;
       const sigue = p.contenido.paso(e);
       state.simMs = p.contenido.simMs;
 
@@ -322,6 +363,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         sigue ||
         state.dirty ||
         turning ||
+        state.reinicioStart !== null ||
         state.glassPending ||
         // Hasta volver a la calidad normal (y recolocar la arena a 3°).
         lod;
@@ -334,24 +376,37 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     pacer.request(frame);
   }, [live, rotation, spin, slots, pacer]);
 
-  // Al elegir duración (o reiniciar), colocamos la arena directamente.
+  // Al elegir duración, colocamos la arena. Al reiniciar con giro, el
+  // montón viejo da la vuelta y el nuevo se coloca al quedar de pie.
   useEffect(() => {
     if (status !== 'idle') return;
     const state = loop.current;
+    const ahora = live.current;
+    if (state.turnStart !== null) ahora.onTurnChange?.(false);
+    state.turnStart = null;
+    const girar = reinicio > 0 && reinicio !== state.reinicioHecho && !ahora.reduceMotion;
+    if (girar) {
+      state.reinicioHecho = reinicio;
+      state.reinicioHold = false;
+      state.reinicioStart = performance.now();
+      spin.set(0);
+      wake();
+      return;
+    }
+    state.reinicioStart = null;
+    state.reinicioHold = false;
     const e = state.entrada;
-    e.gravedad = live.current.motion.simGravity;
+    e.gravedad = ahora.motion.simGravity;
     e.durationMs = durationMs;
     e.reposo = true;
     e.vaciar = false;
     e.soloVaciar = false;
-    live.current.contenido.paso(e);
+    e.enGiro = false;
+    ahora.contenido.paso(e);
     e.reposo = false;
-    // Si estaba dando la vuelta (cambio de fase) y se reinicia, se cancela.
-    if (state.turnStart !== null) live.current.onTurnChange?.(false);
-    state.turnStart = null;
     spin.set(0);
     wake();
-  }, [params.contenido, status, durationMs, wake, live, spin]);
+  }, [params.contenido, status, durationMs, wake, live, spin, reinicio]);
 
   // Cualquier cambio relevante despierta el bucle.
   useEffect(() => {

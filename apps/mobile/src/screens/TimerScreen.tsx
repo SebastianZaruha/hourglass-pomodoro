@@ -521,13 +521,19 @@ export function TimerScreen({ settings, fonts }: Props) {
     },
   });
 
+  const [giroReinicio, setGiroReinicio] = useState(0);
+  const reiniciarReloj = () => {
+    if (!reduceMotion) setGiroReinicio((n) => n + 1);
+    latest.current.restart();
+  };
+
   const longPress = useLongPressGesture({
     runOnJS: true,
     enabled: gesturesOn,
     minDuration: 650,
     onTouchesDown: failInGuard,
     onActivate: (e) => {
-      if (!inGuard(e.absoluteX, e.absoluteY)) latest.current.restart();
+      if (!inGuard(e.absoluteX, e.absoluteY)) reiniciarReloj();
     },
   });
 
@@ -553,7 +559,7 @@ export function TimerScreen({ settings, fonts }: Props) {
         onTapClock();
         break;
       case 'longpress':
-        t.restart();
+        reiniciarReloj();
         break;
     }
   };
@@ -666,6 +672,7 @@ export function TimerScreen({ settings, fonts }: Props) {
               getSnapshot={session.getSnapshot}
               status={view.status}
               durationMs={view.durationMs}
+              giroReinicio={giroReinicio}
               motion={tilt.motion}
               pauseBlur={pauseBlur}
               vidrioPausa={blurred}

@@ -115,6 +115,11 @@ export interface HourglassProps {
   /** 0 = tema claro, 1 = oscuro. Tiñe el vidrio de la pausa. */
   readonly themeProgress?: SharedValue<number>;
   readonly reduceMotion?: boolean;
+  /**
+   * Cada reinicio por mantener pulsado. El frasco da media vuelta y luego
+   * se coloca el tiempo nuevo. 0 no gira.
+   */
+  readonly giroReinicio?: number;
   /** Pose animada del reloj (introducción). Sin ella, quieto en su sitio. */
   readonly pose?: HourglassPose;
   /** true mientras la pose se está animando (activa las capas de opacidad). */
@@ -161,6 +166,7 @@ function HourglassCanvas({
   vidrioPausa = false,
   themeProgress,
   reduceMotion = false,
+  giroReinicio = 0,
   pose,
   poseActive = false,
   children,
@@ -270,6 +276,7 @@ function HourglassCanvas({
     getSnapshot,
     status,
     durationMs,
+    reinicio: giroReinicio,
     reduceMotion,
     onError,
     onTurnChange: setTurning,
