@@ -5,6 +5,7 @@
 Temporizador pomodoro con forma de reloj de arena. El tiempo no es una barra: es arena o agua dentro del frasco. Hay dos apps, web y Android, y comparten la lógica.
 
 La web está en [hourglass.sebastianzaruha.com](https://hourglass.sebastianzaruha.com).
+La app de Android se descarga desde [GitHub Releases](https://github.com/SebastianZaruha/hourglass-pomodoro/releases/latest) (APK, fuera de Google Play).
 
 ## Escenas
 
