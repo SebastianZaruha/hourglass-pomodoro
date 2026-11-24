@@ -102,7 +102,7 @@ import { FloatingHelp } from '../components/FloatingHelp';
 import { GesturesHelp } from '../components/GesturesHelp';
 import { LandscapePauseHint } from '../components/LandscapePauseHint';
 import { HourglassBoundary } from '../components/HourglassBoundary';
-import { FrostedPanel, VidrioPantalla } from '../components/menu/FrostedPanel';
+import { FrostedPanel, VidrioPantalla, VidrioReloj } from '../components/menu/FrostedPanel';
 import { MenuButton } from '../components/menu/MenuButton';
 import { SettingsSheet } from '../components/menu/SettingsSheet';
 import type { MenuFonts } from '../components/menu/themedStyles';
@@ -574,9 +574,21 @@ export function TimerScreen({ settings, fonts }: Props) {
   //
   // Vidrio líquido: la hoja y, a pantalla completa, la ayuda y el consentimiento.
   const capaVidrio = useDerivedValue(() => helpFade.value);
+  // El mismo borde inferior que TimeDisplay. El vidrio va en el lienzo, que
+  // gira con el reloj, así que se queda debajo de los dígitos.
+  const relojBottom = (tilt.flipped ? safe.top : safe.bottom) + TIME_BOTTOM;
   const frosted = useMemo(
     () => (
       <Group>
+        {pip ? null : (
+          <VidrioReloj
+            width={width}
+            height={height}
+            bottom={relojBottom}
+            opacity={timeOpacity}
+            themeProgress={themeProgress}
+          />
+        )}
         <FrostedPanel
           width={width}
           height={height}
@@ -594,7 +606,7 @@ export function TimerScreen({ settings, fonts }: Props) {
         />
       </Group>
     ),
-    [sheet.top, sheet.openness, width, height, themeProgress, capaVidrio, consentFade],
+    [pip, relojBottom, timeOpacity, sheet.top, sheet.openness, width, height, themeProgress, capaVidrio, consentFade],
   );
   // El texto del menú se pinta encima del lienzo: el desenfoque no lo tapa.
   // Mientras hay un diálogo encima, la hoja se apaga.
@@ -690,7 +702,7 @@ export function TimerScreen({ settings, fonts }: Props) {
             // Con el móvil volteado la capa gira 180°: su "abajo" es el borde
             // superior físico de la pantalla, así que usamos el margen seguro
             // de arriba (muesca/cámara) en lugar del de abajo.
-            bottom={(tilt.flipped ? safe.top : safe.bottom) + TIME_BOTTOM}
+            bottom={relojBottom}
             fonts={timeFonts}
             themeProgress={themeProgress}
             opacity={timeOpacity}

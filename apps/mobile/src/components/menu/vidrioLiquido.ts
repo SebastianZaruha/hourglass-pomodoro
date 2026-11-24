@@ -21,4 +21,14 @@ export const VIDRIO = {
   blurDialogo: 32,
   tinteDialogoClaro: 'rgba(247, 243, 237, 0.82)',
   tinteDialogoOscuro: 'rgba(16, 13, 10, 0.86)',
+  /**
+   * Pastilla detrás del reloj, como la web en vertical. El desenfoque y el
+   * canto son los de la hoja. Sin sombra y sin borde blanco.
+   */
+  reloj: {
+    ancho: 176,
+    paddingArriba: 14,
+    paddingAbajo: 15,
+    radio: 28,
+  },
 } as const;

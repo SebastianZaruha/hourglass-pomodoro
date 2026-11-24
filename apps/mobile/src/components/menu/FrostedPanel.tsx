@@ -10,6 +10,7 @@ import { BackdropBlur, Fill, Group, Rect, RoundedRect, rect, rrect } from '@shop
 import { glassFade } from '@reloj/core';
 import { interpolateColor, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
+import { TIME_LINE_HEIGHT } from '../TimeDisplay';
 import { VIDRIO } from './vidrioLiquido';
 
 /** Radio de las esquinas superiores de la hoja. */
@@ -71,6 +72,46 @@ export function VidrioPantalla({
       <BackdropBlur blur={intenso ? VIDRIO.blurDialogo : VIDRIO.blur}>
         <Fill color={tinte} />
       </BackdropBlur>
+    </Group>
+  );
+}
+
+/**
+ * Pastilla de vidrio detrás de los dígitos. Vive en el lienzo del reloj:
+ * BackdropBlur solo desenfoca ese lienzo. No recibe toques.
+ */
+export function VidrioReloj({
+  width,
+  height,
+  bottom,
+  opacity,
+  themeProgress,
+}: {
+  readonly width: number;
+  readonly height: number;
+  /** El mismo `bottom` que TimeDisplay, en px desde el borde inferior del lienzo. */
+  readonly bottom: number;
+  readonly opacity: SharedValue<number>;
+  readonly themeProgress: SharedValue<number>;
+}) {
+  const tinte = useDerivedValue(() =>
+    interpolateColor(themeProgress.value, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro]),
+  );
+  const forma = useDerivedValue(() => {
+    const { ancho, paddingArriba, paddingAbajo, radio } = VIDRIO.reloj;
+    const alto = paddingArriba + TIME_LINE_HEIGHT + paddingAbajo;
+    const y = height - bottom - TIME_LINE_HEIGHT - paddingArriba;
+    const x = (width - ancho) / 2;
+    if (opacity.value < 0.001) return rrect(rect(0, 0, 0, 0), 0, 0);
+    return rrect(rect(x, y, ancho, alto), radio, radio);
+  });
+
+  return (
+    <Group opacity={opacity} clip={forma}>
+      <BackdropBlur blur={VIDRIO.blur}>
+        <Fill color={tinte} />
+      </BackdropBlur>
+      <RoundedRect rect={forma} style="stroke" strokeWidth={1} color={VIDRIO.canto} />
     </Group>
   );
 }
