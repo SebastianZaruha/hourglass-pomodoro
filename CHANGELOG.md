@@ -17,6 +17,7 @@ El paquete vuelve a ser el de producción. No es una publicación: no hay APK su
 - `versionCode` 10904, por encima del 10815 de la 1.8.15.
 - `google-services.json` solo con el cliente de `com.sebastianzaruha.relojdearena`.
 - La firma no cambia: `npm run apk` sigue compilando `assembleRelease` con la misma clave que las releases desde la 1.8.1.
+- El modo de desarrollo no se borra: `APP_VARIANT=development` usa el paquete `.dev`, «Hourglass Dev», `google-services.dev.json` y `expo-dev-client`. En producción esos módulos nativos no se enlazan. Ver `docs/DESARROLLO-LOCAL.md`.
 
 ## 1.9.0-f3 — Ajustes de Lluvia y del vidrio (prueba)
 

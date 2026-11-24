@@ -18,6 +18,9 @@
  *
  * Necesita JAVA_HOME y ANDROID_HOME (o ANDROID_SDK_ROOT) y la carpeta
  * apps/mobile/android ya generada (`npx expo prebuild -p android`).
+ *
+ * `APP_VARIANT=development` compila `assembleDebug` (cliente de desarrollo,
+ * paquete `.dev`). Sin variable, o con `production`, sigue siendo el release.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -26,9 +29,18 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const android = path.join(root, 'apps/mobile/android');
-const apk = path.join(android, 'app/build/outputs/apk/release/app-release.apk');
+const dev = process.env.APP_VARIANT === 'development';
+const apk = path.join(
+  android,
+  dev
+    ? 'app/build/outputs/apk/debug/app-debug.apk'
+    : 'app/build/outputs/apk/release/app-release.apk',
+);
 const ABI = 'arm64-v8a';
 const PROPS = [`-PreactNativeArchitectures=${ABI}`, '-Pexpo.useLegacyPackaging=true'];
+const PAQUETE = dev
+  ? 'com.sebastianzaruha.relojdearena.dev'
+  : 'com.sebastianzaruha.relojdearena';
 
 const args = process.argv.slice(2);
 const expects = [];
@@ -53,15 +65,24 @@ const latest = fs.readdirSync(buildTools).sort().pop();
 const aapt = path.join(buildTools, latest, 'aapt');
 
 // 1. Bundle de JS siempre nuevo.
-fs.rmSync(path.join(android, 'app/build/generated/assets/createBundleReleaseJsAndAssets'), {
-  recursive: true,
-  force: true,
-});
+fs.rmSync(
+  path.join(
+    android,
+    dev
+      ? 'app/build/generated/assets/createBundleDebugJsAndAssets'
+      : 'app/build/generated/assets/createBundleReleaseJsAndAssets',
+  ),
+  { recursive: true, force: true },
+);
 
 // 2. Compilar.
 const gradle = spawnSync(
   './gradlew',
-  ['assembleRelease', ...PROPS, ...(process.env.GRADLE_ARGS?.split(' ').filter(Boolean) ?? [])],
+  [
+    dev ? 'assembleDebug' : 'assembleRelease',
+    ...PROPS,
+    ...(process.env.GRADLE_ARGS?.split(' ').filter(Boolean) ?? []),
+  ],
   {
     cwd: android,
     stdio: 'inherit',
@@ -85,9 +106,11 @@ const app = JSON.parse(fs.readFileSync(path.join(root, 'apps/mobile/app.json'), 
 const badging = execFileSync(aapt, ['dump', 'badging', apk], { encoding: 'utf8' });
 const code = badging.match(/versionCode='(\d+)'/)?.[1];
 const name = badging.match(/versionName='([^']+)'/)?.[1];
+const paquete = badging.match(/package: name='([^']+)'/)?.[1];
 if (Number(code) !== app.android.versionCode || name !== app.version) {
   fail(`versión del APK ${name} (${code}); app.json dice ${app.version} (${app.android.versionCode})`);
 }
+if (paquete !== PAQUETE) fail(`paquete del APK ${paquete}; se esperaba ${PAQUETE}`);
 
 const bundle = execFileSync('unzip', ['-p', apk, 'assets/index.android.bundle'], { maxBuffer: 64 << 20 });
 // Hermes guarda en UTF-16 las cadenas con algún carácter no ASCII («·», tildes):
