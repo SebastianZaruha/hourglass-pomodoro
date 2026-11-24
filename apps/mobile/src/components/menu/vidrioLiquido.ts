@@ -31,8 +31,8 @@ export const VIDRIO = {
     paddingAbajo: 15,
     radio: 28,
     /**
-     * Aire entre el borde superior de la pastilla y la pista
-     * («desliza para elegir», «pulsa para seguir»).
+     * Aire entre el borde superior de la pastilla y cualquier texto
+     * que vaya encima (pista, fin, fase, ayuda). Lo usa SobreElVidrio.
      */
     huecoPista: 12,
   },

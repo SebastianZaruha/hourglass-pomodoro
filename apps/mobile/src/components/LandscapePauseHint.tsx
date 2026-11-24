@@ -8,7 +8,6 @@ import type { HourglassTheme } from '../theme/theme';
 interface Props {
   readonly text: string;
   readonly dismissLabel: string;
-  readonly bottom: number;
   readonly font?: string;
   readonly theme: HourglassTheme;
   readonly themeProgress: SharedValue<number>;
@@ -22,7 +21,6 @@ interface Props {
 export function LandscapePauseHint({
   text,
   dismissLabel,
-  bottom,
   font,
   theme,
   themeProgress,
@@ -39,7 +37,7 @@ export function LandscapePauseHint({
     <Animated.View
       entering={FadeIn.duration(220)}
       exiting={FadeOut.duration(180)}
-      style={[styles.wrap, { bottom }]}
+      style={styles.wrap}
       pointerEvents="box-none"
     >
       <Pressable
@@ -56,7 +54,15 @@ export function LandscapePauseHint({
         ]}
         testID="pista-pausa-apaisada"
       >
-        <Animated.Text style={[styles.text, { fontFamily: font }, pista]}>{text}</Animated.Text>
+        <Animated.Text
+          style={[styles.text, { fontFamily: font }, pista]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.5}
+          maxFontSizeMultiplier={1.3}
+        >
+          {text}
+        </Animated.Text>
         <Animated.Text style={[styles.close, cierre]} accessibilityElementsHidden>
           ×
         </Animated.Text>
@@ -67,12 +73,12 @@ export function LandscapePauseHint({
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
+    alignSelf: 'stretch',
+    marginHorizontal: 20,
     alignItems: 'center',
   },
   chip: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

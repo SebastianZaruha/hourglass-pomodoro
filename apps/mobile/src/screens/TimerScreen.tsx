@@ -108,6 +108,7 @@ import { SettingsSheet } from '../components/menu/SettingsSheet';
 import type { MenuFonts } from '../components/menu/themedStyles';
 import { useSheet } from '../components/menu/useSheet';
 import { PauseLabel } from '../components/PauseLabel';
+import { LineaSobreReloj, SobreElVidrio } from '../components/SobreElVidrio';
 import { TIME_LINE_HEIGHT, TimeDisplay } from '../components/TimeDisplay';
 import { appClock } from '../dev/devClock';
 import { playSelectionTick, playTimerHaptic, useTimerHaptics } from '../haptics';
@@ -422,7 +423,6 @@ export function TimerScreen({ settings, fonts }: Props) {
     landscapeHintAnnounced.current = true;
     announce(tr.pauseLandscapeHint);
   }, [landscapeHint.visible, tr.pauseLandscapeHint]);
-  const landscapeHintBottom = (tilt.flipped ? safe.top : safe.bottom) + TIME_BOTTOM + 72;
   useEffect(() => {
     ladoPausa.set(withTiming(blurred ? 1 : 0, { duration: reduceMotion ? 0 : 280 }));
   }, [blurred, reduceMotion, ladoPausa]);
@@ -629,7 +629,12 @@ export function TimerScreen({ settings, fonts }: Props) {
   const label = view.isCycle && view.status !== 'finished' && !blurred ? phaseLabel(view, tr) : null;
   // Volteado: el texto y el menú giran con el reloj para leerse derechos.
   const overlayStyle = tilt.flipped ? styles.flipped : null;
-  const timeFonts = useMemo(() => ({ time: fonts.time, hint: fonts.hint, label: fonts.medium }), [fonts]);
+  const timeFonts = useMemo(() => ({ time: fonts.time }), [fonts]);
+  const encimaFade = useAnimatedStyle(() => ({ opacity: timeOpacity.value }));
+  const tintaPista = escena.claro.tema.text.hint;
+  const tintaPistaOscura = escena.oscuro.tema.text.hint;
+  const tintaFase = escena.claro.tema.text.time;
+  const tintaFaseOscura = escena.oscuro.tema.text.time;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.solid }]}>
@@ -689,8 +694,8 @@ export function TimerScreen({ settings, fonts }: Props) {
       </GestureDetector>
 
       {pip ? null : (
-        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="none">
-          <Animated.View style={[StyleSheet.absoluteFill, pauseFade]} testID="capa-pausa">
+        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
+          <Animated.View style={[StyleSheet.absoluteFill, pauseFade]} testID="capa-pausa" pointerEvents="none">
             <PauseLabel
               visible={paused}
               sideSign={blurred ? tilt.sideSign : 0}
@@ -709,8 +714,6 @@ export function TimerScreen({ settings, fonts }: Props) {
           <TimeDisplay
             text={formatDuration(displayMs)}
             refresh={view.status === 'running' ? liveTime : null}
-            hint={hint}
-            label={label}
             // Con el móvil volteado la capa gira 180°: su "abajo" es el borde
             // superior físico de la pantalla, así que usamos el margen seguro
             // de arriba (muesca/cámara) en lugar del de abajo.
@@ -721,25 +724,46 @@ export function TimerScreen({ settings, fonts }: Props) {
             textoClaro={escena.claro.tema.text}
             textoOscuro={escena.oscuro.tema.text}
           />
+          <SobreElVidrio bottom={relojBottom}>
+            <Animated.View style={[styles.encima, encimaFade]} pointerEvents="none">
+              {hint ? (
+                <LineaSobreReloj
+                  text={hint}
+                  fontFamily={fonts.hint}
+                  themeProgress={themeProgress}
+                  claro={tintaPista}
+                  oscuro={tintaPistaOscura}
+                  testID="pista"
+                />
+              ) : null}
+              {label ? (
+                <LineaSobreReloj
+                  text={label}
+                  fontFamily={fonts.medium}
+                  themeProgress={themeProgress}
+                  claro={tintaFase}
+                  oscuro={tintaFaseOscura}
+                  letra={2.2}
+                  testID="fase"
+                />
+              ) : null}
+            </Animated.View>
+            {landscapeHint.visible ? (
+              <LandscapePauseHint
+                text={tr.pauseLandscapeHint}
+                dismissLabel={tr.dismissLandscapePauseHint}
+                font={fonts.hint}
+                theme={theme}
+                themeProgress={themeProgress}
+                paleta={paleta}
+                pistaClaro={tintaPista}
+                pistaOscuro={tintaPistaOscura}
+                onDismiss={landscapeHint.dismiss}
+              />
+            ) : null}
+          </SobreElVidrio>
         </View>
       )}
-
-      {pip ? null : landscapeHint.visible ? (
-        <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
-          <LandscapePauseHint
-            text={tr.pauseLandscapeHint}
-            dismissLabel={tr.dismissLandscapePauseHint}
-            bottom={landscapeHintBottom}
-            font={fonts.hint}
-            theme={theme}
-            themeProgress={themeProgress}
-            paleta={paleta}
-            pistaClaro={escena.claro.tema.text.hint}
-            pistaOscuro={escena.oscuro.tema.text.hint}
-            onDismiss={landscapeHint.dismiss}
-          />
-        </View>
-      ) : null}
 
       {pip ? null : (
         <View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
@@ -892,4 +916,5 @@ function accessibilityValue(view: SessionSnapshot, tr: Messages): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flipped: { transform: [{ rotate: '180deg' }] },
+  encima: { alignSelf: 'stretch', alignItems: 'center' },
 });
