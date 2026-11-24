@@ -149,6 +149,8 @@ export function crearModeloAgua(): ModeloAgua {
   let prevVel = 0;
   let saltar = true;
   let llenadoT0: number | null = null;
+  /** Ya estamos parados (ajuste de duración). El siguiente reposo no es un reinicio. */
+  let enReposo = false;
   const yA = new Float64Array(OLAS);
   const vA = new Float64Array(OLAS);
   const yB = new Float64Array(OLAS);
@@ -383,19 +385,29 @@ export function crearModeloAgua(): ModeloAgua {
         volArriba = obj.arriba;
         volAbajo = obj.abajo;
         iniciado = true;
-        phi = 0;
-        phiV = 0;
-        yA.fill(0);
-        vA.fill(0);
-        yB.fill(0);
-        vB.fill(0);
-        prevTheta = e.theta;
-        prevVel = 0;
-        saltar = true;
-        llenadoT0 = e.ahora;
-        vista.llenado = 0;
-        cacheA.alfa = Number.NaN;
-        cacheB.alfa = Number.NaN;
+        if (enReposo) {
+          // El dedo sigue eligiendo el tiempo: el volumen cambia de golpe.
+          // Sin esto cada escalón vacía los bulbos 350 ms y mata las olas.
+          llenadoT0 = null;
+          vista.llenado = null;
+        } else {
+          phi = 0;
+          phiV = 0;
+          yA.fill(0);
+          vA.fill(0);
+          yB.fill(0);
+          vB.fill(0);
+          prevTheta = e.theta;
+          prevVel = 0;
+          saltar = true;
+          llenadoT0 = e.ahora;
+          vista.llenado = 0;
+          cacheA.alfa = Number.NaN;
+          cacheB.alfa = Number.NaN;
+        }
+        enReposo = true;
+      } else if (e.corriendo || e.pausa) {
+        enReposo = false;
       }
       vista.theta = e.theta;
       if (!congelada && !e.reposo) {
