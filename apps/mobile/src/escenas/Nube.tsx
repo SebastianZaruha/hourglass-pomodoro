@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo } from 'react';
 import { useDerivedValue, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Group, Image, Paint, RuntimeShader, Skia, useImage } from '@shopify/react-native-skia';
+import { Group, Image, Paint, RuntimeShader, Skia, rect, useImage } from '@shopify/react-native-skia';
 
 import { disposeLater } from '../hourglass/disposal';
 import type { HourglassLayout } from '../hourglass/layout';
@@ -55,6 +55,7 @@ export function NubeMovil({
   return (
     <Group opacity={visible}>
       <Group
+        clip={rect(x, y, ancho, alto)}
         layer={
           efecto ? (
             <Paint>
