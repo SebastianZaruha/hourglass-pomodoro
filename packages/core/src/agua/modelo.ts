@@ -114,10 +114,15 @@ function copiarContorno(pts: readonly PuntoPlano[]): Contorno {
   return { x, y, n, area: Math.abs(a) * 0.5 };
 }
 
+/** Se rellena en cada llamada. Quien lo use tiene que copiar los números al momento. */
+const volumen = { arriba: 0, abajo: 0 };
+
 function objetivos(durationMs: number, remainingMs: number): { arriba: number; abajo: number } {
   const nivel = nivelDeDuracion(durationMs);
   const resto = durationMs > 0 ? Math.min(1, Math.max(0, remainingMs / durationMs)) : 0;
-  return { arriba: nivel * resto, abajo: 1 - nivel * resto };
+  volumen.arriba = nivel * resto;
+  volumen.abajo = 1 - nivel * resto;
+  return volumen;
 }
 
 /** Altura de la ola en la coordenada s de la superficie. */

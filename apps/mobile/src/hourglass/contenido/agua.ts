@@ -111,6 +111,18 @@ class AguaMotor implements AguaContenido {
     uParallax: [0, 0],
   };
   private alfaGota = ALFA_GOTA_OSCURA;
+  /** Se rellena en cada paso. El modelo no se queda con ella. */
+  private readonly entrada = {
+    dt: 0,
+    ahora: 0,
+    theta: 0,
+    durationMs: 0,
+    remainingMs: 0,
+    corriendo: false,
+    pausa: false,
+    enGiro: false,
+    reposo: false,
+  };
   private readonly gx = new Float32Array(GOTAS);
   private readonly gy = new Float32Array(GOTAS);
   private readonly gv = new Float32Array(GOTAS);
@@ -178,18 +190,16 @@ class AguaMotor implements AguaContenido {
 
   paso(e: EntradaMotor): boolean {
     if (e.soloVaciar) return false;
-    const ahora = performance.now();
-    const entrada: EntradaAgua = {
-      dt: e.dt,
-      ahora,
-      theta: Math.atan2(e.gravedadSuave.x, e.gravedadSuave.y),
-      durationMs: e.reposo ? e.durationMs : e.snap.durationMs,
-      remainingMs: e.reposo ? e.durationMs : e.snap.remainingMs,
-      corriendo: e.snap.status === 'running',
-      pausa: e.snap.status === 'paused',
-      enGiro: e.enGiro,
-      reposo: e.reposo,
-    };
+    const entrada = this.entrada;
+    entrada.dt = e.dt;
+    entrada.ahora = performance.now();
+    entrada.theta = Math.atan2(e.gravedadSuave.x, e.gravedadSuave.y);
+    entrada.durationMs = e.reposo ? e.durationMs : e.snap.durationMs;
+    entrada.remainingMs = e.reposo ? e.durationMs : e.snap.remainingMs;
+    entrada.corriendo = e.snap.status === 'running';
+    entrada.pausa = e.snap.status === 'paused';
+    entrada.enGiro = e.enGiro;
+    entrada.reposo = e.reposo;
     this.vista = this.modelo.paso(entrada);
     this.theta = entrada.theta;
     this.moverGotas(entrada);
