@@ -14,6 +14,9 @@ Tres escenas, cada una en claro y en oscuro.
 - **Arena.** Foto de fondo y arena.
 - **Clásico.** El reloj de arena sobre el fondo de siempre.
 
+![Arena en oscuro](docs/capturas/arena-oscuro.webp)
+![Arena claro, pantalla estrecha](docs/capturas/arena-claro-movil.webp)
+
 ## Funciones
 
 - La rueda (en la web) o el deslizamiento (en el móvil) fija el tiempo. No arranca la cuenta.
@@ -71,19 +74,6 @@ node scripts/build-apk.mjs
 El APK queda en `apps/mobile/android/app/build/outputs/apk/release/`. Solo incluye arm64-v8a.
 
 El APK publicado se descarga desde [GitHub Releases](https://github.com/SebastianZaruha/hourglass-pomodoro/releases).
-
-## Galería
-
-| | |
-| --- | --- |
-| ![Lluvia oscuro](docs/capturas/lluvia-oscuro.webp) | ![Lluvia claro](docs/capturas/lluvia-claro.webp) |
-| Lluvia, oscuro | Lluvia, claro |
-| ![Arena claro](docs/capturas/arena-claro.webp) | ![Arena oscuro](docs/capturas/arena-oscuro.webp) |
-| Arena, claro | Arena, oscuro |
-| ![Clásico](docs/capturas/clasico.webp) | ![Menú](docs/capturas/menu.webp) |
-| Clásico, oscuro | Menú en Lluvia oscuro |
-| ![Lluvia en el móvil](docs/capturas/lluvia-oscuro-movil.webp) | ![Arena en el móvil](docs/capturas/arena-claro-movil.webp) |
-| Lluvia oscuro, 390×844 | Arena claro, 390×844 |
 
 ## Licencia
 
