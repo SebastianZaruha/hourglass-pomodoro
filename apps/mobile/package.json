@@ -13,11 +13,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "start:dev": "node ./scripts/variante.mjs development expo start",
     "android": "expo run:android",
-    "android:dev": "node ./scripts/variante.mjs development expo run:android",
-    "apk": "node ./scripts/variante.mjs production expo prebuild --no-install -p android && node ./scripts/variante.mjs production node ../../scripts/build-apk.mjs",
-    "apk:dev": "node ./scripts/variante.mjs development expo prebuild --no-install -p android && node ./scripts/variante.mjs development node ../../scripts/build-apk.mjs",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",

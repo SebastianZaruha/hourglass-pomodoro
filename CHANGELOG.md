@@ -13,15 +13,12 @@ funcionamiento interno en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
 El paquete vuelve a ser el de producción. No es una publicación: no hay APK subido.
 
-- Nombre «Hourglass». Paquete `com.sebastianzaruha.relojdearena` (sin `.dev`).
+- Nombre «Hourglass». Paquete `com.sebastianzaruha.relojdearena`.
 - `versionCode` 10904, por encima del 10815 de la 1.8.15.
 - `google-services.json` solo con el cliente de `com.sebastianzaruha.relojdearena`.
 - La firma no cambia: `npm run apk` sigue compilando `assembleRelease` con la misma clave que las releases desde la 1.8.1.
-- El modo de desarrollo no se borra: `APP_VARIANT=development` usa el paquete `.dev`, «Hourglass Dev», `google-services.dev.json` y `expo-dev-client`. En producción esos módulos nativos no se enlazan. Ver `docs/DESARROLLO-LOCAL.md`.
 
 ## 1.9.0-f3 — Ajustes de Lluvia y del vidrio (prueba)
-
-Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 
 - El agua de Lluvia cae hacia el lado bajo, como la arena.
 - La nube no se apaga al tumbar el móvil.
@@ -34,8 +31,6 @@ Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 
 ## 1.9.0-f2 — Lluvia no se cierra, y las hojas son vidrio (prueba)
 
-Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
-
 - Lluvia ya no reproduce el vídeo con Skia: en Android release ese reproductor
   cierra la app. La nube es el póster, con el mismo tratamiento.
 - El menú, la ayuda, el consentimiento y la pista de pausa usan el vidrio
@@ -43,12 +38,9 @@ Sigue siendo Hourglass Dev, paquete `com.sebastianzaruha.relojdearena.dev`.
 
 ## 1.9.0-f1 — Escenas en el móvil (prueba)
 
-Versión de prueba. El nombre sigue siendo Hourglass Dev y el paquete
-`com.sebastianzaruha.relojdearena.dev`. Antes de publicar 1.9.0 hay que volver
-al nombre y al paquete de producción y quitar el cliente `.dev` de
-`google-services.json`. La web no cambia de comportamiento.
+Versión de prueba. La web no cambia de comportamiento.
 
-- F0: paquete `.dev`, nombre Hourglass Dev y `versionCode` 10900.
+- F0: `versionCode` 10900.
 - La arena del móvil no desliza en un giro pequeño. La web sigue igual.
 - F1: se elige Clásico, Lluvia o Arena, cada una con su foto y sus colores.
   Clásico conserva el fondo, los colores y el comportamiento de siempre.
