@@ -45,7 +45,9 @@ export function NubeMovil({
 
   // Sigue visible en cualquier inclinación. El frasco no se tumba con el
   // móvil: la boca de arriba sigue arriba en pantalla, y la nube se queda ahí.
-  const visible = useDerivedValue(() => 0.9 + deriva.value * 0.1);
+  // La opacidad va a saltos de 1/255. El mismo número no reescribe el shared
+  // value, así que el lienzo no se redibuja en cada fotograma del vaivén.
+  const visible = useDerivedValue(() => Math.round((0.9 + deriva.value * 0.1) * 255) / 255);
   const uniforme = { uY: y, uH: alto, uOscuro: oscuro ? 1 : 0 };
 
   if (!poster) return null;
