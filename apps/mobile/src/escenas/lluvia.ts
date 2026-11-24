@@ -18,7 +18,7 @@ const claro = temaDeFoto({
 const oscuro = temaDeFoto({
   scheme: 'dark',
   digitos: '#615958',
-  tinta: '#8a8281',
+  tinta: '#e8f0ec',
   barra: '#1a2422',
   reserva: '#141414',
   sombra: 'rgba(0, 0, 0, 0.38)',

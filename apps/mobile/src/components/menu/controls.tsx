@@ -427,7 +427,7 @@ function StepButton({
       onPress={onPress}
       disabled={!enabled}
       hitSlop={9}
-      style={({ pressed }) => [st.stepBtn, { opacity: !enabled ? 0.35 : pressed ? 0.6 : 1 }]}
+      style={({ pressed }) => [st.stepBtn, { opacity: !enabled ? 0.72 : pressed ? 0.6 : 1 }]}
       // El contenedor ya es el control accesible: estos botones no se anuncian.
       importantForAccessibility="no"
       accessibilityElementsHidden

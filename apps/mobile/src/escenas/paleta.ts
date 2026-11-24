@@ -22,13 +22,17 @@ export interface ColoresFoto {
 }
 
 /**
- * Color de los controles del menú sobre el vidrio. Un paso más de contraste
- * que el tinte del vidrio, sin cambiar la tinta ni el texto.
+ * Color de los controles del menú. En Arena y Lluvia son hex opacos: el
+ * fundido del tema interpola el color y el texto a la vez. `textoSuave` es
+ * el texto secundario (chip sin seleccionar, etiquetas, −/+). `sobreAcento`
+ * es el icono del botón relleno. La tinta principal vive en cada escena.
  */
 export interface ControlesEscena {
   readonly track: string;
   readonly pill: string;
   readonly accent: string;
+  readonly textoSuave?: string;
+  readonly sobreAcento?: string;
 }
 
 /** Valores por escena y por claro/oscuro. Se editan aquí. */
@@ -47,26 +51,34 @@ export const CONTROLES = {
   },
   lluvia: {
     light: {
-      track: 'rgba(70, 78, 76, 0.16)',
-      pill: 'rgba(255, 255, 255, 0.96)',
-      accent: '#4E5754',
+      track: '#d7e0dc',
+      pill: '#f3f6f4',
+      accent: '#3d524c',
+      textoSuave: '#141414',
+      sobreAcento: '#f4f7f5',
     },
     dark: {
-      track: 'rgba(220, 228, 224, 0.14)',
-      pill: 'rgba(236, 242, 238, 0.22)',
-      accent: '#8D9894',
+      track: '#1c2824',
+      pill: '#2e3c37',
+      accent: '#d2e3db',
+      textoSuave: '#c5d2cc',
+      sobreAcento: '#12201c',
     },
   },
   arena: {
     light: {
-      track: 'rgba(113, 53, 13, 0.16)',
-      pill: 'rgba(255, 248, 236, 0.97)',
-      accent: '#8A4518',
+      track: '#ead9c6',
+      pill: '#fbf6ee',
+      accent: '#8a4518',
+      textoSuave: '#4a2c16',
+      sobreAcento: '#fff8f1',
     },
     dark: {
-      track: 'rgba(233, 206, 174, 0.16)',
-      pill: 'rgba(255, 228, 196, 0.22)',
-      accent: '#C4895C',
+      track: '#2c1e14',
+      pill: '#4e3828',
+      accent: '#f0d2b0',
+      textoSuave: '#e2cdb4',
+      sobreAcento: '#2a1a10',
     },
   },
 } as const satisfies Record<string, { light: ControlesEscena; dark: ControlesEscena }>;
@@ -97,10 +109,11 @@ function uiDe(tinta: string, scheme: ColorSchemeName, controles?: ControlesEscen
   const claro = scheme === 'light';
   const hacia = claro ? '#f7f3ee' : '#f3ece4';
   const suave = claro ? 0.32 : 0.38;
+  const suaveTexto = controles?.textoSuave ?? mezcla(tinta, hacia, suave);
   return {
     ink: tinta,
-    inkSoft: mezcla(tinta, hacia, suave),
-    label: mezcla(tinta, hacia, claro ? 0.22 : 0.28),
+    inkSoft: suaveTexto,
+    label: suaveTexto,
     track: controles?.track ?? rgbaDe(tinta, claro ? 0.08 : 0.1),
     pill: controles?.pill ?? (claro ? 'rgba(255, 252, 247, 0.94)' : 'rgba(255, 244, 232, 0.14)'),
     pillShadow: claro
@@ -110,9 +123,9 @@ function uiDe(tinta: string, scheme: ColorSchemeName, controles?: ControlesEscen
     line: rgbaDe(tinta, claro ? 0.14 : 0.16),
     panelEdge: claro ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 244, 232, 0.1)',
     scrim: claro ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.22)',
-    grabber: rgbaDe(tinta, claro ? 0.2 : 0.28),
-    menuIcon: mezcla(tinta, hacia, claro ? 0.42 : 0.34),
-    onAccent: claro ? '#fffdf9' : '#1c1612',
+    grabber: rgbaDe(tinta, claro ? 0.28 : 0.4),
+    menuIcon: tinta,
+    onAccent: controles?.sobreAcento ?? (claro ? '#fffdf9' : '#1c1612'),
     tooltip: claro ? 'rgba(255, 252, 247, 0.98)' : 'rgba(36, 30, 26, 0.98)',
   };
 }
