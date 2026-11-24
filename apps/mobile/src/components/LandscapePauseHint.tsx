@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, interpolateColor, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { VIDRIO } from './menu/vidrioLiquido';
+import { useThemedText, type PaletaUi } from './menu/themedStyles';
 import type { HourglassTheme } from '../theme/theme';
 
 interface Props {
@@ -10,11 +11,30 @@ interface Props {
   readonly bottom: number;
   readonly font?: string;
   readonly theme: HourglassTheme;
+  readonly themeProgress: SharedValue<number>;
+  readonly paleta?: PaletaUi;
+  readonly pistaClaro: string;
+  readonly pistaOscuro: string;
   readonly onDismiss: () => void;
 }
 
 /** Pista breve, una sola vez, sobre la pausa al tumbar el móvil. */
-export function LandscapePauseHint({ text, dismissLabel, bottom, font, theme, onDismiss }: Props) {
+export function LandscapePauseHint({
+  text,
+  dismissLabel,
+  bottom,
+  font,
+  theme,
+  themeProgress,
+  paleta,
+  pistaClaro,
+  pistaOscuro,
+  onDismiss,
+}: Props) {
+  const cierre = useThemedText(themeProgress, 'inkSoft', paleta);
+  const pista = useAnimatedStyle(() => ({
+    color: interpolateColor(themeProgress.value, [0, 1], [pistaClaro, pistaOscuro]),
+  }));
   return (
     <Animated.View
       entering={FadeIn.duration(220)}
@@ -36,8 +56,8 @@ export function LandscapePauseHint({ text, dismissLabel, bottom, font, theme, on
         ]}
         testID="pista-pausa-apaisada"
       >
-        <Animated.Text style={[styles.text, { color: theme.text.hint, fontFamily: font }]}>{text}</Animated.Text>
-        <Animated.Text style={[styles.close, { color: theme.ui.inkSoft }]} accessibilityElementsHidden>
+        <Animated.Text style={[styles.text, { fontFamily: font }, pista]}>{text}</Animated.Text>
+        <Animated.Text style={[styles.close, cierre]} accessibilityElementsHidden>
           ×
         </Animated.Text>
       </Pressable>

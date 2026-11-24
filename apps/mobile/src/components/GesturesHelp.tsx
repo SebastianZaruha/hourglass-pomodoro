@@ -56,7 +56,8 @@ function GesturesHelpScreen(props: InfoScreenProps) {
             key={key}
             icon={GESTURE_ICONS[key]}
             text={texts[key]}
-            color={props.theme.ui.ink}
+            progress={props.themeProgress}
+            paleta={props.paleta}
             fonts={props.fonts}
             styles={s}
           />

@@ -5,7 +5,8 @@
  * Ajustes, «atrás» cierra sin cambiar la elección.
  */
 import { useEffect } from 'react';
-import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { type SharedValue } from 'react-native-reanimated';
 
 import { VIDRIO } from './menu/vidrioLiquido';
 import { bannerCopy } from '../consent/bannerCopy';
@@ -13,7 +14,7 @@ import type { ConsentChoice } from '../consent/consent';
 import { announce } from '../hooks/useScreenReader';
 import { useLanguage } from '../i18n/I18n';
 import type { HourglassTheme } from '../theme/theme';
-import type { MenuFonts } from './menu/themedStyles';
+import { useThemedText, type MenuFonts, type PaletaUi } from './menu/themedStyles';
 
 interface Props {
   readonly visible: boolean;
@@ -24,6 +25,8 @@ interface Props {
   readonly onDismiss: () => void;
   readonly onPrivacy: () => void;
   readonly theme: HourglassTheme;
+  readonly themeProgress: SharedValue<number>;
+  readonly paleta?: PaletaUi;
   readonly fonts: MenuFonts;
   readonly safeTop: number;
   readonly safeBottom: number;
@@ -37,11 +40,15 @@ export function ConsentDialog({
   onDismiss,
   onPrivacy,
   theme,
+  themeProgress,
+  paleta,
   fonts,
   safeTop,
   safeBottom,
 }: Props) {
   const copy = bannerCopy(useLanguage());
+  const ink = useThemedText(themeProgress, 'ink', paleta);
+  const soft = useThemedText(themeProgress, 'inkSoft', paleta);
 
   useEffect(() => {
     if (visible) announce(copy.title);
@@ -70,8 +77,6 @@ export function ConsentDialog({
   if (!visible) return null;
 
   const paragraphs = copy.body.split('\n\n');
-  const ink = theme.ui.ink;
-  const soft = theme.ui.inkSoft;
 
   return (
     <View
@@ -84,15 +89,15 @@ export function ConsentDialog({
       testID="consentimiento"
     >
       <View style={styles.card}>
-        <Text style={[styles.title, { fontFamily: fonts.semibold, color: ink }]} accessibilityRole="header">
+        <Animated.Text style={[styles.title, { fontFamily: fonts.semibold }, ink]} accessibilityRole="header">
           {copy.title}
-        </Text>
+        </Animated.Text>
         {paragraphs.map((paragraph) => (
-          <Text key={paragraph} style={[styles.body, { fontFamily: fonts.regular, color: ink }]}>
+          <Animated.Text key={paragraph} style={[styles.body, { fontFamily: fonts.regular }, ink]}>
             {paragraph}
-          </Text>
+          </Animated.Text>
         ))}
-        <Text style={[styles.morePrefix, { fontFamily: fonts.regular, color: soft }]}>{copy.morePrefix}</Text>
+        <Animated.Text style={[styles.morePrefix, { fontFamily: fonts.regular }, soft]}>{copy.morePrefix}</Animated.Text>
         <Pressable
           onPress={onPrivacy}
           disabled={saving}
@@ -101,7 +106,7 @@ export function ConsentDialog({
           style={({ pressed }) => [styles.privacy, pressed && styles.pressed]}
           testID="consentimiento-privacidad"
         >
-          <Text style={[styles.privacyText, { fontFamily: fonts.medium, color: ink }]}>{copy.more}</Text>
+          <Animated.Text style={[styles.privacyText, { fontFamily: fonts.medium }, ink]}>{copy.more}</Animated.Text>
         </Pressable>
         <View style={styles.actions}>
           <Pressable
@@ -110,12 +115,12 @@ export function ConsentDialog({
             accessibilityRole="button"
             style={({ pressed }) => [
               styles.choice,
-              { borderColor: soft, backgroundColor: VIDRIO.humo },
+              { borderColor: theme.ui.inkSoft, backgroundColor: VIDRIO.humo },
               pressed && styles.pressed,
             ]}
             testID="consentimiento-rechazar"
           >
-            <Text style={[styles.choiceText, { fontFamily: fonts.medium, color: ink }]}>{copy.reject}</Text>
+            <Animated.Text style={[styles.choiceText, { fontFamily: fonts.medium }, ink]}>{copy.reject}</Animated.Text>
           </Pressable>
           <Pressable
             onPress={() => onChoose('accepted')}
@@ -123,12 +128,12 @@ export function ConsentDialog({
             accessibilityRole="button"
             style={({ pressed }) => [
               styles.choice,
-              { borderColor: soft, backgroundColor: VIDRIO.humo },
+              { borderColor: theme.ui.inkSoft, backgroundColor: VIDRIO.humo },
               pressed && styles.pressed,
             ]}
             testID="consentimiento-aceptar"
           >
-            <Text style={[styles.choiceText, { fontFamily: fonts.medium, color: ink }]}>{copy.accept}</Text>
+            <Animated.Text style={[styles.choiceText, { fontFamily: fonts.medium }, ink]}>{copy.accept}</Animated.Text>
           </Pressable>
         </View>
       </View>

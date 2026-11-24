@@ -25,12 +25,11 @@
  * estado compartido por la fila (`useQuickTooltip`).
  */
 import { QuickPress, TOOLTIP_DELAY_MS, TOOLTIP_HIDE_MS, tooltipLeft } from '@reloj/core';
-import { Canvas, Path, interpolateColors } from '@shopify/react-native-skia';
+import { Canvas, Path } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withTiming,
@@ -39,9 +38,9 @@ import Animated, {
 
 import { playSelectionTick } from '../../haptics/haptics';
 
-import { DARK_THEME, LIGHT_THEME, type UiPalette } from '../../theme/theme';
+import { type UiPalette } from '../../theme/theme';
 import { circle } from '../InfoScreen';
-import { useThemedBackground, type MenuFonts, type MenuStyles, type PaletaUi } from './themedStyles';
+import { useThemedBackground, useThemedSkiaColor, type MenuFonts, type MenuStyles, type PaletaUi } from './themedStyles';
 
 // ─── Iconos (caja de 32 × 32) ────────────────────────────────────────────────
 
@@ -69,9 +68,7 @@ export const themeIcon = (v: 'light' | 'dark' | 'system'): IconName =>
 
 /** Color del tema que se funde con `progress` (0 claro, 1 oscuro), en el hilo de la interfaz. */
 function useThemedColor(progress: SharedValue<number>, key: keyof UiPalette, paleta?: PaletaUi) {
-  const light = (paleta?.claro ?? LIGHT_THEME.ui)[key];
-  const dark = (paleta?.oscuro ?? DARK_THEME.ui)[key];
-  return useDerivedValue(() => interpolateColors(progress.value, [0, 1], [light, dark]));
+  return useThemedSkiaColor(progress, key, paleta);
 }
 
 function Icon({

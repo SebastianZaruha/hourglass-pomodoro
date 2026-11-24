@@ -692,6 +692,11 @@ export function TimerScreen({ settings, fonts }: Props) {
               font={fonts.time}
               text={tr.paused}
               reduceMotion={reduceMotion}
+              themeProgress={themeProgress}
+              pausaClaro={escena.claro.tema.text.pause}
+              pausaOscuro={escena.oscuro.tema.text.pause}
+              brilloClaro={escena.claro.tema.text.pauseGlow}
+              brilloOscuro={escena.oscuro.tema.text.pauseGlow}
             />
           </Animated.View>
           <TimeDisplay
@@ -720,6 +725,10 @@ export function TimerScreen({ settings, fonts }: Props) {
             bottom={landscapeHintBottom}
             font={fonts.hint}
             theme={theme}
+            themeProgress={themeProgress}
+            paleta={paleta}
+            pistaClaro={escena.claro.tema.text.hint}
+            pistaOscuro={escena.oscuro.tema.text.hint}
             onDismiss={landscapeHint.dismiss}
           />
         </View>
@@ -816,6 +825,8 @@ export function TimerScreen({ settings, fonts }: Props) {
           onDismiss={consent.dismissPrompt}
           onPrivacy={consent.openPrivacy}
           theme={theme}
+          themeProgress={themeProgress}
+          paleta={paleta}
           fonts={fonts}
           safeTop={tilt.flipped ? safe.bottom : safe.top}
           safeBottom={tilt.flipped ? safe.top : safe.bottom}

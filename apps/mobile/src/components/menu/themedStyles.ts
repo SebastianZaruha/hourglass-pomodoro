@@ -8,7 +8,8 @@
  * Se crean UNA vez en la hoja y se pasan a los controles, en vez de que cada
  * control cree los suyos (así hay ~12 estilos animados, no cientos).
  */
-import { interpolateColor, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import { interpolateColors } from '@shopify/react-native-skia';
+import { interpolateColor, useAnimatedStyle, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import { DARK_THEME, LIGHT_THEME, type UiPalette } from '../../theme/theme';
 
@@ -36,6 +37,13 @@ export function useThemedBackground(progress: SharedValue<number>, key: Key, pal
   return useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(progress.value, [0, 1], [light, dark]),
   }));
+}
+
+/** Color de trazo Skia que se funde con el mismo `progress` que el texto. */
+export function useThemedSkiaColor(progress: SharedValue<number>, key: Key, paleta?: PaletaUi) {
+  const light = (paleta?.claro ?? L)[key];
+  const dark = (paleta?.oscuro ?? D)[key];
+  return useDerivedValue(() => interpolateColors(progress.value, [0, 1], [light, dark]));
 }
 
 /** Estilo animado de color de borde. */

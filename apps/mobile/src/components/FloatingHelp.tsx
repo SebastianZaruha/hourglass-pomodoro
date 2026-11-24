@@ -32,7 +32,7 @@ interface Props extends InfoScreenProps {
 
 function FloatingHelpScreen({ onAllow, ...props }: Props) {
   const t = useT();
-  const { fonts, theme } = props;
+  const { fonts } = props;
   const rows = [
     { key: 'drag', icon: ICONS.drag, text: t.floatingDrag },
     { key: 'pinch', icon: ICONS.pinch, text: t.floatingPinch },
@@ -58,7 +58,8 @@ function FloatingHelpScreen({ onAllow, ...props }: Props) {
               key={row.key}
               icon={row.icon}
               text={row.text}
-              color={theme.ui.ink}
+              progress={props.themeProgress}
+              paleta={props.paleta}
               fonts={fonts}
               styles={s}
             />

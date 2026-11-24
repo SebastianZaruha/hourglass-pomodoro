@@ -19,7 +19,7 @@
  */
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { HourglassTheme } from '../theme/theme';
@@ -38,6 +38,12 @@ interface Props {
   readonly reduceMotion?: boolean;
   /** Pista pequeña debajo del rótulo (o null). */
   readonly note?: string | null;
+  /** 0 claro, 1 oscuro. Con los dos colores, el rótulo se funde con el tema. */
+  readonly themeProgress?: SharedValue<number>;
+  readonly pausaClaro?: string;
+  readonly pausaOscuro?: string;
+  readonly brilloClaro?: string;
+  readonly brilloOscuro?: string;
 }
 
 export function PauseLabel({
@@ -48,6 +54,11 @@ export function PauseLabel({
   text,
   reduceMotion = false,
   note = null,
+  themeProgress,
+  pausaClaro,
+  pausaOscuro,
+  brilloClaro,
+  brilloOscuro,
 }: Props) {
   // Montado mientras se ve O se está desvaneciendo; el giro se congela al
   // salir para que no salte a «derecho» a mitad del fundido.
@@ -82,6 +93,30 @@ export function PauseLabel({
     noteShown.set(withTiming(note !== null ? 1 : 0, { duration: reduceMotion ? 0 : 220 }));
   }, [note, reduceMotion, noteShown]);
   const noteAnim = useAnimatedStyle(() => ({ opacity: noteShown.value * shown.value }));
+  const pausa = pausaClaro ?? theme.text.pause;
+  const pausaFin = pausaOscuro ?? theme.text.pause;
+  const brillo = brilloClaro ?? theme.text.pauseGlow;
+  const brilloFin = brilloOscuro ?? theme.text.pauseGlow;
+  const tinta = useAnimatedStyle(() => ({
+    color: themeProgress
+      ? interpolateColor(themeProgress.value, [0, 1], [pausa, pausaFin])
+      : pausa,
+    textShadowColor: themeProgress
+      ? interpolateColor(themeProgress.value, [0, 1], [brillo, brilloFin])
+      : brillo,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: GLOW_RADIUS,
+  }));
+  const tintaNota = useAnimatedStyle(() => ({
+    color: themeProgress
+      ? interpolateColor(themeProgress.value, [0, 1], [pausa, pausaFin])
+      : pausa,
+    textShadowColor: themeProgress
+      ? interpolateColor(themeProgress.value, [0, 1], [brillo, brilloFin])
+      : brillo,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: NOTE_GLOW_RADIUS,
+  }));
 
   return (
     <View
@@ -93,38 +128,13 @@ export function PauseLabel({
       {mounted ? (
         <Animated.View style={[styles.group, anim]}>
           <Animated.Text
-            style={[
-              styles.text,
-              {
-                color: theme.text.pause,
-                // Halo: sin desplazamiento y muy difuminado (no una sombra dura).
-                // Las tres propiedades van juntas en el mismo objeto: en web,
-                // react-native-web solo crea la sombra si las ve juntas.
-                textShadowColor: theme.text.pauseGlow,
-                textShadowOffset: GLOW_OFFSET,
-                textShadowRadius: GLOW_RADIUS,
-                fontFamily: font,
-              },
-            ]}
+            style={[styles.text, { fontFamily: font }, tinta]}
             testID="rotulo-pausa"
           >
             {text}
           </Animated.Text>
           {noteText ? (
-            <Animated.Text
-              style={[
-                styles.note,
-                {
-                  color: theme.text.pause,
-                  textShadowColor: theme.text.pauseGlow,
-                  textShadowOffset: GLOW_OFFSET,
-                  textShadowRadius: NOTE_GLOW_RADIUS,
-                  fontFamily: font,
-                },
-                noteAnim,
-              ]}
-              testID="pista-de-pie"
-            >
+            <Animated.Text style={[styles.note, { fontFamily: font }, tintaNota, noteAnim]} testID="pista-de-pie">
               {noteText}
             </Animated.Text>
           ) : null}
@@ -134,8 +144,6 @@ export function PauseLabel({
   );
 }
 
-/** Halo centrado y difuminado detrás del rótulo. */
-const GLOW_OFFSET = { width: 0, height: 0 } as const;
 const GLOW_RADIUS = 18;
 const NOTE_GLOW_RADIUS = 10;
 

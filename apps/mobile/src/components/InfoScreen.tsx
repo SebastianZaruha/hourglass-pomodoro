@@ -24,7 +24,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { announce } from '../hooks/useScreenReader';
 import type { HourglassTheme } from '../theme/theme';
-import { useMenuStyles, type MenuFonts, type MenuStyles, type PaletaUi } from './menu/themedStyles';
+import { useMenuStyles, useThemedSkiaColor, type MenuFonts, type MenuStyles, type PaletaUi } from './menu/themedStyles';
 
 export interface InfoScreenProps {
   readonly visible: boolean;
@@ -151,16 +151,19 @@ export function InfoScreen({
 export function InfoRow({
   icon,
   text,
-  color,
   fonts,
   styles: s,
+  progress,
+  paleta,
 }: {
   icon: string;
   text: string;
-  color: string;
   fonts: MenuFonts;
   styles: MenuStyles;
+  progress: SharedValue<number>;
+  paleta?: PaletaUi;
 }) {
+  const color = useThemedSkiaColor(progress, 'ink', paleta);
   return (
     <View style={styles.row} accessible accessibilityLabel={text}>
       <Canvas style={styles.icon} pointerEvents="none">
