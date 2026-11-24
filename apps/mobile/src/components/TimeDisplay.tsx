@@ -14,9 +14,10 @@
  * evitamos que lo anuncie dos veces.
  */
 import { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { PixelRatio, StyleSheet } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
+import { margenBajoPista } from './menu/vidrioLiquido';
 import { DARK_THEME, LIGHT_THEME } from '../theme/theme';
 
 /**
@@ -69,6 +70,13 @@ export function TimeDisplay({
   const oscuroPista = textoOscuro?.hint ?? D.hint;
   const shown = useLiveText(text, refresh);
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  // El borde inferior de la pista: la caja del vidrio más el hueco.
+  // Si la fase («Trabajo 2/4») asoma por encima de esa caja, la pista
+  // sube justo lo necesario para no montarse sobre ella.
+  const escala = Math.min(PixelRatio.getFontScale(), 1.3);
+  const altoFase = label ? FASE_LINEA * escala + MARGEN_FASE : 0;
+  const sobreVidrio = TIME_LINE_HEIGHT + margenBajoPista(TIME_LINE_HEIGHT);
+  const bottomPista = Math.max(sobreVidrio, TIME_LINE_HEIGHT + altoFase);
   const timeColor = useAnimatedStyle(() => ({
     color: interpolateColor(themeProgress.value, [0, 1], [claroTiempo, oscuroTiempo]),
   }));
@@ -84,13 +92,14 @@ export function TimeDisplay({
       importantForAccessibility="no-hide-descendants"
     >
       {hint ? (
-        // Una sola línea: en un móvil estrecho la pista larga de la pausa
-        // (1.8.9) encoge un poco en vez de partirse y tapar el reloj.
+        // Una sola línea, por encima de la pastilla. Encoge en vez de
+        // partirse: la segunda línea caería sobre el vidrio.
         <Animated.Text
-          style={[styles.hint, { fontFamily: fonts.hint }, hintColor]}
+          style={[styles.hint, { fontFamily: fonts.hint, bottom: bottomPista }, hintColor]}
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.8}
+          minimumFontScale={0.5}
+          maxFontSizeMultiplier={1.3}
           testID="pista"
         >
           {hint}
@@ -130,6 +139,10 @@ function useLiveText(text: string, refresh: (() => string) | null): string {
   return refresh && live && live.base === text ? live.value : text;
 }
 
+/** Alto de la fase sin escalar, y el aire bajo ella. Reserva para no tapar la pista. */
+const FASE_LINEA = 22;
+const MARGEN_FASE = 2;
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
@@ -145,9 +158,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   hint: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     fontSize: 13.5,
+    lineHeight: 18,
     letterSpacing: 1.2,
-    marginBottom: 14,
+    includeFontPadding: false,
     paddingHorizontal: 16,
     textAlign: 'center',
   },
@@ -155,6 +172,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13.5,
     letterSpacing: 2.2,
-    marginBottom: 2,
+    marginBottom: MARGEN_FASE,
   },
 });

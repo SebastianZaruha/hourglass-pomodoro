@@ -30,5 +30,55 @@ export const VIDRIO = {
     paddingArriba: 14,
     paddingAbajo: 15,
     radio: 28,
+    /**
+     * Aire entre el borde superior de la pastilla y la pista
+     * («desliza para elegir», «pulsa para seguir»).
+     */
+    huecoPista: 12,
   },
 } as const;
+
+export interface CajaVidrioReloj {
+  readonly x: number;
+  readonly y: number;
+  readonly ancho: number;
+  readonly alto: number;
+  /** Radio ya limitado a la caja: el arco no sobresale del borde superior. */
+  readonly radio: number;
+}
+
+/**
+ * La misma pastilla que pinta VidrioReloj. `y` es el borde superior.
+ * El radio entra en la caja y, si pasara de la mitad del lado corto,
+ * se recorta aquí: el borde no sube más que `paddingArriba`.
+ */
+export function cajaVidrioReloj(
+  width: number,
+  height: number,
+  bottom: number,
+  altoLinea: number,
+): CajaVidrioReloj {
+  const { ancho, paddingArriba, paddingAbajo, radio } = VIDRIO.reloj;
+  const alto = paddingArriba + altoLinea + paddingAbajo;
+  const radioCaja = Math.min(radio, ancho / 2, alto / 2);
+  return {
+    x: (width - ancho) / 2,
+    y: height - bottom - altoLinea - paddingArriba,
+    ancho,
+    alto,
+    radio: radioCaja,
+  };
+}
+
+/**
+ * Margen bajo la pista, medido desde la caja (padding y radio).
+ * El borde superior queda `paddingArriba` por encima de la línea del
+ * tiempo; `huecoPista` es el aire fuera de ese borde.
+ */
+export function margenBajoPista(altoLinea: number): number {
+  const { paddingAbajo } = VIDRIO.reloj;
+  const height = altoLinea + paddingAbajo;
+  const caja = cajaVidrioReloj(VIDRIO.reloj.ancho, height, 0, altoLinea);
+  const sobreLinea = height - caja.y - altoLinea;
+  return sobreLinea + VIDRIO.reloj.huecoPista;
+}

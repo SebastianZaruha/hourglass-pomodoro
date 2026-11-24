@@ -11,7 +11,7 @@ import { glassFade } from '@reloj/core';
 import { interpolateColor, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import { TIME_LINE_HEIGHT } from '../TimeDisplay';
-import { VIDRIO } from './vidrioLiquido';
+import { cajaVidrioReloj, VIDRIO } from './vidrioLiquido';
 
 /** Radio de las esquinas superiores de la hoja. */
 export const SHEET_RADIUS = 30;
@@ -98,12 +98,9 @@ export function VidrioReloj({
     interpolateColor(themeProgress.value, [0, 1], [VIDRIO.tinteClaro, VIDRIO.tinteOscuro]),
   );
   const forma = useDerivedValue(() => {
-    const { ancho, paddingArriba, paddingAbajo, radio } = VIDRIO.reloj;
-    const alto = paddingArriba + TIME_LINE_HEIGHT + paddingAbajo;
-    const y = height - bottom - TIME_LINE_HEIGHT - paddingArriba;
-    const x = (width - ancho) / 2;
+    const caja = cajaVidrioReloj(width, height, bottom, TIME_LINE_HEIGHT);
     if (opacity.value < 0.001) return rrect(rect(0, 0, 0, 0), 0, 0);
-    return rrect(rect(x, y, ancho, alto), radio, radio);
+    return rrect(rect(caja.x, caja.y, caja.ancho, caja.alto), caja.radio, caja.radio);
   });
 
   return (
