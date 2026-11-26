@@ -180,6 +180,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     reinicioHold: false,
     /** Último reinicio ya animado. */
     reinicioHecho: 0,
+    spinAngle: 0,
     /** Capas del vidrio: con qué pintor e inclinación se grabaron. */
     glass: null as GlassPainter | null,
     lightX: Number.NaN,
@@ -207,10 +208,16 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     state.dirty = true;
     if (state.scheduled || state.failed) return;
 
+    // El bucle corre en JS. Conserva el ángulo localmente para no esperar al hilo de UI.
+    const setSpin = (angle: number) => {
+      state.spinAngle = angle;
+      spin.set(angle);
+    };
+
     /** Fin del giro: la rejilla da la vuelta y el dibujo vuelve a 0, a la vez. */
     const finishTurn = () => {
       live.current.contenido.alVoltear('fase');
-      spin.value = 0;
+      setSpin(0);
     };
 
     const frame = () => {
@@ -304,17 +311,17 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         if (p.reduceMotion) {
           state.reinicioStart = null;
           state.reinicioHold = false;
-          spin.value = 0;
+          setSpin(0);
           if (snap.status === 'idle') e.reposo = true;
         } else if (t < 1) {
-          spin.value = Math.PI * easeInOutCubic(t);
+          setSpin(Math.PI * easeInOutCubic(t));
         } else if (!state.reinicioHold) {
           state.reinicioHold = true;
-          spin.value = Math.PI;
+          setSpin(Math.PI);
         } else {
           state.reinicioStart = null;
           state.reinicioHold = false;
-          spin.value = 0;
+          setSpin(0);
           if (snap.status === 'idle') e.reposo = true;
         }
         changed = true;
@@ -323,7 +330,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       if (turning && state.reinicioStart === null) {
         const t = Math.min(1, (now - (state.turnStart as number)) / TURN_MS);
         if (t < 1) {
-          spin.value = Math.PI * easeInOutCubic(t);
+          setSpin(Math.PI * easeInOutCubic(t));
         } else {
           finishTurn();
           state.turnStart = null;
@@ -339,7 +346,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       state.simMs = p.contenido.simMs;
 
       // La foto se muestrea en las coordenadas del fondo, incluso al girar el frasco.
-      const giro = spin.value;
+      const giro = state.spinAngle;
       const pose = p.poseDelFrasco?.(giro);
       const angle = pose?.angle ?? 0;
       const scale = pose?.scale ?? 1;
@@ -410,6 +417,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       state.reinicioHecho = reinicio;
       state.reinicioHold = false;
       state.reinicioStart = performance.now();
+      state.spinAngle = 0;
       spin.set(0);
       wake();
       return;
@@ -425,6 +433,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     e.enGiro = false;
     ahora.contenido.paso(e);
     e.reposo = false;
+    state.spinAngle = 0;
     spin.set(0);
     wake();
   }, [params.contenido, status, durationMs, wake, live, spin, reinicio]);

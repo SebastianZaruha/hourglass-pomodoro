@@ -277,9 +277,9 @@ function HourglassCanvas({
     (giro: number) => {
       'worklet';
       return objectPose(
-        pose ? pose.rotate.value : 0,
-        pose ? pose.scale.value : 1,
-        pose ? pose.centered.value : 0,
+        poseActive && pose ? pose.rotate.value : 0,
+        poseActive && pose ? pose.scale.value : 1,
+        poseActive && pose ? pose.centered.value : 0,
         giro,
         roomW,
         objW,
@@ -287,7 +287,7 @@ function HourglassCanvas({
         toScreenCenter,
       );
     },
-    [pose, roomW, objW, objH, toScreenCenter],
+    [pose, poseActive, roomW, objW, objH, toScreenCenter],
   );
 
   const { background, shadow, body, sand, front, rotation, spin } = useSandEngine({
