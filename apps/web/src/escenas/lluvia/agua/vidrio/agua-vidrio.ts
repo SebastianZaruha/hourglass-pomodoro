@@ -56,8 +56,8 @@ export function crearAguaVidrio(opciones: OpcionesAgua): AguaVidrio {
       const { x, y } = opciones.cuello;
       const cuello = { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f };
       if (alfa > 0) {
-        pintarBulbo(ctx, bulbos[0], estado.bulbos[0].alturas, copias, gradientes!, mezcla, alfa, refraccion, cuello);
-        pintarBulbo(ctx, bulbos[1], estado.bulbos[1].alturas, copias, gradientes!, mezcla, alfa, refraccion, cuello);
+        pintarBulbo(ctx, bulbos[0], estado.bulbos[0].alturas, copias, gradientes!, mezcla, alfa, refraccion, estado.pico ? cuello : undefined);
+        pintarBulbo(ctx, bulbos[1], estado.bulbos[1].alturas, copias, gradientes!, mezcla, alfa, refraccion, estado.pico ? cuello : undefined);
       }
 
       // Para las gotas: cuello en el mundo y bulbo que queda abajo (gravedad del mundo).

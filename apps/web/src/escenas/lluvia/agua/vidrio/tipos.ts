@@ -54,6 +54,8 @@ export interface EstadoAgua {
   opacidad: number;
   /** px. Desenfoque extra del frasco durante la media vuelta (0 = nada). */
   desenfoque: number;
+  /** El pico del chorro solo recorta el cuello con el reloj erguido. */
+  pico?: boolean;
 }
 
 export interface EstadoGotas {
