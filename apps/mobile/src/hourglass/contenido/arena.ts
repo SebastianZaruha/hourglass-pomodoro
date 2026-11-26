@@ -6,6 +6,7 @@ import {
   MAX_DURATION_MS,
   MIN_DURATION_MS,
   MIN_FLOW_GRAVITY_Y,
+  MS_LLENADO,
   SandSimulation,
   StreamParticles,
   flowBudget,
@@ -33,6 +34,16 @@ const STEPS_PER_FRAME = 2;
  * el centro algo más bajo que los lados, nunca una línea recta (1.6).
  */
 const IDLE_CRATER = 0.25;
+
+function primeraFilaOcupada(sim: SandSimulation, desde: number, hasta: number): number {
+  for (let fila = desde; fila < hasta; fila++) {
+    const inicio = fila * sim.cols;
+    for (let i = inicio; i < inicio + sim.cols; i++) {
+      if (sim.cells[i]) return fila;
+    }
+  }
+  return hasta;
+}
 
 function streamIntensity(durationMs: number): number {
   const t = Math.log(durationMs / MIN_DURATION_MS) / Math.log(MAX_DURATION_MS / MIN_DURATION_MS);
@@ -81,6 +92,7 @@ class ArenaMotor implements ContenidoArena {
   private streamShown = false;
   private streaming = false;
   private reducir = false;
+  private llenado: { ms: number; progreso: number; supArriba: number; supAbajo: number } | null = null;
   hayQuePintar = false;
   simMs = 0;
   /** Sube cada vez que cambia el pintor (el bucle vuelve a pintar). */
@@ -129,9 +141,33 @@ class ArenaMotor implements ContenidoArena {
       this.sim.arrange(granos, this.sim.totalGrains - granos, e.gravedad, { crater: IDLE_CRATER });
       this.listo = true;
       this.runInitial = granos;
-      return false;
+      this.llenado = null;
+      if (e.rellenar) {
+        this.particles.reset(7);
+        this.streaming = false;
+        this.hayQuePintar = true;
+        this.llenado = {
+          ms: 0,
+          progreso: 0,
+          supArriba: primeraFilaOcupada(this.sim, 0, this.sim.gateRow),
+          supAbajo: primeraFilaOcupada(this.sim, this.sim.gateRow + 1, this.sim.rows),
+        };
+      }
+      return this.llenado !== null;
     }
-    let movio = false;
+    const llenado = this.llenado;
+    if (llenado && e.snap.status === 'idle' && !e.enGiro && !e.reducir) {
+      // Como en la web: durante el revelado los granos ya están asentados.
+      llenado.ms += Math.max(0, Math.min(0.1, e.dt)) * 1000;
+      const t = Math.min(1, llenado.ms / MS_LLENADO);
+      if (t < 1) {
+        llenado.progreso = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+        this.hayQuePintar = true;
+        return true;
+      }
+    }
+    this.llenado = null;
+    let movio = llenado !== null;
     if (!this.listo) {
       this.runInitial = Math.round(this.sim.totalGrains * sandLevelForDuration(e.durationMs));
       const top =
@@ -183,7 +219,7 @@ class ArenaMotor implements ContenidoArena {
     stream.particles = this.particles;
     stream.reduceMotion = this.reducir;
     this.streamShown = this.streaming;
-    return painter.paint(this.sim, motion, stream, giro);
+    return painter.paint(this.sim, motion, stream, giro, this.llenado);
   }
 
   alVoltear(_motivo: 'reinicio' | 'fase'): void {

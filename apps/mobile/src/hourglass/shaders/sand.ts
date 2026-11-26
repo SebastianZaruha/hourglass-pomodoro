@@ -34,6 +34,8 @@ uniform float2 uGridSize;   // columnas, filas
 uniform float2 uLight;      // inclinación de la luz (-1..1)
 uniform float2 uGravity;    // gravedad (para iluminar la superficie)
 uniform float uExposure;
+// Fila de corte por bulbo y fila del cuello, en coordenadas de la rejilla.
+uniform float3 uCorteLlenado;
 // (0, 0) deja la luz como siempre. Si no, se suma para que la clave
 // apunte al ángulo de la escena (0° derecha, 90° abajo).
 uniform float2 uLightBias;
@@ -45,6 +47,9 @@ half4 cellAt(float2 c) {
 
 half4 main(float2 pos) {
   float2 g = (pos - uOrigin) / uCell;   // coordenadas de celda
+  float corte = g.y < uCorteLlenado.z ? uCorteLlenado.x : uCorteLlenado.y;
+  half visible = half(smoothstep(corte - 0.75, corte + 0.75, g.y));
+  if (visible <= 0.0) return half4(0.0);
   float2 m = g * 2.0;                   // coordenadas de micrograno
   float2 mc = floor(m);
   half4 own = cellAt(floor(g));
@@ -96,7 +101,7 @@ half4 main(float2 pos) {
   if (bestH < 0.0) {
     // Hueco entre granos: si la celda está llena, sombra de poro.
     if (own.a < 0.99) return half4(0.0);
-    return half4(own.rgb * 0.76 * uExposure, 1.0);
+    return half4(own.rgb * 0.76 * uExposure, 1.0) * visible;
   }
 
   // Luz difusa suave + ambiente + brillo de cuarzo.
@@ -127,6 +132,6 @@ half4 main(float2 pos) {
     col += float3(1.0, 0.97, 0.9) * g * 0.6 * uExposure;
   }
   col *= mix(0.88, 1.0, smoothstep(0.0, 0.5, bestN.z));
-  return half4(half3(col), 1.0);
+  return half4(half3(col), 1.0) * visible;
 }
 `;

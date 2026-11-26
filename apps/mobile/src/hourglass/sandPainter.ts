@@ -148,6 +148,7 @@ export class SandPainter {
     uOrigin: number[];
     uCell: number;
     uGridSize: number[];
+    uCorteLlenado: number[];
     uLight: number[];
     uGravity: number[];
     uExposure: number;
@@ -191,6 +192,7 @@ export class SandPainter {
       uOrigin: [layout.gridX, layout.gridY],
       uCell: layout.cell,
       uGridSize: [layout.cols, layout.rows],
+      uCorteLlenado: [-2, -2, 0],
       uLight: [0, 0],
       uGravity: [0, 1],
       uExposure: theme.sand.exposure,
@@ -208,7 +210,13 @@ export class SandPainter {
   }
 
   /** Graba un SkPicture con la arena y el chorro. */
-  paint(sim: SandSimulation, inputs: PhysicalInputs, stream: StreamState, giro = 0): SkPicture {
+  paint(
+    sim: SandSimulation,
+    inputs: PhysicalInputs,
+    stream: StreamState,
+    giro = 0,
+    llenado: { readonly progreso: number; readonly supArriba: number; readonly supAbajo: number } | null = null,
+  ): SkPicture {
     if (this.disposed) throw new Error('SandPainter usado después de dispose()');
     const { layout } = this;
     this.frame = (this.frame + 1) % 1_000_000;
@@ -232,6 +240,17 @@ export class SandPainter {
       u.uLight[1] = inputs.tilt.y;
       u.uGravity[0] = inputs.gravity.x;
       u.uGravity[1] = inputs.gravity.y;
+      const corte = u.uCorteLlenado;
+      corte[2] = sim.gateRow;
+      if (llenado) {
+        const baseArriba = sim.gateRow + 1;
+        const baseAbajo = sim.rows + 1;
+        corte[0] = baseArriba + (llenado.supArriba - 1 - baseArriba) * llenado.progreso;
+        corte[1] = baseAbajo + (llenado.supAbajo - 1 - baseAbajo) * llenado.progreso;
+      } else {
+        corte[0] = -2;
+        corte[1] = -2;
+      }
       // El picture gira con la fase; la esfera de la foto no. Se descuenta el giro.
       if (this.luzGrano === null) {
         u.uLightBias[0] = 0;
