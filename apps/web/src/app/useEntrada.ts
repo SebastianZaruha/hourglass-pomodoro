@@ -104,14 +104,18 @@ export function useEntrada(e: Entrada) {
     const el = e.stageRef.current;
     if (!el) return;
     const onWheel = (ev: WheelEvent) => {
-      ev.preventDefault();
       if (
+        ev.ctrlKey ||
+        ev.metaKey ||
+        ev.deltaY === 0 ||
         introRef.current ||
-        e.menu ||
+        legalRef.current ||
+        menuRef.current ||
         e.state.timer.status === 'running' ||
         e.state.timer.status === 'paused'
       )
         return;
+      ev.preventDefault();
       let dy = ev.deltaY;
       if (ev.deltaMode === 1) dy *= 16;
       if (ev.deltaMode === 2) dy *= 400;
@@ -119,24 +123,25 @@ export function useEntrada(e: Entrada) {
       const steps = Math.trunc(wheelAcc.current / 72);
       if (steps === 0) return;
       wheelAcc.current -= steps * 72;
-      if (e.settings.sessionMode === 'cycles') {
-        const cycle = activeCycleConfig(e.settings);
-        e.update({
-          sessionMode: 'cycles',
-          cyclePreset: 'custom',
-          customCycle: { ...cycle, workMin: stepMinutes(cycle.workMin, -steps) },
-        });
-      } else {
-        e.update({
+      e.update((current) => {
+        if (current.sessionMode === 'cycles') {
+          const cycle = activeCycleConfig(current);
+          return {
+            sessionMode: 'cycles',
+            cyclePreset: 'custom',
+            customCycle: { ...cycle, workMin: stepMinutes(cycle.workMin, -steps) },
+          };
+        }
+        return {
           sessionMode: 'single',
-          lastDurationMs: stepToDuration(nearestStepIndex(e.settings.lastDurationMs) - steps),
-        });
-      }
+          lastDurationMs: stepToDuration(nearestStepIndex(current.lastDurationMs) - steps),
+        };
+      });
       wakeRef.current();
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [e.menu, e.settings, e.state.timer.status, e.update, e.stageRef]);
+  }, [e.state.timer.status, e.update, e.stageRef]);
 
   const clickTimer = useRef<number | null>(null);
   /** Esta pareja de clics empezó con PAUSA: el doble clic no reinicia. */
