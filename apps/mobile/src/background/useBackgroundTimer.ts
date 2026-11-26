@@ -72,7 +72,7 @@ export function useBackgroundTimer({ session, settings, update, tr }: Options): 
     /** Aplica lo que se haya hecho desde la notificación (pausar, reanudar, reiniciar). */
     const catchUp = () => {
       const s = latest.current.session;
-      const next = pendingNativeChange(s.state.plan, appClock.now());
+      const next = pendingNativeChange(s.getState().plan, appClock.now());
       // Parada desde fuera (Recientes, notificación, ×): en reposo, con la
       // misma duración (1.8.6).
       if (next === 'stopped') s.restart();
@@ -88,10 +88,10 @@ export function useBackgroundTimer({ session, settings, update, tr }: Options): 
         theme: p.theme,
         force,
       };
-      if (syncBackground(s.state, appClock.now(), t, options)) return;
+      if (syncBackground(s.getState(), appClock.now(), t, options)) return;
       catchUp();
       // Con la sesión de la notificación (o, si no se pudo aplicar, la de la app).
-      syncBackground(latest.current.session.state, appClock.now(), t, { ...options, force: true });
+      syncBackground(s.getState(), appClock.now(), t, { ...options, force: true });
     };
     /** Relee los permisos (pueden haberse cambiado en Ajustes) y vuelve a pintar la notificación. */
     const refresh = () => {

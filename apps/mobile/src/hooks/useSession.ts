@@ -44,6 +44,8 @@ const DISPLAY_REFRESH_MS = 250;
 
 export interface UseSession {
   readonly state: SessionState;
+  /** Estado recién aplicado, aunque React todavía no haya renderizado. */
+  readonly getState: () => SessionState;
   /** Foto calculada en el último refresco (para mostrar texto). */
   readonly view: SessionSnapshot;
   /** Foto calculada AHORA (para el bucle de animación). */
@@ -85,6 +87,7 @@ export function useSession(initialPlan: SessionPlan, clock: Clock = systemClock)
     }
   }, []);
 
+  const getState = useCallback(() => stateRef.current, []);
   const getSnapshot = useCallback(() => sessionSnapshot(stateRef.current, clock.now()), [clock]);
 
   // Mientras corre, se mira cada poco si ha cambiado de fase o terminado.
@@ -113,6 +116,7 @@ export function useSession(initialPlan: SessionPlan, clock: Clock = systemClock)
 
   return {
     state,
+    getState,
     view: sessionSnapshot(state, clock.now()),
     getSnapshot,
     toggle: useCallback(() => apply((s) => toggleSession(s, clock.now())), [apply, clock]),
