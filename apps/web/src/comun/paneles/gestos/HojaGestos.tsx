@@ -25,13 +25,11 @@ function filas(lang: Language, tactil: boolean): readonly Fila[] {
     return es
       ? [
           { icono: 'toca', titulo: 'Toca', detalle: 'Empieza o pausa. En pausa, solo un toque sigue.' },
-          { icono: 'desliza', titulo: 'Desliza', detalle: 'Arriba o abajo, con un dedo, para elegir el tiempo.' },
           { icono: 'arrastra', titulo: 'Arrastra', detalle: 'Inclina el reloj. Soltar lo devuelve; no empieza la sesión.' },
           { icono: 'dobleToque', titulo: 'Dos toques', detalle: 'Da la vuelta y empieza de cero, con la arena dentro.' },
         ]
       : [
           { icono: 'toca', titulo: 'Tap', detalle: 'Starts or pauses. While paused, only a tap resumes.' },
-          { icono: 'desliza', titulo: 'Swipe', detalle: 'Up or down, with one finger, to set the time.' },
           { icono: 'arrastra', titulo: 'Drag', detalle: 'Tilts the hourglass. Releasing returns it; it does not start.' },
           { icono: 'dobleToque', titulo: 'Double-tap', detalle: 'Flips it and starts over, with the sand inside.' },
         ];

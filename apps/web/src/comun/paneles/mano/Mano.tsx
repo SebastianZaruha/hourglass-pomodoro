@@ -27,7 +27,7 @@ interface Props {
 
 /**
  * La primera vez, una mano enseña el clic, la rueda y el arrastre.
- * En táctil, el toque y el desliz. Luego no vuelve.
+ * En táctil, el toque y el arrastre. Luego no vuelve.
  */
 export function Mano({ visible }: Props) {
   const tactil = useTactil();
@@ -55,30 +55,32 @@ export function Mano({ visible }: Props) {
     };
   }, [abierta]);
 
+  const pasos = tactil ? 2 : 3;
   useEffect(() => {
     if (!abierta) return;
-    const id = window.setInterval(() => setPaso((n) => (n + 1) % 3), 3200);
+    const id = window.setInterval(() => setPaso((n) => (n + 1) % pasos), 3200);
     return () => window.clearInterval(id);
-  }, [abierta]);
+  }, [abierta, pasos]);
 
   if (!abierta) return null;
+  const indice = paso % pasos;
   const es = document.documentElement.lang !== 'en';
   const textos = tactil
     ? es
-      ? ['Toca para empezar', 'Desliza para el tiempo', 'Arrastra para inclinar']
-      : ['Tap to start', 'Swipe to set the time', 'Drag to tilt']
+      ? ['Toca para empezar', 'Arrastra para inclinar']
+      : ['Tap to start', 'Drag to tilt']
     : es
       ? ['Clic para empezar', 'Rueda para el tiempo', 'Arrastra para inclinar']
       : ['Click to start', 'Scroll to set the time', 'Drag to tilt'];
-  const gesto = tactil ? (['toque', 'deslizar', 'arrastrar'] as const) : (['clic', 'rueda', 'arrastrar'] as const);
+  const gesto = tactil ? (['toque', 'arrastrar'] as const) : (['clic', 'rueda', 'arrastrar'] as const);
 
   return (
     <div className="mano" aria-hidden="true">
-      <div className={`mano-dibujo mano-${gesto[paso]}`}>
+      <div className={`mano-dibujo mano-${gesto[indice]}`}>
         <span className="mano-palma" />
         <span className="mano-dedo" />
       </div>
-      <p className="mano-texto">{textos[paso]}</p>
+      <p className="mano-texto">{textos[indice]}</p>
     </div>
   );
 }

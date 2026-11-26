@@ -13,8 +13,8 @@ export function hintFor(
   if (status === 'idle') {
     if (tactil) {
       return es
-        ? 'toca para empezar · desliza arriba o abajo para ajustar el tiempo'
-        : 'tap to start · swipe up or down to set the time';
+        ? 'toca para empezar · elige el tiempo en Ajustes'
+        : 'tap to start · set the time in Settings';
     }
     return es ? 'clic para empezar · rueda para ajustar el tiempo' : 'click to start · scroll to set the time';
   }
