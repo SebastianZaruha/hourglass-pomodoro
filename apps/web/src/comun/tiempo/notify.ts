@@ -12,11 +12,27 @@ export function notificationSupported(): boolean {
 
 export async function ensureNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
   if (!notificationSupported()) return 'unsupported';
-  if (Notification.permission !== 'default') return Notification.permission;
   try {
-    return await Notification.requestPermission();
+    const permission =
+      Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
+    if (permission === 'granted') void notificationWorker();
+    return permission;
   } catch {
     return 'denied';
+  }
+}
+
+async function notificationWorker(): Promise<ServiceWorkerRegistration | null> {
+  try {
+    if (!('serviceWorker' in navigator)) return null;
+    const script = new URL('hourglass-notifications.js', new URL(import.meta.env.BASE_URL, location.origin));
+    // Conserva cualquier service worker que la web ya tenga registrado.
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration?.active) return registration;
+    if (!registration) await navigator.serviceWorker.register(script);
+    return await navigator.serviceWorker.ready;
+  } catch {
+    return null;
   }
 }
 
@@ -46,19 +62,22 @@ export function showPhaseNotification(
   if (!notificationSupported() || Notification.permission !== 'granted') return;
   if (!document.hidden) return;
   const note = phaseNotification(t, cue, snap);
+  const options = { body: note.body, lang, tag: 'hourglass-phase', silent: false };
   try {
-    const notification = new Notification(note.title, {
-      body: note.body,
-      lang,
-      tag: 'hourglass-phase',
-      silent: false,
-    });
+    const notification = new Notification(note.title, options);
     notification.onclick = () => {
       window.focus();
       notification.close();
     };
   } catch {
-    // Algunos navegadores solo permiten notificaciones desde un service worker.
+    // En navegador móvil el constructor puede fallar aun con permiso concedido.
+    void notificationWorker()
+      .then((registration) => {
+        if (document.hidden && Notification.permission === 'granted') {
+          return registration?.showNotification(note.title, options);
+        }
+      })
+      .catch(() => undefined);
   }
 }
 
