@@ -113,9 +113,9 @@ export async function applyChoice(choice: ConsentChoice, reset: boolean): Promis
 export async function logTimerEvent(name: TimerEventName, params: TimerEventParams): Promise<void> {
   if (!open) return;
   const sdk = await firebase();
-  if (!sdk) return;
+  if (!sdk || !open) return;
   try {
-    sdk.analytics.logEvent(sdk.analytics.getAnalytics(), name, params);
+    await sdk.analytics.logEvent(sdk.analytics.getAnalytics(), name, params);
   } catch {
     // Un fallo de analítica no puede romper el reloj.
   }
@@ -124,7 +124,7 @@ export async function logTimerEvent(name: TimerEventName, params: TimerEventPara
 export async function setUsageContext(context: UsageContext): Promise<void> {
   if (!open) return;
   const sdk = await firebase();
-  if (!sdk) return;
+  if (!sdk || !open) return;
   try {
     const analytics = sdk.analytics.getAnalytics(sdk.app.getApp());
     await sdk.analytics.setUserProperty(analytics, 'language', context.language);
