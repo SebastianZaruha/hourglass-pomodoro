@@ -7,9 +7,14 @@ function context(): AudioContext | null {
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) return null;
-  audio ??= new Ctor();
-  if (audio.state === 'suspended') void audio.resume();
-  return audio;
+  try {
+    audio ??= new Ctor();
+    if (audio.state === 'suspended') void audio.resume().catch(() => undefined);
+    return audio;
+  } catch {
+    // Si el navegador bloquea el audio, el temporizador sigue funcionando.
+    return null;
+  }
 }
 
 /** Desbloquea el audio en el primer gesto (los navegadores lo exigen). */

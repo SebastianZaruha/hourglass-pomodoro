@@ -170,6 +170,8 @@ export function useEntrada(e: Entrada) {
       }
       return;
     }
+    // Desbloquea el audio dentro del gesto, antes de esperar el doble clic.
+    primeAudio();
     resumeArmed.current = decision.armResume;
     clickTimer.current = window.setTimeout(() => {
       clickTimer.current = null;
