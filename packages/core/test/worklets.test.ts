@@ -8,7 +8,7 @@
  * cuerpo y el valor por defecto del parámetro no las ve.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -48,7 +48,8 @@ function worklets(file: string): { name: string; fn: Fn; sf: ts.SourceFile }[] {
       isWorklet(node)
     ) {
       const name = (node as ts.FunctionDeclaration).name?.getText(sf) ?? '(anónima)';
-      out.push({ name: `${file.slice(SRC.length + 1)}:${name}`, fn: node, sf });
+      const path = relative(SRC, file).split(sep).join('/');
+      out.push({ name: `${path}:${name}`, fn: node, sf });
     }
     ts.forEachChild(node, visit);
   };
