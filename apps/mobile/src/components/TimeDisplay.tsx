@@ -34,6 +34,7 @@ interface Props {
    * segundo). Así la pantalla entera no se vuelve a pintar 4 veces por segundo.
    */
   readonly refresh?: (() => string) | null;
+  readonly startedAt: number | null;
   readonly bottom: number;
   readonly fonts: { readonly time?: string };
   readonly themeProgress: SharedValue<number>;
@@ -49,6 +50,7 @@ const D = DARK_THEME.text;
 export function TimeDisplay({
   text,
   refresh = null,
+  startedAt,
   bottom,
   fonts,
   themeProgress,
@@ -58,7 +60,7 @@ export function TimeDisplay({
 }: Props) {
   const claroTiempo = textoClaro?.time ?? L.time;
   const oscuroTiempo = textoOscuro?.time ?? D.time;
-  const shown = useLiveText(text, refresh);
+  const shown = useLiveText(text, refresh, startedAt);
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const timeColor = useAnimatedStyle(() => ({
     color: interpolateColor(themeProgress.value, [0, 1], [claroTiempo, oscuroTiempo]),
@@ -83,18 +85,22 @@ export function TimeDisplay({
  * devuelve cada REFRESH_MS. Si la pantalla manda un texto nuevo (pausa,
  * cambio de fase...), se usa ese al momento.
  */
-function useLiveText(text: string, refresh: (() => string) | null): string {
-  const [live, setLive] = useState<{ base: string; value: string } | null>(null);
+function useLiveText(text: string, refresh: (() => string) | null, startedAt: number | null): string {
+  const [live, setLive] = useState<{ base: string; value: string; startedAt: number | null } | null>(null);
   useEffect(() => {
     if (!refresh) return;
     const id = setInterval(() => {
       const value = refresh();
-      setLive((prev) => (prev && prev.base === text && prev.value === value ? prev : { base: text, value }));
+      setLive((prev) =>
+        prev?.startedAt === startedAt && prev.base === text && prev.value === value
+          ? prev
+          : { base: text, value, startedAt },
+      );
     }, REFRESH_MS);
     return () => clearInterval(id);
-  }, [refresh, text]);
+  }, [refresh, startedAt, text]);
   // Un valor «vivo» de un texto anterior ya no vale.
-  return refresh && live && live.base === text ? live.value : text;
+  return refresh && live?.startedAt === startedAt && live.base === text ? live.value : text;
 }
 
 const styles = StyleSheet.create({

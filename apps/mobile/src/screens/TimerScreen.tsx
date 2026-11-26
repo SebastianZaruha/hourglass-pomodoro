@@ -714,6 +714,7 @@ export function TimerScreen({ settings, fonts }: Props) {
           <TimeDisplay
             text={formatDuration(displayMs)}
             refresh={view.status === 'running' ? liveTime : null}
+            startedAt={session.state.timer.startedAt}
             // Con el móvil volteado la capa gira 180°: su "abajo" es el borde
             // superior físico de la pantalla, así que usamos el margen seguro
             // de arriba (muesca/cámara) en lugar del de abajo.
