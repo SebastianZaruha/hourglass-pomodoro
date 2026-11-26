@@ -9,10 +9,9 @@ import {
   type Settings,
   type SettingsStore,
 } from '@reloj/core';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { asyncStorageAdapter } from '../storage/asyncStorageAdapter';
-import { useLatest } from './useLatest';
 
 // Una única instancia para toda la app.
 const defaultStore: SettingsStore = new LocalSettingsStore(asyncStorageAdapter);
@@ -27,21 +26,29 @@ export interface UseSettings {
 export function useSettings(store: SettingsStore = defaultStore): UseSettings {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [ready, setReady] = useState(false);
-  const current = useLatest(settings);
+  const current = useRef(settings);
+  const pendingWrite = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
     store
       .load()
       .then((loaded) => {
-        if (!cancelled) setSettings(loaded);
+        if (!cancelled && loaded.updatedAt >= current.current.updatedAt) {
+          current.current = loaded;
+          setSettings(loaded);
+        }
       })
+      .catch((error: unknown) => console.warn('No se pudieron leer los ajustes', error))
       .finally(() => {
         if (!cancelled) setReady(true);
       });
     // Si en el futuro llegan cambios desde otro dispositivo, los aplicamos.
     const unsubscribe = store.subscribe((s) => {
-      if (!cancelled) setSettings(s);
+      // El almacén también notifica nuestras escrituras ya completadas.
+      if (cancelled || s.updatedAt <= current.current.updatedAt) return;
+      current.current = s;
+      setSettings(s);
     });
     return () => {
       cancelled = true;
@@ -51,11 +58,15 @@ export function useSettings(store: SettingsStore = defaultStore): UseSettings {
 
   const update = useCallback(
     (patch: Partial<Omit<Settings, 'version' | 'updatedAt'>>) => {
-      const next = updateSettings(current.current, patch, Date.now());
+      const now = Math.max(Date.now(), current.current.updatedAt + 1);
+      const next = updateSettings(current.current, patch, now);
+      current.current = next;
       setSettings(next);
-      store.save(next).catch((error: unknown) => console.warn('No se pudieron guardar los ajustes', error));
+      pendingWrite.current = pendingWrite.current
+        .then(() => store.save(next))
+        .catch((error: unknown) => console.warn('No se pudieron guardar los ajustes', error));
     },
-    [store, current],
+    [store],
   );
 
   return { settings, ready, update };
