@@ -56,9 +56,7 @@ export function useAvisos(abierto: {
 
   const guardarCookies = (prefs: AnalyticsPrefs) => {
     const choice = eleccionDe(prefs);
-    writeConsent(choice, localStorage, Date.now(), prefs);
-    aplicarAnalitica(prefs);
-    setConsent(readConsent());
+    setConsent(writeConsent(choice, undefined, Date.now(), prefs));
     setPanelOpen(false);
     setBannerOpen(false);
   };
@@ -70,7 +68,7 @@ export function useAvisos(abierto: {
 
   const cerrarPanel = () => {
     setPanelOpen(false);
-    if (readConsent() === null) setBannerOpen(true);
+    if (consent === null) setBannerOpen(true);
   };
 
   const dismissAndroidPromo = () => {

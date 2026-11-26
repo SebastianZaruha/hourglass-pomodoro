@@ -49,33 +49,33 @@ export const ANDROID_PROMO_KEY = 'hourglass-web/android-promo';
 /** La primera sesión de esta visita ya terminó. El aviso de la app espera a eso. */
 export const PRIMERA_SESION_KEY = 'hourglass-web/primera-sesion';
 
-export function readPrimeraSesion(storage: Pick<Storage, 'getItem'> = localStorage): boolean {
+export function readPrimeraSesion(storage: Pick<Storage, 'getItem'> | undefined = undefined): boolean {
   try {
-    return storage.getItem(PRIMERA_SESION_KEY) === '1';
+    return (storage ?? localStorage).getItem(PRIMERA_SESION_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-export function writePrimeraSesion(storage: Pick<Storage, 'setItem'> = localStorage): void {
+export function writePrimeraSesion(storage: Pick<Storage, 'setItem'> | undefined = undefined): void {
   try {
-    storage.setItem(PRIMERA_SESION_KEY, '1');
+    (storage ?? localStorage).setItem(PRIMERA_SESION_KEY, '1');
   } catch {
     // Sin almacenamiento, el aviso puede esperar a la siguiente sesión de esta pestaña.
   }
 }
 
-export function readAndroidPromoDismissed(storage: Pick<Storage, 'getItem'> = localStorage): boolean {
+export function readAndroidPromoDismissed(storage: Pick<Storage, 'getItem'> | undefined = undefined): boolean {
   try {
-    return storage.getItem(ANDROID_PROMO_KEY) === '1';
+    return (storage ?? localStorage).getItem(ANDROID_PROMO_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-export function writeAndroidPromoDismissed(storage: Pick<Storage, 'setItem'> = localStorage): void {
+export function writeAndroidPromoDismissed(storage: Pick<Storage, 'setItem'> | undefined = undefined): void {
   try {
-    storage.setItem(ANDROID_PROMO_KEY, '1');
+    (storage ?? localStorage).setItem(ANDROID_PROMO_KEY, '1');
   } catch {
     // Modo privado o cuota: el aviso puede volver en la siguiente visita.
   }

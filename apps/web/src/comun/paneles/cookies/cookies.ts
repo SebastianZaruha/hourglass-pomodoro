@@ -91,11 +91,11 @@ export function eleccionDe(prefs: AnalyticsPrefs): ConsentChoice {
 }
 
 export function readConsent(
-  storage: Pick<Storage, 'getItem'> = localStorage,
+  storage: Pick<Storage, 'getItem'> | undefined = undefined,
   now = Date.now(),
 ): ConsentRecord | null {
   try {
-    return parseConsent(storage.getItem(CONSENT_KEY), now);
+    return parseConsent((storage ?? localStorage).getItem(CONSENT_KEY), now);
   } catch {
     return null;
   }
@@ -103,9 +103,20 @@ export function readConsent(
 
 export function writeConsent(
   choice: ConsentChoice,
-  storage: Pick<Storage, 'setItem'> = localStorage,
+  storage: Pick<Storage, 'setItem'> | undefined = undefined,
   now = Date.now(),
   prefs?: AnalyticsPrefs,
-): void {
-  storage.setItem(CONSENT_KEY, serializeConsent(choice, now, BANNER_VERSION, prefs));
+): ConsentRecord {
+  const record: ConsentRecord = {
+    choice,
+    at: now,
+    bannerVersion: BANNER_VERSION,
+    ...(choice === 'custom' ? { google: prefs?.google === true, vercel: prefs?.vercel === true } : {}),
+  };
+  try {
+    (storage ?? localStorage).setItem(CONSENT_KEY, serializeConsent(choice, now, BANNER_VERSION, prefs));
+  } catch {
+    // La elección sigue vigente en esta página aunque no se pueda guardar.
+  }
+  return record;
 }

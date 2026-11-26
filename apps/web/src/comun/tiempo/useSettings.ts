@@ -19,9 +19,9 @@ function ajustesNuevos(): Settings {
   return sanitizeSettings({ ...DEFAULT_SETTINGS, sound: false, lastDurationMs: DURACION_PRIMERA_VEZ });
 }
 
-export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage): Settings {
+export function loadWebSettings(storage: Pick<Storage, 'getItem'> | undefined = undefined): Settings {
   try {
-    const raw = storage.getItem(WEB_SETTINGS_KEY);
+    const raw = (storage ?? localStorage).getItem(WEB_SETTINGS_KEY);
     if (raw === null) return ajustesNuevos();
     return sanitizeSettings(JSON.parse(raw));
   } catch {
@@ -31,10 +31,10 @@ export function loadWebSettings(storage: Pick<Storage, 'getItem'> = localStorage
 
 export function saveWebSettings(
   settings: Settings,
-  storage: Pick<Storage, 'setItem'> = localStorage,
+  storage: Pick<Storage, 'setItem'> | undefined = undefined,
 ): Settings {
   const clean = sanitizeSettings(settings);
-  storage.setItem(WEB_SETTINGS_KEY, JSON.stringify(clean));
+  (storage ?? localStorage).setItem(WEB_SETTINGS_KEY, JSON.stringify(clean));
   return clean;
 }
 
