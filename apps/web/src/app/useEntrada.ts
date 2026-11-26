@@ -55,7 +55,11 @@ export function useEntrada(e: Entrada) {
   const giroRef = useRef(e.giro);
   giroRef.current = e.giro;
 
+  const menuRef = useRef(e.menu);
+  menuRef.current = e.menu;
+
   const doToggle = useCallback(() => {
+    if (introRef.current || menuRef.current || legalRef.current) return;
     primeAudio();
     e.toggle();
     wakeRef.current();
@@ -69,8 +73,6 @@ export function useEntrada(e: Entrada) {
 
   const toggleRef = useRef(doToggle);
   toggleRef.current = doToggle;
-  const menuRef = useRef(e.menu);
-  menuRef.current = e.menu;
   const setMenuRef = useRef(e.setMenu);
   setMenuRef.current = e.setMenu;
   const setLegalRef = useRef(e.setLegal);
@@ -86,7 +88,7 @@ export function useEntrada(e: Entrada) {
         if (menuRef.current) setMenuRef.current(false);
         return;
       }
-      if (legalRef.current || introRef.current) return;
+      if (legalRef.current || introRef.current || menuRef.current) return;
       if (ev.code !== 'Space' || ev.repeat) return;
       const target = ev.target instanceof Element ? ev.target : null;
       if (target?.closest('button, a, input, textarea, select')) return;
@@ -183,8 +185,8 @@ export function useEntrada(e: Entrada) {
   };
 
   const onStageKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (introRef.current) return;
-    if (event.key === 'Enter') {
+    if (introRef.current || menuRef.current || legalRef.current) return;
+    if (event.key === 'Enter' && !event.repeat) {
       event.preventDefault();
       doToggle();
     }
