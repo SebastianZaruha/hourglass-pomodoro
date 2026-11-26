@@ -26,6 +26,7 @@ import {
 
 interface Entrada {
   readonly menu: boolean;
+  readonly panelBloqueaReloj: boolean;
   readonly setMenu: (open: boolean) => void;
   readonly legal: { href: string; title: string } | null;
   readonly setLegal: (doc: { href: string; title: string } | null) => void;
@@ -46,8 +47,8 @@ interface Entrada {
  * 260 ms, 72 px de rueda, y el doble clic no reinicia si empezó en pausa.
  */
 export function useEntrada(e: Entrada) {
-  const introRef = useRef(e.introBloquea);
-  introRef.current = e.introBloquea;
+  const introRef = useRef(e.introBloquea || e.panelBloqueaReloj);
+  introRef.current = e.introBloquea || e.panelBloqueaReloj;
   const legalRef = useRef(e.legal);
   legalRef.current = e.legal;
   const wakeRef = useRef(e.wake);

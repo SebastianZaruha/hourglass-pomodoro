@@ -278,7 +278,10 @@ function Timer({
   const stageRef = useRef<HTMLDivElement>(null);
   const caja = useCajaFrasco(stageRef);
   const [puente3d] = useState(crearPuente3D);
+  const avisoVisible = pedirAviso && view.status !== 'paused' && !menu && !avisos.cookiesAbiertas && avisos.legal === null;
+  const panelBloqueaReloj = avisos.panelOpen || avisoVisible;
   const entrada = useEntrada({
+    panelBloqueaReloj,
     menu,
     setMenu,
     legal: avisos.legal,
@@ -480,6 +483,7 @@ function Timer({
         <div
           ref={stageRef}
           className="stage"
+          inert={panelBloqueaReloj || undefined}
           role="button"
           tabIndex={0}
           aria-label={action}
@@ -561,7 +565,7 @@ function Timer({
           />
         </Suspense>
       ) : null}
-      {pedirAviso && !paused && !menu && !avisos.cookiesAbiertas && avisos.legal === null ? (
+      {avisoVisible ? (
         <Suspense fallback={null}>
           <AvisoSesion
             abierta
