@@ -16,7 +16,7 @@ import { minifySync, transformSync } from 'rolldown/utils';
 import vm from 'node:vm';
 
 const webRoot = path.resolve(import.meta.dirname, '..');
-const source = readFileSync(path.join(webRoot, 'src/analytics.ts'), 'utf8');
+const source = readFileSync(path.join(webRoot, 'src/comun/paneles/cookies/analytics.ts'), 'utf8');
 const MEASUREMENT_ID = 'G-LEKYE5VYL2';
 
 function isGtagCommand(entry) {
@@ -71,7 +71,7 @@ test('esbuild y oxc no convierten arguments en un Array', () => {
     target: 'es2022',
     format: 'esm',
   });
-  const stripped = transformSync(path.join(webRoot, 'src/analytics.ts'), source, { target: 'es2022' });
+  const stripped = transformSync(path.join(webRoot, 'src/comun/paneles/cookies/analytics.ts'), source, { target: 'es2022' });
   assert.equal(stripped.errors.length, 0);
   const oxc = minifySync('analytics.js', stripped.code, { compress: true, mangle: true });
   assert.equal(oxc.errors?.length ?? 0, 0);
@@ -97,7 +97,7 @@ test('Accept encola js y config antes del script; Reject no lo deja cargado', as
       absWorkingDir: webRoot,
       stdin: {
         contents:
-          "import { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains } from './src/analytics.ts';\nexport { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains };\n",
+          "import { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains } from './src/comun/paneles/cookies/analytics.ts';\nexport { disableGoogleAnalytics, enableGoogleAnalytics, gaCookieClearDomains };\n",
         resolveDir: webRoot,
         loader: 'ts',
         sourcefile: path.join(webRoot, 'ga-entry.ts'),
