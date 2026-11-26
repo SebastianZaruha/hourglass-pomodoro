@@ -43,6 +43,8 @@ export interface EntradaAgua {
   readonly enGiro: boolean;
   /** Reinicio del temporizador: llena de abajo arriba. */
   readonly reposo: boolean;
+  /** Reinicio explícito, incluso si el temporizador ya estaba en reposo. */
+  readonly rellenar?: boolean;
 }
 
 export interface LineaAgua {
@@ -390,7 +392,7 @@ export function crearModeloAgua(): ModeloAgua {
         volArriba = obj.arriba;
         volAbajo = obj.abajo;
         iniciado = true;
-        if (enReposo) {
+        if (enReposo && !e.rellenar) {
           // El dedo sigue eligiendo el tiempo: el volumen cambia de golpe.
           // Sin esto cada escalón vacía los bulbos 350 ms y mata las olas.
           llenadoT0 = null;

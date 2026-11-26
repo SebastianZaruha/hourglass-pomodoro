@@ -23,6 +23,8 @@ export interface EntradaMotor {
   soloVaciar: boolean;
   /** Reposo: coloca la arena de la duración y no da pasos. */
   reposo: boolean;
+  /** El giro de reinicio acaba: dibuja el nuevo contenido subiendo. */
+  rellenar: boolean;
 }
 
 /**

@@ -124,6 +124,7 @@ class AguaMotor implements AguaContenido {
     pausa: false,
     enGiro: false,
     reposo: false,
+    rellenar: false,
   };
   private readonly gx = new Float32Array(GOTAS);
   private readonly gy = new Float32Array(GOTAS);
@@ -202,6 +203,8 @@ class AguaMotor implements AguaContenido {
     entrada.pausa = e.snap.status === 'paused';
     entrada.enGiro = e.enGiro;
     entrada.reposo = e.reposo;
+    entrada.rellenar = e.rellenar;
+    const llenadoAnterior = this.vista.llenado;
     this.vista = this.modelo.paso(entrada);
     this.theta = entrada.theta;
     this.moverGotas(entrada);
@@ -210,6 +213,7 @@ class AguaMotor implements AguaContenido {
       v.sigue ||
       this.fade > 0.02 ||
       v.llenado !== null ||
+      llenadoAnterior !== null ||
       Math.abs(v.theta - this.thetaPintado) > 1e-4 ||
       Math.abs(v.phi) > 0.0005;
     return v.sigue || this.fade > 0.02 || v.llenado !== null;

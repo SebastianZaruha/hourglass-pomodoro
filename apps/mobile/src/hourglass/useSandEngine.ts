@@ -130,6 +130,7 @@ function entradaVacia(): EntradaMotor {
     vaciar: false,
     soloVaciar: false,
     reposo: false,
+    rellenar: false,
   };
 }
 
@@ -276,6 +277,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       e.vaciar = false;
       e.soloVaciar = false;
       e.reposo = false;
+      e.rellenar = false;
 
       // 0b) Cambio de fase (ciclos): empieza el giro animado del reloj.
       const turns = snap.transitions ?? 0;
@@ -322,7 +324,10 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
           state.reinicioStart = null;
           state.reinicioHold = false;
           setSpin(0);
-          if (snap.status === 'idle') e.reposo = true;
+          if (snap.status === 'idle') {
+            e.reposo = true;
+            e.rellenar = true;
+          }
         }
         changed = true;
       }
@@ -428,6 +433,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     e.gravedad = ahora.motion.simGravity;
     e.durationMs = durationMs;
     e.reposo = true;
+    e.rellenar = false;
     e.vaciar = false;
     e.soloVaciar = false;
     e.enGiro = false;
