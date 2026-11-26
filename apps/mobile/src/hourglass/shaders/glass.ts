@@ -29,10 +29,12 @@
  *    perfectos ni la misma intensidad en todo el bulbo.
  *  - Lente: dentro de los bulbos el fondo se ve ligeramente ampliado.
  */
+import { BACKGROUND_SAMPLE_SKSL } from './background';
 import { PROFILE_SKSL } from './common';
 
 export const GLASS_BODY_SKSL = /* glsl */ `
 uniform shader uBackground;
+${BACKGROUND_SAMPLE_SKSL}
 ${PROFILE_SKSL}
 uniform float uRefraction;  // desplazamiento máximo (px)
 uniform float3 uTint;       // color del vidrio
@@ -58,7 +60,7 @@ half4 main(float2 pos) {
   offset -= (q - bulbCenter) * 0.03 * bulbMask;
   // Ondulaciones del vidrio soplado: desvío lento de ±0.4 × uRefraction.
   offset += glassWave(s, u) * uRefraction * 0.4;
-  float3 c = uBackground.eval(pos + offset).rgb;
+  float3 c = uBackground.eval(fondoEnEscena(pos + offset)).rgb;
 
   // Absorción: cerca del canto la luz atraviesa más vidrio → banda grisácea.
   // Más ancha y marcada donde el vidrio es más grueso (extremos y cuello).

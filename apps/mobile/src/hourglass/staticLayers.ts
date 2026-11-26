@@ -47,6 +47,7 @@ import {
 import type { HourglassTheme } from '../theme/theme';
 import { safeDispose } from './disposal';
 import type { HourglassLayout } from './layout';
+import { setBackgroundSample, type ObjectPose } from './objectPose';
 import type { ShaderSet } from './resources';
 import { profileUniforms } from './shaders/profileUniforms';
 import { UniformPacker, type UniformValues } from './shaders/uniforms';
@@ -111,7 +112,7 @@ export class GlassPainter {
   private readonly frontPacker: UniformPacker;
   /** Valores de uniforms: arrays fijos que se rellenan en sitio. */
   private readonly bgU: UniformValues & { uOffset: number[] };
-  private readonly bodyU: UniformValues & { uLight: number[] };
+  private readonly bodyU: UniformValues & { uLight: number[]; uBackgroundPose: number[] };
   private readonly frontU: UniformValues & { uLight: number[]; uParallax: number[] };
   /** Foto del fondo. Null en Clásico y hasta que la imagen llega. */
   private readonly foto: SkImage | null;
@@ -151,6 +152,7 @@ export class GlassPainter {
       ...profile,
       uRefraction: model.glass.refraction,
       uTint: theme.glass.tint,
+      uBackgroundPose: [1, 0, 0, 0],
       uTintAmount: model.glass.tint,
       uLight: [0, 0],
       uReflection: theme.glass.reflection,
@@ -243,11 +245,12 @@ export class GlassPainter {
    * Graba el CUERPO del vidrio: refracta el fondo, que recibe como shader
    * hijo (por eso crea su propio shader de fondo, que libera al terminar).
    */
-  recordBody(tilt: Vec2): SkPicture {
+  recordBody(tilt: Vec2, pose?: ObjectPose): SkPicture {
     this.assertAlive();
     const canvas = this.recorder.beginRecording(this.bounds);
     const bgShader = this.makeBackgroundShader(tilt);
     const bodyU = this.bodyU;
+    setBackgroundSample(bodyU.uBackgroundPose, this.layout.cx, this.layout.cy, pose);
     bodyU.uLight[0] = tilt.x;
     bodyU.uLight[1] = tilt.y;
     const bodyShader = this.glassBody.makeShaderWithChildren(this.bodyPacker.pack(bodyU), [bgShader]);

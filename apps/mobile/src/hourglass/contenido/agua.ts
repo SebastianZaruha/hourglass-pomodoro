@@ -30,6 +30,7 @@ import {
 } from '@shopify/react-native-skia';
 
 import { disposeLater, safeDispose } from '../disposal';
+import { setBackgroundSample, type ObjectPose } from '../objectPose';
 import type { HourglassLayout } from '../layout';
 import type { ShaderSet } from '../resources';
 import { PARALLAX, marcoFoto } from '../staticLayers';
@@ -109,6 +110,7 @@ class AguaMotor implements AguaContenido {
     uOB0: [0, 0, 0, 0],
     uOB1: [0, 0, 0, 0],
     uParallax: [0, 0],
+    uBackgroundPose: [1, 0, 0, 0],
   };
   private alfaGota = ALFA_GOTA_OSCURA;
   /** Se rellena en cada paso. El modelo no se queda con ella. */
@@ -213,13 +215,14 @@ class AguaMotor implements AguaContenido {
     return v.sigue || this.fade > 0.02 || v.llenado !== null;
   }
 
-  pintar(motion: MotionSource): SkPicture {
+  pintar(motion: MotionSource, _giro: number, pose?: ObjectPose): SkPicture {
     const canvas = this.recorder.beginRecording(this.bounds);
     const fondo = this.fondo;
     const packer = this.packer;
     const effect = this.shaders?.agua;
     if (fondo && packer && effect) {
       this.llenarUniforms(motion);
+      setBackgroundSample(this.uniforms.uBackgroundPose, this.layout.cx, this.layout.cy, pose);
       const shader = effect.makeShaderWithChildren(packer.pack(this.uniforms), [fondo]);
       this.aguaPaint.setShader(shader);
       canvas.save();

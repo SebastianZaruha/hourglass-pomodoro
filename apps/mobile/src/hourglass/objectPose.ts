@@ -42,3 +42,15 @@ export function objectPose(
   const dy = poseCentered * toScreenCenter;
   return { dy, scale, angle };
 }
+
+/** Convierte las coordenadas locales del frasco en coordenadas del fondo. */
+export function setBackgroundSample(values: number[], cx: number, cy: number, pose?: ObjectPose): void {
+  const scale = pose?.scale ?? 1;
+  const angle = pose?.angle ?? 0;
+  const cos = scale * Math.cos(angle);
+  const sin = scale * Math.sin(angle);
+  values[0] = cos;
+  values[1] = sin;
+  values[2] = cx - cos * cx + sin * cy;
+  values[3] = cy - sin * cx - cos * cy + (pose?.dy ?? 0);
+}

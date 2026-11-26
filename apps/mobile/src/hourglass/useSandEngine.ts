@@ -47,6 +47,7 @@ import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 
 import { useLatest } from '../hooks/useLatest';
 import type { EntradaMotor, MotorContenido } from './contenido/tipos';
+import type { ObjectPose } from './objectPose';
 import { useFramePacer } from './useFramePacer';
 import { PictureSlot, recordEmptyPicture } from './pictureSlot';
 import type { GlassPainter } from './staticLayers';
@@ -57,6 +58,8 @@ export interface SandEngineParams {
   /** Cambia con el pintor de la arena (tema, tamaño) sin recrear la simulación. */
   readonly revisionPintor: number;
   readonly glass: GlassPainter;
+  readonly poseDelFrasco: ((giro: number) => ObjectPose) | null;
+  readonly poseActive: boolean;
   readonly motion: MotionSource;
   /** Devuelve la foto actual del temporizador. */
   readonly getSnapshot: () => HourglassSnapshot;
@@ -183,6 +186,9 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
     lightY: Number.NaN,
     /** Cuándo se grabó el vidrio por última vez (performance.now). */
     glassAt: 0,
+    sampleAngle: 0,
+    sampleScale: 1,
+    sampleY: 0,
     /** La luz ha cambiado pero aún no tocaba regrabar: queda pendiente. */
     glassPending: false,
     /** Marca de tiempo del fotograma anterior (para calcular dt). */
@@ -332,6 +338,17 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
       const sigue = p.contenido.paso(e);
       state.simMs = p.contenido.simMs;
 
+      // La foto se muestrea en las coordenadas del fondo, incluso al girar el frasco.
+      const giro = spin.value;
+      const pose = p.poseDelFrasco?.(giro);
+      const angle = pose?.angle ?? 0;
+      const scale = pose?.scale ?? 1;
+      const dy = pose?.dy ?? 0;
+      const sampleMoved = angle !== state.sampleAngle || scale !== state.sampleScale || dy !== state.sampleY;
+      state.sampleAngle = angle;
+      state.sampleScale = scale;
+      state.sampleY = dy;
+
       // 4a) Vidrio: regrabamos si cambió el pintor (tamaño/tema) o la luz.
       const t = m.tilt;
       const newGlass = state.glass !== p.glass;
@@ -344,7 +361,6 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         state.glassAt = now;
         slots.background.publish(p.glass.recordBackground(t));
         slots.shadow.publish(p.glass.recordShadow(t));
-        slots.body.publish(p.glass.recordBody(t));
         slots.front.publish(p.glass.recordFront(t));
         state.glass = p.glass;
         state.lightX = t.x;
@@ -352,9 +368,13 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         changed = true; // la luz de la arena también se mueve
       }
 
-      // 4b) Arena.
-      if (changed || p.contenido.hayQuePintar) {
-        slots.sand.publish(p.contenido.pintar(m, spin.value));
+      if (glassDue || sampleMoved) {
+        slots.body.publish(p.glass.recordBody({ x: state.lightX, y: state.lightY }, pose));
+      }
+
+      // 4b) Contenido.
+      if (changed || sampleMoved || p.contenido.hayQuePintar) {
+        slots.sand.publish(p.contenido.pintar(m, giro, pose));
       }
 
       // ¿Seguimos? Mientras corre el tiempo o la arena se mueve, sí.
@@ -365,6 +385,7 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
         turning ||
         state.reinicioStart !== null ||
         state.glassPending ||
+        (p.poseDelFrasco !== null && p.poseActive) ||
         // Hasta volver a la calidad normal (y recolocar la arena a 3°).
         lod;
       if (keepGoing) {
@@ -411,7 +432,16 @@ export function useSandEngine(params: SandEngineParams): SandEngineOutput {
   // Cualquier cambio relevante despierta el bucle.
   useEffect(() => {
     wake();
-  }, [status, params.contenido, params.revisionPintor, params.glass, params.reduceMotion, wake]);
+  }, [
+    status,
+    params.contenido,
+    params.revisionPintor,
+    params.glass,
+    params.poseDelFrasco,
+    params.poseActive,
+    params.reduceMotion,
+    wake,
+  ]);
 
   // La fuente de movimiento (acelerómetro) también lo despierta.
   useEffect(() => motion.subscribe(wake), [motion, wake]);

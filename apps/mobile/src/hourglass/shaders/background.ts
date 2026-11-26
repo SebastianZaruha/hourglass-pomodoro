@@ -4,6 +4,15 @@
  * fino que evita las "bandas" de los degradados en pantallas de 8 bits.
  * Por debajo de la base del reloj se insinúa una mesa muy difusa.
  */
+export const BACKGROUND_SAMPLE_SKSL = /* glsl */ `
+uniform float4 uBackgroundPose;
+
+float2 fondoEnEscena(float2 p) {
+  float2 a = uBackgroundPose.xy;
+  return float2(a.x * p.x - a.y * p.y, a.y * p.x + a.x * p.y) + uBackgroundPose.zw;
+}
+`;
+
 export const BACKGROUND_SKSL = /* glsl */ `
 uniform float2 uSize;
 uniform float2 uOffset;     // desplazamiento de paralaje (px)

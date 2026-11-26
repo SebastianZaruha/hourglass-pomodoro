@@ -1,3 +1,4 @@
+import type { ObjectPose } from '../objectPose';
 import type { HourglassSnapshot } from '../types';
 import type { MotionSource } from '../types';
 import type { SkPicture } from '@shopify/react-native-skia';
@@ -33,9 +34,9 @@ export interface MotorContenido {
   paso(e: EntradaMotor): boolean;
   /**
    * Picture de este fotograma. El bucle lo publica y lo libera.
-   * `giro` es el de la fase, en radianes: la foto no gira con él.
+   * La pose sitúa en el fondo la muestra que se ve a través del agua.
    */
-  pintar(motion: MotionSource, giro: number): SkPicture;
+  pintar(motion: MotionSource, giro: number, pose?: ObjectPose): SkPicture;
   /**
    * La rejilla da media vuelta. `reinicio` es el volteo del móvil;
    * `fase` es el final del giro de un ciclo. En los dos la arena hace lo mismo.

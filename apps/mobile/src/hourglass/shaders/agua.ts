@@ -8,6 +8,8 @@
  * Los números de arriba se hornean en el shader. Sebastián los ajusta.
  */
 
+import { BACKGROUND_SAMPLE_SKSL } from './background';
+
 /** Desplazamiento máximo de la lupa, en px, en el centro del agua. En el borde es 0. */
 const LUPA = 4;
 /** Cuánto desplaza la ola la muestra, en px, cuando la ola está en su tope. */
@@ -35,6 +37,7 @@ const muestras = [
 
 export const AGUA_SKSL = /* glsl */ `
 uniform shader uBackground;
+${BACKGROUND_SAMPLE_SKSL}
 uniform float uSen;
 uniform float uCs;
 uniform float uSplit;
@@ -98,8 +101,8 @@ half4 main(float2 pos) {
   float2 normal = float2(uSen, uCs);
   float2 tangente = float2(uCs, -uSen);
   float ola = onda / max(rango * 0.04, 1.0);
-  float2 muestra = pos - uParallax - normal * (${LUPA} * campana * profundidad) + tangente * ola * ${DESVIO_OLA};
-  half4 bg = fondo(muestra);
+  float2 muestra = pos - normal * (${LUPA} * campana * profundidad) + tangente * ola * ${DESVIO_OLA};
+  half4 bg = fondo(fondoEnEscena(muestra) - uParallax);
   half3 velo = mix(half3(${GRIS_CLARO}, ${GRIS_CLARO}, ${GRIS_CLARO}), half3(${GRIS_OSCURO}, ${GRIS_OSCURO}, ${GRIS_OSCURO}), profundidad);
   float alfa = mix(${VELO_MIN}, ${VELO_MAX}, profundidad);
   if (bg.a < 0.01) return half4(half3(velo * alfa), alfa);

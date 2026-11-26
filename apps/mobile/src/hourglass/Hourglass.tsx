@@ -268,10 +268,34 @@ function HourglassCanvas({
   );
   useEffect(() => () => disposeLater([glass]), [glass]);
 
+  const toScreenCenter = height / 2 - layout.cy;
+  const objW = 2 * layout.halfW;
+  const objH = 2 * layout.halfH;
+  /** Ancho útil para el reloj cuando gira (deja un margen a los lados). */
+  const roomW = width * 0.94;
+  const poseDelFrasco = useCallback(
+    (giro: number) => {
+      'worklet';
+      return objectPose(
+        pose ? pose.rotate.value : 0,
+        pose ? pose.scale.value : 1,
+        pose ? pose.centered.value : 0,
+        giro,
+        roomW,
+        objW,
+        objH,
+        toScreenCenter,
+      );
+    },
+    [pose, roomW, objW, objH, toScreenCenter],
+  );
+
   const { background, shadow, body, sand, front, rotation, spin } = useSandEngine({
     contenido,
     revisionPintor,
     glass,
+    poseDelFrasco: foto ? poseDelFrasco : null,
+    poseActive,
     motion,
     getSnapshot,
     status,
@@ -288,23 +312,8 @@ function HourglassCanvas({
 
   // Transformación del RELOJ alrededor de su propio centro (el cuello).
   const center = useMemo(() => ({ x: layout.cx, y: layout.cy }), [layout]);
-  /** Distancia del centro del reloj al de la pantalla (la intro empieza centrada). */
-  const toScreenCenter = height / 2 - layout.cy;
-  const objW = 2 * layout.halfW;
-  const objH = 2 * layout.halfH;
-  /** Ancho útil para el reloj cuando gira (deja un margen a los lados). */
-  const roomW = width * 0.94;
   const objectTransform = useDerivedValue(() => {
-    const p = objectPose(
-      pose ? pose.rotate.value : 0,
-      pose ? pose.scale.value : 1,
-      pose ? pose.centered.value : 0,
-      spin.value,
-      roomW,
-      objW,
-      objH,
-      toScreenCenter,
-    );
+    const p = poseDelFrasco(spin.value);
     return [{ translateY: p.dy }, { scale: p.scale }, { rotate: p.angle }];
   });
   const objectOpacity = useDerivedValue(() => (pose ? pose.opacity.value : 1));
